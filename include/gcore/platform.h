@@ -44,6 +44,7 @@ USA.
 # include <pthread.h>
 //# include <semaphore.h>
 # include <sched.h>
+# include <signal.h>
 # define DIR_SEP '/'
 # define PATH_SEP ':'
 #endif

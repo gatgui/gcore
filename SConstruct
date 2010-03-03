@@ -14,6 +14,7 @@ prjs = [
   },
   { "name"    : "testmodule",
     "type"    : "dynamicmodule",
+    "prefix"  : "bin",
     "incdirs" : ["include"],
     "srcs"    : ["src/tests/modules/module.cpp"]
   },

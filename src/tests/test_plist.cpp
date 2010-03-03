@@ -25,6 +25,7 @@ USA.
 
 int main(int argc, char **argv) {
   if (argc != 2) {
+    std::cout << "Usage: test_plist <filename>" << std::endl;
     return -1;
   }
   

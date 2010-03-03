@@ -69,57 +69,38 @@ USA.
 #include <exception>
 #include <stdexcept>
 
-/*
-#ifdef _WIN32
-# ifndef WIN32_LEAN_AND_MEAN
-#   define WIN32_LEAN_AND_MEAN
-# endif
-# ifndef _WIN32_WINNT
-#   define _WIN32_WINNT WINVER
-# endif
-# include <windows.h>
-#else
-# include <sys/wait.h>
-# include <sys/time.h>
-# include <unistd.h>
-# include <errno.h>
-# include <dlfcn.h>
-# include <dirent.h>
-# include <pthread.h>
-# include <semaphore.h>
-# include <sched.h>
-#endif
-*/
+#define FPTR_CAST(target_type, ptr_var) ((target_type)(size_t)(ptr_var))
 
+namespace gcore  {
+  
 #if defined(__LP64__) ||\
     defined(_LP64) ||\
     (_MIPS_SZLONG == 64) ||\
     (__WORDSIZE == 64)
-// Native 64 bits long architecture
-typedef unsigned long UInt64;
-typedef long Int64;
+  // Native 64 bits long architecture
+  typedef unsigned long UInt64;
+  typedef long Int64;
 #elif defined(_MSC_VER) ||\
       (defined(__BCPLUSPLUS__) && __BORLANDC__ > 0x500) ||\
       defined(__WATCOM_INT64__)
-// Compiler native 64 bit type
-typedef unsigned __int64 UInt64;
-typedef __int64 Int64;
+  // Compiler native 64 bit type
+  typedef unsigned __int64 UInt64;
+  typedef __int64 Int64;
 #elif defined(__GNUG__) ||\
       defined(__GNUC__) ||\
       defined(__SUNPRO_CC) ||\
       defined(__MWERKS__) ||\
       defined(__SC__) ||\
       defined(_LONGLONG)
-// Compiler native 64 bit type
-typedef unsigned long long UInt64;
-typedef long long Int64;
+  // Compiler native 64 bit type
+  typedef unsigned long long UInt64;
+  typedef long long Int64;
 #else
-// No 64 bit support define it to be 32 bit
-typedef unsigned long UInt64;
-typedef long Int64;
+  // No 64 bit support define it to be 32 bit
+  typedef unsigned long UInt64;
+  typedef long Int64;
 #endif
 
-//#define FPTR_CAST(target_type, ptr_var) ((target_type)(UInt64)(ptr_var))
-#define FPTR_CAST(target_type, ptr_var) ((target_type)(size_t)(ptr_var))
+}
 
 #endif

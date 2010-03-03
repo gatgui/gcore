@@ -967,7 +967,8 @@ void* gcore::Thread::_ThreadEntryFunc(void *data) {
       }
     
     } catch (...) {
-      fprintf(stderr, "\nError running thread: %d\n", (int)thr->id());
+      int tid = (int)(size_t) thr->id();
+      fprintf(stderr, "\nError running thread: %d\n", tid);
     }  
   }
   
@@ -1037,7 +1038,7 @@ bool gcore::Thread::join(int *retval) {
     void *rval = NULL;
     if (pthread_join((pthread_t)mSelf, &rval) == 0) {
       if (retval) {
-        *retval = (int)rval;
+        *retval = (int)(size_t)rval;
       }
       mSelf = 0;
       return true;

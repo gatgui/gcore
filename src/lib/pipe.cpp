@@ -23,22 +23,15 @@ USA.
 
 #include <gcore/pipe.h>
 #include <gcore/platform.h>
-using namespace std;
 
 gcore::Pipe::Pipe() {
   mDesc[0] = INVALID_PIPE;
   mDesc[1] = INVALID_PIPE;
-#ifdef PRIVATE_BUFFER
-  memset(mReadBuffer, 0, PIPE_BUFFER_SIZE);
-#endif
 }
 
 gcore::Pipe::Pipe(const gcore::Pipe &rhs) {
   mDesc[0] = rhs.mDesc[0];
   mDesc[1] = rhs.mDesc[1];
-#ifdef PRIVATE_BUFFER
-  memset(mReadBuffer, 0, PIPE_BUFFER_SIZE);
-#endif
 }
 
 gcore::Pipe::~Pipe() {
@@ -114,54 +107,33 @@ void gcore::Pipe::closeWrite() {
   }
 }
 
-int gcore::Pipe::read(string &str) const {
-#ifndef PRIVATE_BUFFER
-  static char rdbuf[PIPE_BUFFER_SIZE] = {0};
-#endif
+int gcore::Pipe::read(std::string &str) const {
+
+  char rdbuf[256];
 
   if (canRead()) {
 #ifndef _WIN32
-
-#ifdef PRIVATE_BUFFER
-    int bytesRead = ::read(mDesc[0], mReadBuffer, PIPE_BUFFER_SIZE);
-    if (bytesRead != -1) {
-      mReadBuffer[bytesRead] = '\0';
-      str = mReadBuffer;
-      return bytesRead;
-    }
-#else
-    int bytesRead = ::read(mDesc[0], rdbuf, PIPE_BUFFER_SIZE);
+    int bytesRead = ::read(mDesc[0], rdbuf, 256);
     if (bytesRead != -1) {
       rdbuf[bytesRead] = '\0';
       str = rdbuf;
       return bytesRead;
     }
-#endif
-
 #else
-
     DWORD bytesRead = 0;
-#ifdef PRIVATE_BUFFER
-    if (ReadFile(mDesc[0],mReadBuffer,PIPE_BUFFER_SIZE,&bytesRead,NULL)) {
-      mReadBuffer[bytesRead] = '\0';
-      str = mReadBuffer;
-      return bytesRead;
-    }
-#else
-    if (ReadFile(mDesc[0],rdbuf,PIPE_BUFFER_SIZE,&bytesRead,NULL)) {
+    if (ReadFile(mDesc[0], rdbuf, 256, &bytesRead, NULL)) {
       rdbuf[bytesRead] = '\0';
       str = rdbuf;
       return bytesRead;
     }
-#endif
-
 #endif
   }
+
   str = "";
   return -1;
 }
 
-int gcore::Pipe::write(const string &str) const {
+int gcore::Pipe::write(const std::string &str) const {
   if (canWrite()) {
 #ifndef _WIN32
     int bytesToWrite = str.length();

@@ -26,11 +26,6 @@ USA.
 
 #include <gcore/config.h>
 
-#if 1
-# define PRIVATE_BUFFER
-# define PIPE_BUFFER_SIZE 256
-#endif
-
 namespace gcore {
 
 #ifdef _WIN32
@@ -77,9 +72,6 @@ namespace gcore {
     private:
     
       PipeID mDesc[2];
-#ifdef PRIVATE_BUFFER
-      mutable char mReadBuffer[PIPE_BUFFER_SIZE];
-#endif
   };
 }
 

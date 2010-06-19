@@ -50,7 +50,6 @@ class PipeReader {
     
     void done(int ecode) {
       cout << endl << "### Read pipe thread exited with code(" << ecode << ")" << endl;
-      m_p->wait(true);
     }
 
   protected:
@@ -58,6 +57,10 @@ class PipeReader {
     Process *m_p;
     string m_prompt;
 };
+
+void procOutput(const char *s) {
+  cout << "Process Info: " << s;
+}
 
 int main(int argc, char **argv) {
   // get program as command iline
@@ -79,6 +82,8 @@ int main(int argc, char **argv) {
   
   Thread *thr = 0;
   
+  p.setOutputFunc(procOutput);
+  p.verbose(true);
   p.setEnv("CUSTOM_ENV", "poo");
   p.captureOut(out);
   p.captureErr(out, false);
@@ -90,13 +95,15 @@ int main(int argc, char **argv) {
     thr = new Thread(&r, &PipeReader::read, &PipeReader::done);
   }
   
-  while (p.running()) {
-    if (in) {
+  if (in) {
+    while (p.running()) {
       fgets(inb, 1024, stdin);
       p.write(inb);
     }
   }
   
+  p.wait(true);
+
   if (thr) {
     thr->join();
     delete thr;

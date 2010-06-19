@@ -41,13 +41,15 @@ class PipeReader {
     int read() {
       string rbuf = "";
       while (m_p->read(rbuf) >= 0) {
-        cout << rbuf; // << endl;
+        cout << endl << "### Read from pipe START" << endl;
+        cout << rbuf;
+        cout << endl << "### END";
       }
       return 0;
     }
     
     void done(int ecode) {
-      cout << "### Read pipe thread exited with code(" << ecode << ")" << endl;
+      cout << endl << "### Read pipe thread exited with code(" << ecode << ")" << endl;
       m_p->wait(true);
     }
 
@@ -79,6 +81,7 @@ int main(int argc, char **argv) {
   
   p.setEnv("CUSTOM_ENV", "poo");
   p.captureOut(out);
+  p.captureErr(out, false);
   p.redirectIn(in);
   p.run(argv[1], 0);
   
@@ -95,7 +98,7 @@ int main(int argc, char **argv) {
   }
   
   if (thr) {
-    thr->cancel();
+    thr->join();
     delete thr;
   }
   

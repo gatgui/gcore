@@ -68,7 +68,8 @@ namespace gcore
 
       int read(std::string &str) const;
       int write(const std::string &str) const;
-      //int readErr(std::string &str) const;
+      int readErr(std::string &str) const;
+      int writeErr(const std::string &str) const;
 
       inline const std::string& getCmdLine() const {
         return mCmdLine;
@@ -78,8 +79,9 @@ namespace gcore
       void captureOut(bool co);
       bool captureOut() const;
 
-      //void captureErr(bool yesno, bool toout=false);
-      //bool captureErr() const;
+      void captureErr(bool enable, bool errToOut=false);
+      bool captureErr() const;
+      bool redirectErrToOut() const;
 
       void redirectIn(bool ri);
       bool redirectIn() const;
@@ -109,12 +111,15 @@ namespace gcore
       OutputFunc               mOutFunc;
       Pipe                     mReadPipe;
       Pipe                     mWritePipe;
+      Pipe                     mErrorPipe;
       bool                     mCapture;
       bool                     mRedirect;
       bool                     mVerbose;
       bool                     mShowConsole;
       char**                   mStdArgs; // used on nix
       std::string              mCmdLine;
+      bool                     mCaptureErr;
+      bool                     mErrToOut;
 
       std::map<std::string, std::string> mEnv;
   };

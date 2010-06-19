@@ -925,6 +925,7 @@ const std::string& PropertyList::ValueTypeName(long id) {
 
 PropertyList::PropertyList()
   : mTop(0) {
+  RegisterBasicTypes();
 }
 
 PropertyList::~PropertyList() {

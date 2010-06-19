@@ -31,8 +31,6 @@ int main(int argc, char **argv) {
   
   std::string filename(argv[1]);
   
-  gcore::PropertyList::RegisterBasicTypes();
-  
   gcore::PropertyList pl;
   
   if (!pl.read(filename)) {

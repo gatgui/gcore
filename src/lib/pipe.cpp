@@ -26,18 +26,18 @@ USA.
 using namespace std;
 
 gcore::Pipe::Pipe() {
-	mDesc[0] = INVALID_PIPE;
-	mDesc[1] = INVALID_PIPE;
+  mDesc[0] = INVALID_PIPE;
+  mDesc[1] = INVALID_PIPE;
 #ifdef PRIVATE_BUFFER
-	memset(mReadBuffer, 0, PIPE_BUFFER_SIZE);
+  memset(mReadBuffer, 0, PIPE_BUFFER_SIZE);
 #endif
 }
 
 gcore::Pipe::Pipe(const gcore::Pipe &rhs) {
-	mDesc[0] = rhs.mDesc[0];
-	mDesc[1] = rhs.mDesc[1];
+  mDesc[0] = rhs.mDesc[0];
+  mDesc[1] = rhs.mDesc[1];
 #ifdef PRIVATE_BUFFER
-	memset(mReadBuffer, 0, PIPE_BUFFER_SIZE);
+  memset(mReadBuffer, 0, PIPE_BUFFER_SIZE);
 #endif
 }
 
@@ -47,134 +47,134 @@ gcore::Pipe::~Pipe() {
 }
 
 gcore::Pipe& gcore::Pipe::operator=(const gcore::Pipe &rhs) {
-	if (this != &rhs) {
-		mDesc[0] = rhs.mDesc[0];
-		mDesc[1] = rhs.mDesc[1];
-	}
-	return *this;
+  if (this != &rhs) {
+    mDesc[0] = rhs.mDesc[0];
+    mDesc[1] = rhs.mDesc[1];
+  }
+  return *this;
 }
 
 gcore::PipeID gcore::Pipe::readId() const {
-	return mDesc[0];
+  return mDesc[0];
 }
 
 gcore::PipeID gcore::Pipe::writeId() const
 {
-	return mDesc[1];
+  return mDesc[1];
 }
 
 void gcore::Pipe::close() {
   closeRead();
-	closeWrite();
+  closeWrite();
 }
 
 void gcore::Pipe::create() {
-	close();
+  close();
 #ifndef _WIN32
-	if (pipe(mDesc) == -1) {
+  if (pipe(mDesc) == -1) {
 #else
-	SECURITY_ATTRIBUTES sattr;
-	sattr.nLength = sizeof(sattr);
-	sattr.lpSecurityDescriptor = NULL;
-	sattr.bInheritHandle = TRUE;
-	if (!CreatePipe(&mDesc[0], &mDesc[1],&sattr,0)) {
+  SECURITY_ATTRIBUTES sattr;
+  sattr.nLength = sizeof(sattr);
+  sattr.lpSecurityDescriptor = NULL;
+  sattr.bInheritHandle = TRUE;
+  if (!CreatePipe(&mDesc[0], &mDesc[1],&sattr,0)) {
 #endif
-		mDesc[0] = INVALID_PIPE;
-		mDesc[1] = INVALID_PIPE;
-	}
+    mDesc[0] = INVALID_PIPE;
+    mDesc[1] = INVALID_PIPE;
+  }
 }
 
 bool gcore::Pipe::canRead() const {
-	return (IsValidPipeID(mDesc[0]));
+  return (IsValidPipeID(mDesc[0]));
 }
 
 bool gcore::Pipe::canWrite() const {
-	return (IsValidPipeID(mDesc[1]));
+  return (IsValidPipeID(mDesc[1]));
 }
 
 void gcore::Pipe::closeRead() {
-	if (canRead()) {
+  if (canRead()) {
 #ifndef _WIN32
-		::close(mDesc[0]);
+    ::close(mDesc[0]);
 #else
-		CloseHandle(mDesc[0]);
+    CloseHandle(mDesc[0]);
 #endif
-		mDesc[0] = INVALID_PIPE;
-	}
+    mDesc[0] = INVALID_PIPE;
+  }
 }
 
 void gcore::Pipe::closeWrite() {
-	if (canWrite()) {
+  if (canWrite()) {
 #ifndef _WIN32
-		::close(mDesc[1]);
+    ::close(mDesc[1]);
 #else 
-		CloseHandle(mDesc[1]);
+    CloseHandle(mDesc[1]);
 #endif
-		mDesc[1] = INVALID_PIPE;
-	}
+    mDesc[1] = INVALID_PIPE;
+  }
 }
 
 int gcore::Pipe::read(string &str) const {
 #ifndef PRIVATE_BUFFER
-	static char rdbuf[PIPE_BUFFER_SIZE] = {0};
+  static char rdbuf[PIPE_BUFFER_SIZE] = {0};
 #endif
 
-	if (canRead()) {
+  if (canRead()) {
 #ifndef _WIN32
 
 #ifdef PRIVATE_BUFFER
-		int bytesRead = ::read(mDesc[0], mReadBuffer, PIPE_BUFFER_SIZE);
-		if (bytesRead != -1) {
-			mReadBuffer[bytesRead] = '\0';
-			str = mReadBuffer;
-			return bytesRead;
-		}
+    int bytesRead = ::read(mDesc[0], mReadBuffer, PIPE_BUFFER_SIZE);
+    if (bytesRead != -1) {
+      mReadBuffer[bytesRead] = '\0';
+      str = mReadBuffer;
+      return bytesRead;
+    }
 #else
-		int bytesRead = ::read(mDesc[0], rdbuf, PIPE_BUFFER_SIZE);
-		if (bytesRead != -1) {
-			rdbuf[bytesRead] = '\0';
-			str = rdbuf;
-			return bytesRead;
-		}
+    int bytesRead = ::read(mDesc[0], rdbuf, PIPE_BUFFER_SIZE);
+    if (bytesRead != -1) {
+      rdbuf[bytesRead] = '\0';
+      str = rdbuf;
+      return bytesRead;
+    }
 #endif
 
 #else
 
-		DWORD bytesRead = 0;
+    DWORD bytesRead = 0;
 #ifdef PRIVATE_BUFFER
-		if (ReadFile(mDesc[0],mReadBuffer,PIPE_BUFFER_SIZE,&bytesRead,NULL)) {
-			mReadBuffer[bytesRead] = '\0';
-			str = mReadBuffer;
-			return bytesRead;
-		}
+    if (ReadFile(mDesc[0],mReadBuffer,PIPE_BUFFER_SIZE,&bytesRead,NULL)) {
+      mReadBuffer[bytesRead] = '\0';
+      str = mReadBuffer;
+      return bytesRead;
+    }
 #else
-		if (ReadFile(mDesc[0],rdbuf,PIPE_BUFFER_SIZE,&bytesRead,NULL)) {
-			rdbuf[bytesRead] = '\0';
-			str = rdbuf;
-			return bytesRead;
-		}
+    if (ReadFile(mDesc[0],rdbuf,PIPE_BUFFER_SIZE,&bytesRead,NULL)) {
+      rdbuf[bytesRead] = '\0';
+      str = rdbuf;
+      return bytesRead;
+    }
 #endif
 
 #endif
-	}
-	str = "";
-	return -1;
+  }
+  str = "";
+  return -1;
 }
 
 int gcore::Pipe::write(const string &str) const {
-	if (canWrite()) {
+  if (canWrite()) {
 #ifndef _WIN32
-		int bytesToWrite = str.length();
-		return ::write(mDesc[1], str.c_str(), bytesToWrite);
+    int bytesToWrite = str.length();
+    return ::write(mDesc[1], str.c_str(), bytesToWrite);
 #else
-		DWORD bytesToWrite = (DWORD)str.length();
-		DWORD bytesWritten = 0;
-		if (! WriteFile(mDesc[1], str.c_str(), bytesToWrite, &bytesWritten, NULL)) {
-			return -1;
-		}
-		return bytesWritten;
+    DWORD bytesToWrite = (DWORD)str.length();
+    DWORD bytesWritten = 0;
+    if (! WriteFile(mDesc[1], str.c_str(), bytesToWrite, &bytesWritten, NULL)) {
+      return -1;
+    }
+    return bytesWritten;
 #endif
-	}
-	return -1;
+  }
+  return -1;
 }
 

@@ -24,8 +24,6 @@ USA.
 #include <gcore/process.h>
 #include <gcore/platform.h>
 
-using namespace std;
-
 //------------------------------------------------------------------------------
 
 #ifdef _WIN32
@@ -107,6 +105,10 @@ void gcore::Process::setOutputFunc(gcore::Process::OutputFunc of) {
   }
 }
 
+void gcore::Process::setEnv(const std::string &key, const std::string &value) {
+  mEnv[key] = value;
+}
+
 bool gcore::Process::running() {
   if (IsValidProcessID(mPID)) {
     return (wait(false) == 0);
@@ -147,7 +149,7 @@ bool gcore::Process::showConsole() const {
   return mShowConsole;
 }
 
-gcore::ProcessID gcore::Process::run () {
+gcore::ProcessID gcore::Process::run() {
   
   if (running() || mArgs.size() < 1) {
     return INVALID_PID;
@@ -208,6 +210,12 @@ gcore::ProcessID gcore::Process::run () {
       // thus in child: "cin >>" will read from this pipe
     } else {
       iPipe.close();
+    }
+    
+    std::map<std::string, std::string>::iterator it = mEnv.begin();
+    while (it != mEnv.end()) {
+      setenv(it->first.c_str(), it->second.c_str(), 1);
+      ++it;
     }
     
     int failed = execvp(mArgs[0].c_str(), mStdArgs);
@@ -285,8 +293,25 @@ gcore::ProcessID gcore::Process::run () {
   // this is to hide console if requested
   sinfo.wShowWindow = (mShowConsole ? SW_SHOW : SW_HIDE);
   
+  std::map<std::string, std::string> oldEnv;
+  std::map<std::string, std::string>::iterator envIt;
+  
+  // override environment
+  // on windows a single env var max size is 32,767 characters (including '\0')
+  // have a statically sized buffer of 32k?
+  envIt = mEnv.begin();
+  while (envIt != mEnv.end()) {
+    DWORD len = GetEnvironmentVariableA(envIt->first.c_str(), NULL, 0);
+    char *tmp = new char[len];
+    GetEnvironmentVariableA(envIt->first.c_str(), tmp, len);
+    oldEnv[envIt->first] = tmp;
+    free(tmp);
+    SetEnvironmentVariableA(envIt->first.c_str(), envIt->second.c_str());
+    ++envIt;
+  }
+  
   if (CreateProcess(NULL, (char*)mCmdLine.c_str(), NULL, NULL,
-                    TRUE, 0, NULL, NULL, &sinfo, &pinfo)) {
+                    TRUE, 0, 0, NULL, &sinfo, &pinfo)) {
     // In parent only
     
     mPID = pinfo.dwProcessId;
@@ -298,6 +323,14 @@ gcore::ProcessID gcore::Process::run () {
     if (mRedirect) {
       inPipe.closeRead();
     }
+    
+    // restore environment
+    envIt = oldEnv.begin();
+    while (envIt != oldEnv.end()) {
+      SetEnvironmentVariableA(envIt->first.c_str(), envIt->second.c_str());
+      ++envIt;
+    }
+    
   } else {
     mPID = INVALID_PID;
     closePipes();
@@ -308,25 +341,25 @@ gcore::ProcessID gcore::Process::run () {
 
 }
 
-gcore::ProcessID gcore::Process::run (const std::string &progPath, char **argv) {
+gcore::ProcessID gcore::Process::run(const std::string &progPath, char **argv) {
   mArgs.clear();
   mArgs.push_back(progPath);
   char **carg = argv;
   while (*carg) {
-    string argi = *carg;
+    std::string argi = *carg;
     mArgs.push_back(argi);
     carg++;
   }
   return run();
 }
 
-gcore::ProcessID gcore::Process::run(const string &progPath, int argc, ...) {
+gcore::ProcessID gcore::Process::run(const std::string &progPath, int argc, ...) {
   mArgs.clear();
   mArgs.push_back(progPath);
   va_list va;
   va_start(va, argc);
   for (int i=0; i<argc; ++i) {
-    string argi = va_arg(va,char*);
+    std::string argi = va_arg(va,char*);
     mArgs.push_back(argi);
   }
   va_end(va);

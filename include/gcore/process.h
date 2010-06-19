@@ -54,47 +54,56 @@ namespace gcore
     public:
     
       typedef void (*OutputFunc)(const char*);
-    
+
       Process();
       ~Process();
-      
-      void setOutputFunc (OutputFunc of);
 
-      ProcessID run (const std::string &progPath, char **argv);
-      ProcessID run (const std::string &progPath, int argc, ...);
+      void setOutputFunc(OutputFunc of);
+      void setEnv(const std::string &key, const std::string &value);
+
+      ProcessID run(const std::string &progPath, char **argv);
+      ProcessID run(const std::string &progPath, int argc, ...);
       
-      ProcessID getId () const;
+      ProcessID getId() const;
 
       int read(std::string &str) const;
       int write(const std::string &str) const;
+      //int readErr(std::string &str) const;
 
-      const std::string& getCmdLine () const {return mCmdLine;} 
+      inline const std::string& getCmdLine() const {
+        return mCmdLine;
+      } 
 
+      //what about err?
       void captureOut(bool co);
       bool captureOut() const;
+
+      //void captureErr(bool yesno, bool toout=false);
+      //bool captureErr() const;
 
       void redirectIn(bool ri);
       bool redirectIn() const;
 
       void verbose(bool v);
       bool verbose() const;
-      
+
+      bool running();
+      int wait(bool blocking);
+      int kill();
+
       // for windows
       void showConsole(bool sc);
       bool showConsole() const;
 
-      bool running ();
-      int  wait    (bool blocking);
-      int  kill    ();
-      
     private:
-    
+
       static void std_output(const char*);
 
-      ProcessID run ();
-
+      ProcessID run();
       void closePipes();
-      
+
+    private:
+
       std::vector<std::string> mArgs;
       ProcessID                mPID;
       OutputFunc               mOutFunc;
@@ -106,6 +115,8 @@ namespace gcore
       bool                     mShowConsole;
       char**                   mStdArgs; // used on nix
       std::string              mCmdLine;
+
+      std::map<std::string, std::string> mEnv;
   };
 }
 

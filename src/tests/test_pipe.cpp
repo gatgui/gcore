@@ -70,35 +70,36 @@ int main(int argc, char **argv) {
     in = !strcmp(argv[2], "1");
   }
   
-	char inb[1024];
-	
-	Process p;
+  char inb[1024];
+  
+  Process p;
   PipeReader r(&p);
   
   Thread *thr = 0;
-	
-	p.captureOut(out);
-	p.redirectIn(in);
-	p.run(argv[1], 0);
-	
-	if (out) {
-		//t.start();
+  
+  p.setEnv("CUSTOM_ENV", "poo");
+  p.captureOut(out);
+  p.redirectIn(in);
+  p.run(argv[1], 0);
+  
+  if (out) {
+    //t.start();
     thr = new Thread(&r, &PipeReader::read, &PipeReader::done);
-	}
-	
-	while (p.running()) {
-		if (in) {
-			fgets(inb, 1024, stdin);
-			p.write(inb);
-		}
-	}
-	
-	if (thr) {
+  }
+  
+  while (p.running()) {
+    if (in) {
+      fgets(inb, 1024, stdin);
+      p.write(inb);
+    }
+  }
+  
+  if (thr) {
     thr->cancel();
     delete thr;
-	}
-	
-	return 0;
+  }
+  
+  return 0;
 }
 
 

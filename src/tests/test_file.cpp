@@ -25,16 +25,16 @@ USA.
 
 class AClass {
   public:
-		bool FileFound(const std::string &, const std::string &name, gcore::FileType ft) {
-			if (ft == gcore::FT_DIR) {
-				fprintf(stderr, "Found Directory: %s\n", name.c_str());
-			} else if (ft == gcore::FT_FILE) {
-				fprintf(stderr, "Found File: %s\n", name.c_str());
-			} else {
-				fprintf(stderr, "Found: %s\n", name.c_str());
-			}
+    bool FileFound(const std::string &, const std::string &name, gcore::FileType ft) {
+      if (ft == gcore::FT_DIR) {
+        fprintf(stderr, "Found Directory: %s\n", name.c_str());
+      } else if (ft == gcore::FT_FILE) {
+        fprintf(stderr, "Found File: %s\n", name.c_str());
+      } else {
+        fprintf(stderr, "Found: %s\n", name.c_str());
+      }
       return true;
-		}
+    }
 };
 
 static bool EnumModulePath(const std::string &path) {

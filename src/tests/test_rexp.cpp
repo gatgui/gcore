@@ -27,28 +27,28 @@ using namespace gcore;
 
 int main(int,char**)
 {
-	RexError err;
-	
-	//Regexp  re("(\\d\\d):(\\d\\d)", REX_CAPTURE, &err);
+  RexError err;
+  
+  //Regexp  re("(\\d\\d):(\\d\\d)", REX_CAPTURE, &err);
   Regexp    re(IEC("(\d\d):(\d\d)"), REX_CAPTURE, &err);
-	MatchData md(3, REX_FORWARD|REX_NOT_EMPTY);
-	
-	fprintf(stderr, "%s\n", re.getError(err));
-	
-	string str = "Time -> 10:23";
-	
-	if (re.match(str, md))
-	{
-		fprintf(stderr, "%s",               md.getPre(str).c_str() );
-		fprintf(stderr, "<<%s>>",           md.get(str,0).c_str()  );
-		fprintf(stderr, "%s\n",             md.getPost(str).c_str());
-		fprintf(stderr, "Found1: \'%s\'\n", md.get(str,1).c_str()  );
-		fprintf(stderr, "Found2: \'%s\'\n", md.get(str,2).c_str()  );
-	}
-	else
-	{
-		fprintf(stderr, "Not found\n");
-	}
+  MatchData md(3, REX_FORWARD|REX_NOT_EMPTY);
+  
+  fprintf(stderr, "%s\n", re.getError(err));
+  
+  string str = "Time -> 10:23";
+  
+  if (re.match(str, md))
+  {
+    fprintf(stderr, "%s",               md.getPre(str).c_str() );
+    fprintf(stderr, "<<%s>>",           md.get(str,0).c_str()  );
+    fprintf(stderr, "%s\n",             md.getPost(str).c_str());
+    fprintf(stderr, "Found1: \'%s\'\n", md.get(str,1).c_str()  );
+    fprintf(stderr, "Found2: \'%s\'\n", md.get(str,2).c_str()  );
+  }
+  else
+  {
+    fprintf(stderr, "Not found\n");
+  }
 }
 
 

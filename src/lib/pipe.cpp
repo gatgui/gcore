@@ -70,7 +70,7 @@ void gcore::Pipe::create() {
   sattr.nLength = sizeof(sattr);
   sattr.lpSecurityDescriptor = NULL;
   sattr.bInheritHandle = TRUE;
-  if (!CreatePipe(&mDesc[0], &mDesc[1],&sattr,0)) {
+  if (!CreatePipe(&mDesc[0], &mDesc[1], &sattr, 0)) {
 #endif
     mDesc[0] = INVALID_PIPE;
     mDesc[1] = INVALID_PIPE;
@@ -114,14 +114,21 @@ int gcore::Pipe::read(std::string &str) const {
   if (canRead()) {
 #ifndef _WIN32
     int bytesRead = ::read(mDesc[0], rdbuf, 256);
-    if (bytesRead != -1) {
+    while (bytesRead == -1 && errno == EAGAIN) {
+      bytesRead = ::read(mDesc[0], rdbuf, 256);
+    }
+    if (bytesRead >= 0) {
       rdbuf[bytesRead] = '\0';
       str = rdbuf;
-      return bytesRead;
     }
+    return bytesRead;
 #else
     DWORD bytesRead = 0;
-    if (ReadFile(mDesc[0], rdbuf, 256, &bytesRead, NULL)) {
+    BOOL rv = ReadFile(mDesc[0], rdbuf, 256, &bytesRead, NULL);
+    while (rv == FALSE && GetLastError() == ERROR_IO_PENDING) {
+      rv = ReadFile(mDesc[0], rdbuf, 256, &bytesRead, NULL);
+    }
+    if (rv) {
       rdbuf[bytesRead] = '\0';
       str = rdbuf;
       return bytesRead;
@@ -137,14 +144,19 @@ int gcore::Pipe::write(const std::string &str) const {
   if (canWrite()) {
 #ifndef _WIN32
     int bytesToWrite = str.length();
-    return ::write(mDesc[1], str.c_str(), bytesToWrite);
+    int rv = ::write(mDesc[1], str.c_str(), bytesToWrite);
+    while (rv == -1 && errno == EAGAIN) {
+      rv = ::write(mDesc[1], str.c_str(), bytesToWrite);
+    }
+    return rv;
 #else
     DWORD bytesToWrite = (DWORD)str.length();
     DWORD bytesWritten = 0;
-    if (! WriteFile(mDesc[1], str.c_str(), bytesToWrite, &bytesWritten, NULL)) {
-      return -1;
+    BOOL rv = WriteFile(mDesc[1], str.c_str(), bytesToWrite, &bytesWritten, NULL);
+    if (rv == FALSE && GetLastError() == ERROR_IO_PENDING) {
+      rv = WriteFile(mDesc[1], str.c_str(), bytesToWrite, &bytesWritten, NULL);
     }
-    return bytesWritten;
+    return (rv == TRUE ? bytesWritten : -1);
 #endif
   }
   return -1;

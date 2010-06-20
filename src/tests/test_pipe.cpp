@@ -40,16 +40,26 @@ class PipeReader {
     
     int read() {
       string rbuf = "";
-      while (m_p->read(rbuf) >= 0) {
-        cout << endl << "### Read from pipe START" << endl;
-        cout << rbuf;
-        cout << endl << "### END";
+      //while (m_p->read(rbuf) >= 0) {
+      int rv = m_p->read(rbuf);
+      while (rv != 0) {
+        if (rv > 0) {
+          // could be an error
+          cout << endl << "### Read from pipe START" << endl;
+          cout << rbuf;
+          cout << endl << "### END";
+        } else {
+          // some error
+          cout << endl << "### Read from pipe ERROR" << endl;
+        }
+        rv = m_p->read(rbuf);
       }
       return 0;
     }
     
     void done(int ecode) {
       cout << endl << "### Read pipe thread exited with code(" << ecode << ")" << endl;
+      m_p->wait(true);
     }
 
   protected:
@@ -102,7 +112,7 @@ int main(int argc, char **argv) {
     }
   }
   
-  p.wait(true);
+  //p.wait(true);
 
   if (thr) {
     thr->join();

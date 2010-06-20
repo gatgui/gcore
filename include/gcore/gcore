@@ -34,6 +34,9 @@ USA.
 #include <gcore/tokenizer.h>
 #include <gcore/plist.h>
 #include <gcore/memory.h>
+#include <gcore/md5.h>
+#include <gcore/xml.h>
+#include <gcore/utils.h>
 
 #endif 
 

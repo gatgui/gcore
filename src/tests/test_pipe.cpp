@@ -23,6 +23,7 @@ USA.
 
 #include <gcore/process.h>
 #include <gcore/threads.h>
+#include <gcore/argparser.h>
 #include <string>
 #include <iostream>
 using namespace std;
@@ -72,18 +73,42 @@ void procOutput(const char *s) {
   cout << "Process Info: " << s;
 }
 
+gcore::FlagDesc args_desc[] = 
+{
+  { gcore::FlagDesc::FT_OPTIONAL, "captureOut", "co", 0 },
+  { gcore::FlagDesc::FT_OPTIONAL, "captureErr", "ce", 0 },
+  { gcore::FlagDesc::FT_OPTIONAL, "errToOut",   "eo", 0 },
+  { gcore::FlagDesc::FT_OPTIONAL, "redirectIn", "ri", 0 },
+  { gcore::FlagDesc::FT_OPTIONAL, "verbose",    "v",  0 },
+  ACCEPTS_NOFLAG_ARGUMENTS(1)
+};
+
 int main(int argc, char **argv) {
   // get program as command iline
   bool in = false;
-  bool out = true;
+  bool out = false;
+  bool err = false;
+  bool err2out = false;
+  bool verbose = false;
   
-  if (argc < 2 || argc > 3) {
-    cout << "Usage: test_pipe <program> <redirect_in=0|1>?" << endl;
+  gcore::ArgParser args(args_desc, sizeof(args_desc)/sizeof(gcore::FlagDesc));
+  
+  try {
+    args.parse(argc-1, argv+1);
+    
+  } catch (gcore::ArgParserError &e) {
+    std::cerr << "Error while parsing arguments: " << e.what() << std::endl; 
+    cout << "Usage: test_pipe (--captureOut/-co)? (--captureErr/-ce)? (--errToOut/-eo)? (--redirectIn/-ri)? (--verbose/-v)? <program>" << endl;
     return -1;
   }
-  if (argc == 3) {
-    in = !strcmp(argv[2], "1");
-  }
+  
+  std::string prog;
+  args.getArgument(0, prog);
+  in = args.isFlagSet("redirectIn");
+  out = args.isFlagSet("captureOut");
+  err = args.isFlagSet("captureErr");
+  err2out = args.isFlagSet("errToOut");
+  verbose = args.isFlagSet("verbose");
   
   char inb[1024];
   
@@ -93,15 +118,14 @@ int main(int argc, char **argv) {
   Thread *thr = 0;
   
   p.setOutputFunc(procOutput);
-  p.verbose(true);
+  p.verbose(verbose);
   p.setEnv("CUSTOM_ENV", "poo");
   p.captureOut(out);
-  p.captureErr(out, false);
+  p.captureErr(err, err2out);
   p.redirectIn(in);
-  p.run(argv[1], 0);
+  p.run(prog, 0);
   
   if (out) {
-    //t.start();
     thr = new Thread(&r, &PipeReader::read, &PipeReader::done);
   }
   

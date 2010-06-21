@@ -125,8 +125,17 @@ int gcore::Pipe::read(std::string &str) const {
 #else
     DWORD bytesRead = 0;
     BOOL rv = ReadFile(mDesc[0], rdbuf, 256, &bytesRead, NULL);
-    while (rv == FALSE && GetLastError() == ERROR_IO_PENDING) {
-      rv = ReadFile(mDesc[0], rdbuf, 256, &bytesRead, NULL);
+    while (rv == FALSE) {
+      DWORD lastErr = GetLastError();
+      if (lastErr == ERROR_IO_PENDING) {
+        rv = ReadFile(mDesc[0], rdbuf, 256, &bytesRead, NULL);
+      } else {
+        if (lastErr == ERROR_HANDLE_EOF || lastErr == ERROR_BROKEN_PIPE) {
+          rv = TRUE;
+          bytesRead = 0;
+        }
+        break;
+      }
     }
     if (rv) {
       rdbuf[bytesRead] = '\0';

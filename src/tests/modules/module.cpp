@@ -25,7 +25,7 @@ USA.
 #  define DLLAPI extern "C" __declspec(dllexport)
 #  define WIN32_LEAN_AND_MEAN
 #  include <windows.h>
-DLLAPI BOOL __stdcall DllMain(HINSTANCE hInst, DWORD dwReason, LPVOID pvReseved)
+DLLAPI BOOL __stdcall DllMain(HINSTANCE /*hInst*/, DWORD dwReason, LPVOID /*pvReseved*/)
 {
   switch(dwReason)
   {

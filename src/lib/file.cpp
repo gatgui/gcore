@@ -313,35 +313,6 @@ namespace gcore {
 #endif
   }
   
-  void ForEachInEnv(const std::string &e, EnumEnvCallback callback) {
-    if (e.length() == 0 || callback == 0) {
-      return;
-    }
-    char *envVal = getenv(e.c_str());
-    if (envVal) {
-      std::string v = envVal;
-      std::cout << e << " = \"" << v << "\"" << std::endl;
-      size_t p0 = 0, p1 = v.find(PATH_SEP, p0);
-      while (p1 != std::string::npos) {
-        std::string tmp = v.substr(p0, p1 - p0);
-        if (tmp.length() > 0) {
-          if (!callback(tmp)) {
-            return;
-          }
-        }
-        p0 = p1 + 1;
-        p1 = v.find(PATH_SEP, p0);
-      }
-      // and last one
-      if (p0 < v.length()) {
-        std::string tmp = v.substr(p0);
-        if (tmp.length() > 0) {
-          callback(tmp);
-        }
-      }
-    }
-  }
-  
   void ForEachInDir(const std::string &path, EnumFilesCallback callback, bool recurse) {
     if (callback == 0) {
       return;

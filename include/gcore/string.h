@@ -28,13 +28,15 @@ USA.
 
 namespace gcore {
   
-  GCORE_API std::string GetUser();
-  GCORE_API std::string GetHost();
-  GCORE_API std::string GetDate();
-  
-  GCORE_API std::string Strip(const std::string &str);
-  GCORE_API size_t Split(const std::string &str, char c, std::vector<std::string> &splits);
-  
+  namespace String {
+    
+    GCORE_API std::string Strip(const std::string &str);
+    GCORE_API size_t Split(const std::string &str, char c, std::vector<std::string> &splits);
+    GCORE_API std::string ToLower(const std::string &str);
+    GCORE_API std::string ToUpper(const std::string &str);
+    GCORE_API std::string Replace(char chr, const std::string &in, char by, int maxCount=-1);
+    GCORE_API std::string Replace(const std::string &str, const std::string &in, const std::string &by, int maxCount=-1);
+  }
 }
 
 #endif

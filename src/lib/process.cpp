@@ -365,10 +365,14 @@ gcore::ProcessID gcore::Process::run() {
   envIt = mEnv.begin();
   while (envIt != mEnv.end()) {
     DWORD len = GetEnvironmentVariableA(envIt->first.c_str(), NULL, 0);
-    char *tmp = new char[len];
-    GetEnvironmentVariableA(envIt->first.c_str(), tmp, len);
-    oldEnv[envIt->first] = tmp;
-    free(tmp);
+    if (len > 0) {
+      char *tmp = new char[len];
+      GetEnvironmentVariableA(envIt->first.c_str(), tmp, len);
+      oldEnv[envIt->first] = tmp;
+      free(tmp);
+    } else {
+      oldEnv[envIt->first] = "";
+    }
     SetEnvironmentVariableA(envIt->first.c_str(), envIt->second.c_str());
     ++envIt;
   }

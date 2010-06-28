@@ -21,53 +21,11 @@ USA.
 
 */
 
-#include <gcore/utils.h>
+#include <gcore/string.h>
 #include <gcore/platform.h>
-/*
-#include <cstdio>
-#include <cstring>
-#include <ctime>
-#ifdef _WIN32
-//# include <winsock2.h> // gethostname, requires linking winsock32
-# define _WIN32_WINNT 0x0500
-# include <windows.h>
-#endif
-*/
 
 namespace gcore {
-
-std::string GetUser() {
-#ifdef _WIN32
-  // other ?
-  return getenv("USERNAME");
-#else
-  return getenv("USER");
-#endif
-}
-
-std::string GetHost() {
-  char buffer[1024];
-#ifdef _WIN32
-  DWORD sz = 1024;
-  //ComputerNameDnsHostname?
-  GetComputerNameEx(ComputerNamePhysicalDnsHostname, buffer, &sz);
-  return buffer;
-#else
-  gethostname(buffer, 1024);
-  buffer[1023] = '\0';
-  return buffer;
-#endif
-}
-
-std::string GetDate() {
-  char buffer[256];
-  time_t curt = time(NULL);
-  struct tm *t = 0;
-  t = localtime(&curt);
-  sprintf(buffer, "%04d/%02d/%02d %02d:%02d:%02d", 1900+t->tm_year, 1+t->tm_mon, t->tm_mday,
-                                                   t->tm_hour, t->tm_min, t->tm_sec);
-  return buffer;
-}
+namespace String {
 
 std::string Strip(const std::string &str) {
   size_t from = str.find_first_not_of(" \t\r\n\v");
@@ -96,5 +54,74 @@ size_t Split(const std::string &str, char c, std::vector<std::string> &splits) {
   return splits.size();
 }
 
+std::string ToLower(const std::string &str_in) {
+  std::string str = str_in;
+  for (size_t i=0; i<str.length(); ++i) {
+    if (str[i] >= 'A' && str[i] <= 'Z') {
+      str[i] = 'a' + (str[i] - 'A');
+    }
+  }
+  return str;
+}
+
+std::string ToUpper(const std::string &str_in) {
+  std::string str = str_in;
+  for (size_t i=0; i<str.length(); ++i) {
+    if (str[i] >= 'a' && str[i] <= 'z') {
+      str[i] = 'A' + (str[i] - 'a');
+    }
+  }
+  return str;
+}
+
+std::string Replace(char chr, const std::string &src, char by, int maxCount) {
+  std::string in = src;
+  
+  if (maxCount == 0) {
+    return in;
+  }
+  
+  int count = 0;
+  
+  size_t p0 = 0;
+  size_t p1 = in.find(chr, p0);
+  
+  while (p1 != std::string::npos) {
+    in[p1] = by;
+    if (++count == maxCount) {
+      break;
+    }
+    p0 = p1 + 1;
+    p1 = in.find(chr, p0);
+  }
+  
+  return in;
+}
+
+std::string Replace(const std::string &str, const std::string &src, const std::string &by, int maxCount) {
+  std::string in = src;
+  
+  if (maxCount == 0) {
+    return in;
+  }
+  
+  int count = 0;
+  
+  size_t p0 = 0;
+  size_t p1 = in.find(str, p0);
+  
+  while (p1 != std::string::npos) {
+    in.replace(in.begin()+p1, in.begin()+p1+str.length(), by.begin(), by.end());
+    if (++count == maxCount) {
+      break;
+    }
+    p0 = p1 + by.length();
+    p1 = in.find(str, p0);
+  }
+  
+  return in;
+}
+
+}
 }
 

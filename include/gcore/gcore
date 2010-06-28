@@ -36,7 +36,9 @@ USA.
 #include <gcore/memory.h>
 #include <gcore/md5.h>
 #include <gcore/xml.h>
-#include <gcore/utils.h>
+#include <gcore/string.h>
+#include <gcore/date.h>
+#include <gcore/env.h>
 
 #endif 
 

@@ -44,6 +44,7 @@ namespace gcore {
   
   GCORE_API std::string Basename(const std::string &path);
   GCORE_API std::string Dirname(const std::string &path);
+  // file extension strings do not include the . character
   GCORE_API std::string FileExtension(const std::string &path);
   GCORE_API bool CheckFileExtension(const std::string &path, const std::string &ext);
   
@@ -56,12 +57,35 @@ namespace gcore {
   
   GCORE_API bool CreateDir(const std::string &dir);
   
-  // both callback should return false to stop iteration
+  // should return false to stop iteration
   typedef Callback3wR<bool, const std::string&, const std::string&, FileType> EnumFilesCallback;
-  typedef Callback1wR<bool, const std::string&> EnumEnvCallback;
-  
-  GCORE_API void ForEachInEnv(const std::string &e, EnumEnvCallback cb);
   GCORE_API void ForEachInDir(const std::string &d, EnumFilesCallback cb, bool recurse=false);
+  
+  class FileList : public std::vector<std::string> {
+    public:
+      inline FileList() {
+      }
+      inline FileList(const FileList &rhs)
+        : std::vector<std::string>(rhs) {
+      }
+      inline ~FileList() {
+      }
+      inline FileList& operator=(const FileList &rhs) {
+        std::vector<std::string>::operator=(rhs);
+        return *this;
+      }
+      inline bool enumerate(const std::string &dirname, const std::string &filename, FileType) {
+        push_back(JoinPath(dirname, filename));
+        return true;
+      }
+  };
+  
+  inline size_t ForEachInDir(const std::string &d, FileList &l, bool recurse=false) {
+    EnumFilesCallback cb;
+    MakeCallback(&l, METHOD(FileList, enumerate), cb);
+    ForEachInDir(d, cb, recurse);
+    return l.size();
+  }
 }
 
 

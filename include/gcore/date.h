@@ -70,6 +70,7 @@ namespace gcore {
       bool operator<(const Date &rhs) const;
       
       Date& operator-=(const Date &rhs);
+      Date& operator+=(const Date &rhs);
       
       // this methods will return emtpy strings for difference time
       std::string format(const std::string &fmt) const;
@@ -97,7 +98,7 @@ namespace gcore {
         return Month(mDateTime.tm_mon);
       }
       
-      inline int day() const {
+      inline int dayOfMonth() const {
         return mDateTime.tm_mday;
       }
       
@@ -125,43 +126,27 @@ namespace gcore {
         return mIsDiff;
       }
       
-      // beware, those functions do not check the validity or the resulting date
-      // remaining members are not updated either
+      inline void setYear(int year);
+      inline void setMonth(int m);
+      inline void setDayOfWeek(int d);
+      inline void setDayOfMonth(int d);
+      inline void setDayOfYear(int d);
+      inline void setHour(int h);
+      inline void setMinute(int m);
+      inline void setSecond(int s);
       
-      inline void setYear(int year) {
-        mDateTime.tm_year = year - 1900;
-      }
-      
-      inline void setMonth(int m) {
-        mDateTime.tm_mon = m;
-      }
-      
-      inline void setDay(int d) {
-        mDateTime.tm_mday = d;
-      }
-      
-      inline void setHour(int h) {
-        mDateTime.tm_hour = h;
-      }
-      
-      inline void setMinute(int m) {
-        mDateTime.tm_min = m;
-      }
-      
-      inline void setSecond(int s) {
-        mDateTime.tm_sec = s;
-      }
+      static Date Days(int n);
+      static Date Weeks(int n);
+      static Date Years(int n);
+      static Date Hours(int n);
+      static Date Minutes(int n);
+      static Date Seconds(int n);
       
     protected:
       
       struct tm mDateTime;
       bool mIsDiff;
   };
-  
-  inline std::ostream& operator<<(std::ostream &os, const Date &d) {
-    os << d.toString();
-    return os;
-  }
   
   /*
   Format string
@@ -244,6 +229,23 @@ namespace gcore {
       A literal '%' character.
 */
 
+}
+
+inline std::ostream& operator<<(std::ostream &os, const gcore::Date &d) {
+  os << d.toString();
+  return os;
+}
+
+inline gcore::Date& operator+(const gcore::Date &d0, const gcore::Date &d1) {
+  gcore::Date rv(d0);
+  rv += d1;
+  return rv;
+}
+
+inline gcore::Date& operator-(const gcore::Date &d0, const gcore::Date &d1) {
+  gcore::Date rv(d0);
+  rv -= d1;
+  return rv;
 }
 
 #endif

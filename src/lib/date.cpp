@@ -76,6 +76,24 @@ static const char *gsLongDays[] = {
 
 namespace gcore {
 
+Date Date::Days(int n) {
+}
+  
+Date Date::Weeks(int n) {
+}
+
+Date Date::Years(int n) {
+}
+
+Date Date::Hours(int n) {
+}
+
+Date Date::Minutes(int n) {
+}
+
+Date Date::Seconds(int n) {
+}
+
 std::string GetDate() {
   char buffer[256];
   time_t curt = time(NULL);
@@ -122,6 +140,11 @@ std::string Date::toString() const {
 }
 
 std::string Date::strftime(const std::string &fmt) const {
+  
+  if (mIsDiff) {
+    return "";
+  }
+  
   char buffer[4096];
   if (::strftime(buffer, 4096, fmt.c_str(), &mDateTime) == 0) {
     // too long for buffer
@@ -344,37 +367,59 @@ std::string Date::format(const std::string &fmt) const {
   return dt;
 }
 
+void Date::setYear(int year) {
+  mDateTime.tm_year = year - 1900;
+}
+
+void Date::setMonth(int m) {
+  mDateTime.tm_mon = m;
+}
+
+void Date::setDayOfWeek(int d) {
+  mDateTime.tm_mday = d;
+}
+
+void Date::setDayOfMonth(int d) {
+  mDateTime.tm_mday = d;
+}
+
+void Date::setDayOfYear(int d) {
+  mDateTime.tm_mday = d;
+}
+
+void Date::setHour(int h) {
+  mDateTime.tm_hour = h;
+}
+
+void Date::setMinute(int m) {
+  mDateTime.tm_min = m;
+}
+
+void Date::setSecond(int s) {
+  mDateTime.tm_sec = s;
+}
+
 Date& Date::operator=(const Date &rhs) {
   mDateTime = rhs.mDateTime;
   mIsDiff = rhs.mIsDiff;
   return *this;
 }
 
+Date& Date::operator+=(const Date &rhs) {
+  // TODO
+  return *this;
+}
+
 Date& Date::operator-=(const Date &rhs) {
-  
-  mDateTime.tm_year -= rhs.mDateTime.tm_year;
-  mDateTime.tm_mon  -= rhs.mDateTime.tm_mon;
-  mDateTime.tm_mday -= rhs.mDateTime.tm_mday;
-  mDateTime.tm_hour -= rhs.mDateTime.tm_hour;
-  mDateTime.tm_min  -= rhs.mDateTime.tm_min;
-  mDateTime.tm_sec  -= rhs.mDateTime.tm_sec;
-  mDateTime.tm_yday  = -1;
-  mDateTime.tm_wday  = -1;
-  
-  std::cout << "=> dYear = " << mDateTime.tm_year << std::endl;
-  std::cout << "=> dMonth = " << mDateTime.tm_mon << std::endl;
-  std::cout << "=> dDay = " << mDateTime.tm_mday << std::endl;
-  std::cout << "=> dHour = " << mDateTime.tm_hour << std::endl;
-  std::cout << "=> dMin = " << mDateTime.tm_min << std::endl;
-  std::cout << "=> dSec = " << mDateTime.tm_sec << std::endl;
-  
+  // TODO
   mIsDiff = true;
   
   return *this;
 }
 
 bool Date::operator==(const Date &rhs) const {
-  return (year() == rhs.year() &&
+  return (isDiff() == rhs.isDiff() &&
+          year() == rhs.year() &&
           dayOfYear() == rhs.dayOfYear() &&
           hour() == rhs.hour() &&
           minute() == rhs.minute() &&
@@ -382,6 +427,10 @@ bool Date::operator==(const Date &rhs) const {
 }
 
 bool Date::operator<(const Date &rhs) const {
+  // I wonder about that one...
+  if (isDiff() != rhs.isDiff()) {
+    return false;
+  }
   if (year() < rhs.year()) {
     return true;
   } else if (year() > rhs.year()) {

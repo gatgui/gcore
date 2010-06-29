@@ -73,30 +73,24 @@ USA.
 
 namespace gcore  {
   
-#if defined(__LP64__) ||\
-    defined(_LP64) ||\
-    (_MIPS_SZLONG == 64) ||\
-    (__WORDSIZE == 64)
+#if defined(__LP64__) || defined(_LP64) || (_MIPS_SZLONG == 64) || (__WORDSIZE == 64)
+# define NATIVE_64BIT_LONG 1
   // Native 64 bits long architecture
   typedef unsigned long UInt64;
   typedef long Int64;
-#elif defined(_MSC_VER) ||\
-      (defined(__BCPLUSPLUS__) && __BORLANDC__ > 0x500) ||\
-      defined(__WATCOM_INT64__)
-  // Compiler native 64 bit type
+#elif defined(_MSC_VER) || (defined(__BCPLUSPLUS__) && __BORLANDC__ > 0x500) || defined(__WATCOM_INT64__)
+# define NATIVE_64BIT_LONG 0
+  // Compiler 64 bit type
   typedef unsigned __int64 UInt64;
   typedef __int64 Int64;
-#elif defined(__GNUG__) ||\
-      defined(__GNUC__) ||\
-      defined(__SUNPRO_CC) ||\
-      defined(__MWERKS__) ||\
-      defined(__SC__) ||\
-      defined(_LONGLONG)
-  // Compiler native 64 bit type
+#elif defined(__GNUG__) || defined(__GNUC__) || defined(__SUNPRO_CC) || defined(__MWERKS__) || defined(__SC__) || defined(_LONGLONG)
+# define NATIVE_64BIT_LONG 0  
+  // Compiler 64 bit type
   typedef unsigned long long UInt64;
   typedef long long Int64;
 #else
-  // No 64 bit support define it to be 32 bit
+# define NATIVE_64BIT_LONG 0
+  // No 64 bit support. Define it to be 32 bit
   typedef unsigned long UInt64;
   typedef long Int64;
 #endif

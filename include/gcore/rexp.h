@@ -70,15 +70,6 @@ namespace gcore {
       const std::string getPre(const std::string &str) const;
       const std::string getPost(const std::string &str) const;
       
-      bool convertTo(const std::string &str, int i, unsigned char &uc) const;
-      bool convertTo(const std::string &str, int i, char &c) const;
-      bool convertTo(const std::string &str, int i, unsigned short &us) const;
-      bool convertTo(const std::string &str, int i, short &s) const;
-      bool convertTo(const std::string &str, int i, unsigned long &ul) const;
-      bool convertTo(const std::string &str, int i, long &l) const;
-      bool convertTo(const std::string &str, int i, float &f) const;
-      bool convertTo(const std::string &str, int i, double &d) const;
-          
     private:
     
       int          mFrom;

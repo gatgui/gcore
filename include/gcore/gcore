@@ -39,6 +39,7 @@ USA.
 #include <gcore/string.h>
 #include <gcore/date.h>
 #include <gcore/env.h>
+#include <gcore/typetraits.h>
 
 #endif 
 

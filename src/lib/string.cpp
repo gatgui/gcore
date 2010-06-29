@@ -23,6 +23,7 @@ USA.
 
 #include <gcore/string.h>
 #include <gcore/platform.h>
+#include <gcore/rexp.h>
 
 namespace gcore {
 namespace String {
@@ -41,7 +42,7 @@ std::string Strip(const std::string &str) {
   }
 }
 
-size_t Split(const std::string &str, char c, std::vector<std::string> &splits) {
+size_t Split(const std::string &str, char c, List &splits) {
   splits.clear();
   size_t p0 = 0;
   size_t p1 = str.find(c, p0);
@@ -120,6 +121,161 @@ std::string Replace(const std::string &str, const std::string &src, const std::s
   }
   
   return in;
+}
+
+bool StartsWith(const std::string &s, const std::string &st)
+{
+  if (st.length() > s.length())
+  {
+    return false;
+  }
+  return (s.compare(0, st.length(), st) == 0);
+}
+
+std::string Join(const std::string &joiner, const List &lst)
+{
+  std::string rv;
+  if (lst.size() > 0)
+  {
+    rv.append(lst[0]);
+    for (size_t i=1; i<lst.size(); ++i)
+    {
+      rv.append(joiner + lst[i]);
+    }
+  }
+  return rv;
+}
+
+bool ToChar(const std::string &s, char &out)
+{
+  return (sscanf(s.c_str(), "%hhd", &out) == 1);
+}
+
+bool ToUChar(const std::string &s, unsigned char &out)
+{
+  return (sscanf(s.c_str(), "%hhu", &out) == 1);
+}
+
+bool ToShort(const std::string &s, short &out)
+{
+  return (sscanf(s.c_str(), "%hd", &out) == 1);
+}
+
+bool ToUShort(const std::string &s, unsigned short &out)
+{
+  return (sscanf(s.c_str(), "%hu", &out) == 1);
+}
+
+bool ToInt(const std::string &s, int &out)
+{
+  return (sscanf(s.c_str(), "%d", &out) == 1);
+}
+
+bool ToUInt(const std::string &s, unsigned int &out)
+{
+  return (sscanf(s.c_str(), "%u", &out) == 1);
+}
+
+bool ToLong(const std::string &s, long &out)
+{
+  return (sscanf(s.c_str(), "%ld", &out) == 1);
+}
+
+bool ToULong(const std::string &s, unsigned long &out)
+{
+  return (sscanf(s.c_str(), "%lu", &out) == 1);
+}
+
+bool ToFloat(const std::string &s, float &out)
+{
+  return (sscanf(s.c_str(), "%f", &out) == 1);
+}
+
+bool ToDouble(const std::string &s, double &out)
+{
+  return (sscanf(s.c_str(), "%lf", &out) == 1);
+}
+
+bool ToBool(const std::string &s, bool &out)
+{
+  static Regexp sBoolExp(IEC("(true|1)"), REX_ICASE);
+  out = sBoolExp.match(s);
+  return true;
+}
+
+std::string ToString(char in)
+{
+  char buffer[64];
+  sprintf(buffer, "%hhd", in);
+  return buffer;
+}
+
+std::string ToString(unsigned char in)
+{
+  char buffer[64];
+  sprintf(buffer, "%hhu", in);
+  return buffer;
+}
+
+std::string ToString(short in)
+{
+  char buffer[64];
+  sprintf(buffer, "%hd", in);
+  return buffer;
+}
+
+std::string ToString(unsigned short in)
+{
+  char buffer[64];
+  sprintf(buffer, "%hu", in);
+  return buffer;
+}
+
+std::string ToString(int in)
+{
+  char buffer[64];
+  sprintf(buffer, "%d", in);
+  return buffer;
+}
+
+std::string ToString(unsigned int in)
+{
+  char buffer[64];
+  sprintf(buffer, "%u", in);
+  return buffer;
+}
+
+std::string ToString(long in)
+{
+  char buffer[64];
+  sprintf(buffer, "%ld", in);
+  return buffer;
+}
+
+std::string ToString(unsigned long in)
+{
+  char buffer[64];
+  sprintf(buffer, "%lu", in);
+  return buffer;
+}
+
+std::string ToString(float in)
+{
+  char buffer[64];
+  sprintf(buffer, "%f", in);
+  return buffer;
+}
+
+std::string ToString(double in)
+{
+  char buffer[64];
+  sprintf(buffer, "%lf", in);
+  return buffer;
+}
+
+std::string ToString(bool in)
+{
+  return (in ? "true" : "false");
 }
 
 }

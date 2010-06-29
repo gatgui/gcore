@@ -2269,46 +2269,6 @@ const std::string MatchData::getPost(const std::string &str) const {
   }
 }
 
-bool MatchData::convertTo(const std::string &str, int i, unsigned char &uc) const {
-  std::string ss = get(str,i);
-  return (sscanf(ss.c_str(), "%c", &uc) == 1);
-}
-
-bool MatchData::convertTo(const std::string &str, int i, char &c) const {
-  std::string ss = get(str,i);
-  return (sscanf(ss.c_str(), "%c", &c) == 1);
-}
-
-bool MatchData::convertTo(const std::string &str, int i, unsigned short &us) const {
-  std::string ss = get(str,i);
-  return (sscanf(ss.c_str(), "%hu", &us) == 1);
-}
-
-bool MatchData::convertTo(const std::string &str, int i, short &s) const {
-  std::string ss = get(str,i);
-  return (sscanf(ss.c_str(), "%hd", &s) == 1);
-}
-
-bool MatchData::convertTo(const std::string &str, int i, unsigned long &ul) const {
-  std::string ss = get(str,i);
-  return (sscanf(ss.c_str(), "%lu", &ul) == 1);
-}
-
-bool MatchData::convertTo(const std::string &str, int i, long &l) const {
-  std::string ss = get(str,i);
-  return (sscanf(ss.c_str(), "%ld", &l) == 1);
-}
-
-bool MatchData::convertTo(const std::string &str, int i, float &f) const {
-  std::string ss = get(str,i);
-  return (sscanf(ss.c_str(), "%f", &f) == 1);
-}
-
-bool MatchData::convertTo(const std::string &str, int i, double &d) const {
-  std::string ss = get(str,i);
-  return (sscanf(ss.c_str(), "%lf", &d) == 1);
-}
-
 // Default program always fails
 const int Regexp::fallback[]={2,OP_FAIL};
 
@@ -2477,8 +2437,8 @@ bool Regexp::match
 
 bool Regexp::match(const std::string &str, MatchData &mdata) const {
   return match(str.c_str(), str.length(),
-    mdata.mBeg, mdata.mEnd, mdata.mMode, mdata.mDim,
-    mdata.mFrom, mdata.mTo);
+               mdata.mBeg, mdata.mEnd, mdata.mMode, mdata.mDim,
+               mdata.mFrom, mdata.mTo);
 }
 
 

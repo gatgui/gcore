@@ -31,12 +31,16 @@ namespace gcore {
   
   GCORE_API std::string GetDate();
   
-  // have a class
   class GCORE_API Date {
     public:
       
+      // NOTE: in diffs, a month a always 30 days and a year 365 days
+      //       you'll notice that 30 * 12 != 365, so avoid those kind
+      //       of computation for diffs
+      
       enum Month {
-        January = 0,
+        UnknownMonth = -1,
+        January,
         February,
         March,
         April,
@@ -51,7 +55,8 @@ namespace gcore {
       };
       
       enum Day {
-        Sunday = 0,
+        UnknownDay = -1,
+        Sunday,
         Monday,
         Tuesday,
         Wednesday,
@@ -61,6 +66,7 @@ namespace gcore {
       };
       
       Date();
+      Date(Int64 t, bool asDiff=false);
       Date(const Date &rhs);
       ~Date();
       
@@ -91,7 +97,7 @@ namespace gcore {
       }
       
       inline int year() const {
-        return mDateTime.tm_year + 1900;
+        return mDateTime.tm_year + (mIsDiff ? 0 : 1900);
       }
       
       inline Month month() const {
@@ -126,17 +132,21 @@ namespace gcore {
         return mIsDiff;
       }
       
-      inline void setYear(int year);
-      inline void setMonth(int m);
-      inline void setDayOfWeek(int d);
-      inline void setDayOfMonth(int d);
-      inline void setDayOfYear(int d);
-      inline void setHour(int h);
-      inline void setMinute(int m);
-      inline void setSecond(int s);
+      void setYear(int year);
+      void setMonth(int m);
+      void setDayOfWeek(int d);
+      void setDayOfMonth(int d);
+      void setDayOfYear(int d);
+      void setHour(int h);
+      void setMinute(int m);
+      void setSecond(int s);
+      
+      void set(Int64 t, bool asDiff=false);
+      Int64 get() const;
       
       static Date Days(int n);
       static Date Weeks(int n);
+      static Date Months(int n);
       static Date Years(int n);
       static Date Hours(int n);
       static Date Minutes(int n);
@@ -236,13 +246,13 @@ inline std::ostream& operator<<(std::ostream &os, const gcore::Date &d) {
   return os;
 }
 
-inline gcore::Date& operator+(const gcore::Date &d0, const gcore::Date &d1) {
+inline gcore::Date operator+(const gcore::Date &d0, const gcore::Date &d1) {
   gcore::Date rv(d0);
   rv += d1;
   return rv;
 }
 
-inline gcore::Date& operator-(const gcore::Date &d0, const gcore::Date &d1) {
+inline gcore::Date operator-(const gcore::Date &d0, const gcore::Date &d1) {
   gcore::Date rv(d0);
   rv -= d1;
   return rv;

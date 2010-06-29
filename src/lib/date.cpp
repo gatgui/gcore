@@ -74,25 +74,16 @@ static const char *gsLongDays[] = {
   "Saturday"
 };
 
+// time_t is a signed value
+// negative values might not be handled well on some system though 
+static time_t gsSecsPerMinute =  60;
+static time_t gsSecsPerHour   =  60 * gsSecsPerMinute;
+static time_t gsSecsPerDay    =  24 * gsSecsPerHour;
+static time_t gsSecsPerWeek   =   7 * gsSecsPerDay;
+static time_t gsSecsPerMonth  =  30 * gsSecsPerDay;
+static time_t gsSecsPerYear   = 365 * gsSecsPerDay;
+
 namespace gcore {
-
-Date Date::Days(int n) {
-}
-  
-Date Date::Weeks(int n) {
-}
-
-Date Date::Years(int n) {
-}
-
-Date Date::Hours(int n) {
-}
-
-Date Date::Minutes(int n) {
-}
-
-Date Date::Seconds(int n) {
-}
 
 std::string GetDate() {
   char buffer[256];
@@ -106,11 +97,41 @@ std::string GetDate() {
 
 // ---
 
+Date Date::Days(int n) {
+  return Date(n * gsSecsPerDay, true);
+}
+  
+Date Date::Weeks(int n) {
+  return Date(n * gsSecsPerWeek, true);
+}
+
+Date Date::Months(int n) {
+  return Date(n * gsSecsPerMonth, true);
+}
+
+Date Date::Years(int n) {
+  return Date(n * gsSecsPerYear, true);
+}
+
+Date Date::Hours(int n) {
+  return Date(n * gsSecsPerHour, true);
+}
+
+Date Date::Minutes(int n) {
+  return Date(n * gsSecsPerMinute, true);
+}
+
+Date Date::Seconds(int n) {
+  return Date(n, true);
+}
+
 Date::Date() {
-  time_t curt = time(NULL);
-  struct tm *t = localtime(&curt);
-  mDateTime = *t;
-  mIsDiff = false;
+  set(time(NULL), false);
+}
+
+Date::Date(Int64 t, bool asDiff)
+  : mIsDiff(asDiff) {
+  set(t, asDiff);
 }
 
 Date::Date(const Date &rhs)
@@ -118,6 +139,46 @@ Date::Date(const Date &rhs)
 }
 
 Date::~Date() {
+}
+
+void Date::set(Int64 t, bool asDiff) {
+  mIsDiff = asDiff;
+  
+  if (!asDiff) {
+    struct tm *ts = localtime(&t);
+    mDateTime = *ts;
+    
+  } else {
+    mDateTime.tm_year = int(t / gsSecsPerYear);
+    t = t % gsSecsPerYear;
+    mDateTime.tm_yday = int(t / gsSecsPerDay);
+    mDateTime.tm_mon  = int(t / gsSecsPerMonth);
+    mDateTime.tm_mday = int((t % gsSecsPerMonth) / gsSecsPerDay);
+    t = t % gsSecsPerDay;
+    mDateTime.tm_hour = int(t / gsSecsPerHour);
+    t = t % gsSecsPerHour;
+    mDateTime.tm_min = int(t / gsSecsPerMinute);
+    t = t % gsSecsPerMinute;
+    mDateTime.tm_sec = int(t);
+    mDateTime.tm_wday = -1;
+  }
+}
+
+Int64 Date::get() const {
+  Int64 r;
+  if (mIsDiff) {
+    r = mDateTime.tm_sec;
+    r += gsSecsPerMinute * mDateTime.tm_min;
+    r += gsSecsPerHour * mDateTime.tm_hour;
+    r += gsSecsPerDay * mDateTime.tm_yday;
+    r += gsSecsPerYear * mDateTime.tm_year;
+    return r;
+    
+  } else {
+    struct tm tmp = mDateTime;
+    r = mktime(&tmp);
+  }
+  return r;
 }
 
 std::string Date::toString() const {
@@ -128,6 +189,7 @@ std::string Date::toString() const {
     sprintf(buffer, "%d year(s), %d month(s), %d day(s), %d hour(s), %d minute(s), %d second(s)",
             mDateTime.tm_year, mDateTime.tm_mon, mDateTime.tm_mday,
             mDateTime.tm_hour, mDateTime.tm_min, mDateTime.tm_sec);
+    
   } else {
     sprintf(buffer, "%04d/%02d/%02d %02d:%02d:%02d", 1900+mDateTime.tm_year,
                                                      1+mDateTime.tm_mon,
@@ -142,6 +204,7 @@ std::string Date::toString() const {
 std::string Date::strftime(const std::string &fmt) const {
   
   if (mIsDiff) {
+    // allow only a subset of the formats?
     return "";
   }
   
@@ -156,6 +219,7 @@ std::string Date::strftime(const std::string &fmt) const {
 std::string Date::format(const std::string &fmt) const {
   
   if (mIsDiff) {
+    // allow only a subset of the formats?
     return "";
   }
   
@@ -368,35 +432,36 @@ std::string Date::format(const std::string &fmt) const {
 }
 
 void Date::setYear(int year) {
-  mDateTime.tm_year = year - 1900;
+  // if not a diff, need to add 1900 to tm_year
+  set(get() + ((year - (mIsDiff ? 0 : 1900)) - mDateTime.tm_year) * gsSecsPerYear, mIsDiff);
 }
 
 void Date::setMonth(int m) {
-  mDateTime.tm_mon = m;
+  set(get() + (m - mDateTime.tm_mon) * gsSecsPerMonth, mIsDiff);
 }
 
 void Date::setDayOfWeek(int d) {
-  mDateTime.tm_mday = d;
+  set(get() + (d - mDateTime.tm_wday) * gsSecsPerDay, mIsDiff);
 }
 
 void Date::setDayOfMonth(int d) {
-  mDateTime.tm_mday = d;
+  set(get() + (d - mDateTime.tm_mday) * gsSecsPerDay, mIsDiff);
 }
 
 void Date::setDayOfYear(int d) {
-  mDateTime.tm_mday = d;
+  set(get() + (d - mDateTime.tm_yday) * gsSecsPerDay, mIsDiff);
 }
 
 void Date::setHour(int h) {
-  mDateTime.tm_hour = h;
+  set(get() + (h - mDateTime.tm_hour) * gsSecsPerHour, mIsDiff);
 }
 
 void Date::setMinute(int m) {
-  mDateTime.tm_min = m;
+  set(get() + (m - mDateTime.tm_min) * gsSecsPerMinute, mIsDiff);
 }
 
 void Date::setSecond(int s) {
-  mDateTime.tm_sec = s;
+  set(get() + (s - mDateTime.tm_sec), mIsDiff);
 }
 
 Date& Date::operator=(const Date &rhs) {
@@ -406,56 +471,47 @@ Date& Date::operator=(const Date &rhs) {
 }
 
 Date& Date::operator+=(const Date &rhs) {
-  // TODO
+  if (mIsDiff) {
+    if (rhs.isDiff()) {
+      set(get() + rhs.get(), true);
+    } else {
+      set(rhs.get() + get(), false);
+    }
+  } else {
+    if (rhs.isDiff()) {
+      set(get() + rhs.get(), false);
+    } else {
+      // INVALID OPERATION
+      throw std::runtime_error("Cannot add 2 absolute dates");
+    }
+  }
   return *this;
 }
 
 Date& Date::operator-=(const Date &rhs) {
-  // TODO
-  mIsDiff = true;
-  
+  if (mIsDiff) {
+    if (rhs.isDiff()) {
+      set(get() - rhs.get(), true);
+    } else {
+      // INVALID OPERATION
+      throw std::runtime_error("Cannot subtract an absolute date from a diff date");
+    }
+  } else {
+    if (rhs.isDiff()) {
+      set(get() - rhs.get(), false);
+    } else {
+      set(get() - rhs.get(), true);
+    }
+  }
   return *this;
 }
 
 bool Date::operator==(const Date &rhs) const {
-  return (isDiff() == rhs.isDiff() &&
-          year() == rhs.year() &&
-          dayOfYear() == rhs.dayOfYear() &&
-          hour() == rhs.hour() &&
-          minute() == rhs.minute() &&
-          second() == rhs.second());
+  return (get() == rhs.get());
 }
 
 bool Date::operator<(const Date &rhs) const {
-  // I wonder about that one...
-  if (isDiff() != rhs.isDiff()) {
-    return false;
-  }
-  if (year() < rhs.year()) {
-    return true;
-  } else if (year() > rhs.year()) {
-    return false;
-  } else {
-    if (dayOfYear() < rhs.dayOfYear()) {
-      return true;
-    } else if (dayOfYear() > rhs.dayOfYear()) {
-      return false;
-    } else {
-      if (hour() < rhs.hour()) {
-        return true;
-      } else if (hour() > rhs.hour()) {
-        return false;
-      } else {
-        if (minute() < rhs.minute()) {
-          return true;
-        } else if (minute() > rhs.minute()) {
-          return false;
-        } else {
-          return (second() < rhs.second());
-        }
-      }
-    }
-  }
+  return (get() < rhs.get());
 }
 
 }

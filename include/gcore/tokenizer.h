@@ -46,17 +46,6 @@ namespace gcore {
 
       const char* getToken(void) const;
 
-      bool toString(char *s, unsigned int maxSize) const;
-      bool toByte(char *b) const;
-      bool toUByte(unsigned char *b) const;
-      bool toShort(short *s) const;
-      bool toUShort(unsigned short *s) const;
-      bool toLong(long *l) const;
-      bool toULong(unsigned long *l) const;
-      bool toFloat(float *f) const;
-      bool toDouble(double *d) const;
-      bool toBool(bool *b) const;
-
     private:
 
       char *mStr;

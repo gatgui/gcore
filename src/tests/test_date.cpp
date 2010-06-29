@@ -30,8 +30,10 @@ int main(int, char**) {
   // commented out lines do not work on windows...
   
   std::cout << now << std::endl;
-  std::cout << now.format("%%A (%%a): %A (%a)") << " [strftime: " << now.strftime("%A %a") << "]" << std::endl;
-  std::cout << now.format("%%B (%%b): %B (%b)") << " [strftime: " << now.strftime("%B %b") << "]"<< std::endl;
+  std::cout << now.format("%%A: %A") << " [strftime: " << now.strftime("%A") << "]" << std::endl;
+  std::cout << now.format("%%a: %a") << " [strftime: " << now.strftime("%a") << "]" << std::endl;
+  std::cout << now.format("%%B: %B") << " [strftime: " << now.strftime("%B") << "]" << std::endl;
+  std::cout << now.format("%%b: %b") << " [strftime: " << now.strftime("%b") << "]" << std::endl;
   std::cout << now.format("%%c: %c") << " [strftime: " << now.strftime("%c") << "]"<< std::endl;
   std::cout << now.format("%%d: %d") << " [strftime: " << now.strftime("%d") << "]"<< std::endl;
   std::cout << now.format("%%H: %H") << " [strftime: " << now.strftime("%H") << "]"<< std::endl;
@@ -74,19 +76,51 @@ int main(int, char**) {
   std::cout << now.format("%%u: %u") << std::endl;
   
   
-  gcore::Date n2;
+  gcore::Date othd;
   
-  n2.setDay(27);
-  n2.setHour(16);
-  n2.setMinute(12);
-  n2.setSecond(48);
+  othd.setDayOfMonth(27);
+  othd.setHour(16);
+  othd.setMinute(12);
+  othd.setSecond(48);
   
   std::cout << std::endl;
-  std::cout << n2 << " - " << now << std::endl;
+  std::cout << "Subtract dates:" << std::endl;
   
-  n2 -= now;
+  gcore::Date diff = othd - now;
+  std::cout << "  " << othd << " - " << now << " = " << diff << std::endl;
   
-  std::cout << "=> " << n2 << std::endl;
+  std::cout << "In Seconds:" << std::endl;
+  std::cout << "  now = " << now.get() << std::endl;
+  std::cout << "  othd = " << othd.get() << std::endl;
+  std::cout << "  diff = " << diff.get() << std::endl;
+  std::cout << "  othd - diff = " << (othd.get() - diff.get()) << std::endl;
+  
+  std::cout << "Adding date and diff:" << std::endl;
+  std::cout << "  othd + diff = " << (othd + diff) << std::endl;
+
+  std::cout << "Comparing dates:" << std::endl;  
+  std::cout << "  othd - diff == now? " << (((othd - diff) == now) ? "true" : "false") << std::endl;
+  
+  std::cout << "  othd < now? " << (othd < now ? "true" : "false") << std::endl;
+  std::cout << "  othd > now? " << (othd > now ? "true" : "false") << std::endl;
+  std::cout << "  othd <= now? " << (othd <= now ? "true" : "false") << std::endl;
+  std::cout << "  othd >= now? " << (othd >= now ? "true" : "false") << std::endl;
+  
+  std::cout << "  othd - diff < now? " << (othd-diff < now ? "true" : "false") << std::endl;
+  std::cout << "  othd - diff > now? " << (othd-diff > now ? "true" : "false") << std::endl;
+  std::cout << "  othd - diff <= now? " << (othd-diff <= now ? "true" : "false") << std::endl;
+  std::cout << "  othd - diff >= now? " << (othd-diff >= now ? "true" : "false") << std::endl;
+  
+  diff = gcore::Date::Years(2) +
+         gcore::Date::Months(1) +
+         gcore::Date::Weeks(2) +
+         gcore::Date::Days(3) +
+         gcore::Date::Hours(5) +
+         gcore::Date::Minutes(15) +
+         gcore::Date::Seconds(30);
+  std::cout << "Subtract: " << diff << std::endl;
+  std::cout << "From: " << now << std::endl;
+  std::cout << "= " << (now - diff) << std::endl;
   
   return 0;
 }

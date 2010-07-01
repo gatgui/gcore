@@ -92,6 +92,23 @@ namespace gcore {
   	return true;
   }
   
+  bool CreateDirs(const std::string &dir) {
+    if (! DirExists(dir)) {
+      if (CreateDirs(Dirname(dir))) {
+        return CreateDir(dir);
+      }
+      return false;
+    }
+    return true;
+  }
+  
+  bool RemoveFile(const std::string &path) {
+    if (FileExists(path)) {
+      return (remove(path.c_str()) == 0);
+    }
+    return true;
+  }
+  
   std::string GetCurrentDir() {
 #ifdef _WIN32
     DWORD cwdLen = GetCurrentDirectory(0, NULL);

@@ -146,6 +146,20 @@ std::string Join(const std::string &joiner, const List &lst)
   return rv;
 }
 
+size_t Count(const std::string &in, char c)
+{
+  size_t n = 0;
+  size_t p0 = 0;
+  size_t p1 = in.find(c, p0);
+  while (p1 != std::string::npos)
+  {
+    ++n;
+    p0 = p1 + 1;
+    p1 = in.find(c, p0);
+  }
+  return n;
+}
+
 bool ToChar(const std::string &s, char &out)
 {
   return (sscanf(s.c_str(), "%hhd", &out) == 1);

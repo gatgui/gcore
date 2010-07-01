@@ -4,12 +4,14 @@ import excons.tools
 from excons.tools import threads
 from excons.tools import dl
 
+static = int(ARGUMENTS.get("static", "0"))
+
 prjs = [
   { "name"    : "gcore",
-    "type"    : "sharedlib",
+    "type"    : "staticlib" if static else "sharedlib",
     "incdirs" : ["include"],
-    "srcs"    : glob.glob("src/lib/*.cpp"),
-    "defs"    : ["GCORE_EXPORTS"],
+    "srcs"    : glob.glob("src/lib/*.cpp") + glob.glob("src/lib/regex/*.cpp"),
+    "defs"    : ["GCORE_STATIC"] if static else ["GCORE_EXPORTS"],
     "custom"  : [threads.Require, dl.Require]
   },
   { "name"    : "testmodule",
@@ -22,6 +24,7 @@ prjs = [
     "type"    : "testprograms",
     "incdirs" : ["include"],
     "srcs"    : glob.glob("src/tests/*.cpp"),
+    "defs"    : ["GCORE_STATIC"] if static else [],
     "libs"    : ["gcore"],
     "deps"    : ["testmodule"]
   }

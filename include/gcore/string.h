@@ -40,6 +40,7 @@ namespace gcore {
     GCORE_API std::string Replace(const std::string &str, const std::string &in, const std::string &by, int maxCount=-1);
     GCORE_API bool StartsWith(const std::string &s, const std::string &st);
     GCORE_API std::string Join(const std::string &joiner, const List &lst);
+    GCORE_API size_t Count(const std::string &in, char c);
     
     GCORE_API bool ToChar(const std::string &s, char &out);
     GCORE_API bool ToUChar(const std::string &s, unsigned char &out);

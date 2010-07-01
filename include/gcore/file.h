@@ -56,6 +56,9 @@ namespace gcore {
   GCORE_API size_t FileSize(const std::string &path);
   
   GCORE_API bool CreateDir(const std::string &dir);
+  GCORE_API bool CreateDirs(const std::string &dir);
+  
+  GCORE_API bool RemoveFile(const std::string &path);
   
   // should return false to stop iteration
   typedef Callback3wR<bool, const std::string&, const std::string&, FileType> EnumFilesCallback;

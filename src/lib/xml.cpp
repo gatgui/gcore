@@ -98,11 +98,11 @@ static char* SkipNonWS(char *p, char *upTo) {
 const std::string XMLElement::Empty = "";
 
 XMLElement::XMLElement()
-  : mTag(""), mParent(0) {
+  : mTag(""), mParent(0), mTextIsCDATA(false) {
 }
 
 XMLElement::XMLElement(const std::string &tag)
-  : mTag(tag), mParent(0) {
+  : mTag(tag), mParent(0), mTextIsCDATA(false) {
 }
 
 XMLElement::~XMLElement() {
@@ -145,7 +145,13 @@ void XMLElement::write(std::ostream &os, const std::string &indent) const {
       }
     }
     if (mText.length() > 0) {
-      os << mText << std::endl;
+      if (mTextIsCDATA) {
+        os << "<![CDATA[";
+        os << mText;
+        os << "]]>" << std::endl;
+      } else {
+        os << mText << std::endl;
+      }
     }
     os << indent << "</" << mTag << ">" << std::endl;
   } else {
@@ -166,8 +172,9 @@ bool XMLElement::setAttribute(const std::string &name, const std::string &value)
   return true;
 }
 
-bool XMLElement::setText(const std::string &str) {
-  if (!IsValidText(str)) {
+bool XMLElement::setText(const std::string &str, bool asCDATA) {
+  mTextIsCDATA = asCDATA;
+  if (!asCDATA && !IsValidText(str)) {
     std::cerr << "Invalid characters in text" << std::endl;
     return false;
   }
@@ -176,6 +183,10 @@ bool XMLElement::setText(const std::string &str) {
 }
 
 bool XMLElement::addText(const std::string &str) {
+  if (mTextIsCDATA) {
+    std::cerr << "Element cannot have both text and CDATA" << std::endl;
+    return false;
+  }
   if (!IsValidText(str)) {
     std::cerr << "Invalid characters in text" << std::endl;
     return false;
@@ -558,7 +569,8 @@ bool XMLDoc::read(const std::string &fileName) {
             goto failed;
           }
           pending.erase(pending.length()-2, 2);
-          std::cout << "CDATA: \"" << pending << "\"" << std::endl;
+          //std::cout << "CDATA: \"" << pending << "\"" << std::endl;
+          cur->setText(pending, true);
           pending = "";
           state = READ_OPEN;
         }

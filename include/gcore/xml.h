@@ -48,7 +48,7 @@ namespace gcore {
       size_t numChildren() const;
       
       bool setAttribute(const std::string &name, const std::string &value);
-      bool setText(const std::string &str);
+      bool setText(const std::string &str, bool asCDATA=false);
       bool addText(const std::string &str);
       
       bool hasAttribute(const std::string &name) const;
@@ -75,6 +75,7 @@ namespace gcore {
       std::string mText;
       XMLElement *mParent;
       std::vector<XMLElement*> mChildren;
+      bool mTextIsCDATA;
   };
   
   class GCORE_API XMLDoc {

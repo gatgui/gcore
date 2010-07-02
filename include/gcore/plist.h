@@ -105,6 +105,7 @@ namespace gcore {
       PropertyList();
       ~PropertyList();
       
+      void create();
       bool read(const std::string &filename);
       void write(const std::string &filename) const;
       

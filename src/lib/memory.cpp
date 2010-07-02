@@ -23,7 +23,13 @@ USA.
 
 #include <gcore/memory.h>
 
-using namespace std;
+
+namespace std {
+  inline bool operator<(const gcore::details::ChunkAllocator &ca0,
+                        const gcore::details::ChunkAllocator &ca1) {
+    return (ca0.getBlockSize() < ca1.getBlockSize());
+  }
+}
 
 namespace gcore {
 
@@ -42,9 +48,9 @@ void ChunkAllocator::Chunk::initialize(size_t blockSize,
   data = new unsigned char[numBlocks * blockSize];
 
 #ifdef _DEBUG
-  cout << numBlocks * blockSize << " bytes allocated @ 0x"
-       << hex << reinterpret_cast<size_t>(data) << dec
-       << " in " << blockSize << " bytes blocks" << endl;
+  std::cout << numBlocks * blockSize << " bytes allocated @ 0x"
+            << std::hex << reinterpret_cast<size_t>(data) << std::dec
+            << " in " << blockSize << " bytes blocks" << std::endl;
 #endif
 
   // Initialize memory
@@ -64,8 +70,8 @@ void* ChunkAllocator::Chunk::allocate(size_t blockSize) {
   
   // did we get a valid blockSize
 #ifdef _DEBUG
-  cout << "Alloc " << blockSize << " bytes in chunk @ 0x"
-       << hex << reinterpret_cast<size_t>(data) << dec << endl;
+  std::cout << "Alloc " << blockSize << " bytes in chunk @ 0x"
+            << std::hex << reinterpret_cast<size_t>(data) << std::dec << std::endl;
 #endif
   assert(((firstFreeBlock * blockSize) / blockSize) == firstFreeBlock);
   
@@ -83,8 +89,8 @@ void ChunkAllocator::Chunk::deallocate(void *ptr, size_t blockSize) {
   assert(((block - data) % blockSize) == 0);
 
 #ifdef _DEBUG
-  cout << "Free " << blockSize << " bytes in chunk @ 0x"
-       << hex << reinterpret_cast<size_t>(data) << dec << endl;
+  std::cout << "Free " << blockSize << " bytes in chunk @ 0x"
+            << std::hex << reinterpret_cast<size_t>(data) << std::dec << std::endl;
 #endif
 
   *block = firstFreeBlock;
@@ -98,8 +104,8 @@ void ChunkAllocator::Chunk::deallocate(void *ptr, size_t blockSize) {
 void ChunkAllocator::Chunk::release() {
 
 #ifdef _DEBUG
-  cout << "Memory set free @ 0x"
-       << hex << reinterpret_cast<size_t>(data) << dec << endl;
+  std::cout << "Memory set free @ 0x"
+            << std::hex << reinterpret_cast<size_t>(data) << std::dec << std::endl;
 #endif
 
   delete[] data;
@@ -312,7 +318,7 @@ MemoryManager::MemoryManager(size_t chunkSize, size_t smallSize)
 
 MemoryManager::~MemoryManager() {
 #ifdef _DEBUG
-  cout << "Clear managed memory... " << endl;
+  std::cout << "Clear managed memory... " << std::endl;
 #endif
   mAllocators.clear();
   msInstance = 0;
@@ -321,13 +327,13 @@ MemoryManager::~MemoryManager() {
 void* MemoryManager::allocate(size_t numBytes) {
   if (numBytes == 0) {
 #ifdef _DEBUG
-    cerr << "*** 0 bytes allocation detected !" << endl;
+    std::cerr << "*** 0 bytes allocation detected !" << std::endl;
 #endif
     return 0;
   }
   if (numBytes > mSmallSize) {
 #ifdef _DEBUG
-    cout << "### Too big for memory manager (" << numBytes << ")" << endl;
+    std::cout << "### Too big for memory manager (" << numBytes << ")" << std::endl;
 #endif
     return ::operator new(numBytes);
   } else {
@@ -349,13 +355,13 @@ void* MemoryManager::allocate(size_t numBytes) {
 void MemoryManager::deallocate(void *ptr, size_t numBytes) {
   if (numBytes == 0) {
 #ifdef _DEBUG
-    cerr << "*** 0 bytes deallocation detected !" << endl;
+    std::cerr << "*** 0 bytes deallocation detected !" << std::endl;
 #endif
     return;
   }
   if (numBytes > mSmallSize) {
 #ifdef _DEBUG
-    cout << "### Free big memory chunk (" << numBytes << ")" << endl;
+    std::cout << "### Free big memory chunk (" << numBytes << ")" << std::endl;
 #endif
     ::operator delete(ptr);
   } else {

@@ -22,7 +22,7 @@ USA.
 */
 
 #include <gcore/plist.h>
-#include <gcore/rexp.h>
+#include <gcore/regexp.h>
 #include <cstdarg>
 
 // --- Utils
@@ -52,11 +52,11 @@ static std::string ReadLine(std::istream &is) {
 
 static std::string ReadOpenTag(const std::string &line, std::string &b, std::string &a) {
   static const gcore::Regexp tagopen(IEC("<([-\w]+)(\s+[^>]*)?>"), gcore::REX_CAPTURE);
-  gcore::MatchData md(3);
+  gcore::Regexp::Match md;
   if (tagopen.match(line, md)) {
-    b = md.getPre(line);
-    a = md.getPost(line);
-    return md.get(line, 1);
+    b = md.pre();
+    a = md.post();
+    return md.group(1);
   } else {
     b = line;
     a = "";
@@ -71,10 +71,10 @@ static std::string ReadOpenTag(std::istream &is, std::string &b, std::string &a)
 
 static bool ReadCloseTag(const std::string &name, const std::string &line, std::string &b, std::string &a) {
   gcore::Regexp tagclose("</" + name + ">");
-  gcore::MatchData md(1);
+  gcore::Regexp::Match md;
   if (tagclose.match(line, md)) {
-    b = md.getPre(line);
-    a = md.getPost(line);
+    b = md.pre();
+    a = md.post();
     return true;
   } else {
     a = b = "";
@@ -93,7 +93,7 @@ static void AppendXMLString(std::string &dst, const std::string &str) {
 
 static bool ContainsTag(const std::string &line) {
   static const gcore::Regexp tag(IEC("</?[-\w]+>"));
-  gcore::MatchData md(1);
+  gcore::Regexp::Match md;
   if (tag.match(line, md)) {
     return true;
   } else {
@@ -547,7 +547,7 @@ bool plist::Boolean::fromXML(std::istream &xml, std::string &remain) {
   }
   
   AppendXMLString(content, before);
-  gcore::MatchData md(1);
+  gcore::Regexp::Match md;
   
   if (!trueexp.match(content, md)) {
     if (!falseexp.match(content, md)) {
@@ -919,6 +919,7 @@ const std::string& PropertyList::ValueTypeName(long id) {
     if (it->second.id == id) {
       return it->first;
     }
+    ++it;
   }
   return null;
 }
@@ -932,6 +933,13 @@ PropertyList::~PropertyList() {
   if (mTop) {
     delete mTop;
   }
+}
+
+void PropertyList::create() {
+  if (mTop) {
+    delete mTop;
+  }
+  mTop = new plist::Dictionary();
 }
   
 void PropertyList::write(const std::string &filename) const {
@@ -963,7 +971,7 @@ bool PropertyList::read(const std::string &filename) {
   
   std::string line = ReadLine(xml);
   
-  gcore::MatchData md(1);
+  gcore::Regexp::Match md;
   
   if (!header.match(line, md)) {
 #ifdef _DEBUG
@@ -1053,7 +1061,7 @@ static plist::Value* GetPropertyMember(plist::Dictionary* &cdict,
           
           if (!cdict->value(member)->checkType(ary)) {
             throw plist::Exception(cprop, "Incompatible types (expected \"array\", got \"%s\")",
-                                    PropertyList::ValueTypeName(cdict->value(member)->getType()).c_str());
+                                   PropertyList::ValueTypeName(cdict->value(member)->getType()).c_str());
           }
         }
         
@@ -1079,7 +1087,7 @@ static plist::Value* GetPropertyMember(plist::Dictionary* &cdict,
             
             if (!ary->at(idx)->checkType(subDict)) {
               throw plist::Exception(cprop, "Incompatible types (expected \"dict\", got \"%s\")",
-                                      PropertyList::ValueTypeName(ary->at(idx)->getType()).c_str());
+                                     PropertyList::ValueTypeName(ary->at(idx)->getType()).c_str());
               
             }
           
@@ -1093,7 +1101,7 @@ static plist::Value* GetPropertyMember(plist::Dictionary* &cdict,
           
           if (!ary->at(idx)->checkType(subAry)) {
             throw plist::Exception(cprop, "Incompatible types (expected \"dict\", got \"%s\")",
-                                    PropertyList::ValueTypeName(ary->at(idx)->getType()).c_str());
+                                   PropertyList::ValueTypeName(ary->at(idx)->getType()).c_str());
           }
           
           ary = subAry;
@@ -1119,7 +1127,7 @@ static plist::Value* GetPropertyMember(plist::Dictionary* &cdict,
     
       if (!cdict->value(current)->checkType(d)) {
         throw plist::Exception(cprop, "Incompatible types (expected \"dict\", got \"%s\")",
-                                PropertyList::ValueTypeName(cdict->value(current)->getType()).c_str());
+                               PropertyList::ValueTypeName(cdict->value(current)->getType()).c_str());
       }
       
       cdict = d;
@@ -1294,9 +1302,9 @@ static plist::Value* GetProperty(plist::Dictionary *dict,
     current = remain.substr(0, pos);
     
     remain = remain.substr(pos+1);
-  
+    
     GetPropertyMember(cdict, pre, current);
-  
+    
     pos = remain.find('.');
     
     if (pre.length() > 0) {

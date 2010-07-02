@@ -1,4 +1,4 @@
-#include <gcore/rexp.h>
+#include <gcore/regexp.h>
 #include <assert.h>
 #include <stdio.h>
 
@@ -2203,25 +2203,36 @@ const char *const Regexp::errors[]={
   };
 
 
-MatchData::MatchData(int dim, int mode, int from, int to)
-  : mFrom(from), mTo(to), mMode(mode), mDim(dim), mCount(0) {
-  if (mDim <= 0) {
-    mDim = 1;
+Regexp::Match::Match(int mode, int from, int to)
+  : mFrom(from), mTo(to), mMode(mode) {
+}
+
+Regexp::Match::Match(const Regexp::Match &rhs)
+  : mStr(rhs.mStr), mFrom(rhs.mFrom), mTo(rhs.mTo), mMode(rhs.mMode) {
+  for (int i=0; i<10; ++i) {
+    mBeg[i] = rhs.mBeg[i];
+    mEnd[i] = rhs.mEnd[i];
   }
-  mBeg = new int[mDim];
-  mEnd = new int[mDim];
 }
 
-MatchData::~MatchData() {
-  delete[] mBeg;
-  delete[] mEnd;
+Regexp::Match::~Match() {
 }
 
-int MatchData::getCount() const {
-  return mCount;
+Regexp::Match& Regexp::Match::operator=(const Regexp::Match &rhs) {
+  if (this != &rhs) {
+    mStr = rhs.mStr;
+    mFrom = rhs.mFrom;
+    mTo = rhs.mTo;
+    mMode = rhs.mMode;
+    for (int i=0; i<10; ++i) {
+      mBeg[i] = rhs.mBeg[i];
+      mEnd[i] = rhs.mEnd[i];
+    }
+  }
+  return *this;
 }
 
-void MatchData::setRange(int from, int to) {
+void Regexp::Match::setRange(int from, int to) {
   if (from >= 0) {
     mFrom = from;
   }
@@ -2230,48 +2241,41 @@ void MatchData::setRange(int from, int to) {
   }
 }
 
-void MatchData::setMode(int mode) {
+void Regexp::Match::setMode(int mode) {
   mMode = mode;
 }
 
-void MatchData::setDim(int dim) {
-  mDim = dim;
-  if (mDim <= 0) {
-    mDim = 1;
-  }
-  delete[] mBeg;
-  delete[] mEnd;
-  mBeg = new int[mDim];
-  mEnd = new int[mDim];
-}
-
-const std::string MatchData::get(const std::string &str, int i) const {
-  if (i>=0 && i<mDim && mBeg[i]!=-1 && mEnd[i]!=-1) {
-    return str.substr(mBeg[i], mEnd[i]-mBeg[i]);
+std::string Regexp::Match::group(int i) const {
+  if (i>=0 && i<10 && mBeg[i]!=-1 && mEnd[i]!=-1) {
+    return mStr.substr(mBeg[i], mEnd[i]-mBeg[i]);
   } else {
     return "";
   }
 }
 
-const std::string MatchData::getPre(const std::string &str) const {
+std::string Regexp::Match::pre() const {
   if (mBeg[0]!=-1 && mEnd[0]!=-1) {
-    return str.substr(0, mBeg[0]);
+    return mStr.substr(mFrom, mBeg[0]-mFrom);
   } else {
     return "";
   }
 }
 
-const std::string MatchData::getPost(const std::string &str) const {
+std::string Regexp::Match::post() const {
   if (mBeg[0]!=-1 && mEnd[0]!=-1) {
-    return str.substr(mEnd[0]);
+    return mStr.substr(mEnd[0], mTo-mEnd[0]);
   } else {
     return "";
   }
 }
 
 // Default program always fails
-const int Regexp::fallback[]={2,OP_FAIL};
+const int Regexp::fallback[] = {2, OP_FAIL};
 
+
+Regexp::Regexp()
+  : code((int*)fallback) {
+}
 
 // Copy regex object
 Regexp::Regexp(const Regexp& orig) {
@@ -2318,8 +2322,16 @@ Regexp& Regexp::operator=(const Regexp& orig) {
 }
 
 
+const char* Regexp::getError(RexError err) {
+  return errors[err];
+}
+
+bool Regexp::empty() const {
+  return (code==fallback);
+}
+
 // Parse pattern
-RexError Regexp::parse(const char* pattern,int mode) {
+RexError Regexp::parse(const char* pattern, int mode) {
   RexError err=REXERR_EMPTY;
   Compile cs;
   int flags,size;
@@ -2381,8 +2393,8 @@ RexError Regexp::parse(const char* pattern,int mode) {
 
 
 // Parse pattern, return error code if syntax error is found
-RexError Regexp::parse(const std::string& pattern,int mode) {
-  return parse(pattern.c_str(),mode);
+RexError Regexp::parse(const std::string& pattern, int mode) {
+  return parse(pattern.c_str(), mode);
 }
 
 
@@ -2393,13 +2405,13 @@ RexError Regexp::parse(const std::string& pattern,int mode) {
 // Match subject string, returning number of matches found
 bool Regexp::match
 (
-  const char* string, int len,
+  const char* str, int len,
   int* beg, int* end,
   int mode, int npar,
   int fm, int to
 ) const {
   
-  if (!string || len<0 || npar<1 || NSUBEXP<npar) {
+  if (!str || len<0 || npar<1 || NSUBEXP<npar) {
     fprintf(stderr,"Regexp::match: bad argument.\n");
   }
   
@@ -2411,14 +2423,14 @@ bool Regexp::match
     Execute ms;
     if(!beg) beg=abeg;
     if(!end) end=aend;
-    ms.str_beg=string;
-    ms.str_end=string+len;
+    ms.str_beg=str;
+    ms.str_end=str+len;
     ms.sub_beg=beg;
     ms.sub_end=end;
     ms.code=code;
     ms.npar=npar;
     ms.mode=mode;
-    return ms.execute(string+fm,string+to);
+    return ms.execute(str+fm,str+to);
   }
   return FALSE;
 }
@@ -2431,13 +2443,15 @@ bool Regexp::match
   int* beg, int* end,
   int mode, int npar,
   int fm, int to
-) const {
+) const
+{
   return match(string.c_str(),string.length(),beg,end,mode,npar,fm,to);
 }
 
-bool Regexp::match(const std::string &str, MatchData &mdata) const {
+bool Regexp::match(const std::string &str, Regexp::Match &mdata) const {
+  mdata.mStr = str;
   return match(str.c_str(), str.length(),
-               mdata.mBeg, mdata.mEnd, mdata.mMode, mdata.mDim,
+               mdata.mBeg, mdata.mEnd, mdata.mMode, 10,
                mdata.mFrom, mdata.mTo);
 }
 
@@ -2445,32 +2459,45 @@ bool Regexp::match(const std::string &str, MatchData &mdata) const {
 // Return substitution string
 std::string Regexp::substitute
 (
-  const char* string, int len,
+  const char* str, int len,
   int* beg, int* end,
   const std::string& replace, int npar
-) {
+)
+{
   register int ch,n,i=0;
   std::string result;
-  if (!string || len<0 || !beg || !end || npar<1 || NSUBEXP<npar) {
-    fprintf(stderr,"Regexp::substitute: bad argument.\n");
+  if (!str || len<0 || !beg || !end || npar<1 || NSUBEXP<npar) {
+    fprintf(stderr,"Regexp::Substitute: bad argument.\n");
   }
   while ((ch=replace[i++])!='\0') {
     if (ch=='&') {
       if (0<=beg[0] && end[0]<=len) {
-        result.append(&string[beg[0]],end[0]-beg[0]);
+        result.append(&str[beg[0]],end[0]-beg[0]);
       }
     } else if (ch=='\\' && '0'<=replace[i] && replace[i]<='9') {
       n=replace[i++]-'0';
       if (n<npar && 0<=beg[n] && end[n]<=len) {
-        result.append(&string[beg[n]],end[n]-beg[n]);
+        result.append(&str[beg[n]],end[n]-beg[n]);
       }
     } else {
-      if (ch=='\\' && (replace[i]=='\\' || replace[i]=='&')) {
-        ch=replace[i++];
+      if (ch=='\\') {
+        if (replace[i]=='\\' || replace[i]=='&') {
+          ch=replace[i++];
+        } else if (replace[i]=='`') {
+          if (beg[0]>0) {
+            result.append(str, beg[0]);
+          }
+          ++i;
+          continue;
+        } else if (replace[i]=='\'') {
+          if (end[0]<len) {
+            result.append(&str[end[0]],len-end[0]);
+          }
+          ++i;
+          continue;
+        }
       }
-      //result.append(ch);
-      char c = (char)ch;
-      result.append(&c);
+      result.append(1, char(ch));
     }
   }
   return result;
@@ -2480,11 +2507,49 @@ std::string Regexp::substitute
 // Return substitution string
 std::string Regexp::substitute
 (
-  const std::string& string,
+  const std::string& str,
   int* beg, int* end,
   const std::string& replace, int npar
-) {
-  return substitute(string.c_str(),string.length(),beg,end,replace,npar);
+)
+{
+  return substitute(str.c_str(), str.length(), beg, end, replace, npar);
+}
+
+
+std::string Regexp::substitute
+(
+  Regexp::Match &m,
+  const std::string &replace
+)
+{
+  register int ch,n,i=0;
+  
+  std::string result;
+  
+  while ((ch = replace[i++]) != '\0') {
+    if (ch == '&') {
+      result += m.group(0);
+    } else if (ch == '\\' && replace[i] >= '0' && replace[i] <= '9') {
+      n = replace[i++] - '0';
+      result += m.group(n);
+    } else {
+      if (ch == '\\') {
+        if (replace[i] == '\\' || replace[i] == '&') {
+          ch = replace[i++];
+        } else if (replace[i] == '`') {
+          ++i;
+          result += m.pre();
+          continue;
+        } else if (replace[i] == '\'') {
+          ++i;
+          result += m.post();
+          continue;
+        }
+      }
+      result.append(1, char(ch));
+    }
+  }
+  return result;
 }
 
 

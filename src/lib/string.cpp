@@ -23,7 +23,7 @@ USA.
 
 #include <gcore/string.h>
 #include <gcore/platform.h>
-#include <gcore/rexp.h>
+#include <gcore/regexp.h>
 
 namespace gcore {
 namespace String {

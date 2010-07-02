@@ -45,7 +45,7 @@ namespace gcore {
           return mBlockSize;
         }
         
-        inline bool operator<(size_t sz) {
+        inline bool operator<(size_t sz) const {
           return (mBlockSize < sz);
         }
         

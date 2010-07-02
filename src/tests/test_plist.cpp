@@ -31,6 +31,23 @@ int main(int argc, char **argv) {
   
   std::string filename(argv[1]);
   
+  std::cout << "Create and write plist to file..." << std::endl;
+  try {
+    gcore::PropertyList spl;
+    spl.create();
+    spl.setString("font.name", "Helvetica");
+    spl.setInteger("font.size", 16);
+    spl.setString("schemes.all[0].name", "Hello");
+    spl.setString("schemes.all[1].name", "World");
+    spl.setString("schemes.all[2].name", "Goodbye");
+    spl.write(filename);
+  } catch (gcore::plist::Exception &e) {
+    std::cerr << e.what() << std::endl;
+    return -1;
+  }
+  
+  std::cout << "Read plist from file..." << std::endl;
+  
   gcore::PropertyList pl;
   
   if (!pl.read(filename)) {
@@ -59,7 +76,8 @@ int main(int argc, char **argv) {
     */
   
   } catch (gcore::plist::Exception &e) {
-    std::cout << e.what() << std::endl;
+    std::cerr << e.what() << std::endl;
+    return -1;
   }
 
   pl.write("test.xml");

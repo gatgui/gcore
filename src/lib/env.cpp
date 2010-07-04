@@ -23,6 +23,7 @@ USA.
 
 #include <gcore/env.h>
 #include <gcore/platform.h>
+#include <gcore/path.h>
 
 /*
 #ifdef _WIN32
@@ -43,16 +44,16 @@ extern char **environ;
 
 namespace gcore {
 
-std::string GetUser() {
+String Env::GetUser() {
 #ifdef _WIN32
   // other ?
-  return GetEnv("USERNAME");
+  return Get("USERNAME");
 #else
-  return GetEnv("USER");
+  return Get("USER");
 #endif
 }
 
-std::string GetHost() {
+String Env::GetHost() {
   char buffer[1024];
 #ifdef _WIN32
   DWORD sz = 1024;
@@ -66,6 +67,144 @@ std::string GetHost() {
 #endif
 }
 
+String Env::Get(const String &k) {
+  return Env().get(k);
+}
+
+void Env::Set(const String &k, const String &v, bool ow) {
+  Env().set(k, v, ow);
+}
+
+String Env::IsSet(const String &k) {
+  return Env().isSet(k);
+}
+
+void Env::EachInPath(const String &e, Env::EnumPathCallback callback) {
+  if (e.length() == 0 || callback == 0) {
+    return;
+  }
+  char *envVal = getenv(e.c_str());
+  if (envVal) {
+    String v = envVal;
+    String::List lst;
+    v.split(PATH_SEP, lst);
+    for (size_t i=0; i<lst.size(); ++i) {
+      if (lst[i].length() > 0) {
+        gcore::Path path(lst[i]);
+        if (!callback(path)) {
+          return;
+        }
+      }
+    }
+  }
+}
+
+Env::Env() {
+}
+
+Env::~Env() {
+  mEnvStack.clear();
+}
+
+void Env::push() {
+  Dict d;
+  mEnvStack.push_back(d);
+  asDict(mEnvStack.back());
+}
+
+void Env::pop() {
+  if (mEnvStack.size() > 0) {
+    Dict &last = mEnvStack.back();
+    Dict::iterator it = last.begin();
+    while (it != last.end()) {
+      set(it->first, it->second, false);
+    }
+    mEnvStack.pop_back();
+  }
+}
+
+bool Env::isSet(const String &k) const {
+#ifndef _WIN32
+  return (getenv(k.c_str()) != 0);
+#else
+  return (GetEnvironmentVariableA(k.c_str(), NULL, 0) > 0);
+#endif
+}
+
+String Env::get(const String &k) {
+  std::string rv;
+#ifndef _WIN32
+  char *v = getenv(k.c_str());
+  if (v != NULL) {
+    rv = v;
+  }
+#else
+  DWORD sz = GetEnvironmentVariableA(k.c_str(), NULL, 0);
+  if (sz > 0) {
+    rv.resize(sz-1);
+    GetEnvironmentVariableA(k.c_str(), (char*) rv.data(), sz);
+  }
+#endif
+  return rv;
+}
+
+void Env::set(const String &k, const String &v, bool overwrite) {
+#ifndef _WIN32  
+  setenv(k.c_str(), v.c_str(), (overwrite ? 1 : 0));
+#else
+  std::string dummy;
+  if (overwrite || GetEnvironmentVariableA(k.c_str(), NULL, 0) == 0) {
+    SetEnvironmentVariableA(k.c_str(), v.c_str());
+  }
+#endif
+}
+
+size_t Env::asDict(Dict &d) const {
+  d.clear();
+#ifndef _WIN32
+  int idx = 0;
+  char *curvar = environ[idx];
+  while (curvar != 0) {
+    char *es = strchr(curvar, '=');
+    if (es != 0) {
+      size_t klen = es - curvar;
+      size_t vlen = strlen(curvar) - klen - 1;
+      if (klen > 0) {
+        String key, val;
+        key.insert(0, curvar, klen);
+        val.insert(0, es+1, vlen);
+        d[key] = val;
+      } else {
+        //std::cerr << "Ignore env string \"" << curvar << "\"" << std::endl;
+      }
+    }
+    ++idx;
+    curvar = environ[idx];
+  }
+#else
+  char *curenv = GetEnvironmentStringsA();
+  char *curvar = curenv;
+  while (*curvar != '\0') {
+    size_t len = strlen(curvar);
+    char *es = strchr(curvar, '=');
+    if (es != 0) {
+      if (es == curvar) { 
+        //std::cerr << "Ignore env string \"" << curvar << "\"" << std::endl;
+      } else {
+        *es = '\0';
+        if (strlen(curvar) > 0) {
+          d[curvar] = es+1;
+        }
+      }
+    }
+    curvar += len + 1;
+  }
+  FreeEnvironmentStrings(curenv);
+#endif
+  return d.size();
+}
+
+/*
 void ForEachInEnv(const std::string &e, EnumEnvCallback callback) {
   if (e.length() == 0 || callback == 0) {
     return;
@@ -175,5 +314,6 @@ size_t GetEnv(EnvDict &d) {
 #endif
   return d.size();
 }
-  
+*/
+
 }

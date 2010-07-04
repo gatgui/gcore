@@ -52,7 +52,7 @@ static std::string ReadLine(std::istream &is) {
 
 static std::string ReadOpenTag(const std::string &line, std::string &b, std::string &a) {
   static const gcore::Regexp tagopen(IEC("<([-\w]+)(\s+[^>]*)?>"), gcore::REX_CAPTURE);
-  gcore::Regexp::Match md;
+  gcore::RegexpMatch md;
   if (tagopen.match(line, md)) {
     b = md.pre();
     a = md.post();
@@ -71,7 +71,7 @@ static std::string ReadOpenTag(std::istream &is, std::string &b, std::string &a)
 
 static bool ReadCloseTag(const std::string &name, const std::string &line, std::string &b, std::string &a) {
   gcore::Regexp tagclose("</" + name + ">");
-  gcore::Regexp::Match md;
+  gcore::RegexpMatch md;
   if (tagclose.match(line, md)) {
     b = md.pre();
     a = md.post();
@@ -93,7 +93,7 @@ static void AppendXMLString(std::string &dst, const std::string &str) {
 
 static bool ContainsTag(const std::string &line) {
   static const gcore::Regexp tag(IEC("</?[-\w]+>"));
-  gcore::Regexp::Match md;
+  gcore::RegexpMatch md;
   if (tag.match(line, md)) {
     return true;
   } else {
@@ -547,7 +547,7 @@ bool plist::Boolean::fromXML(std::istream &xml, std::string &remain) {
   }
   
   AppendXMLString(content, before);
-  gcore::Regexp::Match md;
+  gcore::RegexpMatch md;
   
   if (!trueexp.match(content, md)) {
     if (!falseexp.match(content, md)) {
@@ -971,7 +971,7 @@ bool PropertyList::read(const std::string &filename) {
   
   std::string line = ReadLine(xml);
   
-  gcore::Regexp::Match md;
+  gcore::RegexpMatch md;
   
   if (!header.match(line, md)) {
 #ifdef _DEBUG

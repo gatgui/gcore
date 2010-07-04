@@ -22,17 +22,20 @@ USA.
 */
 
 #include <gcore/env.h>
+#include <gcore/path.h>
 
-bool PathCallback(const std::string &val) {
-  std::cout << "  \"" << val << "\"" << std::endl;
+bool PathCallback(const gcore::Path &path) {
+  std::cout << "  \"" << path.fullname() << "\"" << std::endl;
   return true;
 }
 
 int main(int, char**) {
-  gcore::EnvDict all;
-  gcore::EnvDict::iterator it;
+  gcore::Env::Dict all;
+  gcore::Env::Dict::iterator it;
   
-  gcore::GetEnv(all);
+  gcore::Env env;
+  
+  env.asDict(all);
   it = all.begin();
   while (it != all.end()) {
     std::cout << it->first << "=" << it->second << std::endl;
@@ -43,25 +46,18 @@ int main(int, char**) {
   
   std::string bsroot = "Z:/ve/home/GaetanG/dev/deploy/projects";
   
-  if (gcore::HasEnv("BSROOT")) {
-    std::cout << "BSROOT already set: \"" << gcore::GetEnv("BSROOT") << "\"" << std::endl;
-    gcore::SetEnv("BSROOT", bsroot, true);
+  if (env.isSet("BSROOT")) {
+    std::cout << "BSROOT already set: \"" << env.get("BSROOT") << "\"" << std::endl;
+    env.set("BSROOT", bsroot, true);
   } else {
-    gcore::SetEnv("BSROOT", bsroot, false);
+    env.set("BSROOT", bsroot, false);
   }
-  std::cout << "BSROOT = \"" << gcore::GetEnv("BSROOT") << "\"" << std::endl;
+  std::cout << "BSROOT = \"" << env.get("BSROOT") << "\"" << std::endl;
   
   std::cout << "PATH content..." << std::endl;
-  gcore::EnumEnvCallback cb;
+  gcore::Env::EnumPathCallback cb;
   gcore::MakeCallback(PathCallback, cb);
-  gcore::ForEachInEnv("PATH", cb);
-  
-  std::cout << "... or using EnvList..." << std::endl;
-  gcore::EnvList l;
-  gcore::ForEachInEnv("PATH", l);
-  for (size_t i=0; i<l.size(); ++i) {
-    std::cout << "  \"" << l[i] << "\"" << std::endl;
-  }
+  gcore::Env::EachInPath("PATH", cb);
   
   return 0;
 }

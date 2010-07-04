@@ -26,49 +26,46 @@ USA.
 
 #include <gcore/config.h>
 #include <gcore/callbacks.h>
+#include <gcore/string.h>
 
 namespace gcore {
   
-  // should return false to stop iteration
-  typedef Callback1wR<bool, const std::string&> EnumEnvCallback;
-  GCORE_API void ForEachInEnv(const std::string &k, EnumEnvCallback cb);
+  class GCORE_API Path;
   
-  class EnvList : public std::vector<std::string> {
+  class GCORE_API Env {
     public:
-      inline EnvList() {
-      }
-      inline EnvList(const EnvList &rhs)
-        : std::vector<std::string>(rhs) {
-      }
-      inline ~EnvList() {
-      }
-      inline EnvList& operator=(const EnvList &rhs) {
-        std::vector<std::string>::operator=(rhs);
-        return *this;
-      }
-      inline bool enumerate(const std::string &s) {
-        push_back(s);
-        return true;
-      }
+      
+      typedef Callback1wR<bool, const Path&> EnumPathCallback;
+      
+      static String GetUser();
+      static String GetHost();
+      static String Get(const String &k);
+      static void Set(const String &k, const String &v, bool overwrite);
+      static String IsSet(const String &k);
+      static void EachInPath(const String &e, EnumPathCallback callback);
+      // variant returning a list
+      
+    public:
+      
+      typedef std::map<String, String> Dict;
+      
+      Env();
+      ~Env();
+      
+      void push();
+      void pop();
+      
+      bool isSet(const String &key) const;
+      String get(const String &key);
+      void set(const String &key, const String &val, bool overwrite);
+      
+      size_t asDict(Dict &d) const;
+      
+      // enum !
+    protected:
+      
+      std::vector<Dict> mEnvStack;
   };
-  
-  inline size_t ForEachInEnv(const std::string &k, EnvList &l) {
-    EnumEnvCallback cb;
-    MakeCallback(&l, METHOD(EnvList, enumerate), cb);
-    ForEachInEnv(k, cb);
-    return l.size();
-  }
-  
-  GCORE_API std::string GetUser();
-  GCORE_API std::string GetHost();
-  
-  GCORE_API bool HasEnv(const std::string &k);
-  GCORE_API std::string GetEnv(const std::string &k);
-  GCORE_API void SetEnv(const std::string &k, const std::string &v, bool overwrite);
-  
-  typedef std::map<std::string, std::string> EnvDict;
-  GCORE_API size_t GetEnv(EnvDict &d);
-  
 }
 
 #endif

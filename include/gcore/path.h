@@ -21,13 +21,90 @@ USA.
 
 */
 
-#ifndef __gcore_file_h_
-#define __gcore_file_h_
+#ifndef __gcore_path_h_
+#define __gcore_path_h_
 
 #include <gcore/callbacks.h>
+#include <gcore/string.h>
+#include <gcore/platform.h>
 
 namespace gcore {
- 
+  
+  class GCORE_API Path {
+    public:
+      
+      static Path GetCurrentDir();
+      
+    public:
+      
+      typedef std::vector<Path> List;
+      typedef Callback1wR<bool, const Path &> EnumCallback;
+      
+    public:
+      
+      Path();
+      Path(const char *s);
+      Path(const String &s);
+      Path(const Path &rhs);
+      ~Path();
+      
+      Path& operator=(const Path &rhs);
+      Path& operator=(const String &s);
+      Path& operator=(const char *s);
+      
+      Path& operator+=(const Path &rhs);
+      
+      bool operator==(const Path &rhs) const;
+      inline bool operator!=(const Path &rhs) const {
+        return !operator==(rhs);
+      }
+      
+      // those will use DIR_SEP
+      operator String () const;
+      
+      // can use negative numbers -> index from the end
+      String& operator[](int idx);
+      const String& operator[](int idx) const;
+      
+      bool isAbsolute() const;
+      
+      // if path is relative, prepend current directory
+      // but keeps . and ..
+      Path& makeAbsolute();
+      
+      // remove any . or .. and make absolute if necessary
+      Path& normalize();
+      
+      String basename() const;
+      String dirname(char sep=DIR_SEP) const;
+      String fullname(char sep=DIR_SEP) const;
+      
+      bool isDir() const;
+      bool isFile() const;
+      
+      bool exists() const;
+      
+      // file extension without .
+      String getExtension() const;
+      bool checkExtension(const String &ext) const;
+      size_t fileSize() const;
+      
+      bool createDir(bool recursive=false) const;
+      bool removeFile() const;
+      
+      void each(EnumCallback cb, bool includeSubDirs=false) const;
+      size_t listDir(List &l) const;
+      
+      String pop();
+      Path& push(const String &s);
+      
+    protected:
+      
+      String::List mPaths;
+      String mFullName;
+  };
+  
+  /*
   enum FileType {
     FT_FILE = 0,
     FT_DIR,
@@ -89,9 +166,19 @@ namespace gcore {
     ForEachInDir(d, cb, recurse);
     return l.size();
   }
+  */
 }
 
+inline gcore::Path operator+(const gcore::Path &p0, const gcore::Path &p1) {
+  gcore::Path rv(p0);
+  rv += p1;
+  return rv;
+}
 
+inline std::ostream& operator<<(std::ostream &os, const gcore::Path &p) {
+  os << p.fullname();
+  return os;
+}
 
 #endif
 

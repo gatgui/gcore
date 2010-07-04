@@ -2203,11 +2203,11 @@ const char *const Regexp::errors[]={
   };
 
 
-Regexp::Match::Match(int mode, int from, int to)
+RegexpMatch::RegexpMatch(int mode, int from, int to)
   : mFrom(from), mTo(to), mMode(mode) {
 }
 
-Regexp::Match::Match(const Regexp::Match &rhs)
+RegexpMatch::RegexpMatch(const RegexpMatch &rhs)
   : mStr(rhs.mStr), mFrom(rhs.mFrom), mTo(rhs.mTo), mMode(rhs.mMode) {
   for (int i=0; i<10; ++i) {
     mBeg[i] = rhs.mBeg[i];
@@ -2215,10 +2215,10 @@ Regexp::Match::Match(const Regexp::Match &rhs)
   }
 }
 
-Regexp::Match::~Match() {
+RegexpMatch::~RegexpMatch() {
 }
 
-Regexp::Match& Regexp::Match::operator=(const Regexp::Match &rhs) {
+RegexpMatch& RegexpMatch::operator=(const RegexpMatch &rhs) {
   if (this != &rhs) {
     mStr = rhs.mStr;
     mFrom = rhs.mFrom;
@@ -2232,7 +2232,7 @@ Regexp::Match& Regexp::Match::operator=(const Regexp::Match &rhs) {
   return *this;
 }
 
-void Regexp::Match::setRange(int from, int to) {
+void RegexpMatch::setRange(int from, int to) {
   if (from >= 0) {
     mFrom = from;
   }
@@ -2241,11 +2241,11 @@ void Regexp::Match::setRange(int from, int to) {
   }
 }
 
-void Regexp::Match::setMode(int mode) {
+void RegexpMatch::setMode(int mode) {
   mMode = mode;
 }
 
-std::string Regexp::Match::group(int i) const {
+String RegexpMatch::group(int i) const {
   if (i>=0 && i<10 && mBeg[i]!=-1 && mEnd[i]!=-1) {
     return mStr.substr(mBeg[i], mEnd[i]-mBeg[i]);
   } else {
@@ -2253,7 +2253,7 @@ std::string Regexp::Match::group(int i) const {
   }
 }
 
-std::string Regexp::Match::pre() const {
+String RegexpMatch::pre() const {
   if (mBeg[0]!=-1 && mEnd[0]!=-1) {
     return mStr.substr(mFrom, mBeg[0]-mFrom);
   } else {
@@ -2261,7 +2261,7 @@ std::string Regexp::Match::pre() const {
   }
 }
 
-std::string Regexp::Match::post() const {
+String RegexpMatch::post() const {
   if (mBeg[0]!=-1 && mEnd[0]!=-1) {
     return mStr.substr(mEnd[0], mTo-mEnd[0]);
   } else {
@@ -2297,7 +2297,7 @@ Regexp::Regexp(const char* pattern,int mode,RexError* error):code((int*)fallback
 
 
 // Compile expression from pattern; fail if error
-Regexp::Regexp(const std::string& pattern,int mode,RexError* error):code((int*)fallback) {
+Regexp::Regexp(const String& pattern,int mode,RexError* error):code((int*)fallback) {
   RexError err=parse(pattern.c_str(),mode);
   if (error) {
     *error=err;
@@ -2393,7 +2393,7 @@ RexError Regexp::parse(const char* pattern, int mode) {
 
 
 // Parse pattern, return error code if syntax error is found
-RexError Regexp::parse(const std::string& pattern, int mode) {
+RexError Regexp::parse(const String& pattern, int mode) {
   return parse(pattern.c_str(), mode);
 }
 
@@ -2439,7 +2439,7 @@ bool Regexp::match
 // Search for match in string
 bool Regexp::match
 (
-  const std::string& string,
+  const String& string,
   int* beg, int* end,
   int mode, int npar,
   int fm, int to
@@ -2448,7 +2448,7 @@ bool Regexp::match
   return match(string.c_str(),string.length(),beg,end,mode,npar,fm,to);
 }
 
-bool Regexp::match(const std::string &str, Regexp::Match &mdata) const {
+bool Regexp::match(const String &str, RegexpMatch &mdata) const {
   mdata.mStr = str;
   return match(str.c_str(), str.length(),
                mdata.mBeg, mdata.mEnd, mdata.mMode, 10,
@@ -2457,15 +2457,15 @@ bool Regexp::match(const std::string &str, Regexp::Match &mdata) const {
 
 
 // Return substitution string
-std::string Regexp::substitute
+String Regexp::substitute
 (
   const char* str, int len,
   int* beg, int* end,
-  const std::string& replace, int npar
+  const String& replace, int npar
 )
 {
   register int ch,n,i=0;
-  std::string result;
+  String result;
   if (!str || len<0 || !beg || !end || npar<1 || NSUBEXP<npar) {
     fprintf(stderr,"Regexp::Substitute: bad argument.\n");
   }
@@ -2505,26 +2505,26 @@ std::string Regexp::substitute
 
 
 // Return substitution string
-std::string Regexp::substitute
+String Regexp::substitute
 (
-  const std::string& str,
+  const String& str,
   int* beg, int* end,
-  const std::string& replace, int npar
+  const String& replace, int npar
 )
 {
   return substitute(str.c_str(), str.length(), beg, end, replace, npar);
 }
 
 
-std::string Regexp::substitute
+String Regexp::substitute
 (
-  Regexp::Match &m,
-  const std::string &replace
+  RegexpMatch &m,
+  const String &replace
 )
 {
   register int ch,n,i=0;
   
-  std::string result;
+  String result;
   
   while ((ch = replace[i++]) != '\0') {
     if (ch == '&') {

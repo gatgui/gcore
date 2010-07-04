@@ -30,7 +30,7 @@ int main(int,char**)
   RexError err;
   
   Regexp    re(IEC("(\d\d):(\d\d)"), REX_CAPTURE, &err);
-  Regexp::Match md(REX_FORWARD|REX_NOT_EMPTY);
+  RegexpMatch md(REX_FORWARD|REX_NOT_EMPTY);
   
   fprintf(stderr, "Error? %s\n", re.getError(err));
   

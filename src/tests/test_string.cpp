@@ -22,26 +22,31 @@ USA.
 */
 
 #include <gcore/string.h>
-#include <gcore/file.h>
+#include <gcore/path.h>
 
 int main(int, char**) {
   
-  std::string s0 = "Z:\\ve\\home/GaetanG/dev\\deploy";
-  std::string s1 = gcore::String::Replace('\\', gcore::JoinPath(s0, "\tPoo  "), '/');
-  std::string s2 = gcore::String::Replace("GaetanG", s1, "PetitN");
-  std::vector<std::string> splits;
-  gcore::String::Split(s2, '/', splits);
+  gcore::String s0 = "Z:\\ve\\home/GaetanG/dev\\deploy";
+  
+  gcore::String s1 = s0 + "/\tPoo  ";
+  s1.replace('\\', '/');
+  
+  gcore::String s2 = s1;
+  s2.replace("GaetanG", "PetitN");
+  
+  gcore::String::List splits;
+  s2.split('/', splits);
   for (size_t i=0; i<splits.size(); ++i) {
-    splits[i] = gcore::String::Strip(splits[i]);
+    splits[i].strip();
   }
   
   std::cout << "s0 = \"" << s0 << "\"" << std::endl;
   std::cout << "s1 = \"" << s1 << "\"" << std::endl;
   std::cout << "s2 = \"" << s2 << "\"" << std::endl;
   std::cout << "ToUpper s2:" << std::endl;
-  std::cout << "   = \"" << gcore::String::ToUpper(s2) << "\"" << std::endl;
+  std::cout << "   = \"" << s2.toupper() << "\"" << std::endl;
   std::cout << "ToLower s2:" << std::endl;
-  std::cout << "   = \"" << gcore::String::ToLower(s2) << "\"" << std::endl;
+  std::cout << "   = \"" << s2.tolower() << "\"" << std::endl;
   std::cout << "Split Strip s1:" << std::endl;
   for (size_t i=0; i<splits.size(); ++i) {
     std::cout << "  \"" << splits[i] << "\"" << std::endl;

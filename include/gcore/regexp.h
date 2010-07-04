@@ -7,6 +7,7 @@
 #define __gcore_regexp_h_
 
 #include <gcore/config.h>
+#include <gcore/string.h>
 
 // Ignore Escape Character Macro
 #define IEC(str) ((const char*)gcore::_RawString(#str))
@@ -59,45 +60,43 @@ namespace gcore {
     operator const char* () const {
       return e.c_str();
     }
-    std::string e;
+    String e;
   };
   
   // Why IEC and _RawString ? -->
   // Regexp("(\\d\\d):(\\d\\d)") --> Regexp(IEC("(\d\d):(\d\d)"))
   
-  class GCORE_API Regexp {
+  class GCORE_API RegexpMatch {
+    
     public:
-      
-      class GCORE_API Match {
         
-        public:
-            
-          friend class Regexp;
-          
-          Match(int mode=REX_FORWARD, int from=0, int to=2147483647);
-          Match(const Match &rhs);
-          ~Match();
-          
-          Match& operator=(const Match &rhs);
-          
-          // <0 value don't modify previous value
-          void setRange(int from, int to);
-          void setMode(int mode);
-          
-          std::string group(int i) const;
-          std::string pre() const;
-          std::string post() const;
-          
-        private:
-            
-          std::string  mStr;
-          int          mFrom;
-          int          mTo;
-          int          mMode;
-          int          mBeg[10];
-          int          mEnd[10];
-      };
+      friend class Regexp;
       
+      RegexpMatch(int mode=REX_FORWARD, int from=0, int to=2147483647);
+      RegexpMatch(const RegexpMatch &rhs);
+      ~RegexpMatch();
+      
+      RegexpMatch& operator=(const RegexpMatch &rhs);
+      
+      // <0 value don't modify previous value
+      void setRange(int from, int to);
+      void setMode(int mode);
+      
+      String group(int i) const;
+      String pre() const;
+      String post() const;
+      
+    private:
+        
+      String  mStr;
+      int     mFrom;
+      int     mTo;
+      int     mMode;
+      int     mBeg[10];
+      int     mEnd[10];
+  };
+  
+  class GCORE_API Regexp {
     public:
       // Construct empty regular expression object
       Regexp();
@@ -111,7 +110,7 @@ namespace gcore {
       
       // Compile expression from pattern; if error is not NULL,
       // error code is returned
-      Regexp(const std::string& pattern, int mode=REX_NORMAL, RexError* error=0);
+      Regexp(const String& pattern, int mode=REX_NORMAL, RexError* error=0);
       
       // Delete
       ~Regexp();
@@ -130,7 +129,7 @@ namespace gcore {
       RexError parse(const char* pattern, int mode=REX_NORMAL);
       
       // Parse pattern, return error code if syntax error is found
-      RexError parse(const std::string& pattern, int mode=REX_NORMAL);
+      RexError parse(const String& pattern, int mode=REX_NORMAL);
       
       /*
        * Match a subject string of length len, returning TRUE if a match is found
@@ -148,14 +147,14 @@ namespace gcore {
       
       // Search for match in a string
       bool match(
-        const std::string& str,
+        const String& str,
         int* beg = 0, int* end = 0,
         int mode = REX_FORWARD, int npar = 1,
         int fm = 0, int to = 2147483647) const;
         
       bool match(
-        const std::string &str,
-        Match &match) const;
+        const String &str,
+        RegexpMatch &match) const;
       
       /*
        * After performing a regular expression match with capturing parentheses,
@@ -165,18 +164,18 @@ namespace gcore {
        * the match, and "\'" by the remainder of the string.
        * The original source string and its length, and the match arrays beg and end must be passed.
        */
-      static std::string substitute(
+      static String substitute(
         const char* str, int len,
-        int* beg, int* end, const std::string& replace, int npar=1);
+        int* beg, int* end, const String& replace, int npar=1);
       
       // Return substitution string
-      static std::string substitute(
-        const std::string& str, int* beg, int* end,
-        const std::string& replace, int npar=1);
+      static String substitute(
+        const String& str, int* beg, int* end,
+        const String& replace, int npar=1);
       
-      static std::string substitute(
-        Match &match,
-        const std::string &replace);
+      static String substitute(
+        RegexpMatch &match,
+        const String &replace);
       
       // Returns error code for given error
       static const char* getError(RexError err);

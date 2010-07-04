@@ -240,8 +240,8 @@ int main(int, char **) {
   
   
   AClass a;
-  gcore::Path::EnumCallback c1;
-  gcore::MakeCallback(&a, METHOD(AClass, FileFound), c1);
+  gcore::Path::EnumFunc c1;
+  gcore::Bind(&a, METHOD(AClass, FileFound), c1);
   relDir1.each(c1, true);
   
   return 0;

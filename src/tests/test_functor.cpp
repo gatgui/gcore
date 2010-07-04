@@ -21,9 +21,47 @@ USA.
 
 */
 
-#include <gcore/callbacks.h>
+#include <gcore/gcore>
+#include <iostream>
+using namespace gcore;
+using namespace std;
 
-void gcore::MakeCallback(void (*f)(void), gcore::Callback0 &cb) {
-	cb = gcore::FunctionTranslator0<void (*)(void)>(f);
+float add_float(float a, float b) {
+  return a+b;
 }
+
+class Operator {
+  public:
+    Operator(){}
+    virtual ~Operator() {}
+    virtual float execute(float, float) const = 0;
+};
+
+class Add : public Operator {
+  public:
+    Add() {
+    }
+    virtual ~Add() {
+    }
+    virtual float execute(float a, float b) const {
+      return a+b;
+    }
+};
+
+int main(int, char**) {
+  
+  Add add;
+  
+  Functor2wR<float, float, float> cb0;
+  Functor2wR<float, float, float> cb1;
+  
+  Bind(add_float, cb0);
+  Bind(&add, METHOD(Add, execute), cb1);
+  
+  cout << "Functor 0 result: " << cb0(1, 2) << endl;
+  cout << "Functor 1 result: " << cb1(1, 2) << endl;
+  
+  return 0;
+}
+
 

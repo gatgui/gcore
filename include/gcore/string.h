@@ -21,8 +21,8 @@ USA.
 
 */
 
-#ifndef __gcore_utils_h_
-#define __gcore_utils_h_
+#ifndef __gcore_string_h_
+#define __gcore_string_h_
 
 #include <gcore/config.h>
 
@@ -51,7 +51,7 @@ namespace gcore {
       String(float f);
       String(double d);
       String(bool b);
-      ~String();
+      virtual ~String();
       
       String& operator=(const std::string &rhs);
       String& operator=(const char *s);

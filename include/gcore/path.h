@@ -24,7 +24,7 @@ USA.
 #ifndef __gcore_path_h_
 #define __gcore_path_h_
 
-#include <gcore/callbacks.h>
+#include <gcore/functor.h>
 #include <gcore/string.h>
 #include <gcore/platform.h>
 
@@ -38,7 +38,7 @@ namespace gcore {
     public:
       
       typedef std::vector<Path> List;
-      typedef Callback1wR<bool, const Path &> EnumCallback;
+      typedef Functor1wR<bool, const Path &> EnumFunc;
       
     public:
       
@@ -92,7 +92,7 @@ namespace gcore {
       bool createDir(bool recursive=false) const;
       bool removeFile() const;
       
-      void each(EnumCallback cb, bool includeSubDirs=false) const;
+      void each(EnumFunc cb, bool includeSubDirs=false) const;
       size_t listDir(List &l) const;
       
       String pop();

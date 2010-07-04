@@ -36,13 +36,13 @@ class PApp2 {
     template <typename C, typename D>
     PApp2(void (*Func)(C, D), A a, B b)
       : mA(a), mB(b) {
-      gcore::MakeCallback(Func, mProc);
+      gcore::Bind(Func, mProc);
     }
     
     template <class Callee, class Calltype, typename C, typename D>
     PApp2(Callee *c, void (Calltype::*Method)(C, D), A a, B b)
       : mA(a), mB(b) {
-      gcore::MakeCallback(c, Method, mProc);
+      gcore::Bind(c, Method, mProc);
     }
 
     ~PApp2() {
@@ -54,7 +54,7 @@ class PApp2 {
 
   protected:
   
-    gcore::Callback2<A, B> mProc;
+    gcore::Functor2<A, B> mProc;
     A mA;
     B mB;
 };
@@ -85,27 +85,16 @@ int main(int, char**) {
   size_t n;
 
   gcore::Task task[4];
-
-  /*
-  PApp2<char, int> tmp0(ComputeFunc, '.', 1000000);
-  PApp2<char, int> tmp1(ComputeFunc, '#', 10000);
-  PApp2<char, int> tmp2(ComputeFunc, '*', 3000000);
-  PApp2<char, int> tmp3(ComputeFunc, '@', 50);
-
-  gcore::MakeCallback(&tmp0, &PApp2<char, int>::apply, task[0]);
-  gcore::MakeCallback(&tmp1, &PApp2<char, int>::apply, task[1]);
-  gcore::MakeCallback(&tmp2, &PApp2<char, int>::apply, task[2]);
-  gcore::MakeCallback(&tmp2, &PApp2<char, int>::apply, task[3]);
-  */
+  
   PApp2<char, int> tmp0(ComputeFunc, '0', 10000);
   PApp2<char, int> tmp1(ComputeFunc, '1', 10000);
   PApp2<char, int> tmp2(ComputeFunc, '2', 10000);
   PApp2<char, int> tmp3(ComputeFunc, '3', 10000);
   
-  gcore::MakeCallback(&tmp0, &PApp2<char, int>::apply, task[0]);
-  gcore::MakeCallback(&tmp1, &PApp2<char, int>::apply, task[1]);
-  gcore::MakeCallback(&tmp2, &PApp2<char, int>::apply, task[2]);
-  gcore::MakeCallback(&tmp3, &PApp2<char, int>::apply, task[3]);
+  gcore::Bind(&tmp0, &PApp2<char, int>::apply, task[0]);
+  gcore::Bind(&tmp1, &PApp2<char, int>::apply, task[1]);
+  gcore::Bind(&tmp2, &PApp2<char, int>::apply, task[2]);
+  gcore::Bind(&tmp3, &PApp2<char, int>::apply, task[3]);
 
   gcore::ThreadPool pool;
 

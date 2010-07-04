@@ -55,8 +55,8 @@ int main(int, char**) {
   std::cout << "BSROOT = \"" << env.get("BSROOT") << "\"" << std::endl;
   
   std::cout << "PATH content..." << std::endl;
-  gcore::Env::EnumPathCallback cb;
-  gcore::MakeCallback(PathCallback, cb);
+  gcore::Env::EnumPathFunc cb;
+  gcore::Bind(PathCallback, cb);
   gcore::Env::EachInPath("PATH", cb);
   
   return 0;

@@ -25,7 +25,7 @@ USA.
 #define __gcore_env_h__
 
 #include <gcore/config.h>
-#include <gcore/callbacks.h>
+#include <gcore/functor.h>
 #include <gcore/string.h>
 
 namespace gcore {
@@ -35,14 +35,14 @@ namespace gcore {
   class GCORE_API Env {
     public:
       
-      typedef Callback1wR<bool, const Path&> EnumPathCallback;
+      typedef Functor1wR<bool, const Path&> EnumPathFunc;
       
       static String GetUser();
       static String GetHost();
       static String Get(const String &k);
       static void Set(const String &k, const String &v, bool overwrite);
       static String IsSet(const String &k);
-      static void EachInPath(const String &e, EnumPathCallback callback);
+      static void EachInPath(const String &e, EnumPathFunc callback);
       // variant returning a list
       
     public:

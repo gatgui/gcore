@@ -28,9 +28,9 @@ USA.
 
 namespace gcore {
   
-  typedef Callback0 Task;
+  typedef Functor0 Task;
   
-  const Callback0 NullTask;
+  const Functor0 NullTask;
   
   class GCORE_API ThreadPool {
     

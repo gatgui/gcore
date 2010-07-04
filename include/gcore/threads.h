@@ -25,7 +25,7 @@ USA.
 #define __gcore_threads_h_
 
 #include <gcore/config.h>
-#include <gcore/callbacks.h>
+#include <gcore/functor.h>
 
 namespace gcore {
 
@@ -190,8 +190,8 @@ namespace gcore {
         SCH_RR
       };
       
-      typedef Callback0wR<int> Procedure;
-      typedef Callback1<int> EndCallback;
+      typedef Functor0wR<int> Procedure;
+      typedef Functor1<int> EndCallback;
       
       Thread();
       
@@ -200,46 +200,46 @@ namespace gcore {
       template <typename R>
       Thread(R (*run)(), void (*done)(int)=0, bool waitStart=false)
         : mRunning(false), mStarted(false) {
-        MakeCallback(run, mProc);  
+        Bind(run, mProc);  
         restart(waitStart);
       }
       
       template <typename R, typename T>
       Thread(R (*run)(), T *obj, void (T::*done)(int), bool waitStart=false)
         : mRunning(false), mStarted(false) {
-        MakeCallback(run, mProc);
-        MakeCallback(obj, done, mEndCB);  
+        Bind(run, mProc);
+        Bind(obj, done, mEndCB);  
         restart(waitStart);
       }
       
       template <typename T, typename R>
       Thread(T *obj, R (T::*run)(), bool waitStart=false)
         : mRunning(false), mStarted(false) {
-        MakeCallback(obj, run, mProc);
+        Bind(obj, run, mProc);
         restart(waitStart);  
       }
       
       template <typename T, typename R>
       Thread(T *obj, R (T::*run)(), void (T::*done)(int), bool waitStart=false)
         : mRunning(false), mStarted(false) {
-        MakeCallback(obj, run, mProc);
-        MakeCallback(obj, done, mEndCB);
+        Bind(obj, run, mProc);
+        Bind(obj, done, mEndCB);
         restart(waitStart);  
       }
       
       template <typename T, typename R, typename U>
       Thread(T *obj0, R (T::*run)(), U *obj1, void (U::*done)(int), bool waitStart=false)
         : mRunning(false), mStarted(false) {
-        MakeCallback(obj0, run, mProc);
-        MakeCallback(obj1, done, mEndCB);  
+        Bind(obj0, run, mProc);
+        Bind(obj1, done, mEndCB);  
         restart(waitStart);
       }
       
       template <typename T, typename R, typename U>
       Thread(T *obj0, R (T::*run)(), void (*done)(int), bool waitStart=false)
         : mRunning(false), mStarted(false) {
-        MakeCallback(obj0, run, mProc);
-        MakeCallback(done, mEndCB);  
+        Bind(obj0, run, mProc);
+        Bind(done, mEndCB);  
         restart(waitStart);
       }
       

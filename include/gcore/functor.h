@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -21,50 +21,50 @@ USA.
 
 */
 
-#ifndef __gcore_callbacks_h_
-#define __gcore_callbacks_h_
+#ifndef __gcore_functor_h_
+#define __gcore_functor_h_
 
 #include <gcore/config.h>
 
 // List of the callback type
-// Callback0
-// Callback1<P1>
-// Callback2<P1,P2>
-// Callback3<P1,P2,P3>
-// Callback4<P1,P2,P3,P4>
-// Callback0wR<R>
-// Callback1wR<R,P1>
-// Callback2wR<R,P1,P2>
-// Callback3wR<R,P1,P2,P3>
-// Callback4wR<R,P1,P2,P3,P4>
+// Functor0
+// Functor1<P1>
+// Functor2<P1,P2>
+// Functor3<P1,P2,P3>
+// Functor4<P1,P2,P3,P4>
+// Functor0wR<R>
+// Functor1wR<R,P1>
+// Functor2wR<R,P1,P2>
+// Functor3wR<R,P1,P2,P3>
+// Functor4wR<R,P1,P2,P3,P4>
 //
 // For any type, call either:
-//   - MakeCallback(funcPtr, cb)
-//   - MakeCallback(object, methodPtr, cb);
+//   - Bind(funcPtr, cb)
+//   - Bind(object, methodPtr, cb);
 //     |-> use the METHOD macro
 // Where cb is a callback of the wanted signature
 // (doing so, if the function or method have a different signature but compatible
 //  types, the callback can still be created)
-// A callback object is typicaly: Callback2wR<bool,int,int>()
+// A callback object is typicaly: Functor2wR<bool,int,int>()
 // A function with signature: int (*)(double,double) can still fit in the callback
 
 #define METHOD(className,methodName) &className::methodName
 
 namespace gcore {
 
-class GCORE_API Callback {
+class GCORE_API Functor {
   
   public:
     
-    typedef void (Callback::*_Method)();
+    typedef void (Functor::*_Method)();
     typedef void (*Function)();
     
-    inline Callback()
+    inline Functor()
       :callee(0) {
       ptr.func = 0;
     }
     
-    inline Callback(const void *c, const void *f, size_t sz) {
+    inline Functor(const void *c, const void *f, size_t sz) {
       if (c) {
         callee = (void*)c;
         memcpy(ptr.mem, f, sz);
@@ -94,11 +94,11 @@ class GCORE_API Callback {
 
 // Zero parameter callback
 
-class GCORE_API Callback0 : public Callback {
+class GCORE_API Functor0 : public Functor {
   
   public:
     
-    inline Callback0() : Callback() {}
+    inline Functor0() : Functor() {}
     
     inline void operator()() {
       translator(*this);
@@ -106,10 +106,10 @@ class GCORE_API Callback0 : public Callback {
     
   protected:
     
-    typedef void (*Translator)(const Callback &cb);
+    typedef void (*Translator)(const Functor &cb);
     
-    inline Callback0(Translator t, const void *c, const void *f, size_t sz)
-      :Callback(c,f,sz), translator(t) {
+    inline Functor0(Translator t, const void *c, const void *f, size_t sz)
+      :Functor(c,f,sz), translator(t) {
     }
     
   private:
@@ -118,29 +118,29 @@ class GCORE_API Callback0 : public Callback {
 };
 
 template <typename Func>
-class FunctionTranslator0 : public Callback0 {
+class FunctionTranslator0 : public Functor0 {
   
   public:
     
     FunctionTranslator0(Func f)
-      :Callback0(call, 0, FPTR_CAST(const void*, f), 0) {
+      :Functor0(call, 0, FPTR_CAST(const void*, f), 0) {
     }
     
-    static void call(const Callback &cb) {
+    static void call(const Functor &cb) {
       FPTR_CAST(Func, cb.ptr.func)();
     }
 };
 
 template <class Callee, typename Method>
-class MethodTranslator0 : public Callback0 {
+class MethodTranslator0 : public Functor0 {
   
   public:
     
     MethodTranslator0(Callee *c, Method &m)
-      :Callback0(call, c, &m, sizeof(Method)) {
+      :Functor0(call, c, &m, sizeof(Method)) {
     }
     
-    static void call(const Callback &cb) {
+    static void call(const Functor &cb) {
       Callee *callee = (Callee*)(cb.callee);
       Method &method(*(Method*)(void*)(cb.ptr.mem));
       (callee->*method)();
@@ -148,11 +148,11 @@ class MethodTranslator0 : public Callback0 {
 };
 
 template <typename R>
-class Callback0wR : public Callback {
+class Functor0wR : public Functor {
   
   public:
     
-    Callback0wR() : Callback() {}
+    Functor0wR() : Functor() {}
     
     R operator()() {
       return translator(*this);
@@ -160,10 +160,10 @@ class Callback0wR : public Callback {
     
   protected:
     
-    typedef R (*Translator)(const Callback &);
+    typedef R (*Translator)(const Functor &);
     
-    Callback0wR(Translator t, const void *c, const void *f, size_t sz)
-      :Callback(c,f,sz), translator(t) {
+    Functor0wR(Translator t, const void *c, const void *f, size_t sz)
+      :Functor(c,f,sz), translator(t) {
     }
     
   private:
@@ -172,29 +172,29 @@ class Callback0wR : public Callback {
 };
 
 template <typename R, typename Func>
-class FunctionTranslator0wR : public Callback0wR<R> {
+class FunctionTranslator0wR : public Functor0wR<R> {
   
   public:
     
     FunctionTranslator0wR(Func f)
-      :Callback0wR<R>(call, 0, FPTR_CAST(const void*, f), 0) {
+      :Functor0wR<R>(call, 0, FPTR_CAST(const void*, f), 0) {
     }
       
-    static R call(const Callback &cb) {
+    static R call(const Functor &cb) {
       return FPTR_CAST(Func, cb.ptr.func)();
     }
 };
 
 template <typename R, class Callee, typename Method>
-class MethodTranslator0wR : public Callback0wR<R> {
+class MethodTranslator0wR : public Functor0wR<R> {
   
   public:
     
     MethodTranslator0wR(Callee *c, Method &m)
-      :Callback0wR<R>(call, c, &m, sizeof(Method)) {
+      :Functor0wR<R>(call, c, &m, sizeof(Method)) {
     }
     
-    static R call(const Callback &cb) {
+    static R call(const Functor &cb) {
       Callee *callee = (Callee*)(cb.callee);
       Method &method(*(Method*)(void*)(cb.ptr.mem));
       return (callee->*method)();
@@ -204,10 +204,10 @@ class MethodTranslator0wR : public Callback0wR<R> {
 // One parameter callback
 
 template <typename P1>
-class Callback1 : public Callback {
+class Functor1 : public Functor {
   public:
     
-    Callback1() : Callback() {}
+    Functor1() : Functor() {}
     
     void operator()(P1 p1) {
       translator(*this, p1);
@@ -215,10 +215,10 @@ class Callback1 : public Callback {
     
   protected:
     
-    typedef void (*Translator)(const Callback &, P1);
+    typedef void (*Translator)(const Functor &, P1);
     
-    Callback1(Translator t, const void *c,  const void *f, size_t sz)
-      :Callback(c,f,sz), translator(t) {
+    Functor1(Translator t, const void *c,  const void *f, size_t sz)
+      :Functor(c,f,sz), translator(t) {
     }
     
   private:
@@ -227,29 +227,29 @@ class Callback1 : public Callback {
 };
 
 template <typename P1, typename Func>
-class FunctionTranslator1 : public Callback1<P1> {
+class FunctionTranslator1 : public Functor1<P1> {
   
   public:
     
     FunctionTranslator1(Func f)
-      :Callback1<P1>(call, 0, FPTR_CAST(const void*, f), 0) {
+      :Functor1<P1>(call, 0, FPTR_CAST(const void*, f), 0) {
     }
     
-    static void call(const Callback &cb, P1 p1) {
+    static void call(const Functor &cb, P1 p1) {
       FPTR_CAST(Func, cb.ptr.func)(p1);
     } 
 };
 
 template <class Callee, typename P1, typename Method>
-class MethodTranslator1 : public Callback1<P1> {
+class MethodTranslator1 : public Functor1<P1> {
   
   public:
     
     MethodTranslator1(Callee *c, Method &m)
-      :Callback1<P1>(call, c, &m, sizeof(Method)) {
+      :Functor1<P1>(call, c, &m, sizeof(Method)) {
     }
     
-    static void call(const Callback &cb, P1 p1) {
+    static void call(const Functor &cb, P1 p1) {
       Callee *callee = (Callee*)(cb.callee);
       Method &method(*(Method*)(void*)(cb.ptr.mem));
       (callee->*method)(p1);
@@ -259,11 +259,11 @@ class MethodTranslator1 : public Callback1<P1> {
 
 
 template <typename R, typename P1>
-class Callback1wR : public Callback {
+class Functor1wR : public Functor {
   
   public:
     
-    Callback1wR() : Callback() {}
+    Functor1wR() : Functor() {}
     
     R operator()(P1 p1) {
       return translator(*this, p1);
@@ -271,10 +271,10 @@ class Callback1wR : public Callback {
     
   protected:
     
-    typedef R (*Translator)(const Callback &, P1);
+    typedef R (*Translator)(const Functor &, P1);
     
-    Callback1wR(Translator t, const void *c, const void *f, size_t sz)
-      :Callback(c,f,sz), translator(t) {
+    Functor1wR(Translator t, const void *c, const void *f, size_t sz)
+      :Functor(c,f,sz), translator(t) {
     }
     
   private:
@@ -283,29 +283,29 @@ class Callback1wR : public Callback {
 };
 
 template <typename R, typename P1, typename Func>
-class FunctionTranslator1wR : public Callback1wR<R,P1> {
+class FunctionTranslator1wR : public Functor1wR<R,P1> {
   
   public:
     
     FunctionTranslator1wR(Func f)
-      :Callback1wR<R,P1>(call, 0, FPTR_CAST(const void*, f), 0) {
+      :Functor1wR<R,P1>(call, 0, FPTR_CAST(const void*, f), 0) {
     }
     
-    static R call(const Callback &cb, P1 p1) {
+    static R call(const Functor &cb, P1 p1) {
       return FPTR_CAST(Func, cb.ptr.func)(p1);
     } 
 };
 
 template <typename R, class Callee, typename P1, typename Method>
-class MethodTranslator1wR : public Callback1wR<R,P1> {
+class MethodTranslator1wR : public Functor1wR<R,P1> {
   
   public:
     
     MethodTranslator1wR(Callee *c, Method &m)
-      :Callback1wR<R,P1>(call, c, &m, sizeof(Method)) {
+      :Functor1wR<R,P1>(call, c, &m, sizeof(Method)) {
     }
     
-    static R call(const Callback &cb, P1 p1) {
+    static R call(const Functor &cb, P1 p1) {
       Callee *callee = (Callee*)(cb.callee);
       Method &method(*(Method*)(void*)(cb.ptr.mem));
       return (callee->*method)(p1);
@@ -315,11 +315,11 @@ class MethodTranslator1wR : public Callback1wR<R,P1> {
 // Two parameters callback
 
 template <typename P1, typename P2>
-class Callback2 : public Callback {
+class Functor2 : public Functor {
   
   public:
     
-    Callback2() : Callback() {}
+    Functor2() : Functor() {}
     
     void operator()(P1 p1, P2 p2) {
       translator(*this, p1, p2);
@@ -327,10 +327,10 @@ class Callback2 : public Callback {
     
   protected:
     
-    typedef void (*Translator)(const Callback &, P1, P2);
+    typedef void (*Translator)(const Functor &, P1, P2);
     
-    Callback2(Translator t, const void *c, const void *f, size_t sz)
-      :Callback(c, f, sz), translator(t) {
+    Functor2(Translator t, const void *c, const void *f, size_t sz)
+      :Functor(c, f, sz), translator(t) {
     }
     
   private:
@@ -339,29 +339,29 @@ class Callback2 : public Callback {
 };
 
 template <typename P1, typename P2, typename Func>
-class FunctionTranslator2 : public Callback2<P1,P2> {
+class FunctionTranslator2 : public Functor2<P1,P2> {
   
   public:
     
     FunctionTranslator2(Func f)
-      :Callback2<P1,P2>(call, 0, FPTR_CAST(const void*, f), 0) {
+      :Functor2<P1,P2>(call, 0, FPTR_CAST(const void*, f), 0) {
     }
     
-    static void call(const Callback &cb, P1 p1, P2 p2) {
+    static void call(const Functor &cb, P1 p1, P2 p2) {
       FPTR_CAST(Func, cb.ptr.func)(p1, p2);
     }
 };
 
 template <class Callee, typename P1, typename P2, typename Method>
-class MethodTranslator2 : public Callback2<P1,P2> {
+class MethodTranslator2 : public Functor2<P1,P2> {
   
   public:
     
     MethodTranslator2(Callee *c, Method &m)
-      :Callback2<P1,P2>(call, c, &m, sizeof(Method)) {
+      :Functor2<P1,P2>(call, c, &m, sizeof(Method)) {
     }
     
-    static void call(const Callback &cb, P1 p1, P2 p2) {
+    static void call(const Functor &cb, P1 p1, P2 p2) {
       Callee *callee = (Callee*)(cb.callee);
       Method &method(*(Method*)(void*)(cb.ptr.mem));
       (callee->*method)(p1,p2);
@@ -370,11 +370,11 @@ class MethodTranslator2 : public Callback2<P1,P2> {
 };
 
 template <typename R, typename P1, typename P2>
-class Callback2wR : public Callback {
+class Functor2wR : public Functor {
   
   public:
     
-    Callback2wR() : Callback() {}
+    Functor2wR() : Functor() {}
     
     R operator()(P1 p1, P2 p2) {
       return translator(*this, p1, p2);
@@ -382,10 +382,10 @@ class Callback2wR : public Callback {
     
   protected:
     
-    typedef R (*Translator)(const Callback &, P1, P2);
+    typedef R (*Translator)(const Functor &, P1, P2);
     
-    Callback2wR(Translator t, const void *c, const void *f, size_t sz)
-      :Callback(c, f, sz), translator(t) {
+    Functor2wR(Translator t, const void *c, const void *f, size_t sz)
+      :Functor(c, f, sz), translator(t) {
     }
     
   private:
@@ -394,29 +394,29 @@ class Callback2wR : public Callback {
 };
 
 template <typename R, typename P1, typename P2, typename Func>
-class FunctionTranslator2wR : public Callback2wR<R,P1,P2> {
+class FunctionTranslator2wR : public Functor2wR<R,P1,P2> {
   
   public:
     
     FunctionTranslator2wR(Func f)
-      :Callback2wR<R,P1,P2>(call, 0, FPTR_CAST(const void*, f), 0) {
+      :Functor2wR<R,P1,P2>(call, 0, FPTR_CAST(const void*, f), 0) {
     }
     
-    static R call(const Callback &cb, P1 p1, P2 p2) {
+    static R call(const Functor &cb, P1 p1, P2 p2) {
       return FPTR_CAST(Func, cb.ptr.func)(p1, p2);
     }
 };
 
 template <typename R, class Callee, typename P1, typename P2, typename Method>
-class MethodTranslator2wR : public Callback2wR<R,P1,P2> {
+class MethodTranslator2wR : public Functor2wR<R,P1,P2> {
   
   public:
     
     MethodTranslator2wR(Callee *c, Method &m)
-      :Callback2wR<R,P1,P2>(call, c, &m, sizeof(Method)) {
+      :Functor2wR<R,P1,P2>(call, c, &m, sizeof(Method)) {
     }
     
-    static R call(const Callback &cb, P1 p1, P2 p2) {
+    static R call(const Functor &cb, P1 p1, P2 p2) {
       Callee *callee = (Callee*)(cb.callee);
       Method &method(*(Method*)(void*)(cb.ptr.mem));
       return (callee->*method)(p1,p2);
@@ -427,10 +427,10 @@ class MethodTranslator2wR : public Callback2wR<R,P1,P2> {
 // Three parameters callback
 
 template <typename P1, typename P2, typename P3>
-class Callback3 : public Callback {
+class Functor3 : public Functor {
   public:
     
-    Callback3() : Callback() {}
+    Functor3() : Functor() {}
     
     void operator()(P1 p1, P2 p2, P3 p3) {
       translator(*this, p1, p2, p3);
@@ -438,10 +438,10 @@ class Callback3 : public Callback {
     
   protected:
     
-    typedef void (*Translator)(const Callback &, P1, P2, P3);
+    typedef void (*Translator)(const Functor &, P1, P2, P3);
     
-    Callback3(Translator t, const void *c, const void *f, size_t sz)
-      :Callback(c, f, sz), translator(t) {
+    Functor3(Translator t, const void *c, const void *f, size_t sz)
+      :Functor(c, f, sz), translator(t) {
     }
     
   private:
@@ -450,29 +450,29 @@ class Callback3 : public Callback {
 };
 
 template <typename P1, typename P2, typename P3, typename Func>
-class FunctionTranslator3 : public Callback3<P1,P2,P3> {
+class FunctionTranslator3 : public Functor3<P1,P2,P3> {
   
   public:
     
     FunctionTranslator3(Func f)
-      :Callback3<P1,P2,P3>(call, 0, FPTR_CAST(const void*, f), 0) {
+      :Functor3<P1,P2,P3>(call, 0, FPTR_CAST(const void*, f), 0) {
     }
     
-    static void call(const Callback &cb, P1 p1, P2 p2, P3 p3) {
+    static void call(const Functor &cb, P1 p1, P2 p2, P3 p3) {
       FPTR_CAST(Func, cb.ptr.func)(p1, p2, p3);
     }
 };
 
 template <class Callee, typename P1, typename P2, typename P3, typename Method>
-class MethodTranslator3 : public Callback3<P1,P2,P3> {
+class MethodTranslator3 : public Functor3<P1,P2,P3> {
   
   public:
     
     MethodTranslator3(Callee *c, Method &m)
-      :Callback3<P1,P2,P3>(call, c, &m, sizeof(Method)) {
+      :Functor3<P1,P2,P3>(call, c, &m, sizeof(Method)) {
     }
     
-    static void call(const Callback &cb, P1 p1, P2 p2, P3 p3) {
+    static void call(const Functor &cb, P1 p1, P2 p2, P3 p3) {
       Callee *callee = (Callee*)(cb.callee);
       Method &method(*(Method*)(void*)(cb.ptr.mem));
       (callee->*method)(p1,p2,p3);
@@ -481,11 +481,11 @@ class MethodTranslator3 : public Callback3<P1,P2,P3> {
 };
 
 template <typename R, typename P1, typename P2, typename P3>
-class Callback3wR : public Callback {
+class Functor3wR : public Functor {
   
   public:
     
-    Callback3wR() : Callback() {}
+    Functor3wR() : Functor() {}
     
     R operator()(P1 p1, P2 p2, P3 p3) {
       return translator(*this, p1, p2, p3);
@@ -493,10 +493,10 @@ class Callback3wR : public Callback {
     
   protected:
     
-    typedef R (*Translator)(const Callback &, P1, P2, P3);
+    typedef R (*Translator)(const Functor &, P1, P2, P3);
     
-    Callback3wR(Translator t, const void *c, const void *f, size_t sz)
-      :Callback(c, f, sz), translator(t) {
+    Functor3wR(Translator t, const void *c, const void *f, size_t sz)
+      :Functor(c, f, sz), translator(t) {
     }
     
   private:
@@ -505,29 +505,29 @@ class Callback3wR : public Callback {
 };
 
 template <typename R, typename P1, typename P2, typename P3, typename Func>
-class FunctionTranslator3wR : public Callback3wR<R,P1,P2,P3> {
+class FunctionTranslator3wR : public Functor3wR<R,P1,P2,P3> {
   
   public:
     
     FunctionTranslator3wR(Func f)
-      :Callback3wR<R,P1,P2,P3>(call, 0, FPTR_CAST(const void*, f), 0) {
+      :Functor3wR<R,P1,P2,P3>(call, 0, FPTR_CAST(const void*, f), 0) {
     }
     
-    static R call(const Callback &cb, P1 p1, P2 p2, P3 p3) {
+    static R call(const Functor &cb, P1 p1, P2 p2, P3 p3) {
       return FPTR_CAST(Func, cb.ptr.func)(p1, p2, p3);
     }
 };
 
 template <typename R, class Callee, typename P1, typename P2, typename P3, typename Method>
-class MethodTranslator3wR : public Callback3wR<R,P1,P2,P3> {
+class MethodTranslator3wR : public Functor3wR<R,P1,P2,P3> {
   
   public:
     
     MethodTranslator3wR(Callee *c, Method &m)
-      :Callback3wR<R,P1,P2,P3>(call, c, &m, sizeof(Method)) {
+      :Functor3wR<R,P1,P2,P3>(call, c, &m, sizeof(Method)) {
     }
     
-    static R call(const Callback &cb, P1 p1, P2 p2, P3 p3) {
+    static R call(const Functor &cb, P1 p1, P2 p2, P3 p3) {
       Callee *callee = (Callee*)(cb.callee);
       Method &method(*(Method*)(void*)(cb.ptr.mem));
       return (callee->*method)(p1,p2,p3);
@@ -538,11 +538,11 @@ class MethodTranslator3wR : public Callback3wR<R,P1,P2,P3> {
 // Four parameters callback
 
 template <typename P1, typename P2, typename P3, typename P4>
-class Callback4 : public Callback {
+class Functor4 : public Functor {
   
   public:
     
-    Callback4() : Callback() {}
+    Functor4() : Functor() {}
     
     void operator()(P1 p1, P2 p2, P3 p3, P4 p4) {
       translator(*this, p1, p2, p3, p4);
@@ -550,10 +550,10 @@ class Callback4 : public Callback {
     
   protected:
     
-    typedef void (*Translator)(const Callback &, P1, P2, P3,P4);
+    typedef void (*Translator)(const Functor &, P1, P2, P3,P4);
     
-    Callback4(Translator t, const void *c, const void *f, size_t sz)
-      :Callback(c, f, sz), translator(t) {
+    Functor4(Translator t, const void *c, const void *f, size_t sz)
+      :Functor(c, f, sz), translator(t) {
     }
     
   private:
@@ -562,29 +562,29 @@ class Callback4 : public Callback {
 };
 
 template <typename P1, typename P2, typename P3, typename P4, typename Func>
-class FunctionTranslator4 : public Callback4<P1,P2,P3,P4> {
+class FunctionTranslator4 : public Functor4<P1,P2,P3,P4> {
   
   public:
     
     FunctionTranslator4(Func f)
-      :Callback4<P1,P2,P3,P4>(call, 0, FPTR_CAST(const void*, f), 0) {
+      :Functor4<P1,P2,P3,P4>(call, 0, FPTR_CAST(const void*, f), 0) {
     }
     
-    static void call(const Callback &cb, P1 p1, P2 p2, P3 p3, P4 p4) {
+    static void call(const Functor &cb, P1 p1, P2 p2, P3 p3, P4 p4) {
       FPTR_CAST(Func, cb.ptr.func)(p1, p2, p3, p4);
     }
 };
 
 template <class Callee, typename P1, typename P2, typename P3, typename P4, typename Method>
-class MethodTranslator4 : public Callback4<P1,P2,P3,P4> {
+class MethodTranslator4 : public Functor4<P1,P2,P3,P4> {
   
   public:
     
     MethodTranslator4(Callee *c, Method &m)
-      :Callback4<P1,P2,P3,P4>(call, c, &m, sizeof(Method)) {
+      :Functor4<P1,P2,P3,P4>(call, c, &m, sizeof(Method)) {
     }
     
-    static void call(const Callback &cb, P1 p1, P2 p2, P3 p3, P4 p4) {
+    static void call(const Functor &cb, P1 p1, P2 p2, P3 p3, P4 p4) {
       Callee *callee = (Callee*)(cb.callee);
       Method &method(*(Method*)(void*)(cb.ptr.mem));
       (callee->*method)(p1,p2,p3,p4);
@@ -593,11 +593,11 @@ class MethodTranslator4 : public Callback4<P1,P2,P3,P4> {
 };
 
 template <typename R, typename P1, typename P2, typename P3, typename P4>
-class Callback4wR : public Callback {
+class Functor4wR : public Functor {
   
   public:
     
-    Callback4wR() : Callback() {}
+    Functor4wR() : Functor() {}
     
     R operator()(P1 p1, P2 p2, P3 p3, P4 p4) {
       return translator(*this, p1, p2, p3, p4);
@@ -605,10 +605,10 @@ class Callback4wR : public Callback {
     
   protected:
     
-    typedef R (*Translator)(const Callback &, P1, P2, P3,P4);
+    typedef R (*Translator)(const Functor &, P1, P2, P3,P4);
     
-    Callback4wR(Translator t, const void *c, const void *f, size_t sz)
-      :Callback(c, f, sz), translator(t) {
+    Functor4wR(Translator t, const void *c, const void *f, size_t sz)
+      :Functor(c, f, sz), translator(t) {
     }
     
   private:
@@ -617,29 +617,29 @@ class Callback4wR : public Callback {
 };
 
 template <typename R, typename P1, typename P2, typename P3, typename P4, typename Func>
-class FunctionTranslator4wR : public Callback4wR<R,P1,P2,P3,P4> {
+class FunctionTranslator4wR : public Functor4wR<R,P1,P2,P3,P4> {
   
   public:
     
     FunctionTranslator4wR(Func f)
-      :Callback4wR<R,P1,P2,P3,P4>(call, 0, FPTR_CAST(const void*, f), 0) {
+      :Functor4wR<R,P1,P2,P3,P4>(call, 0, FPTR_CAST(const void*, f), 0) {
     }
     
-    static R call(const Callback &cb, P1 p1, P2 p2, P3 p3, P4 p4) {
+    static R call(const Functor &cb, P1 p1, P2 p2, P3 p3, P4 p4) {
       return FPTR_CAST(Func, cb.ptr.func)(p1, p2, p3, p4);
     }
 };
 
 template <typename R, class Callee, typename P1, typename P2, typename P3, typename P4, typename Method>
-class MethodTranslator4wR : public Callback4wR<R,P1,P2,P3,P4> {
+class MethodTranslator4wR : public Functor4wR<R,P1,P2,P3,P4> {
   
   public:
     
     MethodTranslator4wR(Callee *c, Method &m)
-      :Callback4wR<R,P1,P2,P3,P4>(call, c, &m, sizeof(Method)) {
+      :Functor4wR<R,P1,P2,P3,P4>(call, c, &m, sizeof(Method)) {
     }
     
-    static R call(const Callback &cb, P1 p1, P2 p2, P3 p3, P4 p4) {
+    static R call(const Functor &cb, P1 p1, P2 p2, P3 p3, P4 p4) {
       Callee *callee = (Callee*)(cb.callee);
       Method &method(*(Method*)(void*)(cb.ptr.mem));
       return (callee->*method)(p1,p2,p3,p4);
@@ -649,34 +649,34 @@ class MethodTranslator4wR : public Callback4wR<R,P1,P2,P3,P4> {
 
 // For zero parameters callback
 
-GCORE_API void MakeCallback(void (*f)(void), Callback0 &cb);
+GCORE_API void Bind(void (*f)(void), Functor0 &cb);
 
 template <class Callee, class Calltype>
-void MakeCallback(Callee *c, void (Calltype::*m)(void), Callback0 &cb)
+void Bind(Callee *c, void (Calltype::*m)(void), Functor0 &cb)
 {
   cb = MethodTranslator0<Callee, void (Calltype::*)(void)>(c, m);
 }
 
 template <class Callee, class Calltype>
-void MakeCallback(const Callee *c, void (Calltype::*m)(void) const, Callback0 &cb)
+void Bind(const Callee *c, void (Calltype::*m)(void) const, Functor0 &cb)
 {
   cb = MethodTranslator0<const Callee, void (Calltype::*)(void) const>(c, m);
 }
 
 template <typename CR, typename R>
-void MakeCallback(R (*f)(void), Callback0wR<CR> &cb)
+void Bind(R (*f)(void), Functor0wR<CR> &cb)
 {
   cb = FunctionTranslator0wR<CR, R (*)(void)>(f);
 }
 
 template <typename CR, class Callee, typename R, class Calltype>
-void MakeCallback(Callee *c, R (Calltype::*m)(void), Callback0wR<CR> &cb)
+void Bind(Callee *c, R (Calltype::*m)(void), Functor0wR<CR> &cb)
 {
   cb = MethodTranslator0wR<CR, Callee, R (Calltype::*)(void)>(c, m);
 }
 
 template <typename CR, class Callee, typename R, class Calltype>
-void MakeCallback(const Callee *c, R (Calltype::*m)(void) const, Callback0wR<CR> &cb)
+void Bind(const Callee *c, R (Calltype::*m)(void) const, Functor0wR<CR> &cb)
 {
   cb = MethodTranslator0wR<CR, const Callee, R (Calltype::*)(void) const>(c, m);
 }
@@ -684,37 +684,37 @@ void MakeCallback(const Callee *c, R (Calltype::*m)(void) const, Callback0wR<CR>
 // For 1 parameter callback
 
 template <typename CP1, typename P1>
-void MakeCallback(void (*f)(P1), Callback1<CP1> &cb)
+void Bind(void (*f)(P1), Functor1<CP1> &cb)
 {
   cb = FunctionTranslator1<CP1, void (*)(P1)>(f);
 }
 
 template <class Callee, typename CP1, class Calltype, typename P1>
-void MakeCallback(Callee *c, void (Calltype::*m)(P1), Callback1<CP1> &cb)
+void Bind(Callee *c, void (Calltype::*m)(P1), Functor1<CP1> &cb)
 {
   cb = MethodTranslator1<Callee, CP1, void (Calltype::*)(P1)>(c,m);
 }
 
 template <class Callee, typename CP1, class Calltype, typename P1>
-void MakeCallback(const Callee *c, void (Calltype::*m)(P1) const, Callback1<CP1> &cb)
+void Bind(const Callee *c, void (Calltype::*m)(P1) const, Functor1<CP1> &cb)
 {
   cb = MethodTranslator1<const Callee, CP1, void (Calltype::*)(P1) const>(c,m);
 }
 
 template <typename CR, typename CP1, typename R, typename P1>
-void MakeCallback(R (*f)(P1), Callback1wR<CR,CP1> &cb)
+void Bind(R (*f)(P1), Functor1wR<CR,CP1> &cb)
 {
   cb = FunctionTranslator1wR<CR, CP1, R (*)(P1)>(f);
 }
 
 template <typename CR, class Callee, typename CP1, typename R, class Calltype, typename P1>
-void MakeCallback(Callee *c, R (Calltype::*m)(P1), Callback1wR<CR,CP1> &cb)
+void Bind(Callee *c, R (Calltype::*m)(P1), Functor1wR<CR,CP1> &cb)
 {
   cb = MethodTranslator1wR<CR, Callee, CP1, R (Calltype::*)(P1)>(c,m);
 }
 
 template <typename CR, class Callee, typename CP1, typename R, class Calltype, typename P1>
-void MakeCallback(const Callee *c, R (Calltype::*m)(P1) const, Callback1wR<CR,CP1> &cb)
+void Bind(const Callee *c, R (Calltype::*m)(P1) const, Functor1wR<CR,CP1> &cb)
 {
   cb = MethodTranslator1wR<CR, const Callee, CP1, R (Calltype::*)(P1) const>(c,m);
 }
@@ -722,37 +722,37 @@ void MakeCallback(const Callee *c, R (Calltype::*m)(P1) const, Callback1wR<CR,CP
 // For 2 parameters callback
 
 template <typename CP1, typename CP2, typename P1, typename P2>
-void MakeCallback(void (*f)(P1,P2), Callback2<CP1,CP2> &cb)
+void Bind(void (*f)(P1,P2), Functor2<CP1,CP2> &cb)
 {
   cb = FunctionTranslator2<CP1, CP2, void (*)(P1,P2)>(f);
 }
 
 template <class Callee, typename CP1, typename CP2, class Calltype, typename P1, typename P2>
-void MakeCallback(Callee *c, void (Calltype::*m)(P1,P2), Callback2<CP1,CP2> &cb)
+void Bind(Callee *c, void (Calltype::*m)(P1,P2), Functor2<CP1,CP2> &cb)
 {
   cb = MethodTranslator2<Callee, CP1, CP2, void (Calltype::*)(P1,P2)>(c,m);
 }
 
 template <class Callee, typename CP1, typename CP2, class Calltype, typename P1, typename P2>
-void MakeCallback(const Callee *c, void (Calltype::*m)(P1,P2) const, Callback2<CP1,CP2> &cb)
+void Bind(const Callee *c, void (Calltype::*m)(P1,P2) const, Functor2<CP1,CP2> &cb)
 {
   cb = MethodTranslator2<const Callee, CP1, CP2, void (Calltype::*)(P1,P2) const>(c,m);
 }
 
 template <typename CR, typename CP1, typename CP2, typename R, typename P1, typename P2>
-void MakeCallback(R (*f)(P1,P2), Callback2wR<CR,CP1,CP2> &cb)
+void Bind(R (*f)(P1,P2), Functor2wR<CR,CP1,CP2> &cb)
 {
   cb = FunctionTranslator2wR<CR, CP1, CP2, R (*)(P1,P2)>(f);
 }
 
 template <typename CR, class Callee, typename CP1, typename CP2, typename R, class Calltype, typename P1, typename P2>
-void MakeCallback(Callee *c, R (Calltype::*m)(P1,P2), Callback2wR<CR,CP1,CP2> &cb)
+void Bind(Callee *c, R (Calltype::*m)(P1,P2), Functor2wR<CR,CP1,CP2> &cb)
 {
   cb = MethodTranslator2wR<CR, Callee, CP1, CP2, R (Calltype::*)(P1,P2)>(c,m);
 }
 
 template <typename CR, class Callee, typename CP1, typename CP2, typename R, class Calltype, typename P1, typename P2>
-void MakeCallback(const Callee *c, R (Calltype::*m)(P1,P2) const, Callback2wR<CR,CP1,CP2> &cb)
+void Bind(const Callee *c, R (Calltype::*m)(P1,P2) const, Functor2wR<CR,CP1,CP2> &cb)
 {
   cb = MethodTranslator2wR<CR, const Callee, CP1, CP2, R (Calltype::*)(P1,P2) const>(c,m);
 }
@@ -760,37 +760,37 @@ void MakeCallback(const Callee *c, R (Calltype::*m)(P1,P2) const, Callback2wR<CR
 // For 3 parameters callback
 
 template <typename CP1, typename CP2, typename CP3, typename P1, typename P2, typename P3>
-void MakeCallback(void (*f)(P1,P2,P3), Callback3<CP1,CP2,CP3> &cb)
+void Bind(void (*f)(P1,P2,P3), Functor3<CP1,CP2,CP3> &cb)
 {
   cb = FunctionTranslator3<CP1, CP2, CP3, void (*)(P1,P2,P3)>(f);
 }
 
 template <class Callee, typename CP1, typename CP2, typename CP3, class Calltype, typename P1, typename P2, typename P3>
-void MakeCallback(Callee *c, void (Calltype::*m)(P1,P2,P3), Callback3<CP1,CP2,CP3> &cb)
+void Bind(Callee *c, void (Calltype::*m)(P1,P2,P3), Functor3<CP1,CP2,CP3> &cb)
 {
   cb = MethodTranslator3<Callee, CP1, CP2, CP3, void (Calltype::*)(P1,P2,P3)>(c,m);
 }
 
 template <class Callee, typename CP1, typename CP2, typename CP3, class Calltype, typename P1, typename P2, typename P3>
-void MakeCallback(const Callee *c, void (Calltype::*m)(P1,P2,P3) const, Callback3<CP1,CP2,CP3> &cb)
+void Bind(const Callee *c, void (Calltype::*m)(P1,P2,P3) const, Functor3<CP1,CP2,CP3> &cb)
 {
   cb = MethodTranslator3<const Callee, CP1, CP2, CP3, void (Calltype::*)(P1,P2,P3) const>(c,m);
 }
 
 template <typename CR, typename CP1, typename CP2, typename CP3, typename R, typename P1, typename P2, typename P3>
-void MakeCallback(R (*f)(P1,P2,P3), Callback3wR<CR,CP1,CP2,CP3> &cb)
+void Bind(R (*f)(P1,P2,P3), Functor3wR<CR,CP1,CP2,CP3> &cb)
 {
   cb = FunctionTranslator3wR<CR, CP1, CP2, CP3, R (*)(P1,P2,P3)>(f);
 }
 
 template <typename CR, class Callee, typename CP1, typename CP2, typename CP3, typename R, class Calltype, typename P1, typename P2, typename P3>
-void MakeCallback(Callee *c, R (Calltype::*m)(P1,P2,P3), Callback3wR<CR,CP1,CP2,CP3> &cb)
+void Bind(Callee *c, R (Calltype::*m)(P1,P2,P3), Functor3wR<CR,CP1,CP2,CP3> &cb)
 {
   cb = MethodTranslator3wR<CR, Callee, CP1, CP2, CP3, R (Calltype::*)(P1,P2,P3)>(c,m);
 }
 
 template <typename CR, class Callee, typename CP1, typename CP2, typename CP3, typename R, class Calltype, typename P1, typename P2, typename P3>
-void MakeCallback(const Callee *c, R (Calltype::*m)(P1,P2,P3) const, Callback3wR<CR,CP1,CP2,CP3> &cb)
+void Bind(const Callee *c, R (Calltype::*m)(P1,P2,P3) const, Functor3wR<CR,CP1,CP2,CP3> &cb)
 {
   cb = MethodTranslator3wR<CR, const Callee, CP1, CP2, CP3, R (Calltype::*)(P1,P2,P3) const>(c,m);
 }
@@ -798,37 +798,37 @@ void MakeCallback(const Callee *c, R (Calltype::*m)(P1,P2,P3) const, Callback3wR
 // For 4 parameters callback
 
 template <typename CP1, typename CP2, typename CP3, typename CP4, typename P1, typename P2, typename P3, typename P4>
-void MakeCallback(void (*f)(P1,P2,P3,P4), Callback4<CP1,CP2,CP3,CP4> &cb)
+void Bind(void (*f)(P1,P2,P3,P4), Functor4<CP1,CP2,CP3,CP4> &cb)
 {
   cb = FunctionTranslator4<CP1, CP2, CP3, CP4, void (*)(P1,P2,P3,P4)>(f);
 }
 
 template <class Callee, typename CP1, typename CP2, typename CP3, typename CP4, class Calltype, typename P1, typename P2, typename P3, typename P4>
-void MakeCallback(Callee *c, void (Calltype::*m)(P1,P2,P3,P4), Callback4<CP1,CP2,CP3,CP4> &cb)
+void Bind(Callee *c, void (Calltype::*m)(P1,P2,P3,P4), Functor4<CP1,CP2,CP3,CP4> &cb)
 {
   cb = MethodTranslator4<Callee,CP1,CP2,CP3,CP4, void (Calltype::*)(P1,P2,P3,P4)>(c,m);
 }
 
 template <class Callee, typename CP1, typename CP2, typename CP3, typename CP4, class Calltype, typename P1, typename P2, typename P3, typename P4>
-void MakeCallback(const Callee *c, void (Calltype::*m)(P1,P2,P3,P4) const, Callback4<CP1,CP2,CP3,CP4> &cb)
+void Bind(const Callee *c, void (Calltype::*m)(P1,P2,P3,P4) const, Functor4<CP1,CP2,CP3,CP4> &cb)
 {
   cb = MethodTranslator4<const Callee,CP1,CP2,CP3,CP4,void (Calltype::*)(P1,P2,P3,P4) const>(c,m);
 }
 
 template <typename CR, typename CP1, typename CP2, typename CP3, typename CP4, typename R, typename P1, typename P2, typename P3, typename P4>
-void MakeCallback(R (*f)(P1,P2,P3,P4), Callback4wR<CR,CP1,CP2,CP3,CP4> &cb)
+void Bind(R (*f)(P1,P2,P3,P4), Functor4wR<CR,CP1,CP2,CP3,CP4> &cb)
 {
   cb = FunctionTranslator4wR<CR, CP1, CP2, CP3, CP4, R (*)(P1,P2,P3,P4)>(f);
 }
 
 template <typename CR, class Callee, typename CP1, typename CP2, typename CP3, typename CP4, typename R, class Calltype, typename P1, typename P2, typename P3, typename P4>
-void MakeCallback(Callee *c, R (Calltype::*m)(P1,P2,P3,P4), Callback4wR<CR,CP1,CP2,CP3,CP4> &cb)
+void Bind(Callee *c, R (Calltype::*m)(P1,P2,P3,P4), Functor4wR<CR,CP1,CP2,CP3,CP4> &cb)
 {
   cb = MethodTranslator4wR<CR, Callee, CP1, CP2, CP3, CP4, R (Calltype::*)(P1,P2,P3,P4)>(c,m);
 }
 
 template <typename CR, class Callee, typename CP1, typename CP2, typename CP3, typename CP4, typename R, class Calltype, typename P1, typename P2, typename P3, typename P4>
-void MakeCallback(const Callee *c, R (Calltype::*m)(P1,P2,P3,P4) const, Callback4wR<CR,CP1,CP2,CP3,CP4> &cb)
+void Bind(const Callee *c, R (Calltype::*m)(P1,P2,P3,P4) const, Functor4wR<CR,CP1,CP2,CP3,CP4> &cb)
 {
   cb = MethodTranslator4wR<CR, const Callee, CP1, CP2, CP3, CP4, R (Calltype::*)(P1,P2,P3,P4) const>(c,m);
 }

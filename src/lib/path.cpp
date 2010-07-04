@@ -331,7 +331,7 @@ namespace gcore {
     return false;
   }
   
-  void Path::each(EnumCallback callback, bool includeSubDirs) const {
+  void Path::each(EnumFunc callback, bool includeSubDirs) const {
     if (!isDir() || callback == 0) {
       return;
     }

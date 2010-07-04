@@ -79,7 +79,7 @@ String Env::IsSet(const String &k) {
   return Env().isSet(k);
 }
 
-void Env::EachInPath(const String &e, Env::EnumPathCallback callback) {
+void Env::EachInPath(const String &e, Env::EnumPathFunc callback) {
   if (e.length() == 0 || callback == 0) {
     return;
   }

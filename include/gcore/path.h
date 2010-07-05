@@ -26,6 +26,7 @@ USA.
 
 #include <gcore/functor.h>
 #include <gcore/string.h>
+#include <gcore/list.h>
 #include <gcore/platform.h>
 
 namespace gcore {
@@ -37,8 +38,7 @@ namespace gcore {
       
     public:
       
-      typedef std::vector<Path> List;
-      typedef Functor1wR<bool, const Path &> EnumFunc;
+      typedef Functor1wR<bool, const Path &> EachFunc;
       
     public:
       
@@ -60,7 +60,8 @@ namespace gcore {
       }
       
       // those will use DIR_SEP
-      operator String () const;
+      operator const String& () const;
+      operator String& ();
       
       // can use negative numbers -> index from the end
       String& operator[](int idx);
@@ -92,81 +93,20 @@ namespace gcore {
       bool createDir(bool recursive=false) const;
       bool removeFile() const;
       
-      void each(EnumFunc cb, bool includeSubDirs=false) const;
-      size_t listDir(List &l) const;
+      void each(EachFunc cb, bool includeSubDirs=false) const;
+      size_t listDir(List<Path> &l, bool inclideSubDirs=false) const;
       
       String pop();
       Path& push(const String &s);
       
     protected:
       
-      String::List mPaths;
+      StringList mPaths;
       String mFullName;
   };
   
-  /*
-  enum FileType {
-    FT_FILE = 0,
-    FT_DIR,
-    FT_UNKNOWN,
-    FT_MAX
-  };
+  typedef List<Path> PathList;
   
-  GCORE_API std::string JoinPath(const std::string &path0, const std::string &path1);
-  GCORE_API bool IsAbsolutePath(const std::string &path);
-  GCORE_API std::string MakeAbsolutePath(const std::string &path);
-  // Normalize path will make path absolute only if necessary
-  GCORE_API std::string NormalizePath(const std::string &path);
-  GCORE_API bool IsSamePath(const std::string &path0, const std::string &path1);
-  
-  GCORE_API std::string Basename(const std::string &path);
-  GCORE_API std::string Dirname(const std::string &path);
-  // file extension strings do not include the . character
-  GCORE_API std::string FileExtension(const std::string &path);
-  GCORE_API bool CheckFileExtension(const std::string &path, const std::string &ext);
-  
-  GCORE_API std::string GetCurrentDir();
-  
-  GCORE_API bool FileExists(const std::string &path);
-  GCORE_API bool DirExists(const std::string &path);
-  
-  GCORE_API size_t FileSize(const std::string &path);
-  
-  GCORE_API bool CreateDir(const std::string &dir);
-  GCORE_API bool CreateDirs(const std::string &dir);
-  
-  GCORE_API bool RemoveFile(const std::string &path);
-  
-  // should return false to stop iteration
-  typedef Callback3wR<bool, const std::string&, const std::string&, FileType> EnumFilesCallback;
-  GCORE_API void ForEachInDir(const std::string &d, EnumFilesCallback cb, bool recurse=false);
-  
-  class FileList : public std::vector<std::string> {
-    public:
-      inline FileList() {
-      }
-      inline FileList(const FileList &rhs)
-        : std::vector<std::string>(rhs) {
-      }
-      inline ~FileList() {
-      }
-      inline FileList& operator=(const FileList &rhs) {
-        std::vector<std::string>::operator=(rhs);
-        return *this;
-      }
-      inline bool enumerate(const std::string &dirname, const std::string &filename, FileType) {
-        push_back(JoinPath(dirname, filename));
-        return true;
-      }
-  };
-  
-  inline size_t ForEachInDir(const std::string &d, FileList &l, bool recurse=false) {
-    EnumFilesCallback cb;
-    MakeCallback(&l, METHOD(FileList, enumerate), cb);
-    ForEachInDir(d, cb, recurse);
-    return l.size();
-  }
-  */
 }
 
 inline gcore::Path operator+(const gcore::Path &p0, const gcore::Path &p1) {

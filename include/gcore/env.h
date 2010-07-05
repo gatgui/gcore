@@ -27,27 +27,28 @@ USA.
 #include <gcore/config.h>
 #include <gcore/functor.h>
 #include <gcore/string.h>
+#include <gcore/path.h>
 
 namespace gcore {
   
-  class GCORE_API Path;
+  //class GCORE_API Path;
+  //class GCORE_API PathList;
   
   class GCORE_API Env {
     public:
       
-      typedef Functor1wR<bool, const Path&> EnumPathFunc;
+      typedef Functor1wR<bool, const Path&> EachInPathFunc;
       
       static String GetUser();
       static String GetHost();
       static String Get(const String &k);
       static void Set(const String &k, const String &v, bool overwrite);
+      static void SetAll(const StringDict &d, bool overwrite);
       static String IsSet(const String &k);
-      static void EachInPath(const String &e, EnumPathFunc callback);
-      // variant returning a list
+      static void EachInPath(const String &e, EachInPathFunc callback);
+      static size_t ListPaths(const String &e, PathList &l);
       
     public:
-      
-      typedef std::map<String, String> Dict;
       
       Env();
       ~Env();
@@ -58,13 +59,13 @@ namespace gcore {
       bool isSet(const String &key) const;
       String get(const String &key);
       void set(const String &key, const String &val, bool overwrite);
+      void setAll(const StringDict &d, bool overwrite);
       
-      size_t asDict(Dict &d) const;
+      size_t asDict(StringDict &d) const;
       
-      // enum !
     protected:
       
-      std::vector<Dict> mEnvStack;
+      std::vector<StringDict> mEnvStack;
   };
 }
 

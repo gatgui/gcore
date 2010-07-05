@@ -27,6 +27,40 @@ USA.
 
 namespace gcore {
 
+StringList::StringList()
+  : List<String>() {
+}
+
+StringList::StringList(size_t n, const String &s)
+  : List<String>(n, s) {
+}
+
+StringList::StringList(const std::vector<String> &rhs)
+  : List<String>(rhs) {
+}
+
+StringList::~StringList() {
+}
+
+StringList& StringList::operator=(const std::vector<String> &rhs) {
+  List<String>::operator=(rhs);
+  return *this;
+}
+
+StringList& StringList::filter(const Regexp &re) {
+  List<String>::iterator it = begin();
+  while (it != end()) {
+    if (re.match(*it)) {
+      ++it;
+    } else {
+      it = erase(it);
+    }
+  }
+  return *this;
+}
+
+// ---
+
 String::String() {
 }
 
@@ -203,7 +237,7 @@ String& String::strip() {
   return *this;
 }
 
-size_t String::split(char c, List &l) const {
+size_t String::split(char c, StringList &l) const {//List &l) const {
   l.clear();
   size_t p0 = 0;
   size_t p1 = find(c, p0);
@@ -318,7 +352,7 @@ bool String::startswith(const char *st) const {
   return (compare(0, stlen, st) == 0);
 }
 
-String String::join(const List &lst) const {
+String String::join(const StringList &lst) const {//List &lst) const {
   String rv;
   if (lst.size() > 0) {
     rv.append(lst[0]);

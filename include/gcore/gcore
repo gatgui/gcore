@@ -40,6 +40,7 @@ USA.
 #include <gcore/date.h>
 #include <gcore/env.h>
 #include <gcore/typetraits.h>
+#include <gcore/list.h>
 
 #endif 
 

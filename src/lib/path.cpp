@@ -95,16 +95,17 @@ namespace gcore {
     p1.makeAbsolute().normalize();
     
 #ifdef _WIN32
-    return p0.mFullName.casecompare(p1.mFullName);
+    return (p0.mFullName.casecompare(p1.mFullName) == 0);
 #else
-    return p0.mFullName.compare(p1.mFullName);
+    return (p0.mFullName.compare(p1.mFullName) == 0);
 #endif
   }
   
-  // those will use DIR_SEP
-  Path::operator String () const {
-    //String tmp(DIR_SEP);
-    //return tmp.join(mPaths);
+  Path::operator const String& () const {
+    return mFullName;
+  }
+  
+  Path::operator String& () {
     return mFullName;
   }
   
@@ -331,7 +332,7 @@ namespace gcore {
     return false;
   }
   
-  void Path::each(EnumFunc callback, bool includeSubDirs) const {
+  void Path::each(EachFunc callback, bool includeSubDirs) const {
     if (!isDir() || callback == 0) {
       return;
     }
@@ -401,10 +402,31 @@ namespace gcore {
 #endif
   }
   
-  size_t Path::listDir(List &l) const {
+  namespace details {
+    class DirLister {
+      public:
+        DirLister(PathList &l)
+          : mLst(l) {
+        }
+        bool dirItem(const Path &p) {
+          mLst.push_back(p);
+          return true;
+        }
+      private:
+        DirLister();
+        DirLister& operator=(const DirLister&);
+      protected:
+        PathList &mLst;
+    };
+  }
+  
+  size_t Path::listDir(PathList &l, bool includeSubDirs) const {
+    EachFunc func;
+    details::DirLister dl(l);
+    Bind(&dl, &details::DirLister::dirItem, func);
     l.clear();
-    // TODO
-    return 0;
+    each(func, includeSubDirs);
+    return l.size();
   }
   
   Path Path::GetCurrentDir() {

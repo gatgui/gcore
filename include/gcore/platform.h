@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -31,7 +31,9 @@ USA.
 # ifndef _WIN32_WINNT
 #   define _WIN32_WINNT WINVER
 # endif
+//# define _WIN32_WINNT 0x0500
 # include <windows.h>
+//# include <winsock2.h> // gethostname, requires linking winsock32.lib
 # define DIR_SEP '\\'
 # define PATH_SEP ';'
 #else
@@ -47,6 +49,12 @@ USA.
 # include <signal.h>
 # define DIR_SEP '/'
 # define PATH_SEP ':'
+# ifdef __APPLE__
+#  include <crt_externs.h>
+#  define environ (*_NSGetEnviron())
+# else
+extern char **environ;
+# endif
 #endif
 
 #endif

@@ -30,8 +30,8 @@ bool PathCallback(const gcore::Path &path) {
 }
 
 int main(int, char**) {
-  gcore::Env::Dict all;
-  gcore::Env::Dict::iterator it;
+  gcore::StringDict all;
+  gcore::StringDict::iterator it;
   
   gcore::Env env;
   
@@ -55,9 +55,14 @@ int main(int, char**) {
   std::cout << "BSROOT = \"" << env.get("BSROOT") << "\"" << std::endl;
   
   std::cout << "PATH content..." << std::endl;
-  gcore::Env::EnumPathFunc cb;
+  gcore::Env::EachInPathFunc cb;
   gcore::Bind(PathCallback, cb);
   gcore::Env::EachInPath("PATH", cb);
+  
+  std::cout << "PATH content... (using PathList)" << std::endl;
+  gcore::PathList pl;
+  gcore::Env::ListPaths("PATH", pl);
+  std::cout << pl << std::endl;
   
   return 0;
 }

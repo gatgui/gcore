@@ -25,15 +25,18 @@ USA.
 #define __gcore_string_h_
 
 #include <gcore/config.h>
+#include <gcore/list.h>
 
 namespace gcore {
   
+  class GCORE_API Regexp;
   class GCORE_API RegexpMatch;
+  class GCORE_API StringList;
   
   class GCORE_API String : public std::string {
     public:
       
-      typedef std::vector<String> List;
+      //typedef std::vector<String> List;
       
       String();
       String(const std::string &rhs);
@@ -68,7 +71,8 @@ namespace gcore {
       String& operator=(bool b);
       
       String& strip();
-      size_t split(char c, List &l) const;
+      //size_t split(char c, List &l) const;
+      size_t split(char c, StringList &l) const;
       String& tolower();
       String& toupper();
       String& replace(char c, char by, int maxCount=-1);
@@ -76,7 +80,8 @@ namespace gcore {
       String& replace(const char *s, const char *by, int maxCount=-1);
       bool startswith(const std::string &s) const;
       bool startswith(const char *s) const;
-      String join(const List &l) const;
+      //String join(const List &l) const;
+      String join(const StringList &l) const;
       size_t count(char c) const;
       bool match(const std::string &exp, RegexpMatch *m=0) const;
       bool match(const char *exp, RegexpMatch *m=0) const;
@@ -98,6 +103,25 @@ namespace gcore {
       bool toBool(bool &b) const;
   };
   
+  class GCORE_API StringList : public List<String> {
+    public:
+      
+      StringList();
+      StringList(size_t n, const String &s=String());
+      StringList(const std::vector<String> &rhs);
+      virtual ~StringList();
+      
+      StringList& operator=(const std::vector<String> &rhs);
+      
+      StringList& filter(const Regexp &re);
+      
+      template <typename InputIterator>
+      StringList(InputIterator first, InputIterator last)
+        : List<String>(first, last) {
+      }
+  };
+  
+  typedef std::map<String, String> StringDict;
 }
 
 #endif

@@ -40,11 +40,6 @@ class AClass {
     }
 };
 
-static bool EnumModulePath(const std::string &path) {
-  fprintf(stdout, "Module search path: \"%s\"\n", path.c_str());
-  return true;
-}
-
 int main(int, char **) {
   
   gcore::Path absDir0 = gcore::Path::GetCurrentDir();
@@ -172,7 +167,7 @@ int main(int, char **) {
   gcore::Path cwd = gcore::Path::GetCurrentDir(); 
   fprintf(stdout, "CWD = \"%s\"\n", cwd.fullname().c_str());
   
-  gcore::Path path0 = cwd + "SContruct";
+  gcore::Path path0 = cwd + "SConstruct";
   fprintf(stdout, "\"%s\" + \"%s\" = \"%s\"\n", cwd.fullname().c_str(), "SConstruct", path0.fullname().c_str());
   
   gcore::Path path1 = gcore::Path("./") + "SConstruct";
@@ -240,7 +235,7 @@ int main(int, char **) {
   
   
   AClass a;
-  gcore::Path::EnumFunc c1;
+  gcore::Path::EachFunc c1;
   gcore::Bind(&a, METHOD(AClass, FileFound), c1);
   relDir1.each(c1, true);
   

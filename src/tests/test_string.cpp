@@ -24,6 +24,10 @@ USA.
 #include <gcore/string.h>
 #include <gcore/path.h>
 
+void QuoteString(gcore::String &s) {
+  s = "\"" + s + "\"";
+}
+
 int main(int, char**) {
   
   gcore::String s0 = "Z:\\ve\\home/GaetanG/dev\\deploy";
@@ -34,7 +38,7 @@ int main(int, char**) {
   gcore::String s2 = s1;
   s2.replace("GaetanG", "PetitN");
   
-  gcore::String::List splits;
+  gcore::StringList splits;
   s2.split('/', splits);
   for (size_t i=0; i<splits.size(); ++i) {
     splits[i].strip();
@@ -48,9 +52,10 @@ int main(int, char**) {
   std::cout << "ToLower s2:" << std::endl;
   std::cout << "   = \"" << s2.tolower() << "\"" << std::endl;
   std::cout << "Split Strip s1:" << std::endl;
-  for (size_t i=0; i<splits.size(); ++i) {
-    std::cout << "  \"" << splits[i] << "\"" << std::endl;
-  }
+  
+  gcore::StringList::MapFunc quote;
+  gcore::Bind(QuoteString, quote);
+  std::cout << splits.map(quote) << std::endl;
   
   return 0;
 }

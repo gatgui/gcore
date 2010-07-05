@@ -57,7 +57,7 @@ namespace gcore {
       void pop();
       
       bool isSet(const String &key) const;
-      String get(const String &key);
+      String get(const String &key) const;
       void set(const String &key, const String &val, bool overwrite);
       void setAll(const StringDict &d, bool overwrite);
       

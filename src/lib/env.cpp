@@ -158,14 +158,15 @@ void Env::setAll(const StringDict &d, bool overwrite) {
 }
 
 bool Env::isSet(const String &k) const {
-#ifndef _WIN32
-  return (getenv(k.c_str()) != 0);
-#else
-  return (GetEnvironmentVariableA(k.c_str(), NULL, 0) > 0);
-#endif
+//#ifndef _WIN32
+//  return (getenv(k.c_str()) != 0);
+//#else
+//  return (GetEnvironmentVariableA(k.c_str(), NULL, 0) > 0);
+//#endif
+  return (get(k) != "");
 }
 
-String Env::get(const String &k) {
+String Env::get(const String &k) const {
   std::string rv;
 #ifndef _WIN32
   char *v = getenv(k.c_str());

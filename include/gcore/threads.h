@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -24,7 +24,6 @@ USA.
 #ifndef __gcore_threads_h_
 #define __gcore_threads_h_
 
-#include <gcore/config.h>
 #include <gcore/functor.h>
 
 namespace gcore {

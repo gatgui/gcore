@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -107,7 +107,7 @@ void gcore::Pipe::closeWrite() {
   }
 }
 
-int gcore::Pipe::read(std::string &str) const {
+int gcore::Pipe::read(String &str) const {
 
   char rdbuf[256];
 
@@ -149,7 +149,7 @@ int gcore::Pipe::read(std::string &str) const {
   return -1;
 }
 
-int gcore::Pipe::write(const std::string &str) const {
+int gcore::Pipe::write(const String &str) const {
   if (canWrite()) {
 #ifndef _WIN32
     int bytesToWrite = str.length();

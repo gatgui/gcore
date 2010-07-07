@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -23,6 +23,7 @@ USA.
 
 #include <gcore/process.h>
 #include <gcore/platform.h>
+#include <gcore/env.h>
 
 //------------------------------------------------------------------------------
 
@@ -70,28 +71,28 @@ void gcore::Process::closePipes() {
   mErrorPipe.close();
 }
 
-int gcore::Process::read(std::string &str) const {
+int gcore::Process::read(String &str) const {
   if (mReadPipe.canRead()) {
     return mReadPipe.read(str);
   }
   return -1;
 }
 
-int gcore::Process::write(const std::string &str) const {
+int gcore::Process::write(const String &str) const {
   if (mWritePipe.canWrite()) {
     return mWritePipe.write(str);
   }
   return -1;
 }
 
-int gcore::Process::readErr(std::string &str) const {
+int gcore::Process::readErr(String &str) const {
   if (mErrorPipe.canRead()) {
     return mErrorPipe.read(str);
   }
   return -1;
 }
 
-int gcore::Process::writeErr(const std::string &str) const {
+int gcore::Process::writeErr(const String &str) const {
   if (mErrorPipe.canWrite()) {
     return mErrorPipe.write(str);
   }
@@ -109,7 +110,7 @@ void gcore::Process::setOutputFunc(gcore::Process::OutputFunc of) {
   }
 }
 
-void gcore::Process::setEnv(const std::string &key, const std::string &value) {
+void gcore::Process::setEnv(const String &key, const String &value) {
   mEnv[key] = value;
 }
 
@@ -249,11 +250,7 @@ gcore::ProcessID gcore::Process::run() {
       iPipe.close();
     }
     
-    std::map<std::string, std::string>::iterator it = mEnv.begin();
-    while (it != mEnv.end()) {
-      setenv(it->first.c_str(), it->second.c_str(), 1);
-      ++it;
-    }
+    Env::SetAll(mEnv, true);
     
     int failed = execvp(mArgs[0].c_str(), mStdArgs);
     
@@ -356,26 +353,16 @@ gcore::ProcessID gcore::Process::run() {
   // this is to hide console if requested
   sinfo.wShowWindow = (mShowConsole ? SW_SHOW : SW_HIDE);
   
-  std::map<std::string, std::string> oldEnv;
-  std::map<std::string, std::string>::iterator envIt;
+  // on windows, CreateProcess will do the fork internally
+  // need to setup the env before
+  // OR find the equivalent of fork/exec 
+  Env env;
   
-  // override environment
-  // on windows a single env var max size is 32,767 characters (including '\0')
-  // have a statically sized buffer of 32k?
-  envIt = mEnv.begin();
-  while (envIt != mEnv.end()) {
-    DWORD len = GetEnvironmentVariableA(envIt->first.c_str(), NULL, 0);
-    if (len > 0) {
-      char *tmp = new char[len];
-      GetEnvironmentVariableA(envIt->first.c_str(), tmp, len);
-      oldEnv[envIt->first] = tmp;
-      free(tmp);
-    } else {
-      oldEnv[envIt->first] = "";
-    }
-    SetEnvironmentVariableA(envIt->first.c_str(), envIt->second.c_str());
-    ++envIt;
-  }
+  // backup current environment
+  env.push();
+  
+  // modify environment
+  env.setAll(mEnv, true);
   
   if (CreateProcess(NULL, (char*)mCmdLine.c_str(), NULL, NULL,
                     TRUE, 0, 0, NULL, &sinfo, &pinfo)) {
@@ -396,11 +383,7 @@ gcore::ProcessID gcore::Process::run() {
     }
     
     // restore environment
-    envIt = oldEnv.begin();
-    while (envIt != oldEnv.end()) {
-      SetEnvironmentVariableA(envIt->first.c_str(), envIt->second.c_str());
-      ++envIt;
-    }
+    env.pop();
     
   } else {
     mPID = INVALID_PID;
@@ -412,26 +395,26 @@ gcore::ProcessID gcore::Process::run() {
 
 }
 
-gcore::ProcessID gcore::Process::run(const std::string &progPath, char **argv) {
+gcore::ProcessID gcore::Process::run(const String &progPath, char **argv) {
   mArgs.clear();
-  mArgs.push_back(progPath);
+  mArgs.push(progPath);
   char **carg = argv;
   while (*carg) {
-    std::string argi = *carg;
-    mArgs.push_back(argi);
+    String argi = *carg;
+    mArgs.push(argi);
     carg++;
   }
   return run();
 }
 
-gcore::ProcessID gcore::Process::run(const std::string &progPath, int argc, ...) {
+gcore::ProcessID gcore::Process::run(const String &progPath, int argc, ...) {
   mArgs.clear();
-  mArgs.push_back(progPath);
+  mArgs.push(progPath);
   va_list va;
   va_start(va, argc);
   for (int i=0; i<argc; ++i) {
-    std::string argi = va_arg(va,char*);
-    mArgs.push_back(argi);
+    String argi = va_arg(va,char*);
+    mArgs.push(argi);
   }
   va_end(va);
   return run();

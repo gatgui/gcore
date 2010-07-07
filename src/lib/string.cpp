@@ -223,15 +223,14 @@ String& String::operator=(bool b) {
 }
 
 String& String::strip() {
-  size_t from = find_first_not_of(" \t\r\n\v");
-  size_t to   = find_last_not_of(" \t\r\n\v");
-  if (from == npos) {
-    *this = "";
+  size_t p = find_first_not_of(" \t\r\n\v");
+  if (p == npos) {
+    assign("");
   } else {
-    if (to == npos) {
-      *this = substr(from);
-    } else {
-      *this = substr(from, to-from+1);
+    erase(0, p);
+    p = find_last_not_of(" \t\r\n\v");
+    if (p != npos) {
+      erase(p+1);
     }
   }
   return *this;
@@ -421,7 +420,7 @@ String& String::subst(const std::string &ex, const std::string &by) {
   Regexp re(ex.c_str(), REX_CAPTURE);
   RegexpMatch md;
   if (re.match(*this, md)) {
-    *this = re.substitute(md, by);
+    assign(re.substitute(md, by));
   }
   return *this;
 }
@@ -430,7 +429,7 @@ String& String::subst(const char *ex, const char *by) {
   Regexp re(ex, REX_CAPTURE);
   RegexpMatch md;
   if (re.match(*this, md)) {
-    *this = re.substitute(md, by);
+    assign(re.substitute(md, by));
   }
   return *this;
 }
@@ -476,9 +475,14 @@ bool String::toDouble(double &d) const {
 }
 
 bool String::toBool(bool &b) const {
-  static Regexp sBoolExp(IEC("(true|1)"), REX_ICASE);
-  b = sBoolExp.match(*this);
-  return true;
+  if (compare("0") == 0 || casecompare("false") == 0 || casecompare("off") == 0) {
+    b = false;
+    return true;
+  } else if (compare("1") == 0 || casecompare("true") == 0 || casecompare("on") == 0) {
+    b = true;
+    return true;
+  }
+  return false;
 }
 
 }

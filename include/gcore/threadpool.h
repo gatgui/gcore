@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -25,6 +25,7 @@ USA.
 #define __gcore_threadpool_h_
 
 #include <gcore/threads.h>
+#include <gcore/list.h>
 
 namespace gcore {
   
@@ -96,7 +97,7 @@ namespace gcore {
 
     protected:
 
-      std::vector<Worker*> mWorkers;
+      List<Worker*> mWorkers;
       Mutex mWorkersAccess;
       Condition mWorkersChanged;
       

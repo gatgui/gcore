@@ -95,6 +95,14 @@ namespace gcore {
         return val;
       }
       
+      inline void push(const T &val) {
+        std::vector<T, Allocator>::push_back(val);
+      }
+      
+      inline void pop() {
+        std::vector<T, Allocator>::pop_back();
+      }
+      
       List<T, Allocator> operator()(long from=0, long to=-1) {
         List<T, Allocator> rv;
         if (from < 0) {

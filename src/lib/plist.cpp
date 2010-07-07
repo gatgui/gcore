@@ -27,30 +27,33 @@ USA.
 
 // --- Utils
 
-static std::string ReadLine(std::istream &is) {
-  std::string line;
+static gcore::String ReadLine(std::istream &is) {
+  gcore::String line;
   std::getline(is, line);
+  /*
   if (line.length() > 0) {
     size_t p;
     if (line[line.length()-1] == '\r') {
       line.erase(line.length()-1, 1);
     }
     p = line.find_first_not_of(" \t\v");
-    if (p != std::string::npos) {
+    if (p != gcore::String::npos) {
       line.erase(0, p);
     }
     p = line.find_last_not_of(" \t\v");
-    if (p != std::string::npos) {
+    if (p != gcore::String::npos) {
       line.erase(p+1);
     }
   }
+  */
+  line.strip();
 #ifdef _DEBUG
   std::cout << ">> \"" << line << "\"" << std::endl;
 #endif
   return line;
 }
 
-static std::string ReadOpenTag(const std::string &line, std::string &b, std::string &a) {
+static gcore::String ReadOpenTag(const gcore::String &line, gcore::String &b, gcore::String &a) {
   static const gcore::Regexp tagopen(IEC("<([-\w]+)(\s+[^>]*)?>"), gcore::REX_CAPTURE);
   gcore::RegexpMatch md;
   if (tagopen.match(line, md)) {
@@ -64,12 +67,12 @@ static std::string ReadOpenTag(const std::string &line, std::string &b, std::str
   }
 }
 
-static std::string ReadOpenTag(std::istream &is, std::string &b, std::string &a) {
-  std::string line = ReadLine(is);
+static gcore::String ReadOpenTag(std::istream &is, gcore::String &b, gcore::String &a) {
+  gcore::String line = ReadLine(is);
   return ReadOpenTag(line, b, a);
 }
 
-static bool ReadCloseTag(const std::string &name, const std::string &line, std::string &b, std::string &a) {
+static bool ReadCloseTag(const gcore::String &name, const gcore::String &line, gcore::String &b, gcore::String &a) {
   gcore::Regexp tagclose("</" + name + ">");
   gcore::RegexpMatch md;
   if (tagclose.match(line, md)) {
@@ -82,7 +85,7 @@ static bool ReadCloseTag(const std::string &name, const std::string &line, std::
   }
 }
 
-static void AppendXMLString(std::string &dst, const std::string &str) {
+static void AppendXMLString(gcore::String &dst, const gcore::String &str) {
   if (str.length() > 0) {
     if (dst.length() > 0) {
       dst += " ";
@@ -91,7 +94,7 @@ static void AppendXMLString(std::string &dst, const std::string &str) {
   }
 }
 
-static bool ContainsTag(const std::string &line) {
+static bool ContainsTag(const gcore::String &line) {
   static const gcore::Regexp tag(IEC("</?[-\w]+>"));
   gcore::RegexpMatch md;
   if (tag.match(line, md)) {
@@ -101,9 +104,9 @@ static bool ContainsTag(const std::string &line) {
   }
 }
 
-static bool ReadKey(std::istream &xml, std::string &remain, std::string &key) {
+static bool ReadKey(std::istream &xml, gcore::String &remain, gcore::String &key) {
   
-  std::string before, after, tag;
+  gcore::String before, after, tag;
   bool failed = false;
   
   do {
@@ -173,9 +176,9 @@ static bool ReadKey(std::istream &xml, std::string &remain, std::string &key) {
   return false;
 }
 
-static gcore::plist::Value* ReadValue(std::istream &xml, std::string &remain) {
+static gcore::plist::Value* ReadValue(std::istream &xml, gcore::String &remain) {
   
-  std::string before, after, tag;
+  gcore::String before, after, tag;
   bool failed = false;
   
   do {
@@ -237,21 +240,21 @@ static gcore::plist::Value* ReadValue(std::istream &xml, std::string &remain) {
 
 namespace gcore {
 
-plist::Exception::Exception(const std::string &prop)
+plist::Exception::Exception(const gcore::String &prop)
   : std::exception(), mStr("*** PropertyList Error: [" + prop + "] Unknown") {
 }
 
-plist::Exception::Exception(const std::string &prop, const std::string &str)
+plist::Exception::Exception(const gcore::String &prop, const gcore::String &str)
   : std::exception(), mStr("*** PropertyList Error: [" + prop + "]" + str) {
 }
 
-plist::Exception::Exception(const std::string &prop, const char *fmt, ...) {
+plist::Exception::Exception(const gcore::String &prop, const char *fmt, ...) {
   char buffer[1024];
   va_list vl;
   va_start(vl, fmt);  
   vsprintf(buffer, fmt, vl);
   va_end(vl);
-  mStr = std::string("*** PropertyList Error: [") + prop + "] " + buffer;
+  mStr = gcore::String("*** PropertyList Error: [") + prop + "] " + buffer;
 }
 
 plist::Exception::~Exception() throw() {
@@ -278,11 +281,11 @@ plist::InvalidValue::InvalidValue() {
 plist::InvalidValue::~InvalidValue() {
 }
 
-bool plist::InvalidValue::fromXML(std::istream&, std::string&)  {
+bool plist::InvalidValue::fromXML(std::istream&, gcore::String&)  {
   return false;
 }
 
-void plist::InvalidValue::toXML(std::ostream &, const std::string &) const {
+void plist::InvalidValue::toXML(std::ostream &, const gcore::String &) const {
   return;
 }
 
@@ -295,7 +298,7 @@ plist::String::String()
   mType = PropertyList::ValueTypeID("string");
 }
 
-plist::String::String(const std::string &str)
+plist::String::String(const gcore::String &str)
   : mValue(str) {
   mNull = false;
   mType = PropertyList::ValueTypeID("string");
@@ -304,8 +307,8 @@ plist::String::String(const std::string &str)
 plist::String::~String() {
 }
 
-bool plist::String::fromXML(std::istream &xml, std::string &remain) {
-  std::string before, after;
+bool plist::String::fromXML(std::istream &xml, gcore::String &remain) {
+  gcore::String before, after;
   
   if (remain.length() == 0) {
     remain = ReadLine(xml);
@@ -341,7 +344,7 @@ bool plist::String::fromXML(std::istream &xml, std::string &remain) {
   return true;
 }
 
-void plist::String::toXML(std::ostream &xml, const std::string &indent="") const {
+void plist::String::toXML(std::ostream &xml, const gcore::String &indent="") const {
   xml << indent << "<string>" << mValue << "</string>" << std::endl;
 }
     
@@ -370,14 +373,14 @@ plist::Integer::Integer(long value)
 plist::Integer::~Integer() {
 }
 
-bool plist::Integer::fromXML(std::istream &xml, std::string &remain) {
-  std::string before, after;
+bool plist::Integer::fromXML(std::istream &xml, gcore::String &remain) {
+  gcore::String before, after;
   
   if (remain.length() == 0) {
     remain = ReadLine(xml);
   }
   
-  std::string content = "";
+  gcore::String content = "";
   
   while (!ReadCloseTag("integer", remain, before, after)) {
     if (ContainsTag(remain)) {
@@ -414,7 +417,7 @@ bool plist::Integer::fromXML(std::istream &xml, std::string &remain) {
   return true;
 }
 
-void plist::Integer::toXML(std::ostream &xml, const std::string &indent="") const {
+void plist::Integer::toXML(std::ostream &xml, const gcore::String &indent="") const {
   xml << indent << "<integer>" << mValue << "</integer>" << std::endl;
 }
 
@@ -443,14 +446,14 @@ plist::Real::Real(double value)
 plist::Real::~Real() {
 }
 
-bool plist::Real::fromXML(std::istream &xml, std::string &remain) {
-  std::string before, after;
+bool plist::Real::fromXML(std::istream &xml, gcore::String &remain) {
+  gcore::String before, after;
   
   if (remain.length() == 0) {
     remain = ReadLine(xml);
   }
   
-  std::string content = "";
+  gcore::String content = "";
   
   while (!ReadCloseTag("real", remain, before, after)) {
     if (ContainsTag(remain)) {
@@ -487,7 +490,7 @@ bool plist::Real::fromXML(std::istream &xml, std::string &remain) {
   return true;
 }
 
-void plist::Real::toXML(std::ostream &xml, const std::string &indent="") const {
+void plist::Real::toXML(std::ostream &xml, const gcore::String &indent="") const {
   xml << indent << "<real>" << mValue << "</real>" << std::endl;
 }
 
@@ -516,17 +519,17 @@ plist::Boolean::Boolean(bool value)
 plist::Boolean::~Boolean() {
 }
 
-bool plist::Boolean::fromXML(std::istream &xml, std::string &remain) {
+bool plist::Boolean::fromXML(std::istream &xml, gcore::String &remain) {
   static const Regexp trueexp(IEC("^\s*true\s*$"), REX_ICASE);
   static const Regexp falseexp(IEC("^\s*false\s*$"), REX_ICASE);
   
-  std::string before, after;
+  gcore::String before, after;
   
   if (remain.length() == 0) {
     remain = ReadLine(xml);
   }
   
-  std::string content = "";
+  gcore::String content = "";
   
   while (!ReadCloseTag("boolean", remain, before, after)) {
     if (ContainsTag(remain)) {
@@ -570,7 +573,7 @@ bool plist::Boolean::fromXML(std::istream &xml, std::string &remain) {
   return true;
 }
 
-void plist::Boolean::toXML(std::ostream &xml, const std::string &indent="") const {
+void plist::Boolean::toXML(std::ostream &xml, const gcore::String &indent="") const {
   xml << indent << "<boolean>" << (mValue ? "true" : "false") << "</boolean>" << std::endl;
 }
 
@@ -589,7 +592,7 @@ plist::Array::Array() {
   mType = PropertyList::ValueTypeID("array");
 }
 
-plist::Array::Array(const std::vector<Value*> &val)
+plist::Array::Array(const List<Value*> &val)
   : mValues(val) {
   mNull = false;
   mType = PropertyList::ValueTypeID("array");
@@ -639,16 +642,16 @@ void plist::Array::set(size_t idx, Value *v, bool replace) {
     }
   }
   while (idx >= mValues.size()) {
-    mValues.push_back(0);
+    mValues.push(0);
   }
   mValues[idx] = v;
 }
 
-bool plist::Array::fromXML(std::istream &xml, std::string &remain) {
+bool plist::Array::fromXML(std::istream &xml, gcore::String &remain) {
   
   clear();
   
-  std::string before, after;
+  gcore::String before, after;
   
   if (remain.length() == 0) {
     remain = ReadLine(xml);
@@ -656,7 +659,7 @@ bool plist::Array::fromXML(std::istream &xml, std::string &remain) {
   
   while (!ReadCloseTag("array", remain, before, after)) {
     
-    std::string tag = ReadOpenTag(remain, before, after);
+    gcore::String tag = ReadOpenTag(remain, before, after);
     
     if (tag.length() > 0) {
       // Found an opening tag in remaining of line
@@ -685,7 +688,7 @@ bool plist::Array::fromXML(std::istream &xml, std::string &remain) {
 #ifdef _DEBUG
       std::cout << "Append value to array" << std::endl;
 #endif
-      mValues.push_back(v);
+      mValues.push(v);
       
       remain = after;
       if (remain.length() == 0) {
@@ -718,7 +721,7 @@ bool plist::Array::fromXML(std::istream &xml, std::string &remain) {
   return true;
 }
 
-void plist::Array::toXML(std::ostream &xml, const std::string &indent="") const {
+void plist::Array::toXML(std::ostream &xml, const gcore::String &indent="") const {
   xml << indent << "<array>" << std::endl;
   for (size_t i=0; i<mValues.size(); ++i) {
     if (mValues[i]) {
@@ -743,7 +746,7 @@ plist::Dictionary::Dictionary() {
   mType = PropertyList::ValueTypeID("dict");
 }
 
-plist::Dictionary::Dictionary(const std::map<std::string, Value*> &val)
+plist::Dictionary::Dictionary(const std::map<gcore::String, Value*> &val)
   : mPairs(val) {
   mNull = false;
   mType = PropertyList::ValueTypeID("dict");
@@ -754,7 +757,7 @@ plist::Dictionary::~Dictionary() {
 }
   	
 void plist::Dictionary::clear() {
-  std::map<std::string, Value*>::iterator it = mPairs.begin();
+  std::map<gcore::String, Value*>::iterator it = mPairs.begin();
   while (it != mPairs.end()) {
     if (it->second) {
       delete it->second;
@@ -764,13 +767,13 @@ void plist::Dictionary::clear() {
   mPairs.clear();
 }
 
-bool plist::Dictionary::has(const std::string &key) const {
+bool plist::Dictionary::has(const gcore::String &key) const {
   return (mPairs.find(key) != mPairs.end());
 }
 
-plist::Value* plist::Dictionary::value(const std::string &key) {
+plist::Value* plist::Dictionary::value(const gcore::String &key) {
   static plist::InvalidValue dummy = plist::InvalidValue();
-  std::map<std::string, Value*>::iterator it = mPairs.find(key);
+  std::map<gcore::String, Value*>::iterator it = mPairs.find(key);
   if (it == mPairs.end()) {
     return &dummy;
   }
@@ -780,9 +783,9 @@ plist::Value* plist::Dictionary::value(const std::string &key) {
   return it->second;
 }
 
-const plist::Value* plist::Dictionary::value(const std::string &key) const {
+const plist::Value* plist::Dictionary::value(const gcore::String &key) const {
   static plist::InvalidValue dummy = plist::InvalidValue();
-  std::map<std::string, Value*>::const_iterator it = mPairs.find(key);
+  std::map<gcore::String, Value*>::const_iterator it = mPairs.find(key);
   if (it == mPairs.end()) {
     return &dummy;
   }
@@ -792,7 +795,7 @@ const plist::Value* plist::Dictionary::value(const std::string &key) const {
   return it->second;
 }
 
-void plist::Dictionary::set(const std::string &key, Value *v, bool replace) {
+void plist::Dictionary::set(const gcore::String &key, Value *v, bool replace) {
   if (has(key)) {
     if (!replace) {
       return;
@@ -802,11 +805,11 @@ void plist::Dictionary::set(const std::string &key, Value *v, bool replace) {
   mPairs[key] = v;
 }
 
-bool plist::Dictionary::fromXML(std::istream &xml, std::string &remain) {
+bool plist::Dictionary::fromXML(std::istream &xml, gcore::String &remain) {
   
   clear();
   
-  std::string before, after, key, tag;
+  gcore::String before, after, key, tag;
   
   if (remain.length() == 0) {
     remain = ReadLine(xml);
@@ -852,10 +855,10 @@ bool plist::Dictionary::fromXML(std::istream &xml, std::string &remain) {
   return true;
 }
 
-void plist::Dictionary::toXML(std::ostream &xml, const std::string &indent="") const {
+void plist::Dictionary::toXML(std::ostream &xml, const gcore::String &indent="") const {
   xml << indent << "<dict>" << std::endl;
-  std::map<std::string, Value*>::const_iterator it = mPairs.begin();
-  std::string sindent = indent + "  ";
+  std::map<gcore::String, Value*>::const_iterator it = mPairs.begin();
+  gcore::String sindent = indent + "  ";
   
   while (it != mPairs.end()) {
     if (it->second) {
@@ -893,7 +896,7 @@ void PropertyList::ClearTypes() {
   msValueDesc.clear();
 }
 
-plist::Value* PropertyList::NewValue(const std::string &type) {
+plist::Value* PropertyList::NewValue(const String &type) {
   ValueDescIterator it = msValueDesc.find(type);
   if (it != msValueDesc.end()) {
     plist::Value *v = it->second.ctor();
@@ -903,7 +906,7 @@ plist::Value* PropertyList::NewValue(const std::string &type) {
   }
 }
 
-long PropertyList::ValueTypeID(const std::string &type) {
+long PropertyList::ValueTypeID(const String &type) {
   ValueDescIterator it = msValueDesc.find(type);
   if (it != msValueDesc.end()) {
     return it->second.id;
@@ -912,8 +915,8 @@ long PropertyList::ValueTypeID(const std::string &type) {
   }
 }
 
-const std::string& PropertyList::ValueTypeName(long id) {
-  static const std::string null = "Null";
+const String& PropertyList::ValueTypeName(long id) {
+  static const String null = "Null";
   ValueDescIterator it = msValueDesc.begin();
   while (it != msValueDesc.end()) {
     if (it->second.id == id) {
@@ -942,7 +945,7 @@ void PropertyList::create() {
   mTop = new plist::Dictionary();
 }
   
-void PropertyList::write(const std::string &filename) const {
+void PropertyList::write(const String &filename) const {
   std::ofstream xml(filename.c_str());
   xml << "<?xml version=\"1.0\" encoding=\"ISO-8859-1\" standalone=\"yes\" ?>"
       << std::endl;
@@ -952,7 +955,7 @@ void PropertyList::write(const std::string &filename) const {
   xml << std::endl;
 }
 
-bool PropertyList::read(const std::string &filename) {
+bool PropertyList::read(const String &filename) {
   static const gcore::Regexp header(IEC("<\?xml\s.*\?>"));
   
   if (mTop) {
@@ -969,7 +972,7 @@ bool PropertyList::read(const std::string &filename) {
     return false;
   }
   
-  std::string line = ReadLine(xml);
+  String line = ReadLine(xml);
   
   gcore::RegexpMatch md;
   
@@ -980,8 +983,8 @@ bool PropertyList::read(const std::string &filename) {
     return false;
   }
   
-  std::string before, after;
-  std::string tag = ReadOpenTag(xml, before, after);
+  String before, after;
+  String tag = ReadOpenTag(xml, before, after);
 
   if (tag != "dict") {
 #ifdef _DEBUG
@@ -1009,11 +1012,11 @@ bool PropertyList::read(const std::string &filename) {
 // common parts in one function
 
 static plist::Value* GetPropertyMember(plist::Dictionary* &cdict,
-                                        const std::string &pre,
-                                        const std::string &current,
-                                        bool final=false) throw(plist::Exception) {
-
-  std::string cprop = pre;
+                                       const String &pre,
+                                       const String &current,
+                                       bool final=false) throw(plist::Exception)
+{
+  String cprop = pre;
 
   const char *c = current.c_str();
   const char *b = strchr(c, '[');
@@ -1036,15 +1039,15 @@ static plist::Value* GetPropertyMember(plist::Dictionary* &cdict,
         size_t to = b - current.c_str();
         long idx;
         
-        std::string member = current.substr(from, to-from);
+        String member = current.substr(from, to-from);
         cprop += member; // might be 0 for multiple dim array... that's ok
         
         from = to + 1;
         to = e - current.c_str();
         
-        std::string number = current.substr(from, to-from);
+        String number = current.substr(from, to-from);
         
-        if (number.find_first_not_of("0123456789") != std::string::npos) {
+        if (number.find_first_not_of("0123456789") != String::npos) {
           throw plist::Exception(cprop, "Invalid subscript (%s)", number.c_str());
         }
         
@@ -1137,13 +1140,12 @@ static plist::Value* GetPropertyMember(plist::Dictionary* &cdict,
   return 0;
 }
 
-
 static void SetPropertyMember(plist::Dictionary* &cdict,
-                              const std::string &pre,
-                              const std::string &current,
-                              plist::Value *value=0) throw(plist::Exception) {
-
-  std::string cprop = pre;
+                              const String &pre,
+                              const String &current,
+                              plist::Value *value=0) throw(plist::Exception)
+{
+  String cprop = pre;
 
   const char *c = current.c_str();
   const char *b = strchr(c, '[');
@@ -1166,15 +1168,15 @@ static void SetPropertyMember(plist::Dictionary* &cdict,
         size_t to = b - current.c_str();
         long idx;
         
-        std::string member = current.substr(from, to-from);
+        String member = current.substr(from, to-from);
         cprop += member; // might be 0 for multiple dim array... that's ok
         
         from = to + 1;
         to = e - current.c_str();
         
-        std::string number = current.substr(from, to-from);
+        String number = current.substr(from, to-from);
         
-        if (number.find_first_not_of("0123456789") != std::string::npos) {
+        if (number.find_first_not_of("0123456789") != String::npos) {
           throw plist::Exception(cprop, "Invalid subscript (%s)", number.c_str());
         }
         
@@ -1286,18 +1288,19 @@ static void SetPropertyMember(plist::Dictionary* &cdict,
 }
 
 static plist::Value* GetProperty(plist::Dictionary *dict,
-                                  const std::string &prop) throw(plist::Exception) {
+                                 const String &prop) throw(plist::Exception)
+{
   if (!dict) {
     throw plist::Exception("", "Passed null dictionary pointer");
   }
   
   plist::Dictionary *cdict = dict;
   
-  std::string current, pre = "", remain = prop;
+  String current, pre = "", remain = prop;
   
   size_t pos = remain.find('.');
   
-  while (pos != std::string::npos) {
+  while (pos != String::npos) {
     
     current = remain.substr(0, pos);
     
@@ -1317,20 +1320,20 @@ static plist::Value* GetProperty(plist::Dictionary *dict,
 }
 
 static void SetProperty(plist::Dictionary *dict,
-                         const std::string &prop,
-                         plist::Value *value) throw(plist::Exception) {
-  
+                        const String &prop,
+                        plist::Value *value) throw(plist::Exception)
+{
   if (!dict) {
     throw plist::Exception("", "Passed null dictionary pointer");
   }
                           
   plist::Dictionary *cdict = dict;
   
-  std::string current, pre = "", remain = prop;
+  String current, pre = "", remain = prop;
   
   size_t pos = remain.find('.');
   
-  while (pos != std::string::npos) {
+  while (pos != String::npos) {
     
     current = remain.substr(0, pos);
     
@@ -1351,7 +1354,8 @@ static void SetProperty(plist::Dictionary *dict,
 
 template <typename T>
 static typename T::ReturnType GetTypedProperty(plist::Dictionary *dict,
-                                                 const std::string &prop) throw(plist::Exception) {
+                                               const String &prop) throw(plist::Exception)
+{
   const plist::Value *val = GetProperty(dict, prop);
   const T *rv=0;
   if (!val->checkType(rv)) {
@@ -1364,8 +1368,9 @@ static typename T::ReturnType GetTypedProperty(plist::Dictionary *dict,
 
 template <typename T>
 static void SetTypedProperty(plist::Dictionary *dict,
-                              const std::string &prop,
-                              typename T::InputType value) throw(plist::Exception) {
+                             const String &prop,
+                             typename T::InputType value) throw(plist::Exception)
+{
   T *v = new T(value);
   try {
     SetProperty(dict, prop, v);
@@ -1375,40 +1380,40 @@ static void SetTypedProperty(plist::Dictionary *dict,
   }
 }
 
-unsigned long PropertyList::getArraySize(const std::string &p) const throw(plist::Exception) {
+unsigned long PropertyList::getArraySize(const String &p) const throw(plist::Exception) {
   plist::Array::ReturnType ary = GetTypedProperty<plist::Array>(mTop, p);
   return (unsigned long)(ary.size());
 }
 
-const std::string& PropertyList::getString(const std::string &p) const throw(plist::Exception) {
+const String& PropertyList::getString(const String &p) const throw(plist::Exception) {
   return GetTypedProperty<plist::String>(mTop, p);
 }
 
-long PropertyList::getInteger(const std::string &p) const throw(plist::Exception) {
+long PropertyList::getInteger(const String &p) const throw(plist::Exception) {
   return GetTypedProperty<plist::Integer>(mTop, p);
 }
 
-double PropertyList::getReal(const std::string &p) const throw(plist::Exception) {
+double PropertyList::getReal(const String &p) const throw(plist::Exception) {
   return GetTypedProperty<plist::Real>(mTop, p);
 }
 
-bool PropertyList::getBoolean(const std::string &p) const throw(plist::Exception) {
+bool PropertyList::getBoolean(const String &p) const throw(plist::Exception) {
   return GetTypedProperty<plist::Boolean>(mTop, p);
 }
 
-void PropertyList::setString(const std::string &prop, const std::string &str) throw(plist::Exception) {
+void PropertyList::setString(const String &prop, const String &str) throw(plist::Exception) {
   SetTypedProperty<plist::String>(mTop, prop, str);
 }
 
-void PropertyList::setReal(const std::string &prop, double val) throw(plist::Exception) {
+void PropertyList::setReal(const String &prop, double val) throw(plist::Exception) {
   SetTypedProperty<plist::Real>(mTop, prop, val);
 }
 
-void PropertyList::setInteger(const std::string &prop, long val) throw(plist::Exception) {
+void PropertyList::setInteger(const String &prop, long val) throw(plist::Exception) {
   SetTypedProperty<plist::Integer>(mTop, prop, val);
 }
 
-void PropertyList::setBoolean(const std::string &prop, bool val) throw(plist::Exception) {
+void PropertyList::setBoolean(const String &prop, bool val) throw(plist::Exception) {
   SetTypedProperty<plist::Boolean>(mTop, prop, val);
 }
 

@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -191,7 +191,7 @@ void* ChunkAllocator::allocate() {
         mChunks.reserve(mChunks.size() + 1);
         Chunk newChunk;
         newChunk.initialize(mBlockSize, mNumBlocks);
-        mChunks.push_back(newChunk);
+        mChunks.push(newChunk);
         mLastAlloc = &(mChunks.back());
         mLastDealloc = &(mChunks.front());
         break;
@@ -255,14 +255,14 @@ void ChunkAllocator::deallocate(void *ptr) {
       // we deallocated from last chunk
       if (mChunks.size() > 1 && mLastDealloc[-1].numFreeBlocks == mNumBlocks) {
         lastChunk.release();
-        mChunks.pop_back();
+        mChunks.pop();
         mLastAlloc = mLastDealloc = &(mChunks.front());
       }
     } else {
       if (lastChunk.numFreeBlocks == mNumBlocks) {
         // last chunk is also empty, we can release it
         lastChunk.release();
-        mChunks.pop_back();
+        mChunks.pop();
         mLastAlloc = mLastDealloc;
       } else {
         // move this chunks to the end

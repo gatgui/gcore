@@ -22,7 +22,6 @@ USA.
 */
 
 #include <gcore/date.h>
-#include <gcore/platform.h>
 
 static const char *gsShortMonths[] = {
   "Jan",
@@ -85,7 +84,7 @@ static time_t gsSecsPerYear   = 365 * gsSecsPerDay;
 
 namespace gcore {
 
-std::string GetDate() {
+String GetDate() {
   char buffer[256];
   time_t curt = time(NULL);
   struct tm *t = 0;
@@ -181,7 +180,7 @@ Int64 Date::get() const {
   return r;
 }
 
-std::string Date::toString() const {
+String Date::toString() const {
   
   char buffer[256];
   
@@ -201,7 +200,7 @@ std::string Date::toString() const {
   return buffer;
 }
 
-std::string Date::strftime(const std::string &fmt) const {
+String Date::strftime(const String &fmt) const {
   
   if (mIsDiff) {
     // allow only a subset of the formats?
@@ -216,7 +215,7 @@ std::string Date::strftime(const std::string &fmt) const {
   return buffer;
 }
 
-std::string Date::format(const std::string &fmt) const {
+String Date::format(const String &fmt) const {
   
   if (mIsDiff) {
     // allow only a subset of the formats?
@@ -225,12 +224,12 @@ std::string Date::format(const std::string &fmt) const {
   
   char buffer[256];
   
-  std::string dt;
+  String dt;
   
   size_t p0 = 0;
   size_t p1 = fmt.find('%', p0);
   
-  while (p1 != std::string::npos) {
+  while (p1 != String::npos) {
     dt.append(fmt, p0, p1-p0);
     if (p1+1 < fmt.length()) {
       ++p1;
@@ -427,7 +426,7 @@ std::string Date::format(const std::string &fmt) const {
     p1 = fmt.find('%', p0);
   }
 
-  dt.append(fmt, p0, std::string::npos);
+  dt.append(fmt, p0, String::npos);
   return dt;
 }
 

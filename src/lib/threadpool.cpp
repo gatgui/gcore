@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -169,8 +169,7 @@ bool ThreadPool::runTask(Task task, bool /*wait*/) {
 void ThreadPool::notifyTaskDone(Worker *wt) {
   ScopeLock lock(mWorkersAccess);
   
-  std::vector<Worker*>::iterator it =
-    std::find(mWorkers.begin(), mWorkers.end(), wt);
+  List<Worker*>::iterator it = std::find(mWorkers.begin(), mWorkers.end(), wt);
   
   if (it != mWorkers.end()) {
     (*it)->mProcessing = false;
@@ -183,8 +182,7 @@ void ThreadPool::notifyTaskDone(Worker *wt) {
 void ThreadPool::notifyDone(Worker *wt) {
   ScopeLock lock(mWorkersAccess);
 
-  std::vector<Worker*>::iterator it =
-    std::find(mWorkers.begin(), mWorkers.end(), wt);
+  List<Worker*>::iterator it = std::find(mWorkers.begin(), mWorkers.end(), wt);
 
   if (it != mWorkers.end()) {
     delete *it;
@@ -216,8 +214,7 @@ Task ThreadPool::getTask(Worker *wt) {
 
       ScopeLock wlock(mWorkersAccess);
       
-      std::vector<Worker*>::iterator it =
-        std::find(mWorkers.begin(), mWorkers.end(), wt);
+      List<Worker*>::iterator it = std::find(mWorkers.begin(), mWorkers.end(), wt);
     
       if (it != mWorkers.end()) {
         // worker found, take the task

@@ -1,3 +1,0 @@
-x environment override for processes
-- use new Env class in Process
-- use String and List<T> where meaningfull

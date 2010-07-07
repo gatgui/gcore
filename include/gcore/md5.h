@@ -24,7 +24,7 @@ USA.
 #ifndef __gcore_md5_h_
 #define __gcore_md5_h_
 
-#include <gcore/config.h>
+#include <gcore/string.h>
 
 namespace gcore {
   
@@ -33,16 +33,16 @@ namespace gcore {
     
       MD5();
       MD5(const MD5 &rhs);
-      MD5(const std::string &str);
+      MD5(const String &str);
       ~MD5();
   
       MD5& operator=(const MD5 &rhs);
   
       void update(const char *buf, long len=-1);
-      void update(const std::string &str);
+      void update(const String &str);
       void clear();
     
-      std::string asString();
+      String asString();
   
     private:
     

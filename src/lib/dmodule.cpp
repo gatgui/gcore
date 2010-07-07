@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -25,11 +25,11 @@ USA.
 #include <gcore/platform.h>
 
 gcore::DynamicModule::DynamicModule()
-  :_mHandle(0), _mName("") {
+  : _mHandle(0), _mName("") {
 }
 
-gcore::DynamicModule::DynamicModule(const std::string &name)
-  :_mHandle(0), _mName(name) {
+gcore::DynamicModule::DynamicModule(const gcore::String &name)
+  : _mHandle(0), _mName(name) {
   _open(name);
 }
 
@@ -43,7 +43,7 @@ bool gcore::DynamicModule::_opened() const {
   return (_mHandle != 0);
 }
 
-bool gcore::DynamicModule::_open(const std::string &name) {
+bool gcore::DynamicModule::_open(const gcore::String &name) {
   if (_opened()) {
     if (name == _mName) {
       return true;
@@ -55,7 +55,7 @@ bool gcore::DynamicModule::_open(const std::string &name) {
   // RTLD_GLOBAL / RTLD_LOCAL (symbol can be access by using RTLD_DEFAULT or RTLD_NEXT handle, or only through dlopen handle)
   _mHandle = dlopen(name.c_str(), RTLD_LAZY|RTLD_LOCAL);
 #else   //_WIN32
-  _mHandle = LoadLibraryEx(name.c_str(),NULL,LOAD_WITH_ALTERED_SEARCH_PATH);
+  _mHandle = LoadLibraryEx(name.c_str(), NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
 #endif  //_WIN32
   return (_mHandle != 0);
 }
@@ -72,9 +72,9 @@ bool gcore::DynamicModule::_close() {
   return r;
 }
 
-void* gcore::DynamicModule::_getSymbol(const std::string &symbol) const {
+void* gcore::DynamicModule::_getSymbol(const gcore::String &symbol) const {
   if (_opened()) {
-    std::map<std::string,void*>::iterator it = _mSymbolMap.find(symbol);
+    std::map<gcore::String, void*>::iterator it = _mSymbolMap.find(symbol);
     if (it != _mSymbolMap.end()) {
       return (*it).second;
     }
@@ -92,7 +92,7 @@ void* gcore::DynamicModule::_getSymbol(const std::string &symbol) const {
   return 0;
 }
 
-std::string gcore::DynamicModule::_getError() const {
+gcore::String gcore::DynamicModule::_getError() const {
 #ifndef _WIN32
   return dlerror();
 #else   //_WIN32

@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -26,13 +26,11 @@ USA.
 #include <gcore/argparser.h>
 #include <string>
 #include <iostream>
-using namespace std;
-using namespace gcore;
 
 class PipeReader {
   public:
     
-    PipeReader(Process *p)
+    PipeReader(gcore::Process *p)
       : m_p(p), m_prompt("A stupid prompt> ") {
     }
     
@@ -40,18 +38,18 @@ class PipeReader {
     }
     
     int read() {
-      string rbuf = "";
+      gcore::String rbuf = "";
       //while (m_p->read(rbuf) >= 0) {
       int rv = m_p->read(rbuf);
       while (rv != 0) {
         if (rv > 0) {
           // could be an error
-          cout << endl << "### Read from pipe START" << endl;
-          cout << rbuf;
-          cout << endl << "### END";
+          std::cout << std::endl << "### Read from pipe START" << std::endl;
+          std::cout << rbuf;
+          std::cout << std::endl << "### END";
         } else {
           // some error
-          cout << endl << "### Read from pipe ERROR" << endl;
+          std::cout << std::endl << "### Read from pipe ERROR" << std::endl;
         }
         rv = m_p->read(rbuf);
       }
@@ -59,18 +57,18 @@ class PipeReader {
     }
     
     void done(int ecode) {
-      cout << endl << "### Read pipe thread exited with code(" << ecode << ")" << endl;
+      std::cout << std::endl << "### Read pipe thread exited with code(" << ecode << ")" << std::endl;
       m_p->wait(true);
     }
 
   protected:
     
-    Process *m_p;
-    string m_prompt;
+    gcore::Process *m_p;
+    gcore::String m_prompt;
 };
 
 void procOutput(const char *s) {
-  cout << "Process Info: " << s;
+  std::cout << "Process Info: " << s;
 }
 
 gcore::FlagDesc args_desc[] = 
@@ -98,11 +96,11 @@ int main(int argc, char **argv) {
     
   } catch (gcore::ArgParserError &e) {
     std::cerr << "Error while parsing arguments: " << e.what() << std::endl; 
-    cout << "Usage: test_pipe (--captureOut/-co)? (--captureErr/-ce)? (--errToOut/-eo)? (--redirectIn/-ri)? (--verbose/-v)? <program>" << endl;
+    std::cout << "Usage: test_pipe (--captureOut/-co)? (--captureErr/-ce)? (--errToOut/-eo)? (--redirectIn/-ri)? (--verbose/-v)? <program>" << std::endl;
     return -1;
   }
   
-  std::string prog;
+  gcore::String prog;
   args.getArgument(0, prog);
   in = args.isFlagSet("redirectIn");
   out = args.isFlagSet("captureOut");
@@ -112,10 +110,10 @@ int main(int argc, char **argv) {
   
   char inb[1024];
   
-  Process p;
+  gcore::Process p;
   PipeReader r(&p);
   
-  Thread *thr = 0;
+  gcore::Thread *thr = 0;
   
   p.setOutputFunc(procOutput);
   p.verbose(verbose);
@@ -126,7 +124,7 @@ int main(int argc, char **argv) {
   p.run(prog, 0);
   
   if (out) {
-    thr = new Thread(&r, &PipeReader::read, &PipeReader::done);
+    thr = new gcore::Thread(&r, &PipeReader::read, &PipeReader::done);
   }
   
   if (in) {

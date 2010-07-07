@@ -25,7 +25,7 @@ USA.
 
 namespace gcore {
 
-static bool IsValidAttribute(const std::string &str) {
+static bool IsValidAttribute(const String &str) {
   const char *cp = str.c_str();
   while (*cp != '\0') {
     if ((*cp >= 'a' && *cp <= 'z') ||
@@ -40,12 +40,12 @@ static bool IsValidAttribute(const std::string &str) {
   return true;
 }
 
-static bool IsValidValue(const std::string &str) {
-  return (str.find_first_of("\"<>") == std::string::npos);
+static bool IsValidValue(const String &str) {
+  return (str.find_first_of("\"<>") == String::npos);
 }
 
-static bool IsValidText(const std::string &txt) {
-  return (txt.find_first_of("\"<>") == std::string::npos);
+static bool IsValidText(const String &txt) {
+  return (txt.find_first_of("\"<>") == String::npos);
 }
 
 static bool IsWS(char c) {
@@ -95,13 +95,13 @@ static char* SkipNonWS(char *p, char *upTo) {
 
 // ---
 
-const std::string XMLElement::Empty = "";
+const String XMLElement::Empty = "";
 
 XMLElement::XMLElement()
   : mTag(""), mParent(0), mTextIsCDATA(false) {
 }
 
-XMLElement::XMLElement(const std::string &tag)
+XMLElement::XMLElement(const String &tag)
   : mTag(tag), mParent(0), mTextIsCDATA(false) {
 }
 
@@ -122,14 +122,14 @@ bool XMLElement::addChild(XMLElement *elt) {
     return true;
   } else {
     elt->mParent = this;
-    mChildren.push_back(elt);
+    mChildren.push(elt);
     return true;
   }
 }
 
-void XMLElement::write(std::ostream &os, const std::string &indent) const {
+void XMLElement::write(std::ostream &os, const String &indent) const {
   os << indent << "<" << mTag;
-  std::map<std::string, std::string>::const_iterator it = mAttrs.begin();
+  StringDict::const_iterator it = mAttrs.begin();
   while (it != mAttrs.end()) {
     os << " " << it->first << "=\"" << it->second << "\"";
     ++it;
@@ -139,7 +139,7 @@ void XMLElement::write(std::ostream &os, const std::string &indent) const {
     os << ">";
     if (mChildren.size() > 0) {
       os << std::endl;
-      std::string childIndent = indent + "  ";
+      String childIndent = indent + "  ";
       for (size_t i=0; i<mChildren.size(); ++i) {
         mChildren[i]->write(os, childIndent);
       }
@@ -159,7 +159,7 @@ void XMLElement::write(std::ostream &os, const std::string &indent) const {
   }
 }
 
-bool XMLElement::setAttribute(const std::string &name, const std::string &value) {
+bool XMLElement::setAttribute(const String &name, const String &value) {
   if (!IsValidAttribute(name)) {
     std::cerr << "Invalid attribute name: \"" << name << "\"" << std::endl;
     return false;
@@ -172,7 +172,7 @@ bool XMLElement::setAttribute(const std::string &name, const std::string &value)
   return true;
 }
 
-bool XMLElement::setText(const std::string &str, bool asCDATA) {
+bool XMLElement::setText(const String &str, bool asCDATA) {
   mTextIsCDATA = asCDATA;
   if (!asCDATA && !IsValidText(str)) {
     std::cerr << "Invalid characters in text" << std::endl;
@@ -182,7 +182,7 @@ bool XMLElement::setText(const std::string &str, bool asCDATA) {
   return true;
 }
 
-bool XMLElement::addText(const std::string &str) {
+bool XMLElement::addText(const String &str) {
   if (mTextIsCDATA) {
     std::cerr << "Element cannot have both text and CDATA" << std::endl;
     return false;
@@ -221,12 +221,12 @@ size_t XMLElement::numChildren() const {
   return mChildren.size();
 }
 
-bool XMLElement::hasAttribute(const std::string &name) const {
+bool XMLElement::hasAttribute(const String &name) const {
   return (mAttrs.find(name) != mAttrs.end());
 }
 
-const std::string& XMLElement::getAttribute(const std::string &name) const {
-  std::map<std::string, std::string>::const_iterator it = mAttrs.find(name);
+const String& XMLElement::getAttribute(const String &name) const {
+  StringDict::const_iterator it = mAttrs.find(name);
   if (it != mAttrs.end()) {
     return it->second;
   } else {
@@ -234,19 +234,19 @@ const std::string& XMLElement::getAttribute(const std::string &name) const {
   }
 }  
 
-const std::string& XMLElement::getText() const {
+const String& XMLElement::getText() const {
   return mText;
 }
 
-void XMLElement::setTag(const std::string &tag) {
+void XMLElement::setTag(const String &tag) {
   mTag = tag;
 }
 
-const std::string& XMLElement::getTag() const {
+const String& XMLElement::getTag() const {
   return mTag;
 }
 
-bool XMLElement::hasChildWithTag(const std::string &tag) const {
+bool XMLElement::hasChildWithTag(const String &tag) const {
   for (size_t i=0; i<mChildren.size(); ++i) {
     if (mChildren[i]->getTag() == tag) {
       return true;
@@ -255,7 +255,7 @@ bool XMLElement::hasChildWithTag(const std::string &tag) const {
   return false;
 }
 
-size_t XMLElement::numChildrenWithTag(const std::string &tag) const {
+size_t XMLElement::numChildrenWithTag(const String &tag) const {
   size_t cnt = 0;
   for (size_t i=0; i<mChildren.size(); ++i) {
     if (mChildren[i]->getTag() == tag) {
@@ -265,7 +265,7 @@ size_t XMLElement::numChildrenWithTag(const std::string &tag) const {
   return cnt;
 }
 
-XMLElement* XMLElement::getChildWithTag(const std::string &tag, size_t n) {
+XMLElement* XMLElement::getChildWithTag(const String &tag, size_t n) {
   size_t cur = 0;
   for (size_t i=0; i<mChildren.size(); ++i) {
     if (mChildren[i]->getTag() == tag) {
@@ -278,7 +278,7 @@ XMLElement* XMLElement::getChildWithTag(const std::string &tag, size_t n) {
   return NULL;
 }
 
-const XMLElement* XMLElement::getChildWithTag(const std::string &tag, size_t n) const {
+const XMLElement* XMLElement::getChildWithTag(const String &tag, size_t n) const {
   size_t cur = 0;
   for (size_t i=0; i<mChildren.size(); ++i) {
     if (mChildren[i]->getTag() == tag) {
@@ -314,7 +314,7 @@ XMLElement* XMLDoc::getRoot() const {
   return mRoot;
 }
 
-void XMLDoc::write(const std::string &fileName) const {
+void XMLDoc::write(const String &fileName) const {
   if (mRoot) {
     std::ofstream ofile(fileName.c_str());
     if (ofile.is_open()) {
@@ -325,7 +325,7 @@ void XMLDoc::write(const std::string &fileName) const {
   }
 }
 
-bool XMLDoc::read(const std::string &fileName) {
+bool XMLDoc::read(const String &fileName) {
   
   FILE *file = fopen(fileName.c_str(), "rb");
   
@@ -342,7 +342,7 @@ bool XMLDoc::read(const std::string &fileName) {
     READ_HEADER,
   } state = READ_OPEN;
   
-  std::string pending;
+  String pending;
   
   char readBuffer[1024];
   char pendingBuffer[1024];
@@ -676,7 +676,7 @@ bool XMLDoc::read(const std::string &fileName) {
             goto failed;
           } 
           
-          std::string tag = pending.substr(0, len);
+          String tag = pending.substr(0, len);
           
           XMLElement *elem = new XMLElement(tag);
           
@@ -690,13 +690,13 @@ bool XMLDoc::read(const std::string &fileName) {
             size_t o = tc - ts;
             size_t p = pending.find('=', o);
             
-            if (p == std::string::npos) {
+            if (p == String::npos) {
               std::cout << "Invalid XML file: missing = for attribute" << std::endl;
               delete elem;
               goto failed;
             }
             
-            std::string attr = pending.substr(o, p-o);
+            String attr = pending.substr(o, p-o);
             if (!IsValidAttribute(attr)) {
               std::cout << "Invalid XML file: invalid attribute name \"" << attr << "\"" << std::endl;
               delete elem;
@@ -720,7 +720,7 @@ bool XMLDoc::read(const std::string &fileName) {
             ++p;
             
             size_t e = pending.find('"', p);
-            while (e != std::string::npos) {
+            while (e != String::npos) {
               if (pending[e-1] == '\\') {
                 e = pending.find('"', e+1);
               } else {
@@ -728,13 +728,13 @@ bool XMLDoc::read(const std::string &fileName) {
               }
             }
             
-            if (e == std::string::npos) {
+            if (e == String::npos) {
               std::cout << "Invalid XML file: missing closing \" for attribute" << std::endl;
               delete elem;
               goto failed;
             }
             
-            std::string val = pending.substr(p, e-p);
+            String val = pending.substr(p, e-p);
             
             elem->setAttribute(attr, val);
             

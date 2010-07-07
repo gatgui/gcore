@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -24,7 +24,7 @@ USA.
 #ifndef __gcore_memory_h_
 #define __gcore_memory_h_
 
-#include <gcore/config.h>
+#include <gcore/list.h>
 
 namespace gcore {
 
@@ -62,7 +62,7 @@ namespace gcore {
           void release();
         };
         
-        typedef std::vector<Chunk> ChunkVector;
+        typedef List<Chunk> ChunkVector;
         typedef ChunkVector::iterator ChunkIterator;
         typedef ChunkVector::const_iterator ChunkConstIterator;
         
@@ -97,7 +97,7 @@ namespace gcore {
     
     private:
       
-      typedef std::vector<details::ChunkAllocator> AllocatorVector;
+      typedef List<details::ChunkAllocator> AllocatorVector;
       typedef AllocatorVector::iterator AllocatorIterator;
       typedef AllocatorVector::const_iterator AllocatorConstIterator;
       

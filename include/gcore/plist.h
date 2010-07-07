@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -24,7 +24,8 @@ USA.
 #ifndef __gcore_plist_h_
 #define __gcore_plist_h_
 
-#include <gcore/config.h>
+#include <gcore/string.h>
+#include <gcore/list.h>
 
 namespace gcore {
   
@@ -34,9 +35,9 @@ namespace gcore {
     
     class GCORE_API Exception : public std::exception {
       public:
-        explicit Exception(const std::string &prop);
-        explicit Exception(const std::string &prop, const std::string &str);
-        explicit Exception(const std::string &prop, const char *fmt, ...);
+        explicit Exception(const gcore::String &prop);
+        explicit Exception(const gcore::String &prop, const gcore::String &str);
+        explicit Exception(const gcore::String &prop, const char *fmt, ...);
         virtual ~Exception() throw();
         
         virtual const char* what() const throw();
@@ -46,8 +47,8 @@ namespace gcore {
         }
         
       protected:
-        std::string mStr;
-        std::string mProp;
+        gcore::String mStr;
+        gcore::String mProp;
     };
   }
   
@@ -59,7 +60,7 @@ namespace gcore {
         long id;
       };
 
-      typedef std::map<std::string, ValueDesc> ValueDescDict;
+      typedef std::map<String, ValueDesc> ValueDescDict;
       typedef ValueDescDict::iterator ValueDescIterator;
       typedef ValueDescDict::const_iterator ValueDescConstIterator;
 
@@ -71,7 +72,7 @@ namespace gcore {
       
       template <typename T>
       static void RegisterType(bool replace=false) {
-        std::string name = T::TypeName();
+        String name = T::TypeName();
         ValueDescIterator it = msValueDesc.find(name);
         if (it != msValueDesc.end()) {
           if (replace) {
@@ -95,10 +96,10 @@ namespace gcore {
 
       static void ClearTypes();
 
-      static plist::Value* NewValue(const std::string &type);
+      static plist::Value* NewValue(const String &type);
 
-      static long ValueTypeID(const std::string &type);
-      static const std::string& ValueTypeName(long id);
+      static long ValueTypeID(const String &type);
+      static const String& ValueTypeName(long id);
     
     public:
   
@@ -106,20 +107,20 @@ namespace gcore {
       ~PropertyList();
       
       void create();
-      bool read(const std::string &filename);
-      void write(const std::string &filename) const;
+      bool read(const String &filename);
+      void write(const String &filename) const;
       
-      const std::string& getString(const std::string &prop) const throw(plist::Exception);
-      long getInteger(const std::string &prop) const throw(plist::Exception);
-      double getReal(const std::string &prop) const throw(plist::Exception);
-      bool getBoolean(const std::string &prop) const throw(plist::Exception);
+      const String& getString(const String &prop) const throw(plist::Exception);
+      long getInteger(const String &prop) const throw(plist::Exception);
+      double getReal(const String &prop) const throw(plist::Exception);
+      bool getBoolean(const String &prop) const throw(plist::Exception);
       
-      unsigned long getArraySize(const std::string &prop) const throw(plist::Exception);
+      unsigned long getArraySize(const String &prop) const throw(plist::Exception);
       
-      void setString(const std::string &prop, const std::string &str) throw(plist::Exception);
-      void setReal(const std::string &prop, double val) throw(plist::Exception);
-      void setInteger(const std::string &prop, long val) throw(plist::Exception);
-      void setBoolean(const std::string &prop, bool val) throw(plist::Exception);
+      void setString(const String &prop, const String &str) throw(plist::Exception);
+      void setReal(const String &prop, double val) throw(plist::Exception);
+      void setInteger(const String &prop, long val) throw(plist::Exception);
+      void setBoolean(const String &prop, bool val) throw(plist::Exception);
       
       inline class plist::Dictionary* top() {
         return mTop;
@@ -140,8 +141,8 @@ namespace gcore {
         Value();
         virtual ~Value();
 
-        virtual bool fromXML(std::istream &xml, std::string &remain) = 0;
-        virtual void toXML(std::ostream &xml, const std::string &indent) const = 0;
+        virtual bool fromXML(std::istream &xml, gcore::String &remain) = 0;
+        virtual void toXML(std::ostream &xml, const gcore::String &indent) const = 0;
 
         inline long getType() const {
           return mType;
@@ -185,29 +186,29 @@ namespace gcore {
         InvalidValue();
         virtual ~InvalidValue();
         
-        virtual bool fromXML(std::istream &, std::string &);
-        virtual void toXML(std::ostream &, const std::string &) const;
+        virtual bool fromXML(std::istream &, gcore::String &);
+        virtual void toXML(std::ostream &, const gcore::String &) const;
     };
     
     class GCORE_API String : public Value {
       public:
     
-        typedef const std::string& ReturnType;
-        typedef const std::string& InputType;
-        typedef std::string& OutputType;
+        typedef const gcore::String& ReturnType;
+        typedef const gcore::String& InputType;
+        typedef gcore::String& OutputType;
     
         String();
-        String(const std::string &v);
+        String(const gcore::String &v);
         virtual ~String();
         
-        virtual bool fromXML(std::istream &, std::string &);
-        virtual void toXML(std::ostream &, const std::string &) const;
+        virtual bool fromXML(std::istream &, gcore::String &);
+        virtual void toXML(std::ostream &, const gcore::String &) const;
         
-        inline const std::string& get() const {
+        inline const gcore::String& get() const {
           return mValue;
         }
         
-        inline void set(const std::string &v) {
+        inline void set(const gcore::String &v) {
           mValue = v;
         }
         
@@ -218,7 +219,7 @@ namespace gcore {
         
       protected:
         
-        std::string mValue;
+        gcore::String mValue;
     };
     
     class GCORE_API Real : public Value {
@@ -232,8 +233,8 @@ namespace gcore {
         Real(double v);
         virtual ~Real();
         
-        virtual bool fromXML(std::istream &, std::string &);
-        virtual void toXML(std::ostream &, const std::string &) const;
+        virtual bool fromXML(std::istream &, gcore::String &);
+        virtual void toXML(std::ostream &, const gcore::String &) const;
         
         inline double get() const {
           return mValue;
@@ -264,8 +265,8 @@ namespace gcore {
         Integer(long v);
         virtual ~Integer();
         
-        virtual bool fromXML(std::istream &, std::string &);
-        virtual void toXML(std::ostream &, const std::string &) const;
+        virtual bool fromXML(std::istream &, gcore::String &);
+        virtual void toXML(std::ostream &, const gcore::String &) const;
         
         inline long get() const {
           return mValue;
@@ -296,8 +297,8 @@ namespace gcore {
         Boolean(bool v);
         virtual ~Boolean();
         
-        virtual bool fromXML(std::istream &, std::string &);
-        virtual void toXML(std::ostream &, const std::string &) const;
+        virtual bool fromXML(std::istream &, gcore::String &);
+        virtual void toXML(std::ostream &, const gcore::String &) const;
         
         inline bool get() const {
           return mValue;
@@ -320,16 +321,16 @@ namespace gcore {
     class GCORE_API Array : public Value {
       public:
         
-        typedef const std::vector<Value*>& ReturnType;
-        typedef const std::vector<Value*>& InputType;
-        typedef std::vector<Value*>& OutputType;
+        typedef const List<Value*>& ReturnType;
+        typedef const List<Value*>& InputType;
+        typedef List<Value*>& OutputType;
     
         Array();
         Array(InputType val);
         virtual ~Array();
         
-        virtual bool fromXML(std::istream &, std::string &);
-        virtual void toXML(std::ostream &, const std::string &) const;
+        virtual bool fromXML(std::istream &, gcore::String &);
+        virtual void toXML(std::ostream &, const gcore::String &) const;
         
         inline size_t size() const {
           return mValues.size();
@@ -356,32 +357,32 @@ namespace gcore {
         
       protected:
         
-        std::vector<Value*> mValues;
+        List<Value*> mValues;
     };
     
     class GCORE_API Dictionary : public Value {
       public:
         
-        typedef const std::map<std::string, Value*>& ReturnType;
-        typedef const std::map<std::string, Value*>& InputType;
-        typedef std::map<std::string, Value*>& OutputType;
+        typedef const std::map<gcore::String, Value*>& ReturnType;
+        typedef const std::map<gcore::String, Value*>& InputType;
+        typedef std::map<gcore::String, Value*>& OutputType;
     
         Dictionary();
         Dictionary(InputType val);
         virtual ~Dictionary();
         
-        virtual bool fromXML(std::istream &, std::string &);
-        virtual void toXML(std::ostream &, const std::string &) const;
+        virtual bool fromXML(std::istream &, gcore::String &);
+        virtual void toXML(std::ostream &, const gcore::String &) const;
         
         inline ReturnType get() const {
           return mPairs;
         }
         
         void clear();
-        Value* value(const std::string &key);
-        const Value* value(const std::string &key) const;
-        bool has(const std::string &key) const;
-        void set(const std::string &key, Value *v, bool replace=true);
+        Value* value(const gcore::String &key);
+        const Value* value(const gcore::String &key) const;
+        bool has(const gcore::String &key) const;
+        void set(const gcore::String &key, Value *v, bool replace=true);
         
       public:
         
@@ -390,7 +391,7 @@ namespace gcore {
         
       protected:
         
-        std::map<std::string, Value*> mPairs;
+        std::map<gcore::String, Value*> mPairs;
     };
   }
   

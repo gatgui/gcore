@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -24,7 +24,7 @@ USA.
 #ifndef __gcore_dmodule_h_
 #define __gcore_dmodule_h_
 
-#include <gcore/config.h>
+#include <gcore/string.h>
 
 namespace gcore {
 
@@ -33,20 +33,20 @@ namespace gcore {
     public:
       
       DynamicModule();
-      DynamicModule(const std::string &name);
+      DynamicModule(const String &name);
       virtual ~DynamicModule();
       
       bool _opened() const;
-      bool _open(const std::string &name);
+      bool _open(const String &name);
       bool _close();
-      void* _getSymbol(const std::string &symbol) const;
-      std::string _getError() const;
+      void* _getSymbol(const String &symbol) const;
+      String _getError() const;
       
     private:
       
       void *_mHandle;
-      std::string _mName;
-      mutable std::map<std::string,void*> _mSymbolMap;
+      String _mName;
+      mutable std::map<String,void*> _mSymbolMap;
   };
 }
 
@@ -73,130 +73,127 @@ namespace gcore {
 #define BEGIN_MODULE_INTERFACE(ClassName)\
   class ClassName : public gcore::DynamicModule {\
     public:\
-      ClassName():gcore::DynamicModule(){}\
-      ClassName(const std::string &name):gcore::DynamicModule(name){}\
-      virtual ~ClassName(){}
+      ClassName() : gcore::DynamicModule() {}\
+      ClassName(const gcore::String &name) : gcore::DynamicModule(name) {}\
+      virtual ~ClassName() {}
+
+#define DEFINE_MODULE_SYMBOL0(Name)\
+    public:\
+      void Name() {\
+        Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
+        if (ptr) {\
+          (*ptr)();\
+        }\
+      }\
+    protected:\
+      typedef void (*Name##_t)();
+  
+#define DEFINE_MODULE_SYMBOL1(Name,Type1)\
+    public:\
+      void Name(Type1 p1) {\
+        Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
+        if (ptr) {\
+          (*ptr)(p1);\
+        }\
+      }\
+    protected:\
+      typedef void (*Name##_t)(Type1);
+    
+#define DEFINE_MODULE_SYMBOL2(Name,Type1,Type2)\
+    public:\
+      void Name(Type1 p1,Type2 p2) {\
+        Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
+        if (ptr) {\
+          (*ptr)(p1,p2);\
+        }\
+      }\
+    protected:\
+      typedef void (*Name##_t)(Type1,Type2);
+
+#define DEFINE_MODULE_SYMBOL3(Name,Type1,Type2,Type3)\
+    public:\
+      void Name(Type1 p1, Type2 p2, Type3 p3) {\
+        Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
+        if (ptr) {\
+          (*ptr)(p1,p2,p3);\
+        }\
+      }\
+    protected:\
+      typedef void (*Name##_t)(Type1,Type2,Type3);
+
+#define DEFINE_MODULE_SYMBOL4(Name,Type1,Type2,Type3,Type4)\
+    public:\
+      void Name(Type1 p1, Type2 p2, Type3 p3, Type4 p4) {\
+        Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
+        if (ptr) {\
+          (*ptr)(p1,p2,p3,p4);\
+        }\
+      }\
+    protected:\
+      typedef void (*Name##_t)(Type1,Type2,Type3,Type4);
+
+#define DEFINE_MODULE_SYMBOL0R(RType,Name)\
+    public:\
+      RType Name() {\
+        Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
+        if (ptr) {\
+          return (*ptr)();\
+        }\
+        return (RType)0;\
+      }\
+    protected:\
+      typedef RType (*Name##_t)();
+  
+#define DEFINE_MODULE_SYMBOL1R(RType,Name,Type1)\
+    public:\
+      RType Name(Type1 p1) {\
+        Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
+        if (ptr) {\
+          return (*ptr)(p1);\
+        }\
+        return (RType)0;\
+      }\
+    protected:\
+      typedef RType (*Name##_t)(Type1);
+    
+#define DEFINE_MODULE_SYMBOL2R(RType,Name,Type1,Type2)\
+    public:\
+      RType Name(Type1 p1,Type2 p2) {\
+        Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
+        if (ptr) {\
+          return (*ptr)(p1,p2);\
+        }\
+        return (RType)0;\
+      }\
+    protected:\
+      typedef RType (*Name##_t)(Type1,Type2);
+
+#define DEFINE_MODULE_SYMBOL3R(RType,Name,Type1,Type2,Type3)\
+    public:\
+      RType Name(Type1 p1, Type2 p2, Type3 p3) {\
+        Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
+        if (ptr) {\
+          return (*ptr)(p1,p2,p3);\
+        }\
+        return (RType)0;\
+      }\
+    protected:\
+      typedef RType (*Name##_t)(Type1,Type2,Type3);
+
+#define DEFINE_MODULE_SYMBOL4R(RType,Name,Type1,Type2,Type3,Type4)\
+    public:\
+      RType Name(Type1 p1, Type2 p2, Type3 p3, Type4 p4) {\
+        Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
+        if (ptr) {\
+          return (*ptr)(p1,p2,p3,p4);\
+        }\
+        return (RType)0;\
+      }\
+    protected:\
+      typedef RType (*Name##_t)(Type1,Type2,Type3,Type4);
 
 #define END_MODULE_INTERFACE \
   };
-
-#define DEFINE_MODULE_SYMBOL0(Name)\
-  public:\
-    void Name() {\
-      Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
-      if (ptr) {\
-        (*ptr)();\
-      }\
-    }\
-  protected:\
-    typedef void (*Name##_t)();
-  
-#define DEFINE_MODULE_SYMBOL1(Name,Type1)\
-  public:\
-    void Name(Type1 p1) {\
-      Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
-      if (ptr) {\
-        (*ptr)(p1);\
-      }\
-    }\
-  protected:\
-    typedef void (*Name##_t)(Type1);
-    
-#define DEFINE_MODULE_SYMBOL2(Name,Type1,Type2)\
-  public:\
-    void Name(Type1 p1,Type2 p2) {\
-      Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
-      if (ptr) {\
-        (*ptr)(p1,p2);\
-      }\
-    }\
-  protected:\
-    typedef void (*Name##_t)(Type1,Type2);
-
-#define DEFINE_MODULE_SYMBOL3(Name,Type1,Type2,Type3)\
-  public:\
-    void Name(Type1 p1, Type2 p2, Type3 p3) {\
-      Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
-      if (ptr) {\
-        (*ptr)(p1,p2,p3);\
-      }\
-    }\
-  protected:\
-    typedef void (*Name##_t)(Type1,Type2,Type3);
-
-#define DEFINE_MODULE_SYMBOL4(Name,Type1,Type2,Type3,Type4)\
-  public:\
-    void Name(Type1 p1, Type2 p2, Type3 p3, Type4 p4) {\
-      Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
-      if (ptr) {\
-        (*ptr)(p1,p2,p3,p4);\
-      }\
-    }\
-  protected:\
-    typedef void (*Name##_t)(Type1,Type2,Type3,Type4);
-
-#define DEFINE_MODULE_SYMBOL0R(RType,Name)\
-  public:\
-    RType Name() {\
-      Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
-      if (ptr) {\
-        return (*ptr)();\
-      }\
-      return (RType)0;\
-    }\
-  protected:\
-    typedef RType (*Name##_t)();
-  
-#define DEFINE_MODULE_SYMBOL1R(RType,Name,Type1)\
-  public:\
-    RType Name(Type1 p1) {\
-      Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
-      if (ptr) {\
-        return (*ptr)(p1);\
-      }\
-      return (RType)0;\
-    }\
-  protected:\
-    typedef RType (*Name##_t)(Type1);
-    
-#define DEFINE_MODULE_SYMBOL2R(RType,Name,Type1,Type2)\
-  public:\
-    RType Name(Type1 p1,Type2 p2) {\
-      Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
-      if (ptr) {\
-        return (*ptr)(p1,p2);\
-      }\
-      return (RType)0;\
-    }\
-  protected:\
-    typedef RType (*Name##_t)(Type1,Type2);
-
-#define DEFINE_MODULE_SYMBOL3R(RType,Name,Type1,Type2,Type3)\
-  public:\
-    RType Name(Type1 p1, Type2 p2, Type3 p3) {\
-      Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
-      if (ptr) {\
-        return (*ptr)(p1,p2,p3);\
-      }\
-      return (RType)0;\
-    }\
-  protected:\
-    typedef RType (*Name##_t)(Type1,Type2,Type3);
-
-#define DEFINE_MODULE_SYMBOL4R(RType,Name,Type1,Type2,Type3,Type4)\
-  public:\
-    RType Name(Type1 p1, Type2 p2, Type3 p3, Type4 p4) {\
-      Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
-      if (ptr) {\
-        return (*ptr)(p1,p2,p3,p4);\
-      }\
-      return (RType)0;\
-    }\
-  protected:\
-    typedef RType (*Name##_t)(Type1,Type2,Type3,Type4);
-
-// And so on ....
-// What about variadic functions ??
 
 #endif
 

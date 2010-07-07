@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -59,19 +59,19 @@ namespace gcore
       ~Process();
 
       void setOutputFunc(OutputFunc of);
-      void setEnv(const std::string &key, const std::string &value);
+      void setEnv(const String &key, const String &value);
 
-      ProcessID run(const std::string &progPath, char **argv);
-      ProcessID run(const std::string &progPath, int argc, ...);
+      ProcessID run(const String &progPath, char **argv);
+      ProcessID run(const String &progPath, int argc, ...);
       
       ProcessID getId() const;
 
-      int read(std::string &str) const;
-      int write(const std::string &str) const;
-      int readErr(std::string &str) const;
-      int writeErr(const std::string &str) const;
+      int read(String &str) const;
+      int write(const String &str) const;
+      int readErr(String &str) const;
+      int writeErr(const String &str) const;
 
-      inline const std::string& getCmdLine() const {
+      inline const String& getCmdLine() const {
         return mCmdLine;
       } 
 
@@ -106,22 +106,21 @@ namespace gcore
 
     private:
 
-      std::vector<std::string> mArgs;
-      ProcessID                mPID;
-      OutputFunc               mOutFunc;
-      Pipe                     mReadPipe;
-      Pipe                     mWritePipe;
-      Pipe                     mErrorPipe;
-      bool                     mCapture;
-      bool                     mRedirect;
-      bool                     mVerbose;
-      bool                     mShowConsole;
-      char**                   mStdArgs; // used on nix
-      std::string              mCmdLine;
-      bool                     mCaptureErr;
-      bool                     mErrToOut;
-
-      std::map<std::string, std::string> mEnv;
+      StringList  mArgs;
+      ProcessID   mPID;
+      OutputFunc  mOutFunc;
+      Pipe        mReadPipe;
+      Pipe        mWritePipe;
+      Pipe        mErrorPipe;
+      bool        mCapture;
+      bool        mRedirect;
+      bool        mVerbose;
+      bool        mShowConsole;
+      char**      mStdArgs; // used on nix
+      String      mCmdLine;
+      bool        mCaptureErr;
+      bool        mErrToOut;
+      StringDict  mEnv;
   };
 }
 

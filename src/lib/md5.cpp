@@ -53,7 +53,7 @@ MD5::MD5(const MD5 &rhs)
   memcpy(mIn, rhs.mIn, 64*sizeof(unsigned char));
 }
 
-MD5::MD5(const std::string &str) {
+MD5::MD5(const String &str) {
   clear();
   update(str);
 }
@@ -82,7 +82,7 @@ void MD5::clear() {
   mFinalized = false;
 }
 
-void MD5::update(const std::string &str) {
+void MD5::update(const String &str) {
   update(str.c_str(), long(str.length()));
 }
 
@@ -249,7 +249,7 @@ void MD5::final() {
   mFinalized = true;
 }
 
-std::string MD5::asString() {
+String MD5::asString() {
   
   unsigned char digest[16];
   
@@ -270,7 +270,7 @@ std::string MD5::asString() {
     digest[ 8], digest[ 9], digest[10], digest[11],
     digest[12], digest[13], digest[14], digest[15]);
   
-  return std::string(md5s);
+  return String(md5s);
 }
 
 }

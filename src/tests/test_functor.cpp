@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -23,8 +23,6 @@ USA.
 
 #include <gcore/gcore>
 #include <iostream>
-using namespace gcore;
-using namespace std;
 
 float add_float(float a, float b) {
   return a+b;
@@ -52,14 +50,14 @@ int main(int, char**) {
   
   Add add;
   
-  Functor2wR<float, float, float> cb0;
-  Functor2wR<float, float, float> cb1;
+  gcore::Functor2wR<float, float, float> cb0;
+  gcore::Functor2wR<float, float, float> cb1;
   
-  Bind(add_float, cb0);
-  Bind(&add, METHOD(Add, execute), cb1);
+  gcore::Bind(add_float, cb0);
+  gcore::Bind(&add, METHOD(Add, execute), cb1);
   
-  cout << "Functor 0 result: " << cb0(1, 2) << endl;
-  cout << "Functor 1 result: " << cb1(1, 2) << endl;
+  std::cout << "Functor 0 result: " << cb0(1, 2) << std::endl;
+  std::cout << "Functor 1 result: " << cb1(1, 2) << std::endl;
   
   return 0;
 }

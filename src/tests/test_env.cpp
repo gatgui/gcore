@@ -44,7 +44,7 @@ int main(int, char**) {
   
   std::cout << "Check env var BSROOT..." << std::endl;
   
-  std::string bsroot = "Z:/ve/home/GaetanG/dev/deploy/projects";
+  gcore::String bsroot = "Z:/ve/home/GaetanG/dev/deploy/projects";
   
   if (env.isSet("BSROOT")) {
     std::cout << "BSROOT already set: \"" << env.get("BSROOT") << "\"" << std::endl;

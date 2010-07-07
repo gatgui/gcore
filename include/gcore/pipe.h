@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -24,7 +24,7 @@ USA.
 #ifndef __gcore_pipe_h_
 #define __gcore_pipe_h_
 
-#include <gcore/config.h>
+#include <gcore/string.h>
 
 namespace gcore {
 
@@ -62,8 +62,8 @@ namespace gcore {
       void create();
       void closeRead();
       void closeWrite();
-      int read(std::string &str) const;
-      int write(const std::string &str) const;
+      int read(String &str) const;
+      int write(const String &str) const;
       PipeID readId() const;
       PipeID writeId() const;
       

@@ -24,15 +24,12 @@ USA.
 #ifndef __gcore_env_h__
 #define __gcore_env_h__
 
-#include <gcore/config.h>
 #include <gcore/functor.h>
 #include <gcore/string.h>
+#include <gcore/list.h>
 #include <gcore/path.h>
 
 namespace gcore {
-  
-  //class GCORE_API Path;
-  //class GCORE_API PathList;
   
   class GCORE_API Env {
     public:
@@ -65,7 +62,7 @@ namespace gcore {
       
     protected:
       
-      std::vector<StringDict> mEnvStack;
+      List<StringDict> mEnvStack;
   };
 }
 

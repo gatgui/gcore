@@ -24,7 +24,7 @@ USA.
 #ifndef __gcore_xml_h_
 #define __gcore_xml_h_
 
-#include <gcore/config.h>
+#include <gcore/string.h>
 
 namespace gcore {
   
@@ -32,10 +32,10 @@ namespace gcore {
     public:
       friend class XMLDoc;
       
-      static const std::string Empty;
+      static const String Empty;
       
       XMLElement();
-      XMLElement(const std::string &tag);
+      XMLElement(const String &tag);
       ~XMLElement();
       
       bool addChild(XMLElement *elt);
@@ -47,34 +47,34 @@ namespace gcore {
       XMLElement* getChild(size_t idx);
       size_t numChildren() const;
       
-      bool setAttribute(const std::string &name, const std::string &value);
-      bool setText(const std::string &str, bool asCDATA=false);
-      bool addText(const std::string &str);
+      bool setAttribute(const String &name, const String &value);
+      bool setText(const String &str, bool asCDATA=false);
+      bool addText(const String &str);
       
-      bool hasAttribute(const std::string &name) const;
-      const std::string& getAttribute(const std::string &name) const;
+      bool hasAttribute(const String &name) const;
+      const String& getAttribute(const String &name) const;
       
-      const std::string& getText() const;
+      const String& getText() const;
       
-      void setTag(const std::string &tag);
-      const std::string& getTag() const;
+      void setTag(const String &tag);
+      const String& getTag() const;
       
-      bool hasChildWithTag(const std::string &tag) const;
-      size_t numChildrenWithTag(const std::string &tag) const;
-      XMLElement* getChildWithTag(const std::string &tag, size_t n=0);
-      const XMLElement* getChildWithTag(const std::string &tag, size_t n=0) const;
+      bool hasChildWithTag(const String &tag) const;
+      size_t numChildrenWithTag(const String &tag) const;
+      XMLElement* getChildWithTag(const String &tag, size_t n=0);
+      const XMLElement* getChildWithTag(const String &tag, size_t n=0) const;
     
     protected:
     
-      void write(std::ostream &os, const std::string &indent) const;
+      void write(std::ostream &os, const String &indent) const;
       
     private:
       
-      std::string mTag;
-      std::map<std::string, std::string> mAttrs;
-      std::string mText;
+      String mTag;
+      StringDict mAttrs;
+      String mText;
       XMLElement *mParent;
-      std::vector<XMLElement*> mChildren;
+      List<XMLElement*> mChildren;
       bool mTextIsCDATA;
   };
   
@@ -86,8 +86,8 @@ namespace gcore {
       void setRoot(XMLElement *elt);
       XMLElement* getRoot() const;
       
-      void write(const std::string &fileName) const;
-      bool read(const std::string &fileName);
+      void write(const String &fileName) const;
+      bool read(const String &fileName);
     
     protected:
       

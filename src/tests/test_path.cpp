@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -25,16 +25,13 @@ USA.
 
 class AClass {
   public:
-    //bool FileFound(const std::string &, const std::string &name, gcore::FileType ft) {
     bool FileFound(const Path &path) {
-      //if (ft == gcore::FT_DIR) {
       if (path.isDir()) {
-        fprintf(stderr, "Found Directory: %s\n", path.fullname().c_str()); //name.c_str());
-      //} else if (ft == gcore::FT_FILE) {
+        fprintf(stderr, "Found Directory: %s\n", path.fullname().c_str());
       } else if (path.isFile()) {
-        fprintf(stderr, "Found File: %s\n", path.fullname().c_str()); //name.c_str());
+        fprintf(stderr, "Found File: %s\n", path.fullname().c_str());
       } else {
-        fprintf(stderr, "Found: %s\n", path.fullname().c_str()); //name.c_str());
+        fprintf(stderr, "Found: %s\n", path.fullname().c_str());
       }
       return true;
     }

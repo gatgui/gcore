@@ -23,7 +23,6 @@ USA.
 
 #include <gcore/env.h>
 #include <gcore/platform.h>
-#include <gcore/path.h>
 
 namespace gcore {
 
@@ -93,7 +92,7 @@ namespace details {
         : mLst(l) {
       }
       bool pathItem(const Path &item) {
-        mLst.push_back(item);
+        mLst.push(item);
         return true;
       }
     private:
@@ -122,7 +121,7 @@ Env::~Env() {
 
 void Env::push() {
   StringDict d;
-  mEnvStack.push_back(d);
+  mEnvStack.push(d);
   asDict(mEnvStack.back());
 }
 
@@ -145,7 +144,7 @@ void Env::pop() {
       ++it;
     }
     
-    mEnvStack.pop_back();
+    mEnvStack.pop();
   }
 }
 

@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
     return -1;
   }
   
-  std::string filename(argv[1]);
+  gcore::String filename(argv[1]);
   
   std::cout << "Create and write plist to file..." << std::endl;
   try {
@@ -50,12 +50,12 @@ int main(int argc, char **argv) {
   
   gcore::PropertyList pl;
   
-  if (!pl.read(filename)) {
-    std::cerr << "Could not read file: \"" << filename << "\"" << std::endl;
-    return -1;
-  }
-  
   try {
+    if (!pl.read(filename)) {
+      std::cerr << "Could not read file: \"" << filename << "\"" << std::endl;
+      return -1;
+    }
+    
     std::cout << "Font name: " << pl.getString("font.name") << std::endl;
     std::cout << "Font size: " << pl.getInteger("font.size") << std::endl;
     std::cout << "Num schemes: " << pl.getArraySize("schemes.all") << std::endl;

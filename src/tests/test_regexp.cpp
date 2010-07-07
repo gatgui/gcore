@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -25,22 +25,48 @@ USA.
 
 
 int main(int, char**) {
-
-  std::string exp = "fred(?!eric)";
-  gcore::Regexp rexp(exp);
-
-  std::vector<std::string> str;
-  str.push_back("frederic");
-  str.push_back("fredo");
   
-  for (size_t i=0; i<str.size(); ++i) {
-    std::cout << "\"" << str[i] << "\" =~ /" << exp << "/" << std::endl;
-    if (rexp.match(str[i])) {
+  gcore::String exp = "fred(?!eric)";
+  gcore::Regexp re0(exp);
+  
+  gcore::StringList strs;
+  strs.push_back("frederic");
+  strs.push_back("fredo");
+  
+  for (size_t i=0; i<strs.size(); ++i) {
+    std::cout << "\"" << strs[i] << "\" =~ /" << exp << "/" << std::endl;
+    if (re0.match(strs[i])) {
       std::cout << "  Matched" << std::endl;
     } else {
       std::cout << "  Not matched" << std::endl;
     }
   }
-
+  
+  gcore::RexError err;
+  gcore::Regexp re1(IEC("(\d\d):(\d\d)"), gcore::REX_CAPTURE, &err);
+  
+  fprintf(stderr, "Error? %s\n", re1.getError(err));
+  
+  gcore::RegexpMatch md(gcore::REX_FORWARD|gcore::REX_NOT_EMPTY);
+  
+  gcore::String str = "   Time -> 10:23  ";
+  
+  md.setRange(3, str.length()-2);
+  
+  if (re1.match(str, md))
+  {
+    fprintf(stderr, "\"%s",             md.pre().c_str() );
+    fprintf(stderr, "<<%s>>",           md.group(0).c_str()  );
+    fprintf(stderr, "%s\"\n",           md.post().c_str());
+    fprintf(stderr, "Found1: \'%s\'\n", md.group(1).c_str()  );
+    fprintf(stderr, "Found2: \'%s\'\n", md.group(2).c_str()  );
+    
+    fprintf(stderr, "Substitute: %s\n", re1.substitute(md, "Current time is \\1:\\2, removed \"\\`\" and \"\\'\", whole match \"&\"").c_str());
+  }
+  else
+  {
+    fprintf(stderr, "Not found\n");
+  }
+  
   return 0;
 }

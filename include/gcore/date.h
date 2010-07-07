@@ -24,12 +24,12 @@ USA.
 #ifndef __gcore_date_h_
 #define __gcore_date_h_
 
-#include <gcore/config.h>
+#include <gcore/string.h>
 #include <gcore/platform.h>
 
 namespace gcore {
   
-  GCORE_API std::string GetDate();
+  GCORE_API String GetDate();
   
   class GCORE_API Date {
     public:
@@ -79,10 +79,10 @@ namespace gcore {
       Date& operator+=(const Date &rhs);
       
       // this methods will return emtpy strings for difference time
-      std::string format(const std::string &fmt) const;
-      std::string strftime(const std::string &fmt) const;
+      String format(const String &fmt) const;
+      String strftime(const String &fmt) const;
       
-      std::string toString() const;
+      String toString() const;
       
       inline bool operator<=(const Date &rhs) const {
         return (operator==(rhs) || operator<(rhs));

@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -24,7 +24,8 @@ USA.
 #ifndef __gcore_argparser_h_
 #define __gcore_argparser_h_
 
-#include <gcore/config.h>
+#include <gcore/string.h>
+#include <gcore/list.h>
 
 #define ACCEPTS_NOFLAG_ARGUMENTS(arity) {(gcore::FlagDesc::Option)0, "", "", arity}
 
@@ -37,18 +38,18 @@ namespace gcore {
       FT_MULTI = 0x04      // flag can appear several times
     };
     Option opts;
-    std::string longname;  // -<shortName>
-    std::string shortname; // --<longName>
+    String longname;  // -<shortName>
+    String shortname; // --<longName>
     int arity;             // <0: any
   };
   
   class GCORE_API ArgParserError : public std::exception {
     public:
-      ArgParserError(const std::string &message);
+      ArgParserError(const String &message);
       virtual ~ArgParserError() throw();
       virtual const char* what() const throw();
     protected:
-      std::string mMessage;
+      String mMessage;
   };
 
   class GCORE_API ArgParser {
@@ -58,49 +59,49 @@ namespace gcore {
       ~ArgParser();
 
       size_t getArgumentCount() const;
-      bool getArgument(size_t idx, std::string &out) const;
+      bool getArgument(size_t idx, String &out) const;
       bool getArgument(size_t idx, float &out) const;
       bool getArgument(size_t idx, double &out) const;
       bool getArgument(size_t idx, int &out) const;
       bool getArgument(size_t idx, unsigned int &out) const;
       bool getArgument(size_t idx, bool &out) const;
 
-      bool isFlagSet(const std::string &name) const;
-      size_t getFlagOccurenceCount(const std::string &name) const;// if flag is multi
-      size_t getFlagArgumentCount(const std::string &name, size_t occurence=0) const;
-      bool getFlagArgument(const std::string &name, size_t idx, std::string &out) const;
-      bool getFlagArgument(const std::string &name, size_t idx, float &out) const;
-      bool getFlagArgument(const std::string &name, size_t idx, double &out) const;
-      bool getFlagArgument(const std::string &name, size_t idx, int &out) const;
-      bool getFlagArgument(const std::string &name, size_t idx, unsigned int &out) const;
-      bool getFlagArgument(const std::string &name, size_t idx, bool &out) const;
-      bool getMultiFlagArgument(const std::string &name, size_t occurence, size_t idx, std::string &out) const;
-      bool getMultiFlagArgument(const std::string &name, size_t occurence,  size_t idx, float &out) const;
-      bool getMultiFlagArgument(const std::string &name, size_t occurence,  size_t idx, double &out) const;
-      bool getMultiFlagArgument(const std::string &name, size_t occurence,  size_t idx, int &out) const;
-      bool getMultiFlagArgument(const std::string &name, size_t occurence,  size_t idx, unsigned int &out) const;
-      bool getMultiFlagArgument(const std::string &name, size_t occurence,  size_t idx, bool &out) const;
+      bool isFlagSet(const String &name) const;
+      size_t getFlagOccurenceCount(const String &name) const;// if flag is multi
+      size_t getFlagArgumentCount(const String &name, size_t occurence=0) const;
+      bool getFlagArgument(const String &name, size_t idx, String &out) const;
+      bool getFlagArgument(const String &name, size_t idx, float &out) const;
+      bool getFlagArgument(const String &name, size_t idx, double &out) const;
+      bool getFlagArgument(const String &name, size_t idx, int &out) const;
+      bool getFlagArgument(const String &name, size_t idx, unsigned int &out) const;
+      bool getFlagArgument(const String &name, size_t idx, bool &out) const;
+      bool getMultiFlagArgument(const String &name, size_t occurence, size_t idx, String &out) const;
+      bool getMultiFlagArgument(const String &name, size_t occurence,  size_t idx, float &out) const;
+      bool getMultiFlagArgument(const String &name, size_t occurence,  size_t idx, double &out) const;
+      bool getMultiFlagArgument(const String &name, size_t occurence,  size_t idx, int &out) const;
+      bool getMultiFlagArgument(const String &name, size_t occurence,  size_t idx, unsigned int &out) const;
+      bool getMultiFlagArgument(const String &name, size_t occurence,  size_t idx, bool &out) const;
 
       void parse(int argc, char **argv) throw (ArgParserError);
 
     protected:
 
-      FlagDesc* findLongFlag(const std::string &name);
-      FlagDesc* findShortFlag(const std::string &name);
+      FlagDesc* findLongFlag(const String &name);
+      FlagDesc* findShortFlag(const String &name);
       void reset();
       
     protected:
       
-      typedef std::vector<std::string> FlagValues;
-      typedef std::vector<FlagValues> FlagOccurencesValues;
-      typedef std::map<std::string, int> FlagsMap;
+      typedef StringList FlagValues;
+      typedef List<FlagValues> FlagOccurencesValues;
+      typedef std::map<String, int> FlagsMap;
 
       bool mNoFlagOn;
       int mNoFlagCount;
-      std::vector<FlagDesc> mFlags;
-      std::vector<std::string> mArgs;
+      List<FlagDesc> mFlags;
+      StringList mArgs;
       FlagsMap mFlagsMap;
-      std::vector<FlagOccurencesValues> mDatas;
+      List<FlagOccurencesValues> mDatas;
 
     private:
 

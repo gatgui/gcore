@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -23,22 +23,11 @@ USA.
 
 #include <gcore/argparser.h>
 
-#ifdef _WIN32
-# if _MSC_VER >= 1400
-    // Visual Studio 2005 or above
-#		define strcasecmp _stricmp
-# else
-# 	define strcasecmp stricmp
-# endif
-#endif
-
-using namespace std;
-
 namespace gcore {
 
 
-ArgParserError::ArgParserError(const std::string &message)
-  :mMessage(message) {
+ArgParserError::ArgParserError(const String &message)
+  : mMessage(message) {
 }
 
 ArgParserError::~ArgParserError() throw() {
@@ -71,7 +60,7 @@ ArgParser::ArgParser(const FlagDesc *flags, int n)
           mNoFlagCount = 0;
         }
       } else {
-        mFlags.push_back(flags[i]);
+        mFlags.push(flags[i]);
       }
     }
   }
@@ -84,7 +73,7 @@ size_t ArgParser::getArgumentCount() const {
   return mArgs.size();
 }
 
-bool ArgParser::getArgument(size_t idx, string &out) const {
+bool ArgParser::getArgument(size_t idx, String &out) const {
   if (idx < mArgs.size()) {
     out = mArgs[idx];
     return true;
@@ -93,49 +82,26 @@ bool ArgParser::getArgument(size_t idx, string &out) const {
 }
 
 bool ArgParser::getArgument(size_t idx, float &out) const {
-  if (idx < mArgs.size()) {
-    return (sscanf(mArgs[idx].c_str(), "%f", &out) == 1);
-  }
-  return false;
+  return mArgs[idx].toFloat(out);
 }
 
 bool ArgParser::getArgument(size_t idx, double &out) const {
-  if (idx < mArgs.size()) {
-    return (sscanf(mArgs[idx].c_str(), "%lf", &out) == 1);
-  }
-  return false;
+  return mArgs[idx].toDouble(out);
 }
 
 bool ArgParser::getArgument(size_t idx, int &out) const {
-  if (idx < mArgs.size()) {
-    return (sscanf(mArgs[idx].c_str(), "%d", &out) == 1);
-  }
-  return false;
+  return mArgs[idx].toInt(out);
 }
 
 bool ArgParser::getArgument(size_t idx, unsigned int &out) const {
-  if (idx < mArgs.size()) {
-    return (sscanf(mArgs[idx].c_str(), "%u", &out) == 1);
-  }
-  return false;
+  return mArgs[idx].toUInt(out);
 }
 
 bool ArgParser::getArgument(size_t idx, bool &out) const {
-  if (idx < mArgs.size()) {
-    if ((mArgs[idx] == "0") ||
-        !strcasecmp(mArgs[idx].c_str(), "false")) {
-      out = false;
-      return true;
-    } else if ((mArgs[idx] == "1") ||
-              !strcasecmp(mArgs[idx].c_str(), "true")) {
-      out = true;
-      return true;
-    }
-  }
-  return false;
+  return mArgs[idx].toBool(out);
 }
 
-size_t ArgParser::getFlagOccurenceCount(const string &name) const {
+size_t ArgParser::getFlagOccurenceCount(const String &name) const {
   FlagsMap::const_iterator it = mFlagsMap.find(name);
   if (it != mFlagsMap.end()) {
     return (mDatas[it->second].size());
@@ -143,7 +109,7 @@ size_t ArgParser::getFlagOccurenceCount(const string &name) const {
   return 0;
 }
 
-size_t ArgParser::getFlagArgumentCount(const string &name, size_t occurence) const {
+size_t ArgParser::getFlagArgumentCount(const String &name, size_t occurence) const {
   FlagsMap::const_iterator it = mFlagsMap.find(name);
   if (it != mFlagsMap.end()) {
     const FlagOccurencesValues &data = mDatas[it->second];
@@ -154,7 +120,7 @@ size_t ArgParser::getFlagArgumentCount(const string &name, size_t occurence) con
   return 0;
 }
 
-bool ArgParser::getMultiFlagArgument(const string &name, size_t occurence, size_t idx, string &out) const {
+bool ArgParser::getMultiFlagArgument(const String &name, size_t occurence, size_t idx, String &out) const {
   FlagsMap::const_iterator it = mFlagsMap.find(name);
   if (it != mFlagsMap.end()) {
     const FlagOccurencesValues &data = mDatas[it->second];
@@ -168,104 +134,96 @@ bool ArgParser::getMultiFlagArgument(const string &name, size_t occurence, size_
   return false;
 }
 
-bool ArgParser::getMultiFlagArgument(const string &name, size_t occurence,  size_t idx, float &out) const {
+bool ArgParser::getMultiFlagArgument(const String &name, size_t occurence,  size_t idx, float &out) const {
   FlagsMap::const_iterator it = mFlagsMap.find(name);
   if (it != mFlagsMap.end()) {
     const FlagOccurencesValues &data = mDatas[it->second];
     if (occurence < data.size()) {
       if (idx < data[occurence].size()) {
-        return (sscanf(data[occurence][idx].c_str(), "%f", &out) == 1);
+        return data[occurence][idx].toFloat(out);
       }
     }
   }
   return false;
 }
 
-bool ArgParser::getMultiFlagArgument(const string &name, size_t occurence,  size_t idx, double &out) const {
+bool ArgParser::getMultiFlagArgument(const String &name, size_t occurence,  size_t idx, double &out) const {
   FlagsMap::const_iterator it = mFlagsMap.find(name);
   if (it != mFlagsMap.end()) {
     const FlagOccurencesValues &data = mDatas[it->second];
     if (occurence < data.size()) {
       if (idx < data[occurence].size()) {
-        return (sscanf(data[occurence][idx].c_str(), "%lf", &out) == 1);
+        return data[occurence][idx].toDouble(out);
       }
     }
   }
   return false;
 }
 
-bool ArgParser::getMultiFlagArgument(const string &name, size_t occurence,  size_t idx, int &out) const {
+bool ArgParser::getMultiFlagArgument(const String &name, size_t occurence,  size_t idx, int &out) const {
   FlagsMap::const_iterator it = mFlagsMap.find(name);
   if (it != mFlagsMap.end()) {
     const FlagOccurencesValues &data = mDatas[it->second];
     if (occurence < data.size()) {
       if (idx < data[occurence].size()) {
-        return (sscanf(data[occurence][idx].c_str(), "%d", &out) == 1);
+        return data[occurence][idx].toInt(out);
       }
     }
   }
   return false;
 }
 
-bool ArgParser::getMultiFlagArgument(const string &name, size_t occurence,  size_t idx, unsigned int &out) const {
+bool ArgParser::getMultiFlagArgument(const String &name, size_t occurence,  size_t idx, unsigned int &out) const {
   FlagsMap::const_iterator it = mFlagsMap.find(name);
   if (it != mFlagsMap.end()) {
     const FlagOccurencesValues &data = mDatas[it->second];
     if (occurence < data.size()) {
       if (idx < data[occurence].size()) {
-        return (sscanf(data[occurence][idx].c_str(), "%u", &out) == 1);
+        return data[occurence][idx].toUInt(out);
       }
     }
   }
   return false;
 }
 
-bool ArgParser::getMultiFlagArgument(const string &name, size_t occurence,  size_t idx, bool &out) const {
+bool ArgParser::getMultiFlagArgument(const String &name, size_t occurence,  size_t idx, bool &out) const {
   FlagsMap::const_iterator it = mFlagsMap.find(name);
   if (it != mFlagsMap.end()) {
     const FlagOccurencesValues &data = mDatas[it->second];
     if (occurence < data.size()) {
       if (idx < data[occurence].size()) {
-        if ((data[occurence][idx] == "0") ||
-            !strcasecmp(data[occurence][idx].c_str(), "false")) {
-          out = false;
-          return true;
-        } else if ((data[occurence][idx] == "1") ||
-                  !strcasecmp(data[occurence][idx].c_str(), "true")) {
-          out = true;
-          return true;
-        }
+        return data[occurence][idx].toBool(out);
       }
     }
   }
   return false;
 }
 
-bool ArgParser::getFlagArgument(const string &name, size_t idx, string &out) const {
+bool ArgParser::getFlagArgument(const String &name, size_t idx, String &out) const {
   return getMultiFlagArgument(name, 0, idx, out);
 }
 
-bool ArgParser::getFlagArgument(const string &name, size_t idx, float &out) const {
+bool ArgParser::getFlagArgument(const String &name, size_t idx, float &out) const {
   return getMultiFlagArgument(name, 0, idx, out);
 }
 
-bool ArgParser::getFlagArgument(const string &name, size_t idx, double &out) const {
+bool ArgParser::getFlagArgument(const String &name, size_t idx, double &out) const {
   return getMultiFlagArgument(name, 0, idx, out);
 }
 
-bool ArgParser::getFlagArgument(const string &name, size_t idx, int &out) const {
+bool ArgParser::getFlagArgument(const String &name, size_t idx, int &out) const {
   return getMultiFlagArgument(name, 0, idx, out);
 }
 
-bool ArgParser::getFlagArgument(const string &name, size_t idx, unsigned int &out) const {
+bool ArgParser::getFlagArgument(const String &name, size_t idx, unsigned int &out) const {
   return getMultiFlagArgument(name, 0, idx, out);
 }
 
-bool ArgParser::getFlagArgument(const string &name, size_t idx, bool &out) const {
+bool ArgParser::getFlagArgument(const String &name, size_t idx, bool &out) const {
   return getMultiFlagArgument(name, 0, idx, out);
 }
 
-bool ArgParser::isFlagSet(const string &name) const {
+bool ArgParser::isFlagSet(const String &name) const {
   return (mFlagsMap.find(name) != mFlagsMap.end());
 }
 
@@ -300,18 +258,18 @@ void ArgParser::parse(int argc, char **argv) throw (ArgParserError) {
     if (isFlag) {
       
       if (!nflag) {
-        ostringstream oss;
+        std::ostringstream oss;
         oss << "Unknown flag: \"" << flag << "\"";
         throw ArgParserError(oss.str());
       }
 
       if (cflag) {
         if (cflag->arity>0 && valcount!=cflag->arity) {
-          ostringstream oss;
+          std::ostringstream oss;
           oss << "\"" << cflag->longname << "\" flag requires " << cflag->arity << " value(s)";
           throw ArgParserError(oss.str());
         } else if (cflag->arity==0 && valcount>0) {
-          ostringstream oss;
+          std::ostringstream oss;
           oss << "\"" << cflag->longname << "\" flag does not accept any value";
           throw ArgParserError(oss.str());
         }
@@ -328,10 +286,10 @@ void ArgParser::parse(int argc, char **argv) throw (ArgParserError) {
         cdata = (int)mDatas.size();
         mFlagsMap[cflag->shortname] = cdata;
         mFlagsMap[cflag->longname] = cdata;
-        mDatas.push_back(FlagOccurencesValues());
+        mDatas.push(FlagOccurencesValues());
       } else {
         if (!(cflag->opts & FlagDesc::FT_MULTI)) {
-          ostringstream oss;
+          std::ostringstream oss;
           oss << "\"" << cflag->longname << "\" flag is single usage";
           throw ArgParserError(oss.str());
         }
@@ -339,14 +297,14 @@ void ArgParser::parse(int argc, char **argv) throw (ArgParserError) {
       }
       if (cflag->arity != 0) {
         cvalues = (int)mDatas[cdata].size();
-        mDatas[cdata].push_back(FlagValues());
+        mDatas[cdata].push(FlagValues());
       } else {
         cvalues = -1;
       }
     } else {
       if (cvalues != -1 && valcount != cflag->arity) {
         valcount++;
-        mDatas[cdata][cvalues].push_back(string(argv[carg]));
+        mDatas[cdata][cvalues].push(String(argv[carg]));
       } else {
         cflag = 0;
         cdata = -1;
@@ -355,14 +313,14 @@ void ArgParser::parse(int argc, char **argv) throw (ArgParserError) {
         if (mNoFlagOn) {
           if (mNoFlagCount == -1 ||
               (int)(mArgs.size()) < mNoFlagCount) {
-            mArgs.push_back(string(argv[carg]));
+            mArgs.push(String(argv[carg]));
           } else {
-            ostringstream oss;
+            std::ostringstream oss;
             oss << "Only " << mNoFlagCount << " non-flag value(s) accepted";
             throw ArgParserError(oss.str());
           }
         } else {
-          ostringstream oss;
+          std::ostringstream oss;
           oss << "Only flags arguments are accepted (Arg " << carg << ": " << argv[carg] << ")";
           throw ArgParserError(oss.str());
         }
@@ -372,14 +330,14 @@ void ArgParser::parse(int argc, char **argv) throw (ArgParserError) {
   }
   if (cflag) {
     if (cflag->arity>0 && cflag->arity!=valcount) {
-      ostringstream oss;
+      std::ostringstream oss;
       oss << "\"" << cflag->longname << "\" flag requires " << cflag->arity << " value(s)";
       throw ArgParserError(oss.str());
     }
   }
   if (mNoFlagOn && mNoFlagCount>0) {
     if ((int)mArgs.size() != mNoFlagCount) {
-      ostringstream oss;
+      std::ostringstream oss;
       oss << mNoFlagCount << " non-flag value(s) required";
       throw ArgParserError(oss.str());
     }
@@ -389,7 +347,7 @@ void ArgParser::parse(int argc, char **argv) throw (ArgParserError) {
     for (size_t i=0; i<mFlags.size(); ++i) {
       if (mFlags[i].opts & FlagDesc::FT_NEEDED) {
         if (mFlagsMap.find(mFlags[i].longname) == mFlagsMap.end()) {
-          ostringstream oss;
+          std::ostringstream oss;
           oss << "\"" << mFlags[i].longname << "\" flag is required";
           throw ArgParserError(oss.str());
         }
@@ -398,7 +356,7 @@ void ArgParser::parse(int argc, char **argv) throw (ArgParserError) {
   }
 }
 
-FlagDesc* ArgParser::findLongFlag(const string &name) {
+FlagDesc* ArgParser::findLongFlag(const String &name) {
   size_t i;
   for (i=0; i<mFlags.size(); ++i) {
     if (mFlags[i].longname == name) {
@@ -408,7 +366,7 @@ FlagDesc* ArgParser::findLongFlag(const string &name) {
   return 0;
 }
 
-FlagDesc* ArgParser::findShortFlag(const string &name) {
+FlagDesc* ArgParser::findShortFlag(const String &name) {
   size_t i;
   for (i=0; i<mFlags.size(); ++i) {
     if (mFlags[i].shortname == name) {

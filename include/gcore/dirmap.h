@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2010  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -21,28 +21,29 @@ USA.
 
 */
 
-#ifndef __gcore_
-#define __gcore_
+#ifndef __gcore_dirmap_h_
+#define __gcore_dirmap_h_
 
-#include <gcore/pipe.h>
-#include <gcore/process.h>
-#include <gcore/threads.h>
-#include <gcore/threadpool.h>
-#include <gcore/dmodule.h>
-#include <gcore/path.h>
-#include <gcore/regexp.h>
-#include <gcore/tokenizer.h>
-#include <gcore/plist.h>
-#include <gcore/memory.h>
-#include <gcore/md5.h>
-#include <gcore/xml.h>
 #include <gcore/string.h>
-#include <gcore/date.h>
-#include <gcore/env.h>
-#include <gcore/typetraits.h>
-#include <gcore/list.h>
-#include <gcore/argparser.h>
-#include <gcore/dirmap.h>
+#include <gcore/path.h>
 
-#endif 
+namespace gcore {
+   
+  class GCORE_API Dirmap
+  {
+    private:
+      
+      static StringDict msWin2Nix;
+      static StringDict msNix2Win;
+      
+    public:
+      
+      static void AddMapping(const String &wpath, const String &npath);
+      static void RemoveMapping(const String &wpath, const String &npath);
+      static void ReadMappingsFromFile(const Path &mapfile);
+      static String Map(const String &path);
+  };
+  
+}
 
+#endif

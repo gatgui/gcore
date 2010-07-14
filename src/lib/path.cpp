@@ -23,6 +23,7 @@ USA.
 
 #include <gcore/path.h>
 #include <gcore/platform.h>
+#include <gcore/dirmap.h>
 
 namespace gcore {
   
@@ -58,6 +59,7 @@ namespace gcore {
   
   Path& Path::operator=(const char *s) {
     String tmp(s);
+    tmp = Dirmap::Map(tmp);
     tmp.replace('\\', '/');
     tmp.split('/', mPaths);
     size_t i = 0;

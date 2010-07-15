@@ -70,6 +70,8 @@ namespace gcore {
       String& operator=(double d);
       String& operator=(bool b);
       
+      String& operator+=(const String &rhs);
+      
       String& strip();
       //size_t split(char c, List &l) const;
       size_t split(char c, StringList &l) const;

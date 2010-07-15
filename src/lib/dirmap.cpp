@@ -101,7 +101,12 @@ String Dirmap::Map(const String &path) {
   }
   
   if (bestpath.length() > 0) {
-    return lookuppath.replace(bestpath, (*lookupmap)[bestpath], 1);
+    lookuppath = (*lookupmap)[bestpath];
+    lookuppath += path.substr(bestpath.length());
+#ifndef _WIN32
+    lookuppath.replace('\\', '/');
+#endif
+    return lookuppath;
   } else {
     return path;
   }

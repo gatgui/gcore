@@ -222,6 +222,11 @@ String& String::operator=(bool b) {
   return *this;
 }
 
+String& String::operator+=(const String &rhs) {
+  append(rhs);
+  return *this;
+}
+
 String& String::strip() {
   size_t p = find_first_not_of(" \t\r\n\v");
   if (p == npos) {

@@ -22,7 +22,7 @@ USA.
 */
 
 #include <gcore/plist.h>
-#include <gcore/regexp.h>
+#include <gcore/rex.h>
 #include <cstdarg>
 
 // --- Utils
@@ -54,9 +54,9 @@ static gcore::String ReadLine(std::istream &is) {
 }
 
 static gcore::String ReadOpenTag(const gcore::String &line, gcore::String &b, gcore::String &a) {
-  static const gcore::Regexp tagopen(IEC("<([-\w]+)(\s+[^>]*)?>"), gcore::REX_CAPTURE);
-  gcore::RegexpMatch md;
-  if (tagopen.match(line, md)) {
+  static const gcore::Rex tagopen(RAW("<([-\w]+)(\s+[^>]*)?>"));
+  gcore::RexMatch md;
+  if (tagopen.search(line, md)) {
     b = md.pre();
     a = md.post();
     return md.group(1);
@@ -73,9 +73,9 @@ static gcore::String ReadOpenTag(std::istream &is, gcore::String &b, gcore::Stri
 }
 
 static bool ReadCloseTag(const gcore::String &name, const gcore::String &line, gcore::String &b, gcore::String &a) {
-  gcore::Regexp tagclose("</" + name + ">");
-  gcore::RegexpMatch md;
-  if (tagclose.match(line, md)) {
+  gcore::Rex tagclose("</" + name + ">");
+  gcore::RexMatch md;
+  if (tagclose.search(line, md)) {
     b = md.pre();
     a = md.post();
     return true;
@@ -95,9 +95,9 @@ static void AppendXMLString(gcore::String &dst, const gcore::String &str) {
 }
 
 static bool ContainsTag(const gcore::String &line) {
-  static const gcore::Regexp tag(IEC("</?[-\w]+>"));
-  gcore::RegexpMatch md;
-  if (tag.match(line, md)) {
+  static const gcore::Rex tag(RAW("</?[-\w]+>"));
+  gcore::RexMatch md;
+  if (tag.search(line, md)) {
     return true;
   } else {
     return false;
@@ -520,8 +520,8 @@ plist::Boolean::~Boolean() {
 }
 
 bool plist::Boolean::fromXML(std::istream &xml, gcore::String &remain) {
-  static const Regexp trueexp(IEC("^\s*true\s*$"), REX_ICASE);
-  static const Regexp falseexp(IEC("^\s*false\s*$"), REX_ICASE);
+  static const Rex trueexp(RAW("^\s*true\s*$"));
+  static const Rex falseexp(RAW("^\s*false\s*$"));
   
   gcore::String before, after;
   
@@ -550,10 +550,10 @@ bool plist::Boolean::fromXML(std::istream &xml, gcore::String &remain) {
   }
   
   AppendXMLString(content, before);
-  gcore::RegexpMatch md;
+  gcore::RexMatch md;
   
-  if (!trueexp.match(content, md)) {
-    if (!falseexp.match(content, md)) {
+  if (!trueexp.match(content, md, gcore::Rex::NoCase)) {
+    if (!falseexp.match(content, md, gcore::Rex::NoCase)) {
 #ifdef _DEBUG
       std::cerr << "Invalid <boolean> content: \"" << content << "\"" << std::endl;
 #endif
@@ -956,7 +956,7 @@ void PropertyList::write(const String &filename) const {
 }
 
 bool PropertyList::read(const String &filename) {
-  static const gcore::Regexp header(IEC("<\?xml\s.*\?>"));
+  static const gcore::Rex header(RAW("<\?xml\s.*\?>"));
   
   if (mTop) {
     delete mTop;
@@ -974,9 +974,9 @@ bool PropertyList::read(const String &filename) {
   
   String line = ReadLine(xml);
   
-  gcore::RegexpMatch md;
+  gcore::RexMatch md;
   
-  if (!header.match(line, md)) {
+  if (!header.search(line, md)) {
 #ifdef _DEBUG
     std::cerr << "Missing XML header" << std::endl;
 #endif

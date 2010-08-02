@@ -29,8 +29,8 @@ USA.
 
 namespace gcore {
   
-  class GCORE_API Regexp;
-  class GCORE_API RegexpMatch;
+  class GCORE_API Rex;
+  class GCORE_API RexMatch;
   class GCORE_API StringList;
   
   class GCORE_API String : public std::string {
@@ -85,8 +85,8 @@ namespace gcore {
       //String join(const List &l) const;
       String join(const StringList &l) const;
       size_t count(char c) const;
-      bool match(const std::string &exp, RegexpMatch *m=0) const;
-      bool match(const char *exp, RegexpMatch *m=0) const;
+      bool match(const std::string &exp, class RexMatch *m=0) const;
+      bool match(const char *exp, class RexMatch *m=0) const;
       String& subst(const std::string &exp, const std::string &by);
       String& subst(const char *exp, const char *by);
       int casecompare(const String &s) const;
@@ -115,7 +115,7 @@ namespace gcore {
       
       StringList& operator=(const std::vector<String> &rhs);
       
-      StringList& filter(const Regexp &re);
+      StringList& filter(const Rex &re);
       
       template <typename InputIterator>
       StringList(InputIterator first, InputIterator last)

@@ -22,10 +22,10 @@ USA.
 */
 
 #include <gcore/dirmap.h>
-#include <gcore/regexp.h>
+#include <gcore/rex.h>
 
 static bool IsWindowsPath(const std::string &p) {
-  static gcore::Regexp wpe(IEC("^[A-Za-z]:[/\\]"));
+  static gcore::Rex wpe(RAW("^[A-Za-z]:[/\\]"));
   return wpe.match(p);
 }
 

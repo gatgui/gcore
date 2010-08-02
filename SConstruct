@@ -10,7 +10,7 @@ prjs = [
   { "name"    : "gcore",
     "type"    : "staticlib" if static else "sharedlib",
     "incdirs" : ["include"],
-    "srcs"    : glob.glob("src/lib/*.cpp") + glob.glob("src/lib/regex/*.cpp"),
+    "srcs"    : glob.glob("src/lib/*.cpp") + glob.glob("src/lib/rex/*.cpp"),
     "defs"    : ["GCORE_STATIC"] if static else ["GCORE_EXPORTS"],
     "custom"  : [threads.Require, dl.Require]
   },

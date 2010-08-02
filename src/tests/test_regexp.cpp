@@ -27,7 +27,7 @@ USA.
 int main(int, char**) {
   
   gcore::String exp = "fred(?!eric)";
-  gcore::Regexp re0(exp);
+  gcore::Rex re0(exp);
   
   gcore::StringList strs;
   strs.push_back("frederic");
@@ -42,18 +42,15 @@ int main(int, char**) {
     }
   }
   
-  gcore::RexError err;
-  gcore::Regexp re1(IEC("(\d\d):(\d\d)"), gcore::REX_CAPTURE, &err);
+  gcore::Rex re1(RAW("(\d\d):(\d\d)"));
   
-  fprintf(stderr, "Error? %s\n", re1.getError(err));
+  //fprintf(stderr, "Error? %s\n", re1.getError(err));
   
-  gcore::RegexpMatch md(gcore::REX_FORWARD|gcore::REX_NOT_EMPTY);
+  gcore::RexMatch md;
   
   gcore::String str = "   Time -> 10:23  ";
   
-  md.setRange(3, str.length()-2);
-  
-  if (re1.match(str, md))
+  if (re1.search(str, md, 0, 3, str.length()-3))
   {
     fprintf(stderr, "\"%s",             md.pre().c_str() );
     fprintf(stderr, "<<%s>>",           md.group(0).c_str()  );
@@ -61,7 +58,8 @@ int main(int, char**) {
     fprintf(stderr, "Found1: \'%s\'\n", md.group(1).c_str()  );
     fprintf(stderr, "Found2: \'%s\'\n", md.group(2).c_str()  );
     
-    fprintf(stderr, "Substitute: %s\n", re1.substitute(md, "Current time is \\1:\\2, removed \"\\`\" and \"\\'\", whole match \"&\"").c_str());
+    //fprintf(stderr, "Substitute: %s\n", re1.substitute(md, "Current time is \\1:\\2, removed \"\\`\" and \"\\'\", whole match \"\\&\"").c_str());
+    fprintf(stderr, "Substitute: %s\n", re1.substitute(md, RAW("Current time is \1:\2, removed '\`' and '\'', whole match '\&'")).c_str());
   }
   else
   {

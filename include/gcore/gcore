@@ -30,7 +30,7 @@ USA.
 #include <gcore/threadpool.h>
 #include <gcore/dmodule.h>
 #include <gcore/path.h>
-#include <gcore/regexp.h>
+#include <gcore/rex.h>
 #include <gcore/tokenizer.h>
 #include <gcore/plist.h>
 #include <gcore/memory.h>

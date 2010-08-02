@@ -23,7 +23,7 @@ USA.
 
 #include <gcore/string.h>
 #include <gcore/platform.h>
-#include <gcore/regexp.h>
+#include <gcore/rex.h>
 
 namespace gcore {
 
@@ -47,7 +47,7 @@ StringList& StringList::operator=(const std::vector<String> &rhs) {
   return *this;
 }
 
-StringList& StringList::filter(const Regexp &re) {
+StringList& StringList::filter(const Rex &re) {
   List<String>::iterator it = begin();
   while (it != end()) {
     if (re.match(*it)) {
@@ -403,18 +403,18 @@ int String::casecompare(const char *s) const {
 #endif
 }
 
-bool String::match(const std::string &ex, RegexpMatch *m) const {
-  Regexp re(ex.c_str(), REX_CAPTURE);
-  RegexpMatch md;
+bool String::match(const std::string &ex, RexMatch *m) const {
+  Rex re(ex.c_str());
+  RexMatch md;
   if (!m) {
     m = &md;
   }
   return (re.match(*this, *m));
 }
 
-bool String::match(const char *ex, RegexpMatch *m) const {
-  Regexp re(ex, REX_CAPTURE);
-  RegexpMatch md;
+bool String::match(const char *ex, RexMatch *m) const {
+  Rex re(ex);
+  RexMatch md;
   if (!m) {
     m = &md;
   }
@@ -422,19 +422,19 @@ bool String::match(const char *ex, RegexpMatch *m) const {
 }
 
 String& String::subst(const std::string &ex, const std::string &by) {
-  Regexp re(ex.c_str(), REX_CAPTURE);
-  RegexpMatch md;
+  Rex re(ex.c_str());
+  RexMatch md;
   if (re.match(*this, md)) {
-    assign(re.substitute(md, by));
+    assign(md.pre() + re.substitute(md, by) + md.post());
   }
   return *this;
 }
 
 String& String::subst(const char *ex, const char *by) {
-  Regexp re(ex, REX_CAPTURE);
-  RegexpMatch md;
+  Rex re(ex);
+  RexMatch md;
   if (re.match(*this, md)) {
-    assign(re.substitute(md, by));
+    assign(md.pre() + re.substitute(md, by) + md.post());
   }
   return *this;
 }

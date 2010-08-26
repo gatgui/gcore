@@ -144,7 +144,8 @@ void Date::set(Int64 t, bool asDiff) {
   mIsDiff = asDiff;
   
   if (!asDiff) {
-    struct tm *ts = localtime(&t);
+    time_t tt = time_t(t);
+    struct tm *ts = localtime(&tt);
     mDateTime = *ts;
     
   } else {

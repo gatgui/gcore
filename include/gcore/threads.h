@@ -271,9 +271,10 @@ namespace gcore {
       static void SleepCurrent(unsigned long msec);
       // yield current thread time quantum
       static void YieldCurrent();
+      // get current thread id
+      static ThreadID CurrentID();
       // get number of processor on machine
       static int GetProcessorCount();
-
       
     private:
       

@@ -2,3 +2,4 @@
 .sconsign.dblite
 release
 debug
+*.xml

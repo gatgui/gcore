@@ -929,6 +929,10 @@ void gcore::Thread::YieldCurrent() {
   Sleep(0);
 }
 
+gcore::ThreadID gcore::Thread::CurrentID() {
+  return (void*)GetCurrentThread();
+}
+
 int gcore::Thread::GetProcessorCount() {
   SYSTEM_INFO info;
   GetSystemInfo(&info);
@@ -1208,6 +1212,10 @@ void gcore::Thread::SleepCurrent(unsigned long msec) {
 
 void gcore::Thread::YieldCurrent() {
   sched_yield();
+}
+
+gcore::ThreadID gcore::Thread::CurrentID() {
+  return (ThreadID)pthread_self();
 }
 
 int gcore::Thread::GetProcessorCount() {

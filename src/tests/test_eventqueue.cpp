@@ -24,6 +24,23 @@ void safePrint(const char *fmt, ...)
   gPrintMutex.unlock();
 }
 
+void safeDebugPrint(const char *fmt, ...)
+{
+#ifdef _DEBUG
+  va_list args;
+  
+  gPrintMutex.lock();
+  
+  fprintf(stdout, "In thread %s - ", gThreadNames[gcore::Thread::CurrentID()].c_str());
+  
+  va_start(args, fmt);
+  vfprintf(stdout, fmt, args);
+  va_end(args);
+  
+  gPrintMutex.unlock();
+#endif
+}
+
 namespace gcore
 {
   class EventQueue
@@ -75,18 +92,18 @@ namespace gcore
         
         mEventsMutex.unlock();
         
-        safePrint("Pushed event %d\n", id);
+        safeDebugPrint("Pushed event %d\n", id);
         
         if (sync)
         {
           mDoneMutex.lock();
           while (mDoneID != id)
           {
-            safePrint("Not done yet\n");
+            safeDebugPrint("Not done yet\n");
             mDoneCond.wait(mDoneMutex);
-            safePrint("Awoken, check condition\n");
+            safeDebugPrint("Awoken, check if event %d is done\n", id);
           }
-          safePrint("Event has been processed\n");
+          safeDebugPrint("Event has been processed\n");
           mDoneID = (size_t)-1;
           mDoneMutex.unlock();
         }
@@ -105,7 +122,7 @@ namespace gcore
     {
       if (Thread::CurrentID() != mOwner)
       {
-        safePrint("Cannot poll\n");
+        safeDebugPrint("Cannot poll\n");
         return 0;
       }
       
@@ -127,13 +144,15 @@ namespace gcore
       
       EventList tmp(first, last);
       
+      mEvents.erase(first, last);
+      
       mEventsMutex.unlock();
       
       for (size_t i=0; i<tmp.size(); ++i)
       {
         Event &evt = tmp[i];
         
-        safePrint("Execute event %d\n", evt.id);
+        safeDebugPrint("Execute event %d\n", evt.id);
         
         evt.func();
         
@@ -147,7 +166,7 @@ namespace gcore
         
         if (evt.sync)
         {
-          safePrint("Notify waiting threads\n");
+          safeDebugPrint("Notify waiting threads event %d is done\n", evt.id);
           mDoneMutex.lock();
           mDoneID = evt.id;
           // Note: mDoneCond.notifyAll() won't do the job
@@ -160,13 +179,6 @@ namespace gcore
           mDoneMutex.unlock();
         }
       }
-      
-      // only remove events from queue once all are executed
-      // ... is that alright?
-      // No, we might not execute all events in queue
-      mEventsMutex.lock();
-      mEvents.erase(first, last);
-      mEventsMutex.unlock();
       
       return count;
     }
@@ -244,7 +256,7 @@ bool gThread1Done = false;
 bool gThread2Done = false;
 bool gThread3Done = false;
 bool gThread4Done = false;
-const int gLoopCount = 50;
+const int gLoopCount = 10000;
 
 void thread1SyncEvent()
 {
@@ -294,7 +306,7 @@ void thread1Proc()
   
   for (gThread1CurLoop=0; gThread1CurLoop<gLoopCount; ++gThread1CurLoop)
   {
-    safePrint("Push synchronized event and wait for result...\n");
+    safeDebugPrint("Push synchronized event and wait for result...\n");
     
     Bind(thread1SyncEvent, func);
     gMainThreadQueue->push(func, true);
@@ -311,13 +323,13 @@ void thread2Proc()
   
   for (gThread2CurLoop=0; gThread2CurLoop<gLoopCount; ++gThread2CurLoop)
   {
-    safePrint("Push synchronized event and wait for result...\n");
+    safeDebugPrint("Push synchronized event and wait for result...\n");
     
     Bind(thread2SyncEvent, func);
     gMainThreadQueue->push(func, true);
     
     
-    safePrint("Push asynchronized event\n");
+    safeDebugPrint("Push asynchronized event\n");
     
     Bind(thread2ASyncEvent, func);
     gMainThreadQueue->push(func, false);
@@ -334,7 +346,7 @@ void thread3Proc()
   
   for (gThread3CurLoop=0; gThread3CurLoop<gLoopCount; ++gThread3CurLoop)
   {
-    safePrint("Push asynchronized event\n");
+    safeDebugPrint("Push asynchronized event\n");
     
     Bind(thread3ASyncEvent, func);
     gMainThreadQueue->push(func, false);
@@ -351,12 +363,12 @@ void thread4Proc()
   
   for (gThread4CurLoop=0; gThread4CurLoop<gLoopCount; ++gThread4CurLoop)
   {
-    safePrint("Push asynchronized event\n");
+    safeDebugPrint("Push asynchronized event\n");
     
     Bind(thread4ASyncEvent, func);
     gMainThreadQueue->push(func, false);
     
-    safePrint("Push synchronized event and wait for result...\n");
+    safeDebugPrint("Push synchronized event and wait for result...\n");
     
     Bind(thread4SyncEvent, func);
     gMainThreadQueue->push(func, true);
@@ -377,7 +389,7 @@ int main(int, char**)
   
   ThreadPool tpool;
   
-#if 1
+#if 0
   
   tpool.start(2);
   

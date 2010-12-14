@@ -41,19 +41,19 @@ namespace gcore {
       
       ~ThreadPool();
 
-      void start(size_t numThreads=0);
+      bool start(size_t numThreads=0);
       
-      void restart();
+      bool restart();
 
-      void wait();
+      bool wait();
 
-      void stop();
+      bool stop();
       
       bool runTask(Task task, bool wait=true);
       
-      void addWorkers(size_t n);
+      bool addWorkers(size_t n);
       
-      void removeWorkers(size_t n);
+      bool removeWorkers(size_t n);
       
       size_t numIdleWorkers();
 
@@ -81,6 +81,12 @@ namespace gcore {
           
           int run();
           void done(int);
+
+        protected:
+        
+          inline void processing(bool p) {
+            mProcessing = p;
+          }
       };
       
       friend class Worker;
@@ -96,22 +102,25 @@ namespace gcore {
       size_t _numIdleWorkers();
 
     protected:
-
-      List<Worker*> mWorkers;
-      Mutex mWorkersAccess;
-      Condition mWorkersChanged;
       
       enum State {
         TPS_STOPPED,
         TPS_RUNNING,
         TPS_WAITING
       };
-
+      
       State mState;
+      ThreadID mDriverThread;
+      List<Worker*> mWorkers;
       std::deque<Task> mTasks;
-      Mutex mStateTaskAccess;
-      Condition mStateTaskChanged;
       size_t mRestartWorkersCount;
+      
+      Mutex mWorkersAccess;
+      Condition mWorkersChanged;
+      
+      Mutex mTasksAccess;
+      Condition mTasksChanged;
+      
   };
   
   

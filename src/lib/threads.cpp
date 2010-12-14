@@ -733,11 +733,11 @@ bool gcore::Thread::running() const {
   return mRunning;
 }
 
-gcore::ThreadID gcore::Thread::id() const {
-  return mSelf;
-}
-
 #ifdef _WIN32
+
+gcore::ThreadID gcore::Thread::id() const {
+  return mSelfId;
+}
 
 unsigned int __stdcall gcore::Thread::_ThreadEntryFunc(void *data) {
   register int ret = -1;
@@ -767,7 +767,9 @@ unsigned int __stdcall gcore::Thread::_ThreadEntryFunc(void *data) {
 
 gcore::Thread::Thread()
   : mSelf(0), mRunning(false), mStarted(false) {
-  mSelf = (void*)GetCurrentThread();
+  DWORD tid = GetCurrentThreadId();
+  mSelf = (void*) OpenThread(THREAD_ALL_ACCESS, true, tid);
+  mSelfId = (void*) tid;
   mRunning = (mSelf != 0);
 }
 
@@ -788,10 +790,10 @@ bool gcore::Thread::restart(bool waitStart) {
   mStarted = false;
   mRunning = true;
   
-  mSelf = (ThreadID)CreateThread(
-    NULL, 0, (LPTHREAD_START_ROUTINE)&_ThreadEntryFunc, this, 0, &dw);
+  mSelf = (ThreadID)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)&_ThreadEntryFunc, this, 0, &dw);
   
   if (mSelf != 0) {
+    mSelfId = (void*) GetThreadId((HANDLE)mSelf);
     //mRunning = true;
     if (waitStart) {
       waitStarted();
@@ -808,6 +810,7 @@ bool gcore::Thread::detach() {
     CloseHandle((HANDLE)mSelf);
     mRunning = false;
     mSelf = 0;
+    mSelfId = 0;
     return true;
   }
   return false;
@@ -823,6 +826,7 @@ bool gcore::Thread::join(int *retval) {
       }
       CloseHandle((HANDLE)mSelf);
       mSelf = 0;
+      mSelfId = 0;
       return true;
     }
   }
@@ -834,6 +838,7 @@ bool gcore::Thread::cancel() {
     if (TerminateThread((HANDLE)mSelf, 0)) {
       CloseHandle((HANDLE)mSelf);
       mSelf = 0;
+      mSelfId = 0;
       mRunning = false;
       return true;
     }
@@ -930,7 +935,7 @@ void gcore::Thread::YieldCurrent() {
 }
 
 gcore::ThreadID gcore::Thread::CurrentID() {
-  return (void*)GetCurrentThread();
+  return (void*) GetCurrentThreadId();
 }
 
 int gcore::Thread::GetProcessorCount() {
@@ -947,6 +952,10 @@ int gcore::Thread::GetProcessorCount() {
 # endif
 # include <CoreServices/CoreServices.h>
 #endif
+
+gcore::ThreadID gcore::Thread::id() const {
+  return mSelf;
+}
 
 void* gcore::Thread::_ThreadEntryFunc(void *data) {
   register int ret = 0;

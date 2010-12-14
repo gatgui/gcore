@@ -60,8 +60,13 @@ class GCORE_API Functor {
     typedef void (*Function)();
     
     inline Functor()
-      :callee(0) {
+      : callee(0) {
       ptr.func = 0;
+    }
+
+    inline Functor(const Functor &rhs)
+      : callee(rhs.callee) {
+      memcpy(ptr.mem, rhs.ptr.mem, sizeof(_Method));
     }
     
     inline Functor(const void *c, const void *f, size_t sz) {
@@ -71,6 +76,14 @@ class GCORE_API Functor {
       } else {
         ptr.func = f;
       }
+    }
+
+    inline Functor& operator=(const Functor &rhs) {
+      if (this != &rhs) {
+        callee = rhs.callee;
+        memcpy(ptr.mem, rhs.ptr.mem, sizeof(_Method));
+      }
+      return *this;
     }
 
     // Use only if you know what you're doing
@@ -87,7 +100,7 @@ class GCORE_API Functor {
     void *callee; // a weak ref !!
     
     union {
-      char mem[sizeof(_Method)];  // is that nig enought ?
+      char mem[sizeof(_Method)];  // is that big enought ?
       const void *func;
     } ptr;
 };
@@ -100,6 +113,16 @@ class GCORE_API Functor0 : public Functor {
     
     inline Functor0() : Functor() {}
     
+    inline Functor0(const Functor0 &rhs)
+      : Functor(rhs), translator(rhs.translator) {
+    }
+    
+    inline Functor0& operator=(const Functor0 &rhs) {
+      Functor::operator=(rhs);
+      translator = rhs.translator;
+      return *this;
+    }
+
     inline void operator()() {
       translator(*this);
     }
@@ -109,7 +132,7 @@ class GCORE_API Functor0 : public Functor {
     typedef void (*Translator)(const Functor &cb);
     
     inline Functor0(Translator t, const void *c, const void *f, size_t sz)
-      :Functor(c,f,sz), translator(t) {
+      : Functor(c,f,sz), translator(t) {
     }
     
   private:
@@ -123,7 +146,16 @@ class FunctionTranslator0 : public Functor0 {
   public:
     
     FunctionTranslator0(Func f)
-      :Functor0(call, 0, FPTR_CAST(const void*, f), 0) {
+      : Functor0(call, 0, FPTR_CAST(const void*, f), 0) {
+    }
+
+    FunctionTranslator0(const FunctionTranslator0<Func> &rhs)
+      : Functor0(rhs) {
+    }
+    
+    FunctionTranslator0<Func>& operator=(const FunctionTranslator0<Func> &rhs) {
+      Functor0::operator=(rhs);
+      return *this;
     }
     
     static void call(const Functor &cb) {
@@ -137,9 +169,18 @@ class MethodTranslator0 : public Functor0 {
   public:
     
     MethodTranslator0(Callee *c, Method &m)
-      :Functor0(call, c, &m, sizeof(Method)) {
+      : Functor0(call, c, &m, sizeof(Method)) {
     }
     
+    MethodTranslator0(const MethodTranslator0<Callee,Method> &rhs)
+      : Functor0(rhs) {
+    }
+    
+    MethodTranslator0<Callee,Method>& operator=(const MethodTranslator0<Callee,Method> &rhs) {
+      Functor0::operator=(rhs);
+      return *this;
+    }
+
     static void call(const Functor &cb) {
       Callee *callee = (Callee*)(cb.callee);
       Method &method(*(Method*)(void*)(cb.ptr.mem));
@@ -154,6 +195,16 @@ class Functor0wR : public Functor {
     
     Functor0wR() : Functor() {}
     
+    Functor0wR(const Functor0wR<R> &rhs)
+      : Functor(rhs), translator(rhs.translator) {
+    }
+    
+    Functor0wR<R>& operator=(const Functor0wR<R> &rhs) {
+      Functor::operator=(rhs);
+      translator = rhs.translator;
+      return *this;
+    }
+
     R operator()() {
       return translator(*this);
     }
@@ -177,9 +228,18 @@ class FunctionTranslator0wR : public Functor0wR<R> {
   public:
     
     FunctionTranslator0wR(Func f)
-      :Functor0wR<R>(call, 0, FPTR_CAST(const void*, f), 0) {
+      : Functor0wR<R>(call, 0, FPTR_CAST(const void*, f), 0) {
     }
-      
+    
+    FunctionTranslator0wR(const FunctionTranslator0wR<R,Func> &rhs)
+      : Functor0wR<R>(rhs) {
+    }
+    
+    FunctionTranslator0wR<R,Func>& operator=(const FunctionTranslator0wR<R,Func> &rhs) {
+      Functor0wR<R>::operator=(rhs);
+      return *this;
+    }
+
     static R call(const Functor &cb) {
       return FPTR_CAST(Func, cb.ptr.func)();
     }
@@ -191,9 +251,18 @@ class MethodTranslator0wR : public Functor0wR<R> {
   public:
     
     MethodTranslator0wR(Callee *c, Method &m)
-      :Functor0wR<R>(call, c, &m, sizeof(Method)) {
+      : Functor0wR<R>(call, c, &m, sizeof(Method)) {
     }
     
+    MethodTranslator0wR(const MethodTranslator0wR<R,Callee,Method> &rhs)
+      : Functor0wR<R>(rhs) {
+    }
+    
+    MethodTranslator0wR<R,Callee,Method>& operator=(const MethodTranslator0wR<R,Callee,Method> &rhs) {
+      Functor0wR<R>::operator=(rhs);
+      return *this;
+    }
+
     static R call(const Functor &cb) {
       Callee *callee = (Callee*)(cb.callee);
       Method &method(*(Method*)(void*)(cb.ptr.mem));
@@ -209,6 +278,16 @@ class Functor1 : public Functor {
     
     Functor1() : Functor() {}
     
+    Functor1(const Functor1<P1> &rhs)
+      : Functor(rhs), translator(rhs.translator) {
+    }
+    
+    Functor1<P1>& operator=(const Functor1<P1> &rhs) {
+      Functor::operator=(rhs);
+      translator = rhs.translator;
+      return *this;
+    }
+
     void operator()(P1 p1) {
       translator(*this, p1);
     }
@@ -218,7 +297,7 @@ class Functor1 : public Functor {
     typedef void (*Translator)(const Functor &, P1);
     
     Functor1(Translator t, const void *c,  const void *f, size_t sz)
-      :Functor(c,f,sz), translator(t) {
+      : Functor(c,f,sz), translator(t) {
     }
     
   private:
@@ -235,6 +314,15 @@ class FunctionTranslator1 : public Functor1<P1> {
       :Functor1<P1>(call, 0, FPTR_CAST(const void*, f), 0) {
     }
     
+    FunctionTranslator1(const FunctionTranslator1<P1,Func> &rhs)
+      : Functor1<P1>(rhs) {
+    }
+    
+    FunctionTranslator1<P1,Func>& operator=(const FunctionTranslator1<P1,Func> &rhs) {
+      Functor1<P1>::operator=(rhs);
+      return *this;
+    }
+
     static void call(const Functor &cb, P1 p1) {
       FPTR_CAST(Func, cb.ptr.func)(p1);
     } 
@@ -246,9 +334,18 @@ class MethodTranslator1 : public Functor1<P1> {
   public:
     
     MethodTranslator1(Callee *c, Method &m)
-      :Functor1<P1>(call, c, &m, sizeof(Method)) {
+      : Functor1<P1>(call, c, &m, sizeof(Method)) {
     }
     
+    MethodTranslator1(const MethodTranslator1<Callee,P1,Method> &rhs)
+      : Functor1<P1>(rhs) {
+    }
+    
+    MethodTranslator1<Callee,P1,Method>& operator=(const MethodTranslator1<Callee,P1,Method> &rhs) {
+      Functor1<P1>::operator=(rhs);
+      return *this;
+    }
+
     static void call(const Functor &cb, P1 p1) {
       Callee *callee = (Callee*)(cb.callee);
       Method &method(*(Method*)(void*)(cb.ptr.mem));
@@ -265,6 +362,16 @@ class Functor1wR : public Functor {
     
     Functor1wR() : Functor() {}
     
+    Functor1wR(const Functor1wR<R,P1> &rhs)
+      : Functor(rhs), translator(rhs.translator) {
+    }
+    
+    Functor1wR<R,P1>& operator=(const Functor1wR<R,P1> &rhs) {
+      Functor::operator=(rhs);
+      translator = rhs.translator;
+      return *this;
+    }
+
     R operator()(P1 p1) {
       return translator(*this, p1);
     }
@@ -274,7 +381,7 @@ class Functor1wR : public Functor {
     typedef R (*Translator)(const Functor &, P1);
     
     Functor1wR(Translator t, const void *c, const void *f, size_t sz)
-      :Functor(c,f,sz), translator(t) {
+      : Functor(c,f,sz), translator(t) {
     }
     
   private:
@@ -290,6 +397,15 @@ class FunctionTranslator1wR : public Functor1wR<R,P1> {
     FunctionTranslator1wR(Func f)
       :Functor1wR<R,P1>(call, 0, FPTR_CAST(const void*, f), 0) {
     }
+
+    FunctionTranslator1wR(const FunctionTranslator1wR<R,P1,Func> &rhs)
+      : Functor1wR<R,P1>(rhs) {
+    }
+    
+    FunctionTranslator1wR<R,P1,Func>& operator=(const FunctionTranslator1wR<R,P1,Func> &rhs) {
+      Functor1wR<R,P1>::operator=(rhs);
+      return *this;
+    }
     
     static R call(const Functor &cb, P1 p1) {
       return FPTR_CAST(Func, cb.ptr.func)(p1);
@@ -303,6 +419,15 @@ class MethodTranslator1wR : public Functor1wR<R,P1> {
     
     MethodTranslator1wR(Callee *c, Method &m)
       :Functor1wR<R,P1>(call, c, &m, sizeof(Method)) {
+    }
+
+    MethodTranslator1wR(const MethodTranslator1wR<R,Callee,P1,Method> &rhs)
+      : Functor1wR<R,P1>(rhs) {
+    }
+    
+    MethodTranslator1wR<R,Callee,P1,Method>& operator=(const MethodTranslator1wR<R,Callee,P1,Method> &rhs) {
+      Functor1wR<R,P1>::operator=(rhs);
+      return *this;
     }
     
     static R call(const Functor &cb, P1 p1) {
@@ -321,6 +446,16 @@ class Functor2 : public Functor {
     
     Functor2() : Functor() {}
     
+    Functor2(const Functor2<P1,P2> &rhs)
+      : Functor(rhs), translator(rhs.translator) {
+    }
+    
+    Functor2<P1,P2>& operator=(const Functor2<P1,P2> &rhs) {
+      Functor::operator=(rhs);
+      translator = rhs.translator;
+      return *this;
+    }
+
     void operator()(P1 p1, P2 p2) {
       translator(*this, p1, p2);
     }
@@ -330,7 +465,7 @@ class Functor2 : public Functor {
     typedef void (*Translator)(const Functor &, P1, P2);
     
     Functor2(Translator t, const void *c, const void *f, size_t sz)
-      :Functor(c, f, sz), translator(t) {
+      : Functor(c, f, sz), translator(t) {
     }
     
   private:
@@ -347,6 +482,15 @@ class FunctionTranslator2 : public Functor2<P1,P2> {
       :Functor2<P1,P2>(call, 0, FPTR_CAST(const void*, f), 0) {
     }
     
+    FunctionTranslator2(const FunctionTranslator2<P1,P2,Func> &rhs)
+      : Functor2<P1,P2>(rhs) {
+    }
+    
+    FunctionTranslator2<P1,P2,Func>& operator=(const FunctionTranslator2<P1,P2,Func> &rhs) {
+      Functor2<P1,P2>::operator=(rhs);
+      return *this;
+    }
+
     static void call(const Functor &cb, P1 p1, P2 p2) {
       FPTR_CAST(Func, cb.ptr.func)(p1, p2);
     }
@@ -358,7 +502,16 @@ class MethodTranslator2 : public Functor2<P1,P2> {
   public:
     
     MethodTranslator2(Callee *c, Method &m)
-      :Functor2<P1,P2>(call, c, &m, sizeof(Method)) {
+      : Functor2<P1,P2>(call, c, &m, sizeof(Method)) {
+    }
+
+    MethodTranslator2(const MethodTranslator2<Callee,P1,P2,Method> &rhs)
+      : Functor2<P1,P2>(rhs) {
+    }
+    
+    MethodTranslator2<Callee,P1,P2,Method>& operator=(const MethodTranslator2<Callee,P1,P2,Method> &rhs) {
+      Functor2<P1,P2>::operator=(rhs);
+      return *this;
     }
     
     static void call(const Functor &cb, P1 p1, P2 p2) {
@@ -376,6 +529,16 @@ class Functor2wR : public Functor {
     
     Functor2wR() : Functor() {}
     
+    Functor2wR(const Functor2wR<R,P1,P2> &rhs)
+      : Functor(rhs), translator(rhs.translator) {
+    }
+    
+    Functor2wR<R,P1,P2>& operator=(const Functor2wR<R,P1,P2> &rhs) {
+      Functor::operator=(rhs);
+      translator = rhs.translator;
+      return *this;
+    }
+
     R operator()(P1 p1, P2 p2) {
       return translator(*this, p1, p2);
     }
@@ -385,7 +548,7 @@ class Functor2wR : public Functor {
     typedef R (*Translator)(const Functor &, P1, P2);
     
     Functor2wR(Translator t, const void *c, const void *f, size_t sz)
-      :Functor(c, f, sz), translator(t) {
+      : Functor(c, f, sz), translator(t) {
     }
     
   private:
@@ -399,7 +562,16 @@ class FunctionTranslator2wR : public Functor2wR<R,P1,P2> {
   public:
     
     FunctionTranslator2wR(Func f)
-      :Functor2wR<R,P1,P2>(call, 0, FPTR_CAST(const void*, f), 0) {
+      : Functor2wR<R,P1,P2>(call, 0, FPTR_CAST(const void*, f), 0) {
+    }
+
+    FunctionTranslator2wR(const FunctionTranslator2wR<R,P1,P2,Func> &rhs)
+      : Functor2wR<R,P1,P2>(rhs) {
+    }
+    
+    FunctionTranslator2wR<R,P1,P2,Func>& operator=(const FunctionTranslator2wR<R,P1,P2,Func> &rhs) {
+      Functor2wR<R,P1,P2>::operator=(rhs);
+      return *this;
     }
     
     static R call(const Functor &cb, P1 p1, P2 p2) {
@@ -414,6 +586,15 @@ class MethodTranslator2wR : public Functor2wR<R,P1,P2> {
     
     MethodTranslator2wR(Callee *c, Method &m)
       :Functor2wR<R,P1,P2>(call, c, &m, sizeof(Method)) {
+    }
+
+    MethodTranslator2wR(const MethodTranslator2wR<R,Callee,P1,P2,Method> &rhs)
+      : Functor2wR<R,P1,P2>(rhs) {
+    }
+    
+    MethodTranslator2wR<R,Callee,P1,P2,Method>& operator=(const MethodTranslator2wR<R,Callee,P1,P2,Method> &rhs) {
+      Functor2wR<R,P1,P2>::operator=(rhs);
+      return *this;
     }
     
     static R call(const Functor &cb, P1 p1, P2 p2) {
@@ -432,6 +613,16 @@ class Functor3 : public Functor {
     
     Functor3() : Functor() {}
     
+    Functor3(const Functor3<P1,P2,P3> &rhs)
+      : Functor(rhs), translator(rhs.translator) {
+    }
+    
+    Functor3<P1,P2,P3>& operator=(const Functor3<P1,P2,P3> &rhs) {
+      Functor::operator=(rhs);
+      translator = rhs.translator;
+      return *this;
+    }
+
     void operator()(P1 p1, P2 p2, P3 p3) {
       translator(*this, p1, p2, p3);
     }
@@ -455,9 +646,18 @@ class FunctionTranslator3 : public Functor3<P1,P2,P3> {
   public:
     
     FunctionTranslator3(Func f)
-      :Functor3<P1,P2,P3>(call, 0, FPTR_CAST(const void*, f), 0) {
+      : Functor3<P1,P2,P3>(call, 0, FPTR_CAST(const void*, f), 0) {
     }
     
+    FunctionTranslator3(const FunctionTranslator3<P1,P2,P3,Func> &rhs)
+      : Functor3<P1,P2,P3>(rhs) {
+    }
+    
+    FunctionTranslator3<P1,P2,P3,Func>& operator=(const FunctionTranslator3<P1,P2,P3,Func> &rhs) {
+      Functor3<P1,P2,P3>::operator=(rhs);
+      return *this;
+    }
+
     static void call(const Functor &cb, P1 p1, P2 p2, P3 p3) {
       FPTR_CAST(Func, cb.ptr.func)(p1, p2, p3);
     }
@@ -469,7 +669,16 @@ class MethodTranslator3 : public Functor3<P1,P2,P3> {
   public:
     
     MethodTranslator3(Callee *c, Method &m)
-      :Functor3<P1,P2,P3>(call, c, &m, sizeof(Method)) {
+      : Functor3<P1,P2,P3>(call, c, &m, sizeof(Method)) {
+    }
+
+    MethodTranslator3(const MethodTranslator3<Callee,P1,P2,P3,Method> &rhs)
+      : Functor3<P1,P2,P3>(rhs) {
+    }
+    
+    MethodTranslator3<Callee,P1,P2,P3,Method>& operator=(const MethodTranslator3<Callee,P1,P2,P3,Method> &rhs) {
+      Functor3<P1,P2,P3>::operator=(rhs);
+      return *this;
     }
     
     static void call(const Functor &cb, P1 p1, P2 p2, P3 p3) {
@@ -487,6 +696,16 @@ class Functor3wR : public Functor {
     
     Functor3wR() : Functor() {}
     
+    Functor3wR(const Functor3wR<R,P1,P2,P3> &rhs)
+      : Functor(rhs), translator(rhs.translator) {
+    }
+    
+    Functor3wR<R,P1,P2,P3>& operator=(const Functor3wR<R,P1,P2,P3> &rhs) {
+      Functor::operator=(rhs);
+      translator = rhs.translator;
+      return *this;
+    }
+
     R operator()(P1 p1, P2 p2, P3 p3) {
       return translator(*this, p1, p2, p3);
     }
@@ -496,7 +715,7 @@ class Functor3wR : public Functor {
     typedef R (*Translator)(const Functor &, P1, P2, P3);
     
     Functor3wR(Translator t, const void *c, const void *f, size_t sz)
-      :Functor(c, f, sz), translator(t) {
+      : Functor(c, f, sz), translator(t) {
     }
     
   private:
@@ -510,7 +729,16 @@ class FunctionTranslator3wR : public Functor3wR<R,P1,P2,P3> {
   public:
     
     FunctionTranslator3wR(Func f)
-      :Functor3wR<R,P1,P2,P3>(call, 0, FPTR_CAST(const void*, f), 0) {
+      : Functor3wR<R,P1,P2,P3>(call, 0, FPTR_CAST(const void*, f), 0) {
+    }
+
+    FunctionTranslator3wR(const FunctionTranslator3wR<R,P1,P2,P3,Func> &rhs)
+      : Functor3wR<R,P1,P2,P3>(rhs) {
+    }
+    
+    FunctionTranslator3wR<R,P1,P2,P3,Func>& operator=(const FunctionTranslator3wR<R,P1,P2,P3,Func> &rhs) {
+      Functor3wR<R,P1,P2,P3>::operator=(rhs);
+      return *this;
     }
     
     static R call(const Functor &cb, P1 p1, P2 p2, P3 p3) {
@@ -524,9 +752,18 @@ class MethodTranslator3wR : public Functor3wR<R,P1,P2,P3> {
   public:
     
     MethodTranslator3wR(Callee *c, Method &m)
-      :Functor3wR<R,P1,P2,P3>(call, c, &m, sizeof(Method)) {
+      : Functor3wR<R,P1,P2,P3>(call, c, &m, sizeof(Method)) {
     }
     
+    MethodTranslator3wR(const MethodTranslator3wR<R,Callee,P1,P2,P3,Method> &rhs)
+      : Functor3wR<R,P1,P2,P3>(rhs) {
+    }
+    
+    MethodTranslator3wR<R,Callee,P1,P2,P3,Method>& operator=(const MethodTranslator3wR<R,Callee,P1,P2,P3,Method> &rhs) {
+      Functor3wR<R,P1,P2,P3>::operator=(rhs);
+      return *this;
+    }
+
     static R call(const Functor &cb, P1 p1, P2 p2, P3 p3) {
       Callee *callee = (Callee*)(cb.callee);
       Method &method(*(Method*)(void*)(cb.ptr.mem));
@@ -544,6 +781,16 @@ class Functor4 : public Functor {
     
     Functor4() : Functor() {}
     
+    Functor4(const Functor4<P1,P2,P3,P4> &rhs)
+      : Functor(rhs), translator(rhs.translator) {
+    }
+    
+    Functor4<P1,P2,P3,P4>& operator=(const Functor4<P1,P2,P3,P4> &rhs) {
+      Functor::operator=(rhs);
+      translator = rhs.translator;
+      return *this;
+    }
+
     void operator()(P1 p1, P2 p2, P3 p3, P4 p4) {
       translator(*this, p1, p2, p3, p4);
     }
@@ -567,9 +814,18 @@ class FunctionTranslator4 : public Functor4<P1,P2,P3,P4> {
   public:
     
     FunctionTranslator4(Func f)
-      :Functor4<P1,P2,P3,P4>(call, 0, FPTR_CAST(const void*, f), 0) {
+      : Functor4<P1,P2,P3,P4>(call, 0, FPTR_CAST(const void*, f), 0) {
     }
     
+    FunctionTranslator4(const FunctionTranslator4<P1,P2,P3,P4,Func> &rhs)
+      : Functor4<P1,P2,P3,P4>(rhs) {
+    }
+    
+    FunctionTranslator4<P1,P2,P3,P4,Func>& operator=(const FunctionTranslator4<P1,P2,P3,P4,Func> &rhs) {
+      Functor4<P1,P2,P3,P4>::operator=(rhs);
+      return *this;
+    }
+
     static void call(const Functor &cb, P1 p1, P2 p2, P3 p3, P4 p4) {
       FPTR_CAST(Func, cb.ptr.func)(p1, p2, p3, p4);
     }
@@ -581,9 +837,18 @@ class MethodTranslator4 : public Functor4<P1,P2,P3,P4> {
   public:
     
     MethodTranslator4(Callee *c, Method &m)
-      :Functor4<P1,P2,P3,P4>(call, c, &m, sizeof(Method)) {
+      : Functor4<P1,P2,P3,P4>(call, c, &m, sizeof(Method)) {
     }
     
+    MethodTranslator4(const MethodTranslator4<Callee,P1,P2,P3,P4,Method> &rhs)
+      : Functor4<P1,P2,P3,P4>(rhs) {
+    }
+    
+    MethodTranslator4<Callee,P1,P2,P3,P4,Method>& operator=(const MethodTranslator4<Callee,P1,P2,P3,P4,Method> &rhs) {
+      Functor4<P1,P2,P3,P4>::operator=(rhs);
+      return *this;
+    }
+
     static void call(const Functor &cb, P1 p1, P2 p2, P3 p3, P4 p4) {
       Callee *callee = (Callee*)(cb.callee);
       Method &method(*(Method*)(void*)(cb.ptr.mem));
@@ -599,6 +864,16 @@ class Functor4wR : public Functor {
     
     Functor4wR() : Functor() {}
     
+    Functor4wR(const Functor4wR<R,P1,P2,P3,P4> &rhs)
+      : Functor(rhs), translator(rhs.translator) {
+    }
+    
+    Functor4wR<R,P1,P2,P3,P4>& operator=(const Functor4wR<R,P1,P2,P3,P4> &rhs) {
+      Functor::operator=(rhs);
+      translator = rhs.translator;
+      return *this;
+    }
+
     R operator()(P1 p1, P2 p2, P3 p3, P4 p4) {
       return translator(*this, p1, p2, p3, p4);
     }
@@ -622,7 +897,16 @@ class FunctionTranslator4wR : public Functor4wR<R,P1,P2,P3,P4> {
   public:
     
     FunctionTranslator4wR(Func f)
-      :Functor4wR<R,P1,P2,P3,P4>(call, 0, FPTR_CAST(const void*, f), 0) {
+      : Functor4wR<R,P1,P2,P3,P4>(call, 0, FPTR_CAST(const void*, f), 0) {
+    }
+
+    FunctionTranslator4wR(const FunctionTranslator4wR<R,P1,P2,P3,P4,Func> &rhs)
+      : Functor4wR<R,P1,P2,P3,P4>(rhs) {
+    }
+    
+    FunctionTranslator4wR<R,P1,P2,P3,P4,Func>& operator=(const FunctionTranslator4wR<R,P1,P2,P3,P4,Func> &rhs) {
+      Functor4wR<R,P1,P2,P3,P4>::operator=(rhs);
+      return *this;
     }
     
     static R call(const Functor &cb, P1 p1, P2 p2, P3 p3, P4 p4) {
@@ -636,7 +920,16 @@ class MethodTranslator4wR : public Functor4wR<R,P1,P2,P3,P4> {
   public:
     
     MethodTranslator4wR(Callee *c, Method &m)
-      :Functor4wR<R,P1,P2,P3,P4>(call, c, &m, sizeof(Method)) {
+      : Functor4wR<R,P1,P2,P3,P4>(call, c, &m, sizeof(Method)) {
+    }
+
+    MethodTranslator4wR(const MethodTranslator4wR<R,Callee,P1,P2,P3,P4,Method> &rhs)
+      : Functor4wR<R,P1,P2,P3,P4>(rhs) {
+    }
+    
+    MethodTranslator4wR<R,Callee,P1,P2,P3,P4,Method>& operator=(const MethodTranslator4wR<R,Callee,P1,P2,P3,P4,Method> &rhs) {
+      Functor4wR<R,P1,P2,P3,P4>::operator=(rhs);
+      return *this;
     }
     
     static R call(const Functor &cb, P1 p1, P2 p2, P3 p3, P4 p4) {

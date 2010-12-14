@@ -97,6 +97,7 @@ void thread4ASyncEvent()
 void thread1Proc()
 {
   gThreadNames[Thread::CurrentID()] = "thread1";
+  std::cout << "Thread 1: 0x" << std::hex << Thread::CurrentID() << std::dec << std::endl;
   
   Event func;
   
@@ -114,6 +115,7 @@ void thread1Proc()
 void thread2Proc()
 {
   gThreadNames[Thread::CurrentID()] = "thread2";
+  std::cout << "Thread 2: 0x" << std::hex << Thread::CurrentID() << std::dec << std::endl;
   
   Event func;
   
@@ -137,6 +139,7 @@ void thread2Proc()
 void thread3Proc()
 {
   gThreadNames[Thread::CurrentID()] = "thread3";
+  std::cout << "Thread 3: 0x" << std::hex << Thread::CurrentID() << std::dec << std::endl;
   
   Event func;
   
@@ -154,6 +157,7 @@ void thread3Proc()
 void thread4Proc()
 {
   gThreadNames[Thread::CurrentID()] = "thread4";
+  std::cout << "Thread 4: 0x" << std::hex << Thread::CurrentID() << std::dec << std::endl;
   
   Event func;
   
@@ -179,6 +183,7 @@ void thread4Proc()
 int main(int, char**)
 {
   gThreadNames[Thread::CurrentID()] = "main";
+  std::cout << "Main thread: 0x" << std::hex << Thread::CurrentID() << std::dec << std::endl;
   
   EventQueue mainThreadQueue;
   gMainThreadQueue = &mainThreadQueue;

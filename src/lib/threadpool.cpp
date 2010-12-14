@@ -44,13 +44,14 @@ int ThreadPool::Worker::run() {
 }
 
 void ThreadPool::Worker::done(int) {
+  // notify pool to remove this worker
   mPool->notifyDone(this);
 }
 
 // ---
 
 ThreadPool::ThreadPool()
-  : mState(TPS_STOPPED), mRestartWorkersCount(0) {
+  : mState(TPS_STOPPED), mDriverThread(Thread::CurrentID()), mRestartWorkersCount(0) {
 }
 
 ThreadPool::~ThreadPool() {
@@ -75,206 +76,250 @@ size_t ThreadPool::numWorkers() {
   return mWorkers.size();
 }
 
-void ThreadPool::restart() {
-  start(mRestartWorkersCount);
+bool ThreadPool::restart() {
+  if (Thread::CurrentID() == mDriverThread) {
+    start(mRestartWorkersCount);
+    return true;
+  }
+  return false;
 }
 
-void ThreadPool::start(size_t numThreads) {
+bool ThreadPool::start(size_t numThreads) {
+  
+  if (Thread::CurrentID() != mDriverThread) {
+    return false;
+  }
+  
+  mTasksAccess.lock();
+  
+  if (mState != TPS_STOPPED) {
+    // pool is already running
+    mTasksAccess.unlock();
+    return true;
+  }
+  
+  // adjust threads count
   
   if (numThreads == 0) {
     numThreads = Thread::GetProcessorCount();
   }
-
-  ScopeLock lock(mStateTaskAccess);
-
-  if (mState != TPS_STOPPED) {
-    return;
-  }
   
   // add workers
+
   mWorkersAccess.lock();
+  assert(mWorkers.size() == 0);
   mWorkers.resize(numThreads);
   for (size_t i=0; i<mWorkers.size(); ++i) {
+    // threads will start straight away and be lock in getTask()
     mWorkers[i] = new Worker(this);
   }
   mWorkersAccess.unlock();
   
-  // change state and notify
   mState = TPS_RUNNING;
-  mStateTaskChanged.notifyAll();
+  mTasksChanged.notifyAll();
+  mTasksAccess.unlock();
+  
+  return true;
 }
 
-void ThreadPool::wait() {
-  ScopeLock lock(mStateTaskAccess);  
-
+bool ThreadPool::wait() {
+  
+  if (Thread::CurrentID() != mDriverThread) {
+    return false;
+  }
+  
+  mTasksAccess.lock();
+  
   if (mState != TPS_RUNNING) {
-    return;
+    // pool is not running
+    mTasksAccess.unlock();
+    return true;
   }
 
   mState = TPS_WAITING;
-  mStateTaskChanged.notifyAll();
-
+  
+  // wait until we have no more tasks in queue
   while (mTasks.size() > 0) {
-    mStateTaskChanged.wait(mStateTaskAccess);
+    mTasksChanged.wait(mTasksAccess);
   }
-
-  // wait all done
+  
+  mTasksChanged.notifyAll();
+  mTasksAccess.unlock();
+  
+  // wait for all workers to run idle
   mWorkersAccess.lock();
   while (_numIdleWorkers() != mWorkers.size()) {
     mWorkersChanged.wait(mWorkersAccess);
   }
   mWorkersAccess.unlock();
-
+  
+  // switch back status to "running"
+  mTasksAccess.lock();
   mState = TPS_RUNNING;
-  mStateTaskChanged.notifyAll();
+  mTasksChanged.notifyAll();
+  mTasksAccess.unlock();
+  
+  return true;
 }
 
-void ThreadPool::stop() {
-  // beware here do not use scope lock
-  // WIN32 do not like recursive lock/unlock
-  mStateTaskAccess.lock();
+bool ThreadPool::stop() {
   
-  if (mState != TPS_RUNNING) {
-    mStateTaskAccess.unlock();
-    return;
+  if (Thread::CurrentID() != mDriverThread) {
+    return false;
   }
   
-  mRestartWorkersCount = numWorkers();
+  mTasksAccess.lock();
+  
+  if (mState != TPS_RUNNING) {
+    // pool is not running
+    mTasksAccess.unlock();
+    return true;
+  }
+  
   mState = TPS_STOPPED;
-  mStateTaskChanged.notifyAll();
+  mTasksChanged.notifyAll();
+  mTasksAccess.unlock();
+
+  mRestartWorkersCount = numWorkers();
   
-  mStateTaskAccess.unlock();
-  
+  // wait all workers to be done
+
   mWorkersAccess.lock();
   while (mWorkers.size() > 0) {
     mWorkersChanged.wait(mWorkersAccess);
   }
   mWorkersAccess.unlock();
-}
-
-bool ThreadPool::runTask(Task task, bool /*wait*/) {
-  ScopeLock lock(mStateTaskAccess);
-
-  if (mState != TPS_RUNNING) {
-    return false;
-  }
-
-  mTasks.push_back(task);
-
-  mStateTaskChanged.notifyAll();
   
   return true;
 }
 
-void ThreadPool::notifyTaskDone(Worker *wt) {
-  ScopeLock lock(mWorkersAccess);
+bool ThreadPool::runTask(Task task, bool /*wait*/) {
   
-  List<Worker*>::iterator it = std::find(mWorkers.begin(), mWorkers.end(), wt);
-  
-  if (it != mWorkers.end()) {
-    (*it)->mProcessing = false;
+  if (Thread::CurrentID() != mDriverThread) {
+    return false;
   }
+  
+  mTasksAccess.lock();
+  
+  if (mState != TPS_RUNNING) {
+    mTasksAccess.unlock();
+    return false;
+  }
+  
+  mTasks.push_back(task);
+  mTasksChanged.notifyAll();
+  mTasksAccess.unlock();
 
-  mWorkersChanged.notify();
-  //mWorkersChanged.notifyAll();
+  return true;
+}
+
+void ThreadPool::notifyTaskDone(Worker *wt) {
+  mWorkersAccess.lock();
+  wt->processing(false);
+  mWorkersChanged.notifyAll();
+  mWorkersAccess.unlock();
 }
 
 void ThreadPool::notifyDone(Worker *wt) {
-  ScopeLock lock(mWorkersAccess);
-
+  
+  mWorkersAccess.lock();
+  
   List<Worker*>::iterator it = std::find(mWorkers.begin(), mWorkers.end(), wt);
-
+  
   if (it != mWorkers.end()) {
     delete *it;
     mWorkers.erase(it);
     mWorkersChanged.notify();
-    //mWorkersChanged.notifyAll();
+    mWorkersAccess.unlock();
+    
+  } else {
+    mWorkersAccess.unlock();
   }
 }
 
 Task ThreadPool::getTask(Worker *wt) {
-  // return a Null Task if no more task availbale and pool stopped
+  
   Task t = NullTask;
 
-  ScopeLock lock(mStateTaskAccess);
-
+  mTasksAccess.lock();
+  
   if (mState == TPS_STOPPED) {
-    return t;
+    // pool is not running return NullTask
+    mTasksAccess.unlock();
 
   } else {
     
+    // wait until we have an available task or pool is stopped
     while (mTasks.size() == 0 && mState != TPS_STOPPED) {
-      mStateTaskChanged.wait(mStateTaskAccess);
+      mTasksChanged.wait(mTasksAccess);
     }
-
-    if (mTasks.size() > 0) {
-      t = mTasks.front();
-      mTasks.pop_front();
-      mStateTaskChanged.notifyAll();
-
-      ScopeLock wlock(mWorkersAccess);
-      
-      List<Worker*>::iterator it = std::find(mWorkers.begin(), mWorkers.end(), wt);
     
-      if (it != mWorkers.end()) {
-        // worker found, take the task
-        (*it)->mProcessing = true;
-        mWorkersChanged.notify();
-        //mWorkersChanged.notifyAll();
+    if (mState == TPS_STOPPED) {
+      mTasksAccess.unlock();
       
-      } else {
-        // put task pack in queue
-        mTasks.push_front(t);
-        mStateTaskChanged.notifyAll();
-        t = NullTask;
-        
-      } 
+    } else {
+      assert(mTasks.size() > 0);
+      // we have pending task(s)
+      t = mTasks.front();
+      wt->processing(true);
+      mTasks.pop_front();
+      mTasksChanged.notifyAll();
+      mTasksAccess.unlock();
+      
     }
   }
+  
   return t;
 }
 
-void ThreadPool::addWorkers(size_t n) {
-  ScopeLock lock(mStateTaskAccess);
-
-  n += mWorkers.size();
+bool ThreadPool::addWorkers(size_t n) {
+  
+  mTasksAccess.lock();
   
   if (mState == TPS_WAITING) {
-    std::cout << "*** Should never get here" << std::endl;
-    return;
+    // pool is waiting for tasks to complete, cannot modify workers
+    mTasksAccess.unlock();
+    return false;
   
   } else if (mState == TPS_RUNNING) {
-    ScopeUnlock unlock(mStateTaskAccess);
+    // pool is running, stop it once
+    mTasksAccess.unlock();
     stop();
+
+  } else {
+    mTasksAccess.unlock();
   }
   
-  if (mState == TPS_STOPPED) {
-    ScopeUnlock unlock(mStateTaskAccess);
-    start(n);
-  }
+  // mRestartWorkersCount is set in ThreadPool::stop
+  start(n + mRestartWorkersCount);
+  
+  return true;
 }
 
-void ThreadPool::removeWorkers(size_t n) {
-  ScopeLock lock(mStateTaskAccess);
+bool ThreadPool::removeWorkers(size_t n) {
   
-  if (n >= mWorkers.size()) {
-    n = 0;
-  } else {
-    n = mWorkers.size() - n;
-  }
+  mTasksAccess.lock();
   
   if (mState == TPS_WAITING) {
-    std::cout << "*** Should never get here" << std::endl;
-    return;
+    // pool is waiting for tasks to complete, cannot modify workers
+    mTasksAccess.unlock();
+    return false;
+
   } else if (mState == TPS_RUNNING) {
-    ScopeUnlock unlock(mStateTaskAccess);
+    // pool is running, stop it once
+    mTasksAccess.unlock();
     stop();
+  
+  } else {
+    mTasksAccess.unlock();
   }
   
-  if (mState == TPS_STOPPED && n > 0) {
-    ScopeUnlock unlock(mStateTaskAccess);
-    start(n);
+  if (n < mRestartWorkersCount) {
+    // restart pool if we have at least one worker left
+    start(mRestartWorkersCount - n);
   }
+  
+  return true;
 }
   
 }

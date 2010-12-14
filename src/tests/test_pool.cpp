@@ -60,6 +60,7 @@ class PApp2 {
 };
 
 gcore::Mutex IOMutex;
+int gExecutedCount = 0;
 
 void safe_print(const char *fmt, ...) {
   IOMutex.lock();
@@ -76,6 +77,7 @@ void ComputeFunc(char c, int i) {
     sum += float(pow(sin(j * 3.5687 / 180.0), 2.0));
   }
   safe_print("%c = %f\n", c, sum);
+  gExecutedCount++;
 }
 
 
@@ -99,46 +101,53 @@ int main(int, char**) {
   gcore::ThreadPool pool;
 
   safe_print("Start thread pool\n");
-  pool.start();
+  pool.start(8);
   
   n = pool.numWorkers();
+  safe_print("%d workers\n", n);
 
   safe_print("Add 10 tasks\n");
   for (i=0; i<10; ++i) {
-    pool.runTask(task[i%n]);
+    pool.runTask(task[i%4]);
   }
   
-  //gcore::Thread::YieldCurrent();
+  safe_print("Wait workers...\n");
+  pool.wait();
+  
+  n = pool.numWorkers();
+  safe_print("%d workers waiting for tasks\n", n);
+  
+  safe_print("Add 300 tasks\n");
+  for (i=0; i<300; ++i) {
+    pool.runTask(task[i%4]);
+  }
 
   safe_print("Add 2 workers...\n");
   pool.addWorkers(2);
   safe_print("  ...added\n");
   
-  n += 2;
-  
-  safe_print("Add 10 tasks\n");
-  for (i=0; i<10; ++i) {
-    pool.runTask(task[i%n]);
-  }
-  
-  //gcore::Thread::YieldCurrent();
-  
-  safe_print("Remove 3 workers...\n");
-  pool.removeWorkers(3);
-  safe_print("  ...removed\n");
-  
-  n -= 3;
-  
-  safe_print("Add 10 tasks\n");
-  for (i=0; i<10; ++i) {
-    pool.runTask(task[i%n]);
+  safe_print("Add 100 tasks\n");
+  for (i=0; i<100; ++i) {
+    pool.runTask(task[i%4]);
   }
 
+  safe_print("Remove 6 workers...\n");
+  pool.removeWorkers(6);
+  safe_print("  ...removed\n");
+
+  safe_print("Add 100 tasks\n");
+  for (i=0; i<100; ++i) {
+    pool.runTask(task[i%4]);
+  }
+
+  // stopping pool without waiting will result in un-executed tasks
   safe_print("Wait workers...\n");
   pool.wait();
+  
+  safe_print("Stop pool...\n");
   pool.stop();
   
-  safe_print("Done!\n");
+  safe_print("Done, executed %d tasks\n", gExecutedCount);
 
   return 0;
 }

@@ -287,6 +287,7 @@ namespace gcore {
       
 #ifdef _WIN32
       static unsigned int __stdcall _ThreadEntryFunc(void *data);
+      volatile ThreadID mSelfId;
 #else
       static void* _ThreadEntryFunc(void *data);
 #endif

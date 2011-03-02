@@ -31,7 +31,8 @@ static bool IsValidAttribute(const String &str) {
     if ((*cp >= 'a' && *cp <= 'z') ||
         (*cp >= 'A' && *cp <= 'Z') ||
         (*cp >= '0' && *cp <= '9') ||
-        *cp == '-') {
+        *cp == '-' ||
+        *cp == ':') {
       ++cp;
     } else {
       return false;
@@ -137,23 +138,31 @@ void XMLElement::write(std::ostream &os, const String &indent) const {
   if (mChildren.size() > 0 || mText.length() > 0) {
     //os << ">" << std::endl;
     os << ">";
+    
     if (mChildren.size() > 0) {
       os << std::endl;
       String childIndent = indent + "  ";
       for (size_t i=0; i<mChildren.size(); ++i) {
         mChildren[i]->write(os, childIndent);
       }
+      os << indent;
     }
+    
     if (mText.length() > 0) {
       if (mTextIsCDATA) {
         os << "<![CDATA[";
         os << mText;
-        os << "]]>" << std::endl;
+        os << "]]>";
       } else {
-        os << mText << std::endl;
+        os << mText;
+      }
+      if (mChildren.size() > 0) {
+        os << std::endl << indent;
       }
     }
-    os << indent << "</" << mTag << ">" << std::endl;
+    
+    os << "</" << mTag << ">" << std::endl;
+    
   } else {
     os << " />" << std::endl;
   }

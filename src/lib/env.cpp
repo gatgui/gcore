@@ -61,7 +61,7 @@ void Env::SetAll(const StringDict &d, bool ow) {
   Env().setAll(d, ow);
 }
 
-String Env::IsSet(const String &k) {
+bool Env::IsSet(const String &k) {
   return Env().isSet(k);
 }
 

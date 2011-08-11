@@ -41,7 +41,7 @@ namespace gcore {
       static String Get(const String &k);
       static void Set(const String &k, const String &v, bool overwrite);
       static void SetAll(const StringDict &d, bool overwrite);
-      static String IsSet(const String &k);
+      static bool IsSet(const String &k);
       static void EachInPath(const String &e, EachInPathFunc callback);
       static size_t ListPaths(const String &e, PathList &l);
       

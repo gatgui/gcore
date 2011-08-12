@@ -87,6 +87,7 @@ namespace gcore {
       XMLElement* getRoot() const;
       
       void write(const String &fileName) const;
+      void write(std::ostream &os) const;
       bool read(const String &fileName);
     
     protected:

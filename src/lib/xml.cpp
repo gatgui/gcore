@@ -334,6 +334,14 @@ void XMLDoc::write(const String &fileName) const {
   }
 }
 
+void XMLDoc::write(std::ostream &os) const {
+  if (mRoot) {
+    os << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" << std::endl;
+    mRoot->write(os, "");
+    os << std::endl;
+  }
+}
+
 bool XMLDoc::read(const String &fileName) {
   
   FILE *file = fopen(fileName.c_str(), "rb");

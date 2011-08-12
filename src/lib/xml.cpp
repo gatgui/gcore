@@ -829,7 +829,7 @@ bool XMLDoc::read(const String &fileName) {
     
   fclose(file);
   
-  mRoot = root;
+  setRoot(root);
   
   return true;
 

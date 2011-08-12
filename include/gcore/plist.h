@@ -115,7 +115,10 @@ namespace gcore {
       double getReal(const String &prop) const throw(plist::Exception);
       bool getBoolean(const String &prop) const throw(plist::Exception);
       
-      unsigned long getArraySize(const String &prop) const throw(plist::Exception);
+      size_t getArraySize(const String &prop) const throw(plist::Exception);
+      size_t getDictKeys(const String &prop, StringList &keys) const throw(plist::Exception);
+      
+      bool has(const String &prop) const;
       
       void setString(const String &prop, const String &str) throw(plist::Exception);
       void setReal(const String &prop, double val) throw(plist::Exception);
@@ -382,6 +385,7 @@ namespace gcore {
         Value* value(const gcore::String &key);
         const Value* value(const gcore::String &key) const;
         bool has(const gcore::String &key) const;
+        size_t keys(gcore::StringList &keys) const;
         void set(const gcore::String &key, Value *v, bool replace=true);
         
       public:

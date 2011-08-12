@@ -771,6 +771,18 @@ bool plist::Dictionary::has(const gcore::String &key) const {
   return (mPairs.find(key) != mPairs.end());
 }
 
+size_t plist::Dictionary::keys(gcore::StringList &keys) const
+{
+   keys.clear();
+   std::map<gcore::String, Value*>::const_iterator it = mPairs.begin();
+   while (it != mPairs.end())
+   {
+      keys.push_back(it->first);
+      ++it;
+   }
+   return keys.size();
+}
+
 plist::Value* plist::Dictionary::value(const gcore::String &key) {
   static plist::InvalidValue dummy = plist::InvalidValue();
   std::map<gcore::String, Value*>::iterator it = mPairs.find(key);
@@ -1380,9 +1392,29 @@ static void SetTypedProperty(plist::Dictionary *dict,
   }
 }
 
-unsigned long PropertyList::getArraySize(const String &p) const throw(plist::Exception) {
+size_t PropertyList::getArraySize(const String &p) const throw(plist::Exception) {
   plist::Array::ReturnType ary = GetTypedProperty<plist::Array>(mTop, p);
-  return (unsigned long)(ary.size());
+  return ary.size();
+}
+
+size_t PropertyList::getDictKeys(const String &p, StringList &kl) const throw(plist::Exception) {
+  const plist::Value *val = GetProperty(mTop, p);
+  const plist::Dictionary *dict=0;
+  if (!val->checkType(dict)) {
+    throw plist::Exception(p, "Invalid type (expected \"%s\", got \"%s\")",
+                           plist::Dictionary::TypeName(),
+                           PropertyList::ValueTypeName(val->getType()).c_str());
+  }
+  return dict->keys(kl);
+}
+
+bool PropertyList::has(const String &prop) const {
+  try {
+    GetProperty(mTop, prop);
+    return true;
+  } catch (...) {
+    return false;
+  }
 }
 
 const String& PropertyList::getString(const String &p) const throw(plist::Exception) {

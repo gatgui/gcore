@@ -27,7 +27,7 @@ prjs = [
     "incdirs" : ["include"],
     "srcs"    : ["src/tests/modules/module.cpp"]
   },
-  { "name"    : "tests",
+  { "name"    : "gcore_tests",
     "type"    : "testprograms",
     "incdirs" : ["include"],
     "srcs"    : glob.glob("src/tests/*.cpp"),

@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009  Gaetan Guidet
+Copyright (C) 2009, 2010, 2011  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -24,219 +24,6 @@ USA.
 #include <gcore/plist.h>
 #include <gcore/rex.h>
 #include <cstdarg>
-
-// --- Utils
-
-static gcore::String ReadLine(std::istream &is) {
-  gcore::String line;
-  std::getline(is, line);
-  /*
-  if (line.length() > 0) {
-    size_t p;
-    if (line[line.length()-1] == '\r') {
-      line.erase(line.length()-1, 1);
-    }
-    p = line.find_first_not_of(" \t\v");
-    if (p != gcore::String::npos) {
-      line.erase(0, p);
-    }
-    p = line.find_last_not_of(" \t\v");
-    if (p != gcore::String::npos) {
-      line.erase(p+1);
-    }
-  }
-  */
-  line.strip();
-#ifdef _DEBUG
-  std::cout << ">> \"" << line << "\"" << std::endl;
-#endif
-  return line;
-}
-
-static gcore::String ReadOpenTag(const gcore::String &line, gcore::String &b, gcore::String &a) {
-  static const gcore::Rex tagopen(RAW("<([-\w]+)(\s+[^>]*)?>"));
-  gcore::RexMatch md;
-  if (tagopen.search(line, md)) {
-    b = md.pre();
-    a = md.post();
-    return md.group(1);
-  } else {
-    b = line;
-    a = "";
-    return "";
-  }
-}
-
-static gcore::String ReadOpenTag(std::istream &is, gcore::String &b, gcore::String &a) {
-  gcore::String line = ReadLine(is);
-  return ReadOpenTag(line, b, a);
-}
-
-static bool ReadCloseTag(const gcore::String &name, const gcore::String &line, gcore::String &b, gcore::String &a) {
-  gcore::Rex tagclose("</" + name + ">");
-  gcore::RexMatch md;
-  if (tagclose.search(line, md)) {
-    b = md.pre();
-    a = md.post();
-    return true;
-  } else {
-    a = b = "";
-    return false;
-  }
-}
-
-static void AppendXMLString(gcore::String &dst, const gcore::String &str) {
-  if (str.length() > 0) {
-    if (dst.length() > 0) {
-      dst += " ";
-    }
-    dst += str;
-  }
-}
-
-static bool ContainsTag(const gcore::String &line) {
-  static const gcore::Rex tag(RAW("</?[-\w]+>"));
-  gcore::RexMatch md;
-  if (tag.search(line, md)) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-static bool ReadKey(std::istream &xml, gcore::String &remain, gcore::String &key) {
-  
-  gcore::String before, after, tag;
-  bool failed = false;
-  
-  do {
-  
-    tag = ReadOpenTag(remain, before, after);
-  
-    if (tag.length() > 0) {
-    
-      if (tag != "key") {
-#ifdef _DEBUG
-        std::cerr << "Expected <key> tag, got <" << tag << ">" << std::endl;
-#endif
-        failed = true;
-       
-      } else {
-        
-        key = "";
-        
-        remain = after;
-        
-        while (!ContainsTag(remain)) {
-          AppendXMLString(key, remain);
-          remain = ReadLine(xml);
-        }
-        
-        // we have a tag in the line, check if it is a </key> and no other tag before
-        if (!ReadCloseTag("key", remain, before, after)) {
-#ifdef _DEBUG
-          std::cerr << "Expected </key> tag" << std::endl;
-#endif
-          failed = true;
-          
-        } else {
-        
-          if (ContainsTag(before)) {
-#ifdef _DEBUG
-            std::cerr << "Found invalid tag before </key>" << std::endl;
-#endif
-            failed = true;
-          
-          } else {
-          
-            AppendXMLString(key, before);
-            remain = after;
-#ifdef _DEBUG
-            std::cout << "Read key: \"" << key << "\"" << std::endl;
-#endif
-            return true;
-          }
-        }
-      }
-      
-    } else {
-      // no tag, check if remain is empty
-      if (remain.length() > 0) {
-#ifdef _DEBUG
-        std::cerr << "Invalid content (ReadKey): \"" << remain << "\"" << std::endl;
-#endif
-        failed = true;
-      
-      } else {
-        remain = ReadLine(xml);
-      }
-    }
-  } while (!failed);
-  
-  return false;
-}
-
-static gcore::plist::Value* ReadValue(std::istream &xml, gcore::String &remain) {
-  
-  gcore::String before, after, tag;
-  bool failed = false;
-  
-  do {
-    
-    tag = ReadOpenTag(remain, before, after);
-    
-    if (tag.length() > 0) {
-      
-      if (before.length() > 0) {
-#ifdef _DEBUG
-        std::cerr << "Invalid content (ReadValue): \"" << before << "\"" << std::endl;
-#endif
-        failed = true;
-      
-      } else {
-      
-        gcore::plist::Value *v = gcore::PropertyList::NewValue(tag);
-        
-        if (!v) {
-#ifdef _DEBUG
-          std::cerr << "Could not create value for tag <" << tag << ">" << std::endl;
-#endif
-          failed = true;
-          
-        } else {
-        
-          remain = after;
-        
-          if (!v->fromXML(xml, remain)) {
-            delete v;
-            failed = true;
-          
-          } else {
-            return v;
-          }
-        }
-      }
-    
-    } else {
-      
-      if (remain.length() > 0) {
-#ifdef _DEBUG
-        std::cerr << "Invalid content (ReadValue): \"" << remain << "\"" << std::endl;
-#endif
-        failed = true;
-      
-      } else {
-        
-        remain = ReadLine(xml);
-      }
-    }
-    
-  } while (!failed);
-  
-  return 0;
-}
-
-// ---
 
 namespace gcore {
 
@@ -281,12 +68,12 @@ plist::InvalidValue::InvalidValue() {
 plist::InvalidValue::~InvalidValue() {
 }
 
-bool plist::InvalidValue::fromXML(std::istream&, gcore::String&)  {
+bool plist::InvalidValue::fromXML(const gcore::XMLElement *)  {
   return false;
 }
 
-void plist::InvalidValue::toXML(std::ostream &, const gcore::String &) const {
-  return;
+gcore::XMLElement* plist::InvalidValue::toXML(gcore::XMLElement *) const {
+  return NULL;
 }
 
 // ---
@@ -307,47 +94,24 @@ plist::String::String(const gcore::String &str)
 plist::String::~String() {
 }
 
-bool plist::String::fromXML(std::istream &xml, gcore::String &remain) {
-  gcore::String before, after;
-  
-  if (remain.length() == 0) {
-    remain = ReadLine(xml);
-  }
-  
-  mValue = "";
-  
-  while (!ReadCloseTag("string", remain, before, after)) {
-    if (ContainsTag(remain)) {
-#ifdef _DEBUG
-      std::cerr << "Invalid <string> content: \"" << remain << "\"" << std::endl;
-#endif
-      return false;
-    }
-    AppendXMLString(mValue, remain);
-    remain = ReadLine(xml);
-  }
-  
-  if (ContainsTag(before)) {
-#ifdef _DEBUG
-    std::cerr << "Invalid <string> content: \"" << before << "\"" << std::endl;
-#endif
+bool plist::String::fromXML(const gcore::XMLElement *elt)  {
+  if (!elt) return false;
+  if (elt->getTag() != "string") {
     return false;
+  } else {
+    mValue = elt->getText();
+    mValue.strip();
+    return true;
   }
-  
-  AppendXMLString(mValue, before);
-  
-  remain = after;
-  
-#ifdef _DEBUG
-  std::cout << "Read String: \"" << mValue << "\"" << std::endl;
-#endif
-  return true;
 }
 
-void plist::String::toXML(std::ostream &xml, const gcore::String &indent="") const {
-  xml << indent << "<string>" << mValue << "</string>" << std::endl;
+gcore::XMLElement* plist::String::toXML(gcore::XMLElement *elt) const {
+  gcore::XMLElement *s = new gcore::XMLElement("string");
+  s->setText(mValue);
+  if (elt) elt->addChild(s);
+  return s;
 }
-    
+
 plist::Value* plist::String::New() {
   return new String();
 }
@@ -373,52 +137,21 @@ plist::Integer::Integer(long value)
 plist::Integer::~Integer() {
 }
 
-bool plist::Integer::fromXML(std::istream &xml, gcore::String &remain) {
-  gcore::String before, after;
-  
-  if (remain.length() == 0) {
-    remain = ReadLine(xml);
-  }
-  
-  gcore::String content = "";
-  
-  while (!ReadCloseTag("integer", remain, before, after)) {
-    if (ContainsTag(remain)) {
-#ifdef _DEBUG
-      std::cerr << "Invalid <integer> content: \"" << remain << "\"" << std::endl;
-#endif
-      return false;
-    }
-    AppendXMLString(content, remain);
-    remain = ReadLine(xml);
-  }
-  
-  if (ContainsTag(before)) {
-#ifdef _DEBUG
-    std::cerr << "Invalid <integer> content: \"" << before << "\"" << std::endl;
-#endif
+bool plist::Integer::fromXML(const gcore::XMLElement *elt)  {
+  if (!elt) return false;
+  if (elt->getTag() != "integer") {
     return false;
+  } else {
+    gcore::String txt = elt->getText();
+    return txt.strip().toLong(mValue);
   }
-  
-  AppendXMLString(content, before);
-  
-  if (sscanf(content.c_str(), "%ld", &mValue) != 1) {
-#ifdef _DEBUG
-    std::cerr << "Invalid <integer> content: \"" << content << "\"" << std::endl;
-#endif
-    return false;
-  }
-  
-#ifdef _DEBUG
-  std::cout << "Read Integer: " << mValue << std::endl;
-#endif
-  remain = after;
-  
-  return true;
 }
 
-void plist::Integer::toXML(std::ostream &xml, const gcore::String &indent="") const {
-  xml << indent << "<integer>" << mValue << "</integer>" << std::endl;
+gcore::XMLElement* plist::Integer::toXML(gcore::XMLElement *elt) const {
+  gcore::XMLElement *s = new gcore::XMLElement("integer");
+  s->setText(gcore::String(mValue));
+  if (elt) elt->addChild(s);
+  return s;
 }
 
 plist::Value* plist::Integer::New() {
@@ -446,52 +179,21 @@ plist::Real::Real(double value)
 plist::Real::~Real() {
 }
 
-bool plist::Real::fromXML(std::istream &xml, gcore::String &remain) {
-  gcore::String before, after;
-  
-  if (remain.length() == 0) {
-    remain = ReadLine(xml);
-  }
-  
-  gcore::String content = "";
-  
-  while (!ReadCloseTag("real", remain, before, after)) {
-    if (ContainsTag(remain)) {
-#ifdef _DEBUG
-      std::cerr << "Invalid <real> content: \"" << remain << "\"" << std::endl;
-#endif
-      return false;
-    }
-    AppendXMLString(content, remain);
-    remain = ReadLine(xml);
-  }
-  
-  if (ContainsTag(before)) {
-#ifdef _DEBUG
-    std::cerr << "Invalid <real> content: \"" << before << "\"" << std::endl;
-#endif
+bool plist::Real::fromXML(const gcore::XMLElement *elt)  {
+  if (!elt) return false;
+  if (elt->getTag() != "real") {
     return false;
+  } else {
+    gcore::String txt = elt->getText();
+    return txt.strip().toDouble(mValue);
   }
-  
-  AppendXMLString(content, before);
-  
-  if (sscanf(content.c_str(), "%lf", &mValue) != 1) {
-#ifdef _DEBUG
-    std::cerr << "Invalid <real> content: \"" << content << "\"" << std::endl;
-#endif
-    return false;
-  }
-  
-#ifdef _DEBUG
-  std::cout << "Read Real: " << mValue << std::endl;
-#endif
-  remain = after;
-  
-  return true;
 }
 
-void plist::Real::toXML(std::ostream &xml, const gcore::String &indent="") const {
-  xml << indent << "<real>" << mValue << "</real>" << std::endl;
+gcore::XMLElement* plist::Real::toXML(gcore::XMLElement *elt) const {
+  gcore::XMLElement *s = new gcore::XMLElement("real");
+  s->setText(gcore::String(mValue));
+  if (elt) elt->addChild(s);
+  return s;
 }
 
 plist::Value* plist::Real::New() {
@@ -519,62 +221,21 @@ plist::Boolean::Boolean(bool value)
 plist::Boolean::~Boolean() {
 }
 
-bool plist::Boolean::fromXML(std::istream &xml, gcore::String &remain) {
-  static const Rex trueexp(RAW("^\s*true\s*$"));
-  static const Rex falseexp(RAW("^\s*false\s*$"));
-  
-  gcore::String before, after;
-  
-  if (remain.length() == 0) {
-    remain = ReadLine(xml);
-  }
-  
-  gcore::String content = "";
-  
-  while (!ReadCloseTag("boolean", remain, before, after)) {
-    if (ContainsTag(remain)) {
-#ifdef _DEBUG
-      std::cerr << "Invalid <boolean> content: \"" << remain << "\"" << std::endl;
-#endif
-      return false;
-    }
-    AppendXMLString(content, remain);
-    remain = ReadLine(xml);
-  }
-  
-  if (ContainsTag(before)) {
-#ifdef _DEBUG
-    std::cerr << "Invalid <boolean> content: \"" << before << "\"" << std::endl;
-#endif
+bool plist::Boolean::fromXML(const gcore::XMLElement *elt)  {
+  if (!elt) return false;
+  if (elt->getTag() != "boolean") {
     return false;
-  }
-  
-  AppendXMLString(content, before);
-  gcore::RexMatch md;
-  
-  if (!trueexp.match(content, md, gcore::Rex::NoCase)) {
-    if (!falseexp.match(content, md, gcore::Rex::NoCase)) {
-#ifdef _DEBUG
-      std::cerr << "Invalid <boolean> content: \"" << content << "\"" << std::endl;
-#endif
-      return false;
-    } else {
-      mValue = false;
-    }
   } else {
-    mValue = true;
+    gcore::String txt = elt->getText();
+    return txt.strip().toBool(mValue);
   }
-  
-#ifdef _DEBUG
-  std::cout << "Read Boolean: " << (mValue ? "true" : "false") << std::endl;
-#endif
-  remain = after;
-  
-  return true;
 }
 
-void plist::Boolean::toXML(std::ostream &xml, const gcore::String &indent="") const {
-  xml << indent << "<boolean>" << (mValue ? "true" : "false") << "</boolean>" << std::endl;
+gcore::XMLElement* plist::Boolean::toXML(gcore::XMLElement *elt) const {
+  gcore::XMLElement *s = new gcore::XMLElement("boolean");
+  s->setText(gcore::String(mValue));
+  if (elt) elt->addChild(s);
+  return s;
 }
 
 plist::Value* plist::Boolean::New() {
@@ -647,90 +308,39 @@ void plist::Array::set(size_t idx, Value *v, bool replace) {
   mValues[idx] = v;
 }
 
-bool plist::Array::fromXML(std::istream &xml, gcore::String &remain) {
-  
+bool plist::Array::fromXML(const gcore::XMLElement *elt)  {
   clear();
-  
-  gcore::String before, after;
-  
-  if (remain.length() == 0) {
-    remain = ReadLine(xml);
-  }
-  
-  while (!ReadCloseTag("array", remain, before, after)) {
-    
-    gcore::String tag = ReadOpenTag(remain, before, after);
-    
-    if (tag.length() > 0) {
-      // Found an opening tag in remaining of line
-    
-      if (before.length() > 0) {
-#ifdef _DEBUG
-        std::cerr << "Found invalid content in <array>: \"" << before << "\"" << std::endl;
-#endif
+  if (!elt) return false;
+  if (elt->getTag() != "array") {
+    return false;
+  } else {
+    for (size_t i=0; i<elt->numChildren(); ++i) {
+      const gcore::XMLElement *c = elt->getChild(i);
+      Value *v = PropertyList::NewValue(c->getTag());
+      if (v == 0) {
         return false;
       }
-      
-      Value *v = PropertyList::NewValue(tag);
-      
-      if (!v) {
-#ifdef _DEBUG
-        std::cerr << "Could not create value of type \"" << tag << "\"" << std::endl;
-#endif
-        return false;
-      }
-      
-      if (!v->fromXML(xml, after)) {
+      if (!v->fromXML(c)) {
         delete v;
         return false;
       }
-
-#ifdef _DEBUG
-      std::cout << "Append value to array" << std::endl;
-#endif
       mValues.push(v);
-      
-      remain = after;
-      if (remain.length() == 0) {
-        remain = ReadLine(xml);
-      }
-      
-    } else {
-    
-      if (remain.length() > 0) {
-#ifdef _DEBUG
-        std::cerr << "Found invalid content in <array>: \"" << remain << "\"" << std::endl;
-#endif
-        return false;
-      }
-      
-      remain = ReadLine(xml);
     }
+    return true;
   }
-  
-  // found closing tag, before should be empty or blank
-  if (before.length() > 0) {
-#ifdef _DEBUG
-    std::cerr << "Found invalid content in <array>: \"" << before << "\"" << std::endl;
-#endif
-    return false;
-  }
-  
-  remain = after;
-  
-  return true;
 }
 
-void plist::Array::toXML(std::ostream &xml, const gcore::String &indent="") const {
-  xml << indent << "<array>" << std::endl;
+gcore::XMLElement* plist::Array::toXML(gcore::XMLElement *elt) const {
+  gcore::XMLElement *s = new gcore::XMLElement("array");
   for (size_t i=0; i<mValues.size(); ++i) {
     if (mValues[i]) {
-      mValues[i]->toXML(xml, indent+"  ");
+      mValues[i]->toXML(s);
     }
   }
-  xml << indent << "</array>" << std::endl;
+  if (elt) elt->addChild(s);
+  return s;
 }
-  
+
 plist::Value* plist::Array::New() {
   return new Array();
 }
@@ -817,70 +427,53 @@ void plist::Dictionary::set(const gcore::String &key, Value *v, bool replace) {
   mPairs[key] = v;
 }
 
-bool plist::Dictionary::fromXML(std::istream &xml, gcore::String &remain) {
-  
+bool plist::Dictionary::fromXML(const gcore::XMLElement *elt)  {
   clear();
-  
-  gcore::String before, after, key, tag;
-  
-  if (remain.length() == 0) {
-    remain = ReadLine(xml);
-  }
-  
-  while (!ReadCloseTag("dict", remain, before, after)) {
-  
-    if (!ReadKey(xml, remain, key)) {
-      return false;
-    }
-    
-    if (mPairs.find(key) != mPairs.end()) {
-#ifdef _DEBUG
-      std::cerr << "Key already exists: \"" << key << "\"" << std::endl;
-#endif
-      return false;
-    }
-    
-    Value *v = ReadValue(xml, remain); 
-    if (!v) {
-      return false;
-    }
-    
-#ifdef _DEBUG
-    std::cout << "Add key to dict: \"" << key << "\"" << std::endl;
-#endif
-    mPairs[key] = v;
-    
-    if (remain.length() == 0) {
-      remain = ReadLine(xml);
-    }
-  }
-  
-  if (before.length() > 0) {
-#ifdef _DEBUG
-    std::cerr << "Found invalid content in <dict>: \"" << before << "\"" << std::endl;
-#endif
+  if (!elt) return false;
+  if (elt->getTag() != "dict") {
     return false;
+  } else {
+    size_t i = 0;
+    while (i < elt->numChildren()) {
+      const gcore::XMLElement *k = elt->getChild(i);
+      if (k->getTag() != "key") {
+        return false;
+      }
+      gcore::String key = k->getText();
+      key.strip();
+      if (mPairs.find(key) != mPairs.end()) {
+        return false;
+      }
+      const gcore::XMLElement *v = elt->getChild(i+1);
+      Value *val = PropertyList::NewValue(v->getTag());
+      if (val == 0) {
+        return false;
+      }
+      if (!val->fromXML(v)) {
+        delete val;
+        return false;
+      }
+      mPairs[key] = val;
+      i += 2;
+    }
+    return true;
   }
-  
-  remain = after;
-  
-  return true;
 }
 
-void plist::Dictionary::toXML(std::ostream &xml, const gcore::String &indent="") const {
-  xml << indent << "<dict>" << std::endl;
+gcore::XMLElement* plist::Dictionary::toXML(gcore::XMLElement *elt) const {
+  gcore::XMLElement *s = new gcore::XMLElement("dict");
   std::map<gcore::String, Value*>::const_iterator it = mPairs.begin();
-  gcore::String sindent = indent + "  ";
-  
   while (it != mPairs.end()) {
     if (it->second) {
-      xml << sindent << "<key>" << it->first << "</key>" << std::endl;
-      it->second->toXML(xml, sindent);
+      gcore::XMLElement *k = new gcore::XMLElement("key");
+      k->setText(it->first);
+      s->addChild(k);
+      it->second->toXML(s);
     }
     ++it;
   }
-  
-  xml << indent << "</dict>" << std::endl;
+  if (elt) elt->addChild(s);
+  return s;
 }
 
 plist::Value* plist::Dictionary::New() {
@@ -956,68 +549,49 @@ void PropertyList::create() {
   }
   mTop = new plist::Dictionary();
 }
-  
-void PropertyList::write(const String &filename) const {
-  std::ofstream xml(filename.c_str());
-  xml << "<?xml version=\"1.0\" encoding=\"ISO-8859-1\" standalone=\"yes\" ?>"
-      << std::endl;
+
+XMLElement* PropertyList::write(XMLElement *elt) const {
   if (mTop) {
-    mTop->toXML(xml, "");
+    return mTop->toXML(elt);
+  } else {
+    return NULL;
   }
-  xml << std::endl;
+}
+
+bool PropertyList::read(const XMLElement *elt) {
+  bool newed = true;
+  if (!mTop) {
+    mTop = new plist::Dictionary();
+  } else {
+    mTop->clear();
+    newed = false;
+  }
+  bool rv = mTop->fromXML(elt);
+  if (!rv && newed) {
+    delete mTop;
+    mTop = 0;
+  }
+  return rv;
+}
+
+void PropertyList::write(const String &filename) const {
+  XMLDoc *doc = new XMLDoc();
+  XMLElement *root = write(NULL);
+  if (root) {
+    doc->setRoot(root);
+    doc->write(filename);
+  }
+  delete doc;
 }
 
 bool PropertyList::read(const String &filename) {
-  static const gcore::Rex header(RAW("<\?xml\s.*\?>"));
-  
-  if (mTop) {
-    delete mTop;
-    mTop = 0;
+  bool rv = false;
+  XMLDoc *doc = new XMLDoc();
+  if (doc->read(filename)) {
+    rv = read(doc->getRoot());
   }
-  
-  std::ifstream xml(filename.c_str());
-  
-  if (!xml.is_open()) {
-#ifdef _DEBUG
-    std::cerr << "Could not read file: \"" << filename << "\"" << std::endl;
-#endif
-    return false;
-  }
-  
-  String line = ReadLine(xml);
-  
-  gcore::RexMatch md;
-  
-  if (!header.search(line, md)) {
-#ifdef _DEBUG
-    std::cerr << "Missing XML header" << std::endl;
-#endif
-    return false;
-  }
-  
-  String before, after;
-  String tag = ReadOpenTag(xml, before, after);
-
-  if (tag != "dict") {
-#ifdef _DEBUG
-    std::cerr << "First TAG must be \"dict\"" << std::endl;
-#endif
-    return false;
-  }
-
-  mTop = new plist::Dictionary();
-
-  if (!mTop) {
-    return false;
-  }
-  
-  if (!mTop->fromXML(xml, after)) {
-    delete mTop;
-    mTop = 0;
-    return false;
-  }
-  
-  return true;
+  delete doc;
+  return rv;
 }
 
 // might have a way to merge GetPropertyMember and SetPropertyMember

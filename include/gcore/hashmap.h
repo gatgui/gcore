@@ -103,7 +103,7 @@ namespace gcore
     public:
       
       friend class HashMap;
-      friend class const_iterator;
+      //friend class const_iterator;
       
       iterator();
       iterator(const iterator &rhs);
@@ -119,14 +119,18 @@ namespace gcore
       const KeyType& key() const;
       void value(const ValueType &val);
       
+      Type* hash() const;
+      long bucket() const;
+      const typename EntryList::iterator& entry() const;
+      
     private:
       
       iterator(Type *h);
       iterator(Type *h, long b, typename EntryList::iterator e);
       
-      Type *hash;
-      long bucket;
-      typename EntryList::iterator entry;
+      Type *mHash;
+      long mBucket;
+      typename EntryList::iterator mEntry;
     };
     
     class const_iterator
@@ -152,14 +156,18 @@ namespace gcore
       const ValueType& value() const;
       const KeyType& key() const;
       
+      const Type* hash() const;
+      long bucket() const;
+      const typename EntryList::const_iterator& entry() const;
+      
     private:
       
       const_iterator(const Type *h);
       const_iterator(const Type *h, long b, typename EntryList::const_iterator e);
       
-      const Type *hash;
-      long bucket;
-      typename EntryList::const_iterator entry;
+      const Type *mHash;
+      long mBucket;
+      typename EntryList::const_iterator mEntry;
     };
     
     friend class iterator;
@@ -234,25 +242,25 @@ gcore::HashMap<KeyType, ValueType, H>::KeyError::~KeyError() throw()
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline gcore::HashMap<KeyType, ValueType, H>::iterator::iterator()
-  : hash(0), bucket(-1)
+  : mHash(0), mBucket(-1)
 {
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline gcore::HashMap<KeyType, ValueType, H>::iterator::iterator(gcore::HashMap<KeyType, ValueType, H> *h)
-  : hash(h), bucket(long(h->mNumBuckets))
+  : mHash(h), mBucket(long(h->mNumBuckets))
 {
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline gcore::HashMap<KeyType, ValueType, H>::iterator::iterator(gcore::HashMap<KeyType, ValueType, H> *h, long b, typename gcore::HashMap<KeyType, ValueType, H>::EntryList::iterator e)
-  : hash(h), bucket(b), entry(e)
+  : mHash(h), mBucket(b), mEntry(e)
 {
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline gcore::HashMap<KeyType, ValueType, H>::iterator::iterator(const typename gcore::HashMap<KeyType, ValueType, H>::iterator &rhs)
-  : hash(rhs.hash), bucket(rhs.bucket), entry(rhs.entry)
+  : mHash(rhs.mHash), mBucket(rhs.mBucket), mEntry(rhs.mEntry)
 {
 }
 
@@ -262,21 +270,41 @@ inline gcore::HashMap<KeyType, ValueType, H>::iterator::~iterator()
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
+gcore::HashMap<KeyType, ValueType, H>*
+gcore::HashMap<KeyType, ValueType, H>::iterator::hash() const
+{
+  return mHash;
+}
+
+template <typename KeyType, typename ValueType, gcore::HashFunc H>
+long gcore::HashMap<KeyType, ValueType, H>::iterator::bucket() const
+{
+  return mBucket;
+}
+
+template <typename KeyType, typename ValueType, gcore::HashFunc H>
+const typename gcore::HashMap<KeyType, ValueType, H>::EntryList::iterator&
+gcore::HashMap<KeyType, ValueType, H>::iterator::entry() const
+{
+  return mEntry;
+}
+
+template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline typename gcore::HashMap<KeyType, ValueType, H>::iterator&
 gcore::HashMap<KeyType, ValueType, H>::iterator::operator=(const typename gcore::HashMap<KeyType, ValueType, H>::iterator &rhs)
 {
-  hash = rhs.hash;
-  bucket = rhs.bucket;
-  entry = rhs.entry;
+  mHash = rhs.mHash;
+  mBucket = rhs.mBucket;
+  mEntry = rhs.mEntry;
   return *this;
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline bool gcore::HashMap<KeyType, ValueType, H>::iterator::operator==(const typename gcore::HashMap<KeyType, ValueType, H>::iterator &rhs) const
 {
-  if (hash == rhs.hash && bucket == rhs.bucket)
+  if (mHash == rhs.mHash && mBucket == rhs.mBucket)
   {
-    return (bucket < 0 || bucket >= long(hash->mNumBuckets) ? true : entry == rhs.entry);
+    return (mBucket < 0 || mBucket >= long(mHash->mNumBuckets) ? true : mEntry == rhs.mEntry);
   }
   return false;
 }
@@ -290,39 +318,39 @@ inline bool gcore::HashMap<KeyType, ValueType, H>::iterator::operator!=(const ty
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline const ValueType& gcore::HashMap<KeyType, ValueType, H>::iterator::value() const
 {
-  return entry->value;
+  return mEntry->value;
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline const KeyType& gcore::HashMap<KeyType, ValueType, H>::iterator::key() const
 {
-  return entry->key;
+  return mEntry->key;
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline void gcore::HashMap<KeyType, ValueType, H>::iterator::value(const ValueType &val)
 {
-  entry->value = val;
+  mEntry->value = val;
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
 typename gcore::HashMap<KeyType, ValueType, H>::iterator&
 gcore::HashMap<KeyType, ValueType, H>::iterator::operator++()
 {
-  long nbuckets = long(hash->mNumBuckets);
-  if (bucket < nbuckets)
+  long nbuckets = long(mHash->mNumBuckets);
+  if (mBucket < nbuckets)
   {
-    ++entry;
-    if (entry == hash->mBuckets[bucket].end())
+    ++mEntry;
+    if (mEntry == hash->mBuckets[mBucket].end())
     {
-      ++bucket;
-      while (bucket < nbuckets && hash->mBuckets[bucket].size() == 0)
+      ++mBucket;
+      while (mBucket < nbuckets && mHash->mBuckets[mBucket].size() == 0)
       {
-        ++bucket;
+        ++mBucket;
       }
-      if (bucket < nbuckets)
+      if (mBucket < nbuckets)
       {
-        entry = hash->mBuckets[bucket].begin();
+        mEntry = mHash->mBuckets[mBucket].begin();
       }
     }
   }
@@ -334,20 +362,20 @@ typename gcore::HashMap<KeyType, ValueType, H>::iterator
 gcore::HashMap<KeyType, ValueType, H>::iterator::operator++(int)
 {
   iterator rv(*this);
-  long nbuckets = long(hash->mNumBuckets);
-  if (bucket < nbuckets)
+  long nbuckets = long(mHash->mNumBuckets);
+  if (mBucket < nbuckets)
   {
     ++entry;
-    if (entry == hash->mBuckets[bucket].end())
+    if (mEntry == mHash->mBuckets[mBucket].end())
     {
-      ++bucket;
-      while (bucket < nbuckets && hash->mBuckets[bucket].size() == 0)
+      ++mBucket;
+      while (mBucket < nbuckets && mHash->mBuckets[mBucket].size() == 0)
       {
-        ++bucket;
+        ++mBucket;
       }
-      if (bucket < nbuckets)
+      if (mBucket < nbuckets)
       {
-        entry = hash->mBuckets[bucket].begin();
+        mEntry = hash->mBuckets[mBucket].begin();
       }
     }
   }
@@ -358,31 +386,31 @@ gcore::HashMap<KeyType, ValueType, H>::iterator::operator++(int)
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline gcore::HashMap<KeyType, ValueType, H>::const_iterator::const_iterator()
-  : hash(0), bucket(-1)
+  : mHash(0), mBucket(-1)
 {
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline gcore::HashMap<KeyType, ValueType, H>::const_iterator::const_iterator(const gcore::HashMap<KeyType, ValueType, H> *h)
-  : hash(h), bucket(long(h->mNumBuckets))
+  : mHash(h), mBucket(long(h->mNumBuckets))
 {
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline gcore::HashMap<KeyType, ValueType, H>::const_iterator::const_iterator(const gcore::HashMap<KeyType, ValueType, H> *h, long b, typename gcore::HashMap<KeyType, ValueType, H>::EntryList::const_iterator e)
-  : hash(h), bucket(b), entry(e)
+  : mHash(h), mBucket(b), mEntry(e)
 {
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline gcore::HashMap<KeyType, ValueType, H>::const_iterator::const_iterator(const typename gcore::HashMap<KeyType, ValueType, H>::const_iterator &rhs)
-  : hash(rhs.hash), bucket(rhs.bucket), entry(rhs.entry)
+  : mHash(rhs.mHash), mBucket(rhs.mBucket), mEntry(rhs.mEntry)
 {
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline gcore::HashMap<KeyType, ValueType, H>::const_iterator::const_iterator(const typename gcore::HashMap<KeyType, ValueType, H>::iterator &rhs)
-  : hash(rhs.hash), bucket(rhs.bucket), entry(rhs.entry)
+  : mHash(rhs.hash()), mBucket(rhs.bucket()), mEntry(rhs.entry())
 {
 }
 
@@ -392,12 +420,32 @@ inline gcore::HashMap<KeyType, ValueType, H>::const_iterator::~const_iterator()
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
+const gcore::HashMap<KeyType, ValueType, H>*
+gcore::HashMap<KeyType, ValueType, H>::const_iterator::hash() const
+{
+  return mHash;
+}
+
+template <typename KeyType, typename ValueType, gcore::HashFunc H>
+long gcore::HashMap<KeyType, ValueType, H>::const_iterator::bucket() const
+{
+  return mBucket;
+}
+
+template <typename KeyType, typename ValueType, gcore::HashFunc H>
+const typename gcore::HashMap<KeyType, ValueType, H>::EntryList::const_iterator&
+gcore::HashMap<KeyType, ValueType, H>::const_iterator::entry() const
+{
+  return mEntry;
+}
+
+template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline typename gcore::HashMap<KeyType, ValueType, H>::const_iterator&
 gcore::HashMap<KeyType, ValueType, H>::const_iterator::operator=(const typename gcore::HashMap<KeyType, ValueType, H>::const_iterator &rhs)
 {
-  hash = rhs.hash;
-  bucket = rhs.bucket;
-  entry = rhs.entry;
+  mHash = rhs.mHash;
+  mBucket = rhs.mBucket;
+  mEntry = rhs.mEntry;
   return *this;
 }
 
@@ -405,18 +453,18 @@ template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline typename gcore::HashMap<KeyType, ValueType, H>::const_iterator&
 gcore::HashMap<KeyType, ValueType, H>::const_iterator::operator=(const typename gcore::HashMap<KeyType, ValueType, H>::iterator &rhs)
 {
-  hash = rhs.hash;
-  bucket = rhs.bucket;
-  entry = rhs.entry;
+  mHash = rhs.hash();
+  mBucket = rhs.bucket();
+  mEntry = rhs.entry();
   return *this;
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline bool gcore::HashMap<KeyType, ValueType, H>::const_iterator::operator==(const typename gcore::HashMap<KeyType, ValueType, H>::const_iterator &rhs) const
 {
-  if (hash == rhs.hash && bucket == rhs.bucket)
+  if (mHash == rhs.mHash && mBucket == rhs.mBucket)
   {
-    return (bucket < 0 || bucket >= long(hash->mNumBuckets) ? true : entry == rhs.entry);
+    return (mBucket < 0 || mBucket >= long(mHash->mNumBuckets) ? true : mEntry == rhs.mEntry);
   }
   return false;
 }
@@ -424,9 +472,9 @@ inline bool gcore::HashMap<KeyType, ValueType, H>::const_iterator::operator==(co
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline bool gcore::HashMap<KeyType, ValueType, H>::const_iterator::operator==(const typename gcore::HashMap<KeyType, ValueType, H>::iterator &rhs) const
 {
-  if (hash == rhs.hash && bucket == rhs.bucket)
+  if (mHash == rhs.hash() && mBucket == rhs.bucket())
   {
-    return (bucket < 0 || bucket >= long(hash->mNumBuckets) ? true : entry == rhs.entry);
+    return (mBucket < 0 || mBucket >= long(mHash->mNumBuckets) ? true : mEntry == rhs.entry());
   }
   return false;
 }
@@ -446,33 +494,33 @@ inline bool gcore::HashMap<KeyType, ValueType, H>::const_iterator::operator!=(co
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline const ValueType& gcore::HashMap<KeyType, ValueType, H>::const_iterator::value() const
 {
-  return entry->value;
+  return mEntry->value;
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline const KeyType& gcore::HashMap<KeyType, ValueType, H>::const_iterator::key() const
 {
-  return entry->key;
+  return mEntry->key;
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
 typename gcore::HashMap<KeyType, ValueType, H>::const_iterator&
 gcore::HashMap<KeyType, ValueType, H>::const_iterator::operator++()
 {
-  long nbuckets = long(hash->mNumBuckets);
-  if (bucket < nbuckets)
+  long nbuckets = long(mHash->mNumBuckets);
+  if (mBucket < nbuckets)
   {
-    ++entry;
-    if (entry == hash->mBuckets[bucket].end())
+    ++mEntry;
+    if (mEntry == mHash->mBuckets[mBucket].end())
     {
-      ++bucket;
-      while (bucket < nbuckets && hash->mBuckets[bucket].size() == 0)
+      ++mBucket;
+      while (mBucket < nbuckets && mHash->mBuckets[mBucket].size() == 0)
       {
-        ++bucket;
+        ++mBucket;
       }
-      if (bucket < nbuckets)
+      if (mBucket < nbuckets)
       {
-        entry = hash->mBuckets[bucket].begin();
+        mEntry = mHash->mBuckets[mBucket].begin();
       }
     }
   }
@@ -484,20 +532,20 @@ typename gcore::HashMap<KeyType, ValueType, H>::const_iterator
 gcore::HashMap<KeyType, ValueType, H>::const_iterator::operator++(int)
 {
   iterator rv(*this);
-  long nbuckets = long(hash->mNumBuckets);
-  if (bucket < nbuckets)
+  long nbuckets = long(mHash->mNumBuckets);
+  if (mBucket < nbuckets)
   {
-    ++entry;
-    if (entry == hash->mBuckets[bucket].end())
+    ++mEntry;
+    if (mEntry == mHash->mBuckets[mBucket].end())
     {
-      ++bucket;
-      while (bucket < nbuckets && hash->mBuckets[bucket].size() == 0)
+      ++mBucket;
+      while (mBucket < nbuckets && mHash->mBuckets[mBucket].size() == 0)
       {
-        ++bucket;
+        ++mBucket;
       }
-      if (bucket < nbuckets)
+      if (mBucket < nbuckets)
       {
-        entry = hash->mBuckets[bucket].begin();
+        mEntry = mHash->mBuckets[mBucket].begin();
       }
     }
   }

@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2009, 2010, 2011  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -26,6 +26,7 @@ USA.
 
 #include <gcore/string.h>
 #include <gcore/list.h>
+#include <gcore/xml.h>
 
 namespace gcore {
   
@@ -107,8 +108,12 @@ namespace gcore {
       ~PropertyList();
       
       void create();
+      
       bool read(const String &filename);
       void write(const String &filename) const;
+      
+      bool read(const XMLElement *elt);
+      XMLElement* write(XMLElement *elt) const;
       
       const String& getString(const String &prop) const throw(plist::Exception);
       long getInteger(const String &prop) const throw(plist::Exception);
@@ -144,8 +149,8 @@ namespace gcore {
         Value();
         virtual ~Value();
 
-        virtual bool fromXML(std::istream &xml, gcore::String &remain) = 0;
-        virtual void toXML(std::ostream &xml, const gcore::String &indent) const = 0;
+        virtual bool fromXML(const gcore::XMLElement *elt) = 0;
+        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt) const = 0;
 
         inline long getType() const {
           return mType;
@@ -189,8 +194,8 @@ namespace gcore {
         InvalidValue();
         virtual ~InvalidValue();
         
-        virtual bool fromXML(std::istream &, gcore::String &);
-        virtual void toXML(std::ostream &, const gcore::String &) const;
+        virtual bool fromXML(const gcore::XMLElement *elt);
+        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt) const;
     };
     
     class GCORE_API String : public Value {
@@ -204,8 +209,8 @@ namespace gcore {
         String(const gcore::String &v);
         virtual ~String();
         
-        virtual bool fromXML(std::istream &, gcore::String &);
-        virtual void toXML(std::ostream &, const gcore::String &) const;
+        virtual bool fromXML(const gcore::XMLElement *elt);
+        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt) const;
         
         inline const gcore::String& get() const {
           return mValue;
@@ -236,8 +241,8 @@ namespace gcore {
         Real(double v);
         virtual ~Real();
         
-        virtual bool fromXML(std::istream &, gcore::String &);
-        virtual void toXML(std::ostream &, const gcore::String &) const;
+        virtual bool fromXML(const gcore::XMLElement *elt);
+        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt) const;
         
         inline double get() const {
           return mValue;
@@ -268,8 +273,8 @@ namespace gcore {
         Integer(long v);
         virtual ~Integer();
         
-        virtual bool fromXML(std::istream &, gcore::String &);
-        virtual void toXML(std::ostream &, const gcore::String &) const;
+        virtual bool fromXML(const gcore::XMLElement *elt);
+        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt) const;
         
         inline long get() const {
           return mValue;
@@ -300,8 +305,8 @@ namespace gcore {
         Boolean(bool v);
         virtual ~Boolean();
         
-        virtual bool fromXML(std::istream &, gcore::String &);
-        virtual void toXML(std::ostream &, const gcore::String &) const;
+        virtual bool fromXML(const gcore::XMLElement *elt);
+        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt) const;
         
         inline bool get() const {
           return mValue;
@@ -332,8 +337,8 @@ namespace gcore {
         Array(InputType val);
         virtual ~Array();
         
-        virtual bool fromXML(std::istream &, gcore::String &);
-        virtual void toXML(std::ostream &, const gcore::String &) const;
+        virtual bool fromXML(const gcore::XMLElement *elt);
+        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt) const;
         
         inline size_t size() const {
           return mValues.size();
@@ -374,8 +379,8 @@ namespace gcore {
         Dictionary(InputType val);
         virtual ~Dictionary();
         
-        virtual bool fromXML(std::istream &, gcore::String &);
-        virtual void toXML(std::ostream &, const gcore::String &) const;
+        virtual bool fromXML(const gcore::XMLElement *elt);
+        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt) const;
         
         inline ReturnType get() const {
           return mPairs;

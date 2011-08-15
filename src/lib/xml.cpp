@@ -32,6 +32,7 @@ static bool IsValidAttribute(const String &str) {
         (*cp >= 'A' && *cp <= 'Z') ||
         (*cp >= '0' && *cp <= '9') ||
         *cp == '-' ||
+        *cp == '_' ||
         *cp == ':') {
       ++cp;
     } else {

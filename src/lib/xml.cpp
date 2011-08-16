@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2010  Gaetan Guidet
+Copyright (C) 2010, 2011  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -42,12 +42,76 @@ static bool IsValidAttribute(const String &str) {
   return true;
 }
 
-static bool IsValidValue(const String &str) {
-  return (str.find_first_of("\"<>") == String::npos);
+static String RemoveEntities(const String &txt) {
+  String ent, rv = txt;
+  size_t p0 = 0;
+  size_t p1 = rv.find('&', p0);
+  size_t p2;
+  while (p1 != String::npos) {
+    p2 = rv.find(';', p1);
+    if (p2 != String::npos) {
+      ent = rv.substr(p1+1, p2-p1-1);
+      if (ent == "gt") {
+        rv.erase(p1, p2-p1+1);
+        rv.insert(p1, ">");
+      } else if (ent == "lt") {
+        rv.erase(p1, p2-p1+1);
+        rv.insert(p1, "<");
+      } else if (ent == "quot") {
+        rv.erase(p1, p2-p1+1);
+        rv.insert(p1, "\"");
+      } else if (ent == "apos") {
+        rv.erase(p1, p2-p1+1);
+        rv.insert(p1, "'");
+      } else if (ent == "amp") {
+        rv.erase(p1, p2-p1+1);
+        rv.insert(p1, "&");
+      }
+    } else {
+      break;
+    }
+    p0 = p1 + 1;
+    p1 = rv.find('&', p0);
+  }
+  return rv;
 }
 
-static bool IsValidText(const String &txt) {
-  return (txt.find_first_of("\"<>") == String::npos);
+static String ValidateString(const String &txt) {
+  String rv = txt;
+  size_t p0 = 0;
+  size_t p1 = rv.find_first_of("<>&\"'");
+  while (p1 != String::npos) {
+    if (rv[p1] == '<') {
+      rv.erase(p1, 1);
+      rv.insert(p1, "&lt;");
+    } else if (rv[p1] == '>') {
+      rv.erase(p1, 1);
+      rv.insert(p1, "&gt;");
+    } else if (rv[p1] == '"') {
+      rv.erase(p1, 1);
+      rv.insert(p1, "&quot;");
+    } else if (rv[p1] == '\'') {
+      rv.erase(p1, 1);
+      rv.insert(p1, "&apos;");
+    } else if (rv[p1] == '&') {
+      size_t p2 = rv.find(';', p1);
+      if (p2 != String::npos && (p2-p1) > 2) {
+        String ent = rv.substr(p1+1, p2-p1-1);
+        if (ent != "gt" && ent != "lt" && ent != "quot" && ent != "apos" && ent != "amp") {
+          rv.erase(p1, 1);
+          rv.insert(p1, "&amp;");
+        }
+      } else {
+        rv.erase(p1, 1);
+        rv.insert(p1, "&amp;");
+      }
+    } else {
+      break;
+    }
+    p0 = p1 + 1;
+    p1 = rv.find_first_of("<>&\"'", p0);
+  }
+  return rv;
 }
 
 static bool IsWS(char c) {
@@ -57,21 +121,6 @@ static bool IsWS(char c) {
     return false;
   }
 }
-
-/*
-static bool IsValidXMLChar(char c) {
-  if ((c >= '0' && c <= '9') ||
-      (c >= 'a' && c <= 'z') ||
-      (c >= 'A' && c <= 'Z') ||
-      (c == '-') ||
-      (c == '_') ||
-      (c == ':')) {
-    return true;
-  } else {
-    return false;
-  }
-}
-*/
 
 static char* SkipWS(char *p, char *upTo) {
   while (p != upTo) {
@@ -133,7 +182,7 @@ void XMLElement::write(std::ostream &os, const String &indent) const {
   os << indent << "<" << mTag;
   StringDict::const_iterator it = mAttrs.begin();
   while (it != mAttrs.end()) {
-    os << " " << it->first << "=\"" << it->second << "\"";
+    os << " " << it->first << "=\"" << ValidateString(it->second) << "\"";
     ++it;
   }
   if (mChildren.size() > 0 || mText.length() > 0) {
@@ -155,7 +204,7 @@ void XMLElement::write(std::ostream &os, const String &indent) const {
         os << mText;
         os << "]]>";
       } else {
-        os << mText;
+        os << ValidateString(mText);
       }
       if (mChildren.size() > 0) {
         os << std::endl << indent;
@@ -174,20 +223,12 @@ bool XMLElement::setAttribute(const String &name, const String &value) {
     std::cerr << "Invalid attribute name: \"" << name << "\"" << std::endl;
     return false;
   }
-  if (!IsValidValue(value)) {
-    std::cerr << "Invalid characters in attribute \"" << name << "\" value: \"" << value << "\"" << std::endl;
-    return false;
-  }
   mAttrs[name] = value;
   return true;
 }
 
 bool XMLElement::setText(const String &str, bool asCDATA) {
   mTextIsCDATA = asCDATA;
-  if (!asCDATA && !IsValidText(str)) {
-    std::cerr << "Invalid characters in text" << std::endl;
-    return false;
-  }
   mText = str;
   return true;
 }
@@ -195,10 +236,6 @@ bool XMLElement::setText(const String &str, bool asCDATA) {
 bool XMLElement::addText(const String &str) {
   if (mTextIsCDATA) {
     std::cerr << "Element cannot have both text and CDATA" << std::endl;
-    return false;
-  }
-  if (!IsValidText(str)) {
-    std::cerr << "Invalid characters in text" << std::endl;
     return false;
   }
   mText += str;
@@ -407,7 +444,7 @@ bool XMLDoc::read(const String &fileName) {
             char *ps = (char*) pending.c_str();
             char *pe = ps + pending.length();
             if (SkipWS(ps, pe) != pe) {
-              cur->addText(pending);
+              cur->addText(RemoveEntities(pending));
             }
           }
           pending = "";
@@ -754,7 +791,7 @@ bool XMLDoc::read(const String &fileName) {
             
             String val = pending.substr(p, e-p);
             
-            elem->setAttribute(attr, val);
+            elem->setAttribute(attr, RemoveEntities(val));
             
             tc = ts + e + 1;
           }

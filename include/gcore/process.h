@@ -61,6 +61,7 @@ namespace gcore
       void setOutputFunc(OutputFunc of);
       void setEnv(const String &key, const String &value);
 
+      ProcessID run(const String &cmdline);
       ProcessID run(const String &progPath, char **argv);
       ProcessID run(const String &progPath, int argc, ...);
       

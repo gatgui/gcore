@@ -395,6 +395,58 @@ gcore::ProcessID gcore::Process::run() {
 
 }
 
+gcore::ProcessID gcore::Process::run(const gcore::String &cmdline) {
+  gcore::String tmp = cmdline;
+  bool inSingleQuote = false;
+  bool inDoubleQuote = false;
+  for (size_t i=0; i<tmp.length(); ++i)
+  {
+    if (tmp[i] == '\"')
+    {
+      if (i == 0 || tmp[i-1] != '\\')
+      {
+        inDoubleQuote = !inDoubleQuote;
+      }
+    }
+    else if (tmp[i] == '\'')
+    {
+      if (i == 0 || tmp[i-1] != '\\')
+      {
+        inSingleQuote = !inSingleQuote;
+      }
+    }
+    else
+    {
+      if (tmp[i] == ' ' && !inSingleQuote && !inDoubleQuote)
+      {
+        tmp[i] = '\n';
+      }
+    }
+  }
+  
+  mArgs.clear();
+  tmp.split('\n', mArgs);
+  
+  size_t i = 0;
+  while (i < mArgs.size())
+  {
+    if (mArgs[i].length() == 0)
+    {
+      mArgs.erase(mArgs.begin() + i);
+      continue;
+    }
+    if (mArgs[i].length() >= 2 &&
+        ((mArgs[i][0] == '\'' && mArgs[i][mArgs[i].length()-1] == '\'') ||
+         (mArgs[i][0] == '\"' && mArgs[i][mArgs[i].length()-1] == '\"')))
+    {
+      mArgs[i] = mArgs[i].substr(1, mArgs[i].length()-2);
+    }
+    ++i;
+  }
+  
+  return run();
+}
+
 gcore::ProcessID gcore::Process::run(const String &progPath, char **argv) {
   mArgs.clear();
   mArgs.push(progPath);

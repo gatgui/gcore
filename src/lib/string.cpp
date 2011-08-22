@@ -227,6 +227,31 @@ String& String::operator+=(const String &rhs) {
   return *this;
 }
 
+String String::operator()(long from, long to) const {
+  long len = long(length());
+  if (len == 0) {
+    return "";
+  }
+  if (from < 0) {
+    from = len + from;
+    if (from < 0) {
+      return "";
+    }
+  } else if (from >= len) {
+    return "";
+  }
+  if (to < 0) {
+    to = len + to;
+  } else if (to >= len) {
+    to = len - 1;
+  }
+  if (to < from) {
+    return "";
+  }
+  long n = to - from + 1;
+  return substr(from, n);
+}
+
 String& String::strip() {
   size_t p = find_first_not_of(" \t\r\n\v");
   if (p == npos) {

@@ -72,6 +72,8 @@ namespace gcore {
       
       String& operator+=(const String &rhs);
       
+      String operator()(long from, long to) const;
+      
       String& strip();
       //size_t split(char c, List &l) const;
       size_t split(char c, StringList &l) const;

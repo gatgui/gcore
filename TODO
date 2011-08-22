@@ -1,0 +1,8 @@
+Added new regex syntaxes:
+
+- Comment: (?#...)
+- Named group: (?P<name>...)
+- Named group referemce: (?P=name)
+- Conditional expression: (?(id/name)yes-pattern|no-pattern)
+  (no-pattern optional)
+

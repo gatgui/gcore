@@ -85,9 +85,9 @@ namespace gcore {
         return *this;
       }
       
-      T reduce(ReduceFunc func, const T &initVal=T()) {
+      T reduce(ReduceFunc func, const T &initVal=T()) const {
         T val = initVal;
-        typename std::vector<T, Allocator>::iterator it = std::vector<T, Allocator>::begin();
+        typename std::vector<T, Allocator>::const_iterator it = std::vector<T, Allocator>::begin();
         while (it != std::vector<T, Allocator>::end()) {
           val = func(val, *it);
           ++it;
@@ -103,7 +103,7 @@ namespace gcore {
         std::vector<T, Allocator>::pop_back();
       }
       
-      List<T, Allocator> operator()(long from=0, long to=-1) {
+      List<T, Allocator> operator()(long from=0, long to=-1) const {
         List<T, Allocator> rv;
         if (from < 0) {
           from = long(std::vector<T, Allocator>::size()) + from;

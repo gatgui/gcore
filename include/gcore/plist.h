@@ -113,7 +113,7 @@ namespace gcore {
       void write(const String &filename) const;
       
       bool read(const XMLElement *elt);
-      XMLElement* write(XMLElement *elt) const;
+      XMLElement* write(XMLElement *elt=NULL) const;
       
       const String& getString(const String &prop) const throw(plist::Exception);
       long getInteger(const String &prop) const throw(plist::Exception);
@@ -150,7 +150,7 @@ namespace gcore {
         virtual ~Value();
 
         virtual bool fromXML(const gcore::XMLElement *elt) = 0;
-        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt) const = 0;
+        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const = 0;
 
         inline long getType() const {
           return mType;
@@ -195,7 +195,7 @@ namespace gcore {
         virtual ~InvalidValue();
         
         virtual bool fromXML(const gcore::XMLElement *elt);
-        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt) const;
+        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
     };
     
     class GCORE_API String : public Value {
@@ -210,7 +210,7 @@ namespace gcore {
         virtual ~String();
         
         virtual bool fromXML(const gcore::XMLElement *elt);
-        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt) const;
+        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
         
         inline const gcore::String& get() const {
           return mValue;
@@ -242,7 +242,7 @@ namespace gcore {
         virtual ~Real();
         
         virtual bool fromXML(const gcore::XMLElement *elt);
-        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt) const;
+        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
         
         inline double get() const {
           return mValue;
@@ -274,7 +274,7 @@ namespace gcore {
         virtual ~Integer();
         
         virtual bool fromXML(const gcore::XMLElement *elt);
-        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt) const;
+        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
         
         inline long get() const {
           return mValue;
@@ -306,7 +306,7 @@ namespace gcore {
         virtual ~Boolean();
         
         virtual bool fromXML(const gcore::XMLElement *elt);
-        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt) const;
+        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
         
         inline bool get() const {
           return mValue;
@@ -338,7 +338,7 @@ namespace gcore {
         virtual ~Array();
         
         virtual bool fromXML(const gcore::XMLElement *elt);
-        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt) const;
+        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
         
         inline size_t size() const {
           return mValues.size();
@@ -380,7 +380,7 @@ namespace gcore {
         virtual ~Dictionary();
         
         virtual bool fromXML(const gcore::XMLElement *elt);
-        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt) const;
+        virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
         
         inline ReturnType get() const {
           return mPairs;

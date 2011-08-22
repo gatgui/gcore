@@ -95,21 +95,20 @@ plist::String::~String() {
 }
 
 bool plist::String::fromXML(const gcore::XMLElement *elt)  {
-  if (!elt) return false;
-  if (elt->getTag() != "string") {
+  if (!elt) {
     return false;
-  } else {
-    mValue = elt->getText();
-    mValue.strip();
-    return true;
   }
+  mValue = elt->getText();
+  mValue.strip();
+  return true;
 }
 
 gcore::XMLElement* plist::String::toXML(gcore::XMLElement *elt) const {
-  gcore::XMLElement *s = new gcore::XMLElement("string");
-  s->setText(mValue);
-  if (elt) elt->addChild(s);
-  return s;
+  if (!elt) {
+    elt = new gcore::XMLElement("string");
+  }
+  elt->setText(mValue);
+  return elt;
 }
 
 plist::Value* plist::String::New() {
@@ -148,10 +147,11 @@ bool plist::Integer::fromXML(const gcore::XMLElement *elt)  {
 }
 
 gcore::XMLElement* plist::Integer::toXML(gcore::XMLElement *elt) const {
-  gcore::XMLElement *s = new gcore::XMLElement("integer");
-  s->setText(gcore::String(mValue));
-  if (elt) elt->addChild(s);
-  return s;
+  if (!elt) {
+    elt = new gcore::XMLElement("integer");
+  }
+  elt->setText(gcore::String(mValue));
+  return elt;
 }
 
 plist::Value* plist::Integer::New() {
@@ -180,20 +180,19 @@ plist::Real::~Real() {
 }
 
 bool plist::Real::fromXML(const gcore::XMLElement *elt)  {
-  if (!elt) return false;
-  if (elt->getTag() != "real") {
+  if (!elt) {
     return false;
-  } else {
-    gcore::String txt = elt->getText();
-    return txt.strip().toDouble(mValue);
   }
+  gcore::String txt = elt->getText();
+  return txt.strip().toDouble(mValue);
 }
 
 gcore::XMLElement* plist::Real::toXML(gcore::XMLElement *elt) const {
-  gcore::XMLElement *s = new gcore::XMLElement("real");
-  s->setText(gcore::String(mValue));
-  if (elt) elt->addChild(s);
-  return s;
+  if (!elt) {
+    elt = new gcore::XMLElement("real");
+  }
+  elt->setText(gcore::String(mValue));
+  return elt;
 }
 
 plist::Value* plist::Real::New() {
@@ -222,20 +221,19 @@ plist::Boolean::~Boolean() {
 }
 
 bool plist::Boolean::fromXML(const gcore::XMLElement *elt)  {
-  if (!elt) return false;
-  if (elt->getTag() != "boolean") {
+  if (!elt) {
     return false;
-  } else {
-    gcore::String txt = elt->getText();
-    return txt.strip().toBool(mValue);
   }
+  gcore::String txt = elt->getText();
+  return txt.strip().toBool(mValue);
 }
 
 gcore::XMLElement* plist::Boolean::toXML(gcore::XMLElement *elt) const {
-  gcore::XMLElement *s = new gcore::XMLElement("boolean");
-  s->setText(gcore::String(mValue));
-  if (elt) elt->addChild(s);
-  return s;
+  if (!elt) {
+    elt = new gcore::XMLElement("boolean");
+  }
+  elt->setText(gcore::String(mValue));
+  return elt;
 }
 
 plist::Value* plist::Boolean::New() {
@@ -310,35 +308,34 @@ void plist::Array::set(size_t idx, Value *v, bool replace) {
 
 bool plist::Array::fromXML(const gcore::XMLElement *elt)  {
   clear();
-  if (!elt) return false;
-  if (elt->getTag() != "array") {
+  if (!elt) {
     return false;
-  } else {
-    for (size_t i=0; i<elt->numChildren(); ++i) {
-      const gcore::XMLElement *c = elt->getChild(i);
-      Value *v = PropertyList::NewValue(c->getTag());
-      if (v == 0) {
-        return false;
-      }
-      if (!v->fromXML(c)) {
-        delete v;
-        return false;
-      }
-      mValues.push(v);
-    }
-    return true;
   }
+  for (size_t i=0; i<elt->numChildren(); ++i) {
+    const gcore::XMLElement *c = elt->getChild(i);
+    Value *v = PropertyList::NewValue(c->getTag());
+    if (v == 0) {
+      return false;
+    }
+    if (!v->fromXML(c)) {
+      delete v;
+      return false;
+    }
+    mValues.push(v);
+  }
+  return true;
 }
 
 gcore::XMLElement* plist::Array::toXML(gcore::XMLElement *elt) const {
-  gcore::XMLElement *s = new gcore::XMLElement("array");
+  if (!elt) {
+    elt = new gcore::XMLElement("array");
+  }
   for (size_t i=0; i<mValues.size(); ++i) {
     if (mValues[i]) {
-      mValues[i]->toXML(s);
+      elt->addChild(mValues[i]->toXML());
     }
   }
-  if (elt) elt->addChild(s);
-  return s;
+  return elt;
 }
 
 plist::Value* plist::Array::New() {
@@ -429,51 +426,50 @@ void plist::Dictionary::set(const gcore::String &key, Value *v, bool replace) {
 
 bool plist::Dictionary::fromXML(const gcore::XMLElement *elt)  {
   clear();
-  if (!elt) return false;
-  if (elt->getTag() != "dict") {
+  if (!elt) {
     return false;
-  } else {
-    size_t i = 0;
-    while (i < elt->numChildren()) {
-      const gcore::XMLElement *k = elt->getChild(i);
-      if (k->getTag() != "key") {
-        return false;
-      }
-      gcore::String key = k->getText();
-      key.strip();
-      if (mPairs.find(key) != mPairs.end()) {
-        return false;
-      }
-      const gcore::XMLElement *v = elt->getChild(i+1);
-      Value *val = PropertyList::NewValue(v->getTag());
-      if (val == 0) {
-        return false;
-      }
-      if (!val->fromXML(v)) {
-        delete val;
-        return false;
-      }
-      mPairs[key] = val;
-      i += 2;
-    }
-    return true;
   }
+  size_t i = 0;
+  while (i < elt->numChildren()) {
+    const gcore::XMLElement *k = elt->getChild(i);
+    if (k->getTag() != "key") {
+      return false;
+    }
+    gcore::String key = k->getText();
+    key.strip();
+    if (mPairs.find(key) != mPairs.end()) {
+      return false;
+    }
+    const gcore::XMLElement *v = elt->getChild(i+1);
+    Value *val = PropertyList::NewValue(v->getTag());
+    if (val == 0) {
+      return false;
+    }
+    if (!val->fromXML(v)) {
+      delete val;
+      return false;
+    }
+    mPairs[key] = val;
+    i += 2;
+  }
+  return true;
 }
 
 gcore::XMLElement* plist::Dictionary::toXML(gcore::XMLElement *elt) const {
-  gcore::XMLElement *s = new gcore::XMLElement("dict");
+  if (elt == NULL) {
+    elt = new gcore::XMLElement("dict");
+  }
   std::map<gcore::String, Value*>::const_iterator it = mPairs.begin();
   while (it != mPairs.end()) {
     if (it->second) {
       gcore::XMLElement *k = new gcore::XMLElement("key");
       k->setText(it->first);
-      s->addChild(k);
-      it->second->toXML(s);
+      elt->addChild(k);
+      elt->addChild(it->second->toXML());
     }
     ++it;
   }
-  if (elt) elt->addChild(s);
-  return s;
+  return elt;
 }
 
 plist::Value* plist::Dictionary::New() {
@@ -552,7 +548,11 @@ void PropertyList::create() {
 
 XMLElement* PropertyList::write(XMLElement *elt) const {
   if (mTop) {
-    return mTop->toXML(elt);
+    if (elt == NULL) {
+      elt = new XMLElement("dict");
+    }
+    mTop->toXML(elt);
+    return elt;
   } else {
     return NULL;
   }
@@ -576,7 +576,7 @@ bool PropertyList::read(const XMLElement *elt) {
 
 void PropertyList::write(const String &filename) const {
   XMLDoc *doc = new XMLDoc();
-  XMLElement *root = write(NULL);
+  XMLElement *root = write();
   if (root) {
     doc->setRoot(root);
     doc->write(filename);

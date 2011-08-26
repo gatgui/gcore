@@ -67,9 +67,9 @@ bool RexMatch::hasGroup(size_t i) const
   return (i < mGroups.size() && mGroups[i].first>=0 && mGroups[i].second>=0);
 }
 
-bool RexMatch::hasNamedGroup(const String &n) const
+bool RexMatch::hasNamedGroup(const std::string &n) const
 {
-  std::map<String, size_t>::const_iterator it = mNamedGroups.find(n);
+  std::map<std::string, size_t>::const_iterator it = mNamedGroups.find(n);
   if (it == mNamedGroups.end())
   {
     return false;
@@ -99,9 +99,9 @@ String RexMatch::group(size_t i) const
   return mStr.substr(mGroups[i].first, mGroups[i].second - mGroups[i].first);
 }
 
-String RexMatch::group(const String &n) const
+String RexMatch::group(const std::string &n) const
 {
-  std::map<String, size_t>::const_iterator it = mNamedGroups.find(n);
+  std::map<std::string, size_t>::const_iterator it = mNamedGroups.find(n);
   if (it == mNamedGroups.end())
   {
     return "";
@@ -259,6 +259,7 @@ bool Rex::search(const String &s, RexMatch &m, unsigned short flags, size_t offs
     if (rv != 0)
     {
       std::swap(info.gmatch, m.mGroups);
+      std::swap(info.gnames, m.mNamedGroups);
       if (flags & Rex::Reverse)
       {
         m.mRange.first = int(rv - info.beg);
@@ -339,6 +340,7 @@ bool Rex::match(const String &s, RexMatch &m, unsigned short flags, size_t offse
   if (rv != 0)
   {
     std::swap(info.gmatch, m.mGroups);
+    std::swap(info.gnames, m.mNamedGroups);
     if (flags & Rex::Reverse)
     {
       m.mRange.first = int(rv - info.beg);

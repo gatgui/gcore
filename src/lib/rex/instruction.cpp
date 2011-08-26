@@ -32,10 +32,46 @@ namespace gcore {
 # define strcasecmp _stricmp
 #endif
 
+MatchInfo::MatchInfo()
+  : beg(0), end(0), flags(0), once(false)
+{
+}
+
 MatchInfo::MatchInfo(const char *b, const char *e, unsigned short f, size_t ngroups)
   : beg(b), end(e), flags(f), once(false)
 {
   gmatch.resize(ngroups, std::pair<int,int>(-1,-1));
+}
+
+MatchInfo::MatchInfo(const MatchInfo &rhs)
+  : beg(rhs.beg)
+  , end(rhs.end)
+  , flags(rhs.flags)
+  , gmatch(rhs.gmatch)
+  , fstack(rhs.fstack)
+  , cstack(rhs.cstack)
+  , once(rhs.once)
+  , gclosed(rhs.gclosed)
+  , gnames(rhs.gnames)
+{
+  
+}
+
+MatchInfo& MatchInfo::operator=(const MatchInfo &rhs)
+{
+  if (this != &rhs)
+  {
+    beg = rhs.beg;
+    end = rhs.end;
+    flags = rhs.flags;
+    gmatch = rhs.gmatch;
+    fstack = rhs.fstack;
+    cstack = rhs.cstack;
+    once = rhs.once;
+    gclosed = rhs.gclosed;
+    gnames = rhs.gnames;
+  }
+  return *this;
 }
 
 // ---
@@ -985,6 +1021,7 @@ void Alternative::toStream(std::ostream &os, const std::string &indent) const
 const char* Alternative::match(const char *cur, MatchInfo &info) const
 {
   const char *rv = 0;
+  //MatchInfo mi = info;
   if (mFirst)
   {
     rv = mFirst->match(cur, info);
@@ -995,6 +1032,7 @@ const char* Alternative::match(const char *cur, MatchInfo &info) const
   }
   else if (mSecond)
   {
+    // info = mi;
     rv = mSecond->match(cur, info);
   }
   return (rv ? matchRemain(rv, info) : 0);
@@ -1064,6 +1102,7 @@ bool Group::end(bool failure, const char *&cur, MatchInfo &info) const
   
   if (mIndex > 0)
   {
+    info.gnames[mName] = mIndex;
     if (info.flags & Rex::Reverse)
     {
       info.gmatch[mIndex].first = int(cur - info.beg);
@@ -1104,7 +1143,7 @@ Instruction* Group::clone() const
 void Group::toStream(std::ostream &os, const std::string &indent) const
 {
   os << indent << "(";
-  os << "group:" << mIndex << " ";
+  os << "group:" << mIndex << "[\"" << mName << "\"] ";
   
   if (mInvert)
   {
@@ -1377,18 +1416,31 @@ Backsubst::Backsubst(int index)
 {      
 }
 
+Backsubst::Backsubst(const std::string &n)
+  : Instruction(), mIndex(-1), mName(n)
+{
+}
+
 Backsubst::~Backsubst()
 {
 }
 
 Instruction* Backsubst::clone() const
 {
-  return new Backsubst(mIndex);
+  return (mIndex > 0 ? new Backsubst(mIndex) : new Backsubst(mName));
 }
 
 void Backsubst::toStream(std::ostream &os, const std::string &indent) const
 {
-  os << indent << "\\" << mIndex << std::endl;
+  //os << indent << "\\" << mIndex << std::endl;
+  if (mName.length() > 0)
+  {
+    os << indent << "\\g<" << mName << ">" << std::endl;
+  }
+  else
+  {
+    os << indent << "\\" << mIndex << std::endl;
+  }
   Instruction::toStream(os, indent);
 }
 
@@ -1398,7 +1450,26 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
   std::cout << "Match backsubstitution " << mIndex << "... ";
 #endif
   
-  if (mIndex <= 0)
+  size_t index = 0;
+  
+  if (mIndex > 0)
+  {
+    index = mIndex;
+  }
+  else
+  {
+    std::map<std::string, size_t>::iterator it = info.gnames.find(mName);
+    if (it == info.gnames.end() || it->second <= 0)
+    {
+#ifdef _DEBUG
+      std::cout << "Failed" << std::endl;
+#endif
+      return 0;
+    }
+    index = it->second;
+  }
+  
+  if (index >= info.gmatch.size())
   {
 #ifdef _DEBUG
     std::cout << "Failed" << std::endl;
@@ -1406,7 +1477,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
     return 0;
   }
   
-  if (size_t(mIndex) >= info.gmatch.size())
+  if (info.gmatch[index].first < 0 || info.gmatch[index].second < 0)
   {
 #ifdef _DEBUG
     std::cout << "Failed" << std::endl;
@@ -1414,15 +1485,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
     return 0;
   }
   
-  if (info.gmatch[mIndex].first < 0 || info.gmatch[mIndex].second < 0)
-  {
-#ifdef _DEBUG
-    std::cout << "Failed" << std::endl;
-#endif
-    return 0;
-  }
-  
-  size_t bslen = info.gmatch[mIndex].second - info.gmatch[mIndex].first;
+  size_t bslen = info.gmatch[index].second - info.gmatch[index].first;
   
   if (info.flags & Rex::Reverse)
   {
@@ -1437,7 +1500,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
     }
     
     const char *to = cur - bslen;
-    const char *bs = info.beg + info.gmatch[mIndex].second;
+    const char *bs = info.beg + info.gmatch[index].second;
     
     --bs;
     --cur;
@@ -1516,7 +1579,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
     
     if (info.flags & Rex::NoCase)
     {
-      if (strncasecmp(cur, info.beg + info.gmatch[mIndex].first, bslen) == 0)
+      if (strncasecmp(cur, info.beg + info.gmatch[index].first, bslen) == 0)
       {
 #ifdef _DEBUG
         std::cout << "OK" << std::endl;
@@ -1530,7 +1593,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
     }
     else
     {
-      if (strncmp(cur, info.beg + info.gmatch[mIndex].first, bslen) == 0)
+      if (strncmp(cur, info.beg + info.gmatch[index].first, bslen) == 0)
       {
 #ifdef _DEBUG
         std::cout << "OK" << std::endl;

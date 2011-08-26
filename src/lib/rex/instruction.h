@@ -42,8 +42,13 @@ struct MatchInfo
   std::vector<const char*> cstack;
   bool once;
   std::map<const class Group*, bool> gclosed;
+  std::map<std::string, size_t> gnames;
   
+  MatchInfo();
   MatchInfo(const char *b, const char *e, unsigned short flags, size_t ngroups);
+  MatchInfo(const MatchInfo &rhs);
+  
+  MatchInfo& operator=(const MatchInfo &rhs);
 };
 
 class Instruction
@@ -343,6 +348,7 @@ class Backsubst : public Instruction
   public:
     
     Backsubst(int index);
+    Backsubst(const std::string &n);
     virtual ~Backsubst();
     
     virtual Instruction* clone() const;
@@ -352,6 +358,7 @@ class Backsubst : public Instruction
   protected:
     
     int mIndex;
+    std::string mName;
 };
 
 class WordStart : public Instruction

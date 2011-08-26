@@ -59,7 +59,7 @@ namespace gcore {
       String post() const;
     
       String group(size_t i) const;
-      String group(const String &n) const;
+      String group(const std::string &n) const;
     
       // offset in matched string (group(0))
       size_t offset(size_t i) const;
@@ -69,14 +69,14 @@ namespace gcore {
       size_t numGroups() const;
     
       bool hasGroup(size_t i) const;
-      bool hasNamedGroup(const String &n) const;
+      bool hasNamedGroup(const std::string &n) const;
     
     protected:
     
       String mStr;
       Range mRange;
       List<Range> mGroups; // 0 if full match
-      std::map<String, size_t> mNamedGroups;
+      std::map<std::string, size_t> mNamedGroups;
   };
 
   class GCORE_API Rex {

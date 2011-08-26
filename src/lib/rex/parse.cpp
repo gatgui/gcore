@@ -230,22 +230,38 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
         else if (*pc == 'P')
         {
           ++pc;
-          if (*pc != '<')
+          if (*pc == '<')
           {
-            return 0;
-          }
-          ++pc;
-          while (*pc != '>')
-          {
-            if (*pc == '\0')
+            ++pc;
+            while (*pc != '>')
             {
-              return 0;
+              if (*pc == '\0')
+              {
+                return 0;
+              }
+              name.push_back(*pc);
+              ++pc;
             }
-            name.push_back(*pc);
             ++pc;
           }
-          ++pc;
-          if (*pc != '>')
+          else if (*pc == '=')
+          {
+            std::string name;
+            ++pc;
+            while (*pc != ')')
+            {
+              if (*pc == '\0')
+              {
+                return 0;
+              }
+              name.push_back(*pc);
+              ++pc;
+            }
+            ++pc;
+            *ppc = pc;
+            return new Backsubst(name);
+          }
+          else
           {
             return 0;
           }

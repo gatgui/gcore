@@ -355,6 +355,22 @@ int main(int argc, char **argv)
   
   suite.execute(true);
   
+  
+  Rex re0("(?:(?P<aaa>[a-z]+)|(?P<bbb>[0-9]+))\\1");
+  std::cout << "Code: " << re0 << std::endl;
+  RexMatch rm0;
+  if (re0.search("123hellhellO", rm0))
+  {
+    std::cout << "Has group \"aaa\"?: " << rm0.hasNamedGroup("aaa") << std::endl;
+    std::cout << "Has group \"bbb\"?: " << rm0.hasNamedGroup("bbb") << std::endl;
+    std::cout << "aaa = " << rm0.group("aaa") << std::endl;
+    std::cout << "bbb = " << rm0.group("bbb") << std::endl;
+  }
+  else
+  {
+    std::cout << "Failed" << std::endl;
+  }
+  
   return 0;
 }
 

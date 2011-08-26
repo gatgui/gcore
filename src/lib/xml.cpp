@@ -178,6 +178,23 @@ bool XMLElement::addChild(XMLElement *elt) {
   }
 }
 
+void XMLElement::removeChild(XMLElement *elt) {
+  List<XMLElement*>::iterator it = std::find(mChildren.begin(), mChildren.end(), elt);
+  if (it != mChildren.end()) {
+    delete *it;
+    mChildren.erase(it);
+  }
+}
+
+void XMLElement::removeChild(size_t idx) {
+  if (idx >= mChildren.size()) {
+    return;
+  }
+  List<XMLElement*>::iterator it = mChildren.begin() + idx;
+  delete *it;
+  mChildren.erase(it);
+}
+
 void XMLElement::write(std::ostream &os, const String &indent) const {
   os << indent << "<" << mTag;
   StringDict::const_iterator it = mAttrs.begin();
@@ -225,6 +242,13 @@ bool XMLElement::setAttribute(const String &name, const String &value) {
   }
   mAttrs[name] = value;
   return true;
+}
+
+void XMLElement::removeAttribute(const String &name) {
+  StringDict::iterator it = mAttrs.find(name);
+  if (it != mAttrs.end()) {
+    mAttrs.erase(it);
+  }
 }
 
 bool XMLElement::setText(const String &str, bool asCDATA) {
@@ -310,6 +334,16 @@ size_t XMLElement::numChildrenWithTag(const String &tag) const {
     }
   }
   return cnt;
+}
+
+size_t XMLElement::getChildrenWithTag(const String &tag, List<XMLElement*> &el) const {
+  el.clear();
+  for (size_t i=0; i<mChildren.size(); ++i) {
+    if (mChildren[i]->getTag() == tag) {
+      el.push_back(mChildren[i]);
+    }
+  }
+  return el.size();
 }
 
 XMLElement* XMLElement::getChildWithTag(const String &tag, size_t n) {

@@ -39,6 +39,8 @@ namespace gcore {
       ~XMLElement();
       
       bool addChild(XMLElement *elt);
+      void removeChild(XMLElement *elt);
+      void removeChild(size_t idx);
       
       const XMLElement* getParent() const;
       XMLElement* getParent();
@@ -48,6 +50,7 @@ namespace gcore {
       size_t numChildren() const;
       
       bool setAttribute(const String &name, const String &value);
+      void removeAttribute(const String &name);
       bool setText(const String &str, bool asCDATA=false);
       bool addText(const String &str);
       
@@ -63,6 +66,7 @@ namespace gcore {
       size_t numChildrenWithTag(const String &tag) const;
       XMLElement* getChildWithTag(const String &tag, size_t n=0);
       const XMLElement* getChildWithTag(const String &tag, size_t n=0) const;
+      size_t getChildrenWithTag(const String &tag, List<XMLElement*> &el) const;
     
     protected:
     

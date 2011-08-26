@@ -349,6 +349,10 @@ int main(int argc, char **argv)
   if (doTest("Complex 7", tests)) suite.addTest(new RexTest("Complex 7", "(?<=hello$)\r?\n\\staro", "hello\n taro", true, 1, results35, Rex::Multiline));
   if (doTest("Complex 8", tests)) suite.addTest(new RexTest("Complex 8", "(?<=frame\\.\\d+\\.exr$)\r?\n\\staro", "frame.1.exr\n taro", true, 1, results35, Rex::Multiline));
   
+  const char *results37[] = {"hell"};
+  
+  if (doTest("Comment", tests)) suite.addTest(new RexTest("Comment", "(?#a comment)[a-z]+", "12hellO", true, 1, results37));
+  
   suite.execute(true);
   
   return 0;

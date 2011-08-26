@@ -205,6 +205,22 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
       if (*pc == '?')
       {
         ++pc;
+        if (*pc == '#')
+        {
+          // skip everything until ) and from behave as if ParseAtom was
+          // called starting next character
+          ++pc;
+          while (*pc != ')')
+          {
+            if (*pc == '\0')
+            {
+              return 0;
+            }
+            ++pc;
+          }
+          *ppc = ++pc;
+          return ParseAtom(ppc, info);
+        }
         if (*pc == ':')
         {
           capture = false;
@@ -386,7 +402,7 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
       break;
     }
     default:
-    i = ParseCharacters(&pc, info);
+      i = ParseCharacters(&pc, info);
       if (!i)
       {
         i = ParseZerowidth(&pc, info);

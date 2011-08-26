@@ -309,7 +309,8 @@ class Group : public Instruction
     };
     
     Group(int index, Instruction *fisrt, bool zerowidth, bool invert,
-          unsigned short flags, TriState nc, TriState ml, TriState dnl);
+          unsigned short flags, TriState nc, TriState ml, TriState dnl,
+          const std::string &name="");
     virtual ~Group();
     
     bool end(bool failure, const char *&cur, MatchInfo &info) const;
@@ -317,6 +318,7 @@ class Group : public Instruction
     
     inline bool empty() const {return mFirst == 0;}
     inline bool zeroWidth() const {return mZeroWidth;}
+    inline const std::string& name() const {return mName;}
     
     virtual Instruction* clone() const;
     virtual void toStream(std::ostream &os, const std::string &indent="") const;
@@ -333,6 +335,7 @@ class Group : public Instruction
     TriState mNoCase;
     TriState mMultiline;
     unsigned short mFlags;
+    std::string mName;
 };
 
 class Backsubst : public Instruction

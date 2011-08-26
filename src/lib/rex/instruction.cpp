@@ -1003,7 +1003,8 @@ const char* Alternative::match(const char *cur, MatchInfo &info) const
 // ---
 
 Group::Group(int index, Instruction *first, bool zerowidth, bool invert,
-             unsigned short flags, TriState nc, TriState ml, TriState dnl)
+             unsigned short flags, TriState nc, TriState ml, TriState dnl,
+             const std::string &name)
   : Instruction()
   , mIndex(index)
   , mFirst(first)
@@ -1014,6 +1015,7 @@ Group::Group(int index, Instruction *first, bool zerowidth, bool invert,
   , mNoCase(nc)
   , mMultiline(ml)
   , mFlags(flags)
+  , mName(name)
 {
   if (mFirst)
   {
@@ -1096,7 +1098,7 @@ bool Group::end(bool failure, const char *&cur, MatchInfo &info) const
 Instruction* Group::clone() const
 {
   return new Group(mIndex, CloneList(mFirst), mZeroWidth, mInvert,
-                   mFlags, mNoCase, mMultiline, mDotNewline);
+                   mFlags, mNoCase, mMultiline, mDotNewline, mName);
 }
 
 void Group::toStream(std::ostream &os, const std::string &indent) const

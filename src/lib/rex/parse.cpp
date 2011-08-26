@@ -199,6 +199,7 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
       bool consume = true;
       bool invert = false;
       bool reverse = false;
+      std::string name = "";
       
       ++pc;
       
@@ -225,6 +226,29 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
         {
           capture = false;
           ++pc;
+        }
+        else if (*pc == 'P')
+        {
+          ++pc;
+          if (*pc != '<')
+          {
+            return 0;
+          }
+          ++pc;
+          while (*pc != '>')
+          {
+            if (*pc == '\0')
+            {
+              return 0;
+            }
+            name.push_back(*pc);
+            ++pc;
+          }
+          ++pc;
+          if (*pc != '>')
+          {
+            return 0;
+          }
         }
         else if (*pc == '=')
         {
@@ -357,6 +381,7 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
       std::cout << "  nc: " << nc << std::endl;
       std::cout << "  ml: " << ml << std::endl;
       std::cout << "  dnl: " << dnl << std::endl;
+      std::cout << "  name: \"" << name << "\"" << std::endl;
       std::cout << "  code: " << std::endl;
       if (i)
       {
@@ -364,7 +389,7 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
       }
 #endif
       
-      i = new Group(gidx, i, !consume, invert, flags, nc, ml, dnl);
+      i = new Group(gidx, i, !consume, invert, flags, nc, ml, dnl, name);
       
 #ifdef _DEBUG
       std::cout << "Group created" << std::endl;

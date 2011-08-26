@@ -57,6 +57,7 @@ RexMatch& RexMatch::operator=(const RexMatch &rhs)
   {
     mStr = rhs.mStr;
     mGroups = rhs.mGroups;
+    mNamedGroups = rhs.mNamedGroups;
   }
   return *this;
 }
@@ -64,6 +65,17 @@ RexMatch& RexMatch::operator=(const RexMatch &rhs)
 bool RexMatch::hasGroup(size_t i) const
 {
   return (i < mGroups.size() && mGroups[i].first>=0 && mGroups[i].second>=0);
+}
+
+bool RexMatch::hasNamedGroup(const String &n) const
+{
+  std::map<String, size_t>::const_iterator it = mNamedGroups.find(n);
+  if (it == mNamedGroups.end())
+  {
+    return false;
+  }
+  size_t i = it->second;
+  return hasGroup(i);
 }
 
 String RexMatch::pre() const
@@ -80,6 +92,21 @@ String RexMatch::post() const
 
 String RexMatch::group(size_t i) const
 {
+  if (!hasGroup(i))
+  {
+    return "";
+  }
+  return mStr.substr(mGroups[i].first, mGroups[i].second - mGroups[i].first);
+}
+
+String RexMatch::group(const String &n) const
+{
+  std::map<String, size_t>::const_iterator it = mNamedGroups.find(n);
+  if (it == mNamedGroups.end())
+  {
+    return "";
+  }
+  size_t i = it->second;
   if (!hasGroup(i))
   {
     return "";

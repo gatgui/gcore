@@ -273,7 +273,7 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
           int index = 0;
           if (sscanf(cond.c_str(), "%d", &index) != 1)
           {
-            return new Conditional(index, ifTrue, ifFalse);
+            return new Conditional(cond, ifTrue, ifFalse);
           }
           else
           {

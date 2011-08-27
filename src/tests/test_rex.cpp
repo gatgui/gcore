@@ -353,23 +353,13 @@ int main(int argc, char **argv)
   
   if (doTest("Comment", tests)) suite.addTest(new RexTest("Comment", "(?#a comment)[a-z]+", "12hellO", true, 1, results37));
   
+  const char *results38[] = {"$MAYA_VER", "$", "", "MAYA_VER"};
+  const char *results39[] = {"%MAYA_VER%", "", "%", "MAYA_VER"};
+  if (doTest("Condition 0", tests)) suite.addTest(new RexTest("Condition 0", RAW("(?:(?P<refunix>\$)|(?P<refwin>%))([a-zA-Z_][a-zA-Z0-9_]+)(?(refwin)(?P=refwin))"), "/usr/autodesk/maya$MAYA_VER/bin", true, 4, results38));
+  if (doTest("Condition 1", tests)) suite.addTest(new RexTest("Condition 1", RAW("(?:(?P<refunix>\$)|(?P<refwin>%))([a-zA-Z_][a-zA-Z0-9_]+)(?(refwin)(?P=refwin))"), "/usr/autodesk/maya%MAYA_VER%/bin", true, 4, results39));
+  if (doTest("Condition 2", tests)) suite.addTest(new RexTest("Condition 2", RAW("(?:(?P<refunix>\$)|(?P<refwin>%))([a-zA-Z_][a-zA-Z0-9_]+)(?(refwin)(?P=refwin))"), "/usr/autodesk/maya%MAYA_VER/bin", false, 0));
+    
   suite.execute(true);
-  
-  std::cout << std::endl << "=== Testing named groups:" << std::endl;
-  Rex re1("(?:(?P<aaa>[a-z]+)|(?P<bbb>[0-9]+))(?P=aaa)");
-  std::cout << "Code: " << re1 << std::endl;
-  RexMatch rm1;
-  if (re1.search("123hellhellO", rm1))
-  {
-    std::cout << "Has group \"aaa\"?: " << rm1.hasNamedGroup("aaa") << std::endl;
-    std::cout << "Has group \"bbb\"?: " << rm1.hasNamedGroup("bbb") << std::endl;
-    std::cout << "aaa = " << rm1.group("aaa") << std::endl;
-    std::cout << "bbb = " << rm1.group("bbb") << std::endl;
-  }
-  else
-  {
-    std::cout << "Failed" << std::endl;
-  }
   
   return 0;
 }

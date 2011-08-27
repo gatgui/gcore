@@ -230,9 +230,10 @@ bool Rex::search(const String &s, RexMatch &m, unsigned short flags, size_t offs
   //MatchInfo info(s.c_str()+offset, s.c_str()+offset+len, flags, mNumGroups+1);
   //const char *cur = info.beg;
   
-  MatchInfo info(s.c_str(), s.c_str()+s.length(), flags, mNumGroups+1);
+  //MatchInfo info(s.c_str(), s.c_str()+s.length(), flags, mNumGroups+1);
   
-  const char *beg = info.beg + offset;
+  //const char *beg = info.beg + offset;
+  const char *beg = s.c_str() + offset;
   const char *end = beg + len;
   const char *cur = beg;
   int step = 1;
@@ -255,6 +256,7 @@ bool Rex::search(const String &s, RexMatch &m, unsigned short flags, size_t offs
 #ifdef _DEBUG
     std::cout << "Try match with \"" << cur << "\"" << std::endl;
 #endif
+    MatchInfo info(s.c_str(), s.c_str()+s.length(), flags, mNumGroups+1);
     const char *rv = code->match(cur, info);
     if (rv != 0)
     {

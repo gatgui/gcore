@@ -355,16 +355,16 @@ int main(int argc, char **argv)
   
   suite.execute(true);
   
-  
-  Rex re0("(?:(?P<aaa>[a-z]+)|(?P<bbb>[0-9]+))\\1");
-  std::cout << "Code: " << re0 << std::endl;
-  RexMatch rm0;
-  if (re0.search("123hellhellO", rm0))
+  std::cout << std::endl << "=== Testing named groups:" << std::endl;
+  Rex re1("(?:(?P<aaa>[a-z]+)|(?P<bbb>[0-9]+))(?P=aaa)");
+  std::cout << "Code: " << re1 << std::endl;
+  RexMatch rm1;
+  if (re1.search("123hellhellO", rm1))
   {
-    std::cout << "Has group \"aaa\"?: " << rm0.hasNamedGroup("aaa") << std::endl;
-    std::cout << "Has group \"bbb\"?: " << rm0.hasNamedGroup("bbb") << std::endl;
-    std::cout << "aaa = " << rm0.group("aaa") << std::endl;
-    std::cout << "bbb = " << rm0.group("bbb") << std::endl;
+    std::cout << "Has group \"aaa\"?: " << rm1.hasNamedGroup("aaa") << std::endl;
+    std::cout << "Has group \"bbb\"?: " << rm1.hasNamedGroup("bbb") << std::endl;
+    std::cout << "aaa = " << rm1.group("aaa") << std::endl;
+    std::cout << "bbb = " << rm1.group("bbb") << std::endl;
   }
   else
   {

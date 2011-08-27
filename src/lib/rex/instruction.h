@@ -58,7 +58,7 @@ class Instruction
     Instruction();
     virtual ~Instruction();
     
-    void setGroup(class Group *grp);
+    virtual void setGroup(class Group *grp);
     void setNext(Instruction *inst);
     void setPrev(Instruction *inst);
     
@@ -86,7 +86,7 @@ class Instruction
     
     bool preStep(const char *&cur, MatchInfo &info) const;
     const char* postStep(const char *cur, MatchInfo &info) const;
-    const char* matchRemain(const char *cur, MatchInfo &info) const;
+    virtual const char* matchRemain(const char *cur, MatchInfo &info) const;
     
   protected:
     
@@ -296,6 +296,8 @@ class Alternative : public Instruction
     virtual void toStream(std::ostream &os, const std::string &indent="") const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
     
+    virtual void setGroup(class Group *grp);
+    
   protected:
     
     Instruction *mFirst;
@@ -324,6 +326,7 @@ class Group : public Instruction
     inline bool empty() const {return mFirst == 0;}
     inline bool zeroWidth() const {return mZeroWidth;}
     inline const std::string& name() const {return mName;}
+    inline size_t index() const {return mIndex;}
     
     virtual Instruction* clone() const;
     virtual void toStream(std::ostream &os, const std::string &indent="") const;

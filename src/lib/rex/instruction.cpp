@@ -181,7 +181,7 @@ const char* Instruction::postStep(const char *cur, MatchInfo &info) const
 const char* Instruction::matchRemain(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG
-  std::cout << "Match remaining: \"" << cur << "\"" << std::endl;
+  std::cout << "Match remaining (" << typeid(*this).name() << "): \"" << cur << "\"" << std::endl;
 #endif
   
   register bool failed = false;
@@ -203,17 +203,44 @@ const char* Instruction::matchRemain(const char *cur, MatchInfo &info) const
       failed = (rv == 0);
     }
   }
+
+#ifdef _DEBUG
+  if (mGroup)
+  {
+    std::cout << "Is in group " << (int)mGroup->index() << std::endl;
+  }
+#endif
   
   if (mGroup && info.gclosed[mGroup] == false)
   {
+#ifdef _DEBUG
+    std::cout << "Group " << (int)mGroup->index() << " not closed yet" << std::endl;
+#endif
     // is it?
     // note on groups:
     //   inverted groups are necessarily zero width groups, meaning
     //   the rv pointer will be always restored to the position at the begining of the group
+    
+    unsigned short gflags = info.fstack.back();
+    const char *gcur = 0;
+    if (mGroup->zeroWidth())
+    {
+      gcur = info.cstack.back();
+    }
+    
     rv = (rv == 0 ? cur : rv);
     if (mGroup->end(failed, rv, info))
     {
-      return mGroup->matchRemain(rv, info);
+      rv = mGroup->matchRemain(rv, info);
+      if (!rv)
+      {
+#ifdef _DEBUG
+        std::cout << "Re-open matched group " << mGroup->index() << std::endl;
+#endif
+        info.flags = gflags;
+        mGroup->open(gcur, info);
+      }
+      return rv;
     }
     else
     {
@@ -284,7 +311,7 @@ const char* Single::match(const char *cur, MatchInfo &info) const
     if (matched)
     {
 #ifdef _DEBUG
-      std::cout << "OK" << std::endl;
+      std::cout << "OK (Single)" << std::endl;
 #endif
       return postStep(cur, info);
     }
@@ -329,7 +356,7 @@ const char* Any::match(const char *cur, MatchInfo &info) const
     if ((info.flags & Rex::DotMatchNewline) || (*cur != '\r' && *cur != '\n'))
     {
 #ifdef _DEBUG
-      std::cout << "OK" << std::endl;
+      std::cout << "OK (Any)" << std::endl;
 #endif
       return postStep(cur, info);
     }
@@ -374,7 +401,7 @@ const char* Word::match(const char *cur, MatchInfo &info) const
     if (mInvert ^ CHAR_IS(*cur, WORD_CHAR))
     {
 #ifdef _DEBUG
-      std::cout << "OK" << std::endl;
+      std::cout << "OK (Word)" << std::endl;
 #endif
       return postStep(cur, info);
     }
@@ -418,7 +445,7 @@ const char* Digit::match(const char *cur, MatchInfo &info) const
     if (mInvert ^ CHAR_IS(*cur, DIGIT_CHAR))
     {
 #ifdef _DEBUG
-      std::cout << "OK" << std::endl;
+      std::cout << "OK (Digit)" << std::endl;
 #endif
       return postStep(cur, info);
     }
@@ -461,7 +488,7 @@ const char* LowerLetter::match(const char *cur, MatchInfo &info) const
     if (CHAR_IS(*cur, LOWER_CHAR) || ((info.flags & Rex::NoCase) && CHAR_IS(*cur, UPPER_CHAR)))
     {
 #ifdef _DEBUG
-      std::cout << "OK" << std::endl;
+      std::cout << "OK (LowerLetter)" << std::endl;
 #endif
       return postStep(cur, info);
     }
@@ -504,7 +531,7 @@ const char* UpperLetter::match(const char *cur, MatchInfo &info) const
     if (CHAR_IS(*cur, UPPER_CHAR) || ((info.flags & Rex::NoCase) && CHAR_IS(*cur, LOWER_CHAR)))
     {
 #ifdef _DEBUG
-      std::cout << "OK" << std::endl;
+      std::cout << "OK (UpperLetter)" << std::endl;
 #endif
       return postStep(cur, info);
     }
@@ -547,7 +574,7 @@ const char* Letter::match(const char *cur, MatchInfo &info) const
     if (mInvert ^ CHAR_IS(*cur, LETTER_CHAR))
     {
 #ifdef _DEBUG
-      std::cout << "OK" << std::endl;
+      std::cout << "OK (Letter)" << std::endl;
 #endif
       return postStep(cur, info);
     }
@@ -590,7 +617,7 @@ const char* Hexa::match(const char *cur, MatchInfo &info) const
     if (mInvert ^ CHAR_IS(*cur, HEXA_CHAR))
     {
 #ifdef _DEBUG
-      std::cout << "OK" << std::endl;
+      std::cout << "OK (Hexa)" << std::endl;
 #endif
       return postStep(cur, info);
     }
@@ -633,7 +660,7 @@ const char* Space::match(const char *cur, MatchInfo &info) const
     if (mInvert ^ CHAR_IS(*cur, SPACE_CHAR))
     {
 #ifdef _DEBUG
-      std::cout << "OK" << std::endl;
+      std::cout << "OK (Space)" << std::endl;
 #endif
       return postStep(cur, info);
     }
@@ -707,7 +734,7 @@ const char* CharRange::match(const char *cur, MatchInfo &info) const
     if (matched)
     {
 #ifdef _DEBUG
-      std::cout << "OK" << std::endl;
+      std::cout << "OK (CharRange)" << std::endl;
 #endif
       return postStep(cur, info);
     }
@@ -960,6 +987,9 @@ const char* Repeat::match(const char *cur, MatchInfo &info) const
         
         if (mGroup && info.gclosed[mGroup] == true)
         {
+#ifdef _DEBUG
+          std::cout << "Repeat in group match remaining failed, re-open group " << mGroup->index() << std::endl;
+#endif
           info.flags = gflags;
           mGroup->open(gcur, info);
         }
@@ -974,7 +1004,7 @@ const char* Repeat::match(const char *cur, MatchInfo &info) const
     }
   }
 #ifdef _DEBUG
-  std::cout << (rv ? "OK" : "Failed") << std::endl;
+  std::cout << (rv ? "OK (Repeat)" : "Failed") << std::endl;
 #endif
   return rv;
 }
@@ -985,6 +1015,19 @@ const char* Repeat::match(const char *cur, MatchInfo &info) const
 Alternative::Alternative(Instruction *i0, Instruction *i1)
   : Instruction(), mFirst(i0), mSecond(i1)
 {      
+}
+
+void Alternative::setGroup(class Group *grp)
+{
+  Instruction::setGroup(grp);
+  if (mFirst)
+  {
+    mFirst->setGroup(grp);
+  }
+  if (mSecond)
+  {
+    mSecond->setGroup(grp);
+  }
 }
 
 Alternative::~Alternative()
@@ -1032,7 +1075,7 @@ const char* Alternative::match(const char *cur, MatchInfo &info) const
   }
   else if (mSecond)
   {
-    // info = mi;
+    //info = mi;
     rv = mSecond->match(cur, info);
   }
   return (rv ? matchRemain(rv, info) : 0);
@@ -1380,7 +1423,7 @@ const char* Group::match(const char *cur, MatchInfo &info) const
       if (end(failed, rv, info))
       {
 #ifdef _DEBUG
-        std::cout << "OK" << std::endl;
+        std::cout << "OK (Group)" << std::endl;
 #endif
         return matchRemain(rv, info);
       }
@@ -1392,7 +1435,7 @@ const char* Group::match(const char *cur, MatchInfo &info) const
     else
     {
 #ifdef _DEBUG
-      std::cout << (rv == 0 ? "Failed" : "OK") << std::endl;
+      std::cout << (rv == 0 ? "Failed" : "OK (Group)") << std::endl;
 #endif
       return rv;
     }
@@ -1403,7 +1446,7 @@ const char* Group::match(const char *cur, MatchInfo &info) const
     // the remaining of the expression
     info.flags = flags;
 #ifdef _DEBUG
-    std::cout << "OK (flag modify only)" << std::endl;
+    std::cout << "OK (Group, flag modify only)" << std::endl;
 #endif
     return matchRemain(cur, info);
   }
@@ -1472,7 +1515,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
   if (index >= info.gmatch.size())
   {
 #ifdef _DEBUG
-    std::cout << "Failed" << std::endl;
+    std::cout << "Failed (invalid group index)" << std::endl;
 #endif
     return 0;
   }
@@ -1480,7 +1523,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
   if (info.gmatch[index].first < 0 || info.gmatch[index].second < 0)
   {
 #ifdef _DEBUG
-    std::cout << "Failed" << std::endl;
+    std::cout << "Failed (group not matched)" << std::endl;
 #endif
     return 0;
   }
@@ -1541,7 +1584,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
         --cur;
       }
 #ifdef _DEBUG
-      std::cout << "OK" << std::endl;
+      std::cout << "OK (Backsubst)" << std::endl;
 #endif
       return matchRemain(cur+1, info);
     }
@@ -1560,7 +1603,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
         --cur;
       }
 #ifdef _DEBUG
-      std::cout << "OK" << std::endl;
+      std::cout << "OK (Backsubst)" << std::endl;
 #endif
       return matchRemain(cur+1, info);
     }
@@ -1582,7 +1625,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
       if (strncasecmp(cur, info.beg + info.gmatch[index].first, bslen) == 0)
       {
 #ifdef _DEBUG
-        std::cout << "OK" << std::endl;
+        std::cout << "OK (Backsubst)" << std::endl;
 #endif
         return matchRemain(cur + bslen, info);
       }
@@ -1596,7 +1639,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
       if (strncmp(cur, info.beg + info.gmatch[index].first, bslen) == 0)
       {
 #ifdef _DEBUG
-        std::cout << "OK" << std::endl;
+        std::cout << "OK (Backsubst)" << std::endl;
 #endif
         return matchRemain(cur + bslen, info);
       }
@@ -1644,7 +1687,7 @@ const char* WordStart::match(const char *cur, MatchInfo &info) const
   if (CHAR_IS(*cur, WORD_CHAR) && ((cur <= info.beg) || !CHAR_IS(*(cur-1), WORD_CHAR)))
   {
 #ifdef _DEBUG
-    std::cout << "OK" << std::endl;
+    std::cout << "OK (WordStart)" << std::endl;
 #endif
     return matchRemain(cur, info);
   }
@@ -1685,7 +1728,7 @@ const char* WordEnd::match(const char *cur, MatchInfo &info) const
   if (!CHAR_IS(*cur, WORD_CHAR) && ((cur <= info.beg) || CHAR_IS(*(cur-1), WORD_CHAR)))
   {
 #ifdef _DEBUG
-    std::cout << "OK" << std::endl;
+    std::cout << "OK (WordEnd)" << std::endl;
 #endif
     return matchRemain(cur, info);
   }
@@ -1730,7 +1773,7 @@ const char* WordBound::match(const char *cur, MatchInfo &info) const
         (!CHAR_IS(*cur, WORD_CHAR) &&  CHAR_IS(*(cur-1), WORD_CHAR)))
     {
 #ifdef _DEBUG
-      std::cout << "OK" << std::endl;
+      std::cout << "OK (WordBound)" << std::endl;
 #endif
       return matchRemain(cur, info);
     }
@@ -1744,7 +1787,7 @@ const char* WordBound::match(const char *cur, MatchInfo &info) const
          (!CHAR_IS(*cur, WORD_CHAR) && !CHAR_IS(*(cur-1), WORD_CHAR))))
     {
 #ifdef _DEBUG
-      std::cout << "OK" << std::endl;
+      std::cout << "OK (WordBound)" << std::endl;
 #endif
       return matchRemain(cur, info);
     }
@@ -1789,7 +1832,7 @@ const char* LineStart::match(const char *cur, MatchInfo &info) const
   if (cur <= info.beg)
   {
 #ifdef _DEBUG
-    std::cout << "OK" << std::endl;
+    std::cout << "OK (LineStart)" << std::endl;
 #endif
     return matchRemain(cur, info);
   }
@@ -1799,7 +1842,7 @@ const char* LineStart::match(const char *cur, MatchInfo &info) const
     if (c0 == '\n' || c0 == '\r')
     {
 #ifdef _DEBUG
-      std::cout << "OK" << std::endl;
+      std::cout << "OK (LineStart)" << std::endl;
 #endif
       return matchRemain(cur, info);
     }
@@ -1842,7 +1885,7 @@ const char* LineEnd::match(const char *cur, MatchInfo &info) const
   if (cur >= info.end)
   {
 #ifdef _DEBUG
-    std::cout << "OK" << std::endl;
+    std::cout << "OK (LineEnd)" << std::endl;
 #endif
     return matchRemain(cur, info);
   }
@@ -1851,7 +1894,7 @@ const char* LineEnd::match(const char *cur, MatchInfo &info) const
     if (*cur == '\n' || *cur == '\r')
     {
 #ifdef _DEBUG
-      std::cout << "OK" << std::endl;
+      std::cout << "OK (LineEnd)" << std::endl;
 #endif
       return matchRemain(cur, info);
     }
@@ -1893,7 +1936,7 @@ const char* StrStart::match(const char *cur, MatchInfo &info) const
   if (cur <= info.beg) // cur == info.beg
   {
 #ifdef _DEBUG
-    std::cout << "OK" << std::endl;
+    std::cout << "OK (StrStart)" << std::endl;
 #endif
     return matchRemain(cur, info);
   }
@@ -1936,7 +1979,7 @@ const char* StrEnd::match(const char *cur, MatchInfo &info) const
       ((cur+2 == info.end) && (*cur == '\r') && (*(cur+1) == '\n')))
   {
 #ifdef _DEBUG
-    std::cout << "OK" << std::endl;
+    std::cout << "OK (StrEnd)" << std::endl;
 #endif
     return matchRemain(cur, info);
   }
@@ -1978,7 +2021,7 @@ const char* BufferEnd::match(const char *cur, MatchInfo &info) const
   if (cur == info.end)
   {
 #ifdef _DEBUG
-    std::cout << "OK" << std::endl;
+    std::cout << "OK (BufferEnd)" << std::endl;
 #endif
     return matchRemain(cur, info);
   }

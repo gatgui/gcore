@@ -2032,5 +2032,113 @@ const char* BufferEnd::match(const char *cur, MatchInfo &info) const
   return 0;
 }
 
+// ---
+
+Conditional::Conditional(int index, Instruction *ifTrue, Instruction *ifFalse)
+  : mIndex(index), mTrue(ifTrue), mFalse(ifFalse)
+{
+}
+
+Conditional::Conditional(const std::string &n, Instruction *ifTrue, Instruction *ifFalse)
+  : mIndex(-1), mName(n), mTrue(ifTrue), mFalse(ifFalse)
+{
+}
+
+Conditional::~Conditional()
+{
+  if (mTrue)
+  {
+    delete mTrue;
+  }
+  if (mFalse)
+  {
+    delete mFalse;
+  }
+}
+
+Instruction* Conditional::clone() const
+{
+  if (mIndex > 0)
+  {
+    return new Conditional(mIndex, (mTrue ? mTrue->clone() : 0), (mFalse ? mFalse->clone() : 0));
+  }
+  else
+  {
+    return new Conditional(mName, (mTrue ? mTrue->clone() : 0), (mFalse ? mFalse->clone() : 0));
+  }
+}
+
+void Conditional::toStream(std::ostream &os, const std::string &indent) const
+{
+  if (mTrue)
+  {
+    os << indent << "If group ";
+    if (mIndex > 0)
+    {
+      os << mIndex;
+    }
+    else
+    {
+      os << mName;
+    }
+    os << " captured" << std::endl;
+    mTrue->toStream(os, indent+"  ");
+    if (mFalse)
+    {
+      os << indent << "Else" << std::endl;
+      mFalse->toStream(os, indent+"  ");
+    }
+  }
+  Instruction::toStream(os, indent);
+}
+
+void Conditional::setGroup(class Group *grp)
+{
+  Instruction::setGroup(grp);
+  if (mTrue)
+  {
+    mTrue->setGroup(grp);
+  }
+  if (mFalse)
+  {
+    mFalse->setGroup(grp);
+  }
+}
+
+const char* Conditional::match(const char *cur, MatchInfo &info) const
+{
+  if (!mTrue)
+  {
+    return matchRemain(cur, info);
+  }
+  size_t index = 0;
+  if (mName.length() > 0)
+  {
+    std::map<std::string, size_t>::iterator it = info.gnames.find(mName);
+    if (it != info.gnames.end())
+    {
+      index = it->second;
+    }
+  }
+  if (index == 0 ||
+      index >= info.gmatch.size() ||
+      info.gmatch[mIndex].first == -1 ||
+      info.gmatch[mIndex].second == -1)
+  {
+    if (mFalse)
+    {
+      return mFalse->match(cur, info);
+    }
+    else
+    {
+      return matchRemain(cur, info);
+    }
+  }
+  else
+  {
+    return mTrue->match(cur, info);
+  }
+}
+
 }
 

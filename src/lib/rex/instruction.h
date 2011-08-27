@@ -298,6 +298,9 @@ class Alternative : public Instruction
     
     virtual void setGroup(class Group *grp);
     
+    inline Instruction* first() const {return mFirst;}
+    inline Instruction* second() const {return mSecond;}
+    
   protected:
     
     Instruction *mFirst;
@@ -466,6 +469,30 @@ class BufferEnd : public Instruction
     virtual Instruction* clone() const;
     virtual void toStream(std::ostream &os, const std::string &indent="") const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
+};
+
+// Conditional
+// (?(id|name)true|false)
+class Conditional : public Instruction
+{
+  public:
+    
+    Conditional(int index, Instruction *ifTrue, Instruction *ifFalse=0);
+    Conditional(const std::string &n, Instruction *ifTrue, Instruction *ifFalse=0);
+    virtual ~Conditional();
+    
+    virtual Instruction* clone() const;
+    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual const char* match(const char *cur, MatchInfo &info) const;
+    
+    virtual void setGroup(class Group *grp);
+  
+  protected:
+    
+    int mIndex;
+    std::string mName;
+    Instruction *mTrue;
+    Instruction *mFalse;
 };
 
 }

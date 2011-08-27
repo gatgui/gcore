@@ -227,6 +227,59 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
           capture = false;
           ++pc;
         }
+        else if (*pc == '(')
+        {
+          // conditional
+          ++pc;
+          
+          std::string cond;
+          while (*pc != ')')
+          {
+            if (*pc == '\0')
+            {
+              return 0;
+            }
+            cond.push_back(*pc);
+            ++pc;
+          }
+          ++pc;
+          
+          Instruction *ci = ParseExpression(&pc, info);
+          if (!ci || *pc != ')')
+          {
+            if (ci)
+            {
+              delete ci;
+            }
+            return 0;
+          }
+          ++pc;
+          
+          Alternative *alt = dynamic_cast<Alternative*>(ci);
+          Instruction *ifTrue, *ifFalse;
+          if (alt == 0)
+          {
+            ifTrue = ci;
+            ifFalse = 0;
+          }
+          else
+          {
+            ifTrue = alt->first()->clone();
+            ifFalse = alt->second()->clone();
+            delete alt;
+          }
+          
+          *ppc = pc;
+          int index = 0;
+          if (sscanf(cond.c_str(), "%d", &index) != 1)
+          {
+            return new Conditional(index, ifTrue, ifFalse);
+          }
+          else
+          {
+            return new Conditional(index, ifTrue, ifFalse);
+          }
+        }
         else if (*pc == 'P')
         {
           ++pc;

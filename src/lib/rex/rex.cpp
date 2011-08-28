@@ -408,6 +408,42 @@ String Rex::substitute(const RexMatch &m, const String &in, bool *failed) const
         {
           rv += m.post();
         }
+        else if (*c == 'g')
+        {
+          ++c;
+          if (*c != '<')
+          {
+            rv.append(1, *(c-2));
+            rv.append(1, *(c-1));
+            rv.append(1, *c);
+          }
+          else
+          {
+            std::string name;
+            ++c;
+            while (*c != '>')
+            {
+              if (*c == '\0')
+              {
+                if (failed)
+                {
+                  *failed = true;
+                  return "";
+                }
+              }
+              name.push_back(*c);
+            }
+            if (!m.hasNamedGroup(name))
+            {
+              if (failed)
+              {
+                *failed = true;
+              }
+              return "";
+            }
+            rv += m.group(name);
+          }
+        }
         else
         {
           --c;
@@ -421,6 +457,10 @@ String Rex::substitute(const RexMatch &m, const String &in, bool *failed) const
       ++c;
     }
     
+    if (failed)
+    {
+      *failed = false;
+    }
     return rv;
   }
   
@@ -428,7 +468,6 @@ String Rex::substitute(const RexMatch &m, const String &in, bool *failed) const
   {
     *failed = true;
   }
-  
   return "";
 }
 

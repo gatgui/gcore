@@ -432,6 +432,7 @@ String Rex::substitute(const RexMatch &m, const String &in, bool *failed) const
                 }
               }
               name.push_back(*c);
+              ++c;
             }
             if (!m.hasNamedGroup(name))
             {

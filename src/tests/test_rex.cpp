@@ -361,6 +361,23 @@ int main(int argc, char **argv)
     
   suite.execute(true);
   
+  std::cout << std::endl << "Named group substitution: " << std::endl;
+  
+  String s = "shape123";
+  std::cout << s << " -> ";
+  s.subst("(?P<name>[a-zA-Z][a-zA-Z_-]*)\\d+", "\\g<name>");
+  std::cout << s << " (expected: \"shape\")" << std::endl;
+  
+  s = "anotherShape";
+  std::cout << s << " -> ";
+  s.subst("(?P<name>[a-zA-Z][a-zA-Z_-]*)\\d+", "\\g<name>");
+  std::cout << s << " (expected: \"anotherShape\")" << std::endl;
+  
+  s = "aThirdShape3";
+  std::cout << s << " -> ";
+  s.subst("(?P<name>[a-zA-Z][a-zA-Z_-]*)\\d+", "\\g<dummy>");
+  std::cout << s << " (expected: \"\")" << std::endl;
+  
   return 0;
 }
 

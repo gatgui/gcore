@@ -370,7 +370,7 @@ bool Rex::match(const String &s, unsigned short flags, size_t offset, size_t len
   return match(s, m, flags, offset, len);
 }
 
-String Rex::substitute(const RexMatch &m, const String &in, bool *failed) const
+String Rex::substitute(const RexMatch &m, const String &in) const
 {
   if (m.hasGroup(0))
   {
@@ -388,11 +388,7 @@ String Rex::substitute(const RexMatch &m, const String &in, bool *failed) const
           int grp = *c - '0';
           if (!m.hasGroup(grp))
           {
-            if (failed)
-            {
-              *failed = true;
-            }
-            return "";
+            return in;
           }
           rv += m.group(grp);
         }
@@ -425,22 +421,14 @@ String Rex::substitute(const RexMatch &m, const String &in, bool *failed) const
             {
               if (*c == '\0')
               {
-                if (failed)
-                {
-                  *failed = true;
-                  return "";
-                }
+                return in;
               }
               name.push_back(*c);
               ++c;
             }
             if (!m.hasNamedGroup(name))
             {
-              if (failed)
-              {
-                *failed = true;
-              }
-              return "";
+              return in;
             }
             rv += m.group(name);
           }
@@ -458,32 +446,30 @@ String Rex::substitute(const RexMatch &m, const String &in, bool *failed) const
       ++c;
     }
     
-    if (failed)
-    {
-      *failed = false;
-    }
     return rv;
   }
   
-  if (failed)
-  {
-    *failed = true;
-  }
-  return "";
+  return in;
 }
 
-String Rex::substitute(const String &str, const String &in, bool *failed) const
+String Rex::substitute(const String &in, const String &by, int maxCount) const
 {
+  if (maxCount == 0)
+  {
+    return in;
+  }
   RexMatch m;
-  if (search(str, m))
+  int count = 0;
+  String rv = in;
+  while (search(rv, m))
   {
-    return substitute(m, in, failed);
+    rv = m.pre() + substitute(m, by) + m.post();
+    if (++count == maxCount)
+    {
+      break;
+    }
   }
-  if (failed)
-  {
-    *failed = true;
-  }
-  return "";
+  return rv;
 }
 
 std::ostream& operator<<(std::ostream &os, const Rex &r)

@@ -446,21 +446,15 @@ bool String::match(const char *ex, RexMatch *m) const {
   return (re.match(*this, *m));
 }
 
-String& String::subst(const std::string &ex, const std::string &by) {
+String& String::subst(const std::string &ex, const std::string &by, int maxCount) {
   Rex re(ex.c_str());
-  RexMatch md;
-  if (re.match(*this, md)) {
-    assign(md.pre() + re.substitute(md, by) + md.post());
-  }
+  assign(re.substitute(*this, by, maxCount));
   return *this;
 }
 
-String& String::subst(const char *ex, const char *by) {
+String& String::subst(const char *ex, const char *by, int maxCount) {
   Rex re(ex);
-  RexMatch md;
-  if (re.match(*this, md)) {
-    assign(md.pre() + re.substitute(md, by) + md.post());
-  }
+  assign(re.substitute(*this, by, maxCount));
   return *this;
 }
 

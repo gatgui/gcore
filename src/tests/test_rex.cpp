@@ -376,7 +376,7 @@ int main(int argc, char **argv)
   s = "aThirdShape3";
   std::cout << s << " -> ";
   s.subst("(?P<name>[a-zA-Z][a-zA-Z_-]*)\\d+", "\\g<dummy>");
-  std::cout << s << " (expected: \"\")" << std::endl;
+  std::cout << s << " (expected: \"\\g<dummy>\")" << std::endl;
   
   return 0;
 }

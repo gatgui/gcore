@@ -89,8 +89,8 @@ namespace gcore {
       size_t count(char c) const;
       bool match(const std::string &exp, class RexMatch *m=0) const;
       bool match(const char *exp, class RexMatch *m=0) const;
-      String& subst(const std::string &exp, const std::string &by);
-      String& subst(const char *exp, const char *by);
+      String& subst(const std::string &exp, const std::string &by, int maxCount=-1);
+      String& subst(const char *exp, const char *by, int maxCount=-1);
       int casecompare(const String &s) const;
       int casecompare(const char *s) const;
       

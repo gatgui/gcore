@@ -110,8 +110,8 @@ namespace gcore {
       bool match(const String &s, RexMatch &m, unsigned short flags=0, size_t offset=0, size_t len=size_t(-1)) const;
       bool match(const String &s, unsigned short execflags=0, size_t offset=0, size_t len=size_t(-1)) const;
       
-      String substitute(const RexMatch &m, const String &in, bool *failed=0) const;
-      String substitute(const String &str, const String &in, bool *failed=0) const;
+      String substitute(const RexMatch &m, const String &in) const;
+      String substitute(const String &in, const String &by, int maxCount=-1) const;
     
       friend GCORE_API std::ostream& operator<<(std::ostream &os, const Rex &r);
     

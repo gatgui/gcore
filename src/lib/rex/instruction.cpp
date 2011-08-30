@@ -182,7 +182,7 @@ const char* Instruction::postStep(const char *cur, MatchInfo &info) const
 const char* Instruction::matchRemain(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match remaining (" << typeid(*this).name() << "): \"" << cur << "\"" << std::endl;
+  std::cerr << "Match remaining (" << typeid(*this).name() << "): \"" << cur << "\"" << std::endl;
 #endif
   
   register bool failed = false;
@@ -208,14 +208,14 @@ const char* Instruction::matchRemain(const char *cur, MatchInfo &info) const
 #ifdef _DEBUG_REX
   if (mGroup)
   {
-    std::cout << "Is in group " << (int)mGroup->index() << std::endl;
+    std::cerr << "Is in group " << (int)mGroup->index() << std::endl;
   }
 #endif
   
   if (mGroup && info.gclosed[mGroup] == false)
   {
 #ifdef _DEBUG_REX
-    std::cout << "Group " << (int)mGroup->index() << " not closed yet" << std::endl;
+    std::cerr << "Group " << (int)mGroup->index() << " not closed yet" << std::endl;
 #endif
     // is it?
     // note on groups:
@@ -236,7 +236,7 @@ const char* Instruction::matchRemain(const char *cur, MatchInfo &info) const
       if (!rv)
       {
 #ifdef _DEBUG_REX
-        std::cout << "Re-open matched group " << mGroup->index() << std::endl;
+        std::cerr << "Re-open matched group " << mGroup->index() << std::endl;
 #endif
         info.flags = gflags;
         mGroup->open(gcur, info);
@@ -300,7 +300,7 @@ Instruction* Single::clone() const
 const char* Single::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match single character \'" << mChar << "\' with \"" << cur << "\"... ";
+  std::cerr << "Match single character \'" << mChar << "\' with \"" << cur << "\"... ";
 #endif
   
   register bool matched;
@@ -312,14 +312,14 @@ const char* Single::match(const char *cur, MatchInfo &info) const
     if (matched)
     {
 #ifdef _DEBUG_REX
-      std::cout << "OK (Single)" << std::endl;
+      std::cerr << "OK (Single)" << std::endl;
 #endif
       return postStep(cur, info);
     }
   }
   
 #ifdef _DEBUG_REX
-  std::cout << "Failed" << std::endl;
+  std::cerr << "Failed" << std::endl;
 #endif
   return 0;
 }
@@ -349,7 +349,7 @@ Instruction* Any::clone() const
 const char* Any::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match any character... ";
+  std::cerr << "Match any character... ";
 #endif
   
   if (preStep(cur, info))
@@ -357,14 +357,14 @@ const char* Any::match(const char *cur, MatchInfo &info) const
     if ((info.flags & Rex::DotMatchNewline) || (*cur != '\r' && *cur != '\n'))
     {
 #ifdef _DEBUG_REX
-      std::cout << "OK (Any)" << std::endl;
+      std::cerr << "OK (Any)" << std::endl;
 #endif
       return postStep(cur, info);
     }
   }
 
 #ifdef _DEBUG_REX
-  std::cout << "Failed" << std::endl;
+  std::cerr << "Failed" << std::endl;
 #endif
   
   return 0;
@@ -395,20 +395,20 @@ Instruction* Word::clone() const
 const char* Word::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match " << (mInvert ? "non " : "") << "word character... ";
+  std::cerr << "Match " << (mInvert ? "non " : "") << "word character... ";
 #endif
   if (preStep(cur, info))
   {
     if (mInvert ^ CHAR_IS(*cur, WORD_CHAR))
     {
 #ifdef _DEBUG_REX
-      std::cout << "OK (Word)" << std::endl;
+      std::cerr << "OK (Word)" << std::endl;
 #endif
       return postStep(cur, info);
     }
   }
 #ifdef _DEBUG_REX
-  std::cout << "Failed" << std::endl;
+  std::cerr << "Failed" << std::endl;
 #endif
   return 0;
 }
@@ -439,20 +439,20 @@ Instruction* Digit::clone() const
 const char* Digit::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match " << (mInvert ? "non " : "") << "digit character... ";
+  std::cerr << "Match " << (mInvert ? "non " : "") << "digit character... ";
 #endif
   if (preStep(cur, info))
   {
     if (mInvert ^ CHAR_IS(*cur, DIGIT_CHAR))
     {
 #ifdef _DEBUG_REX
-      std::cout << "OK (Digit)" << std::endl;
+      std::cerr << "OK (Digit)" << std::endl;
 #endif
       return postStep(cur, info);
     }
   }
 #ifdef _DEBUG_REX
-  std::cout << "Failed" << std::endl;
+  std::cerr << "Failed" << std::endl;
 #endif
   return 0;
 }
@@ -482,20 +482,20 @@ Instruction* LowerLetter::clone() const
 const char* LowerLetter::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match lower case letter... ";
+  std::cerr << "Match lower case letter... ";
 #endif
   if (preStep(cur, info))
   {
     if (CHAR_IS(*cur, LOWER_CHAR) || ((info.flags & Rex::NoCase) && CHAR_IS(*cur, UPPER_CHAR)))
     {
 #ifdef _DEBUG_REX
-      std::cout << "OK (LowerLetter)" << std::endl;
+      std::cerr << "OK (LowerLetter)" << std::endl;
 #endif
       return postStep(cur, info);
     }
   }
 #ifdef _DEBUG_REX
-  std::cout << "Failed" << std::endl;
+  std::cerr << "Failed" << std::endl;
 #endif
   return 0;
 }
@@ -525,20 +525,20 @@ Instruction* UpperLetter::clone() const
 const char* UpperLetter::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match upper case letter... ";
+  std::cerr << "Match upper case letter... ";
 #endif
   if (preStep(cur, info))
   {
     if (CHAR_IS(*cur, UPPER_CHAR) || ((info.flags & Rex::NoCase) && CHAR_IS(*cur, LOWER_CHAR)))
     {
 #ifdef _DEBUG_REX
-      std::cout << "OK (UpperLetter)" << std::endl;
+      std::cerr << "OK (UpperLetter)" << std::endl;
 #endif
       return postStep(cur, info);
     }
   }
 #ifdef _DEBUG_REX
-  std::cout << "Failed" << std::endl;
+  std::cerr << "Failed" << std::endl;
 #endif
   return 0;
 }
@@ -568,20 +568,20 @@ Instruction* Letter::clone() const
 const char* Letter::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match " << (mInvert ? "non " : "") << "letter character... ";
+  std::cerr << "Match " << (mInvert ? "non " : "") << "letter character... ";
 #endif
   if (preStep(cur, info))
   {
     if (mInvert ^ CHAR_IS(*cur, LETTER_CHAR))
     {
 #ifdef _DEBUG_REX
-      std::cout << "OK (Letter)" << std::endl;
+      std::cerr << "OK (Letter)" << std::endl;
 #endif
       return postStep(cur, info);
     }
   }
 #ifdef _DEBUG_REX
-  std::cout << "Failed" << std::endl;
+  std::cerr << "Failed" << std::endl;
 #endif
   return 0;
 }
@@ -611,20 +611,20 @@ Instruction* Hexa::clone() const
 const char* Hexa::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match " << (mInvert ? "non " : "") << "hexa character... ";
+  std::cerr << "Match " << (mInvert ? "non " : "") << "hexa character... ";
 #endif
   if (preStep(cur, info))
   {
     if (mInvert ^ CHAR_IS(*cur, HEXA_CHAR))
     {
 #ifdef _DEBUG_REX
-      std::cout << "OK (Hexa)" << std::endl;
+      std::cerr << "OK (Hexa)" << std::endl;
 #endif
       return postStep(cur, info);
     }
   }
 #ifdef _DEBUG_REX
-  std::cout << "Failed" << std::endl;
+  std::cerr << "Failed" << std::endl;
 #endif
   return 0;
 }
@@ -654,20 +654,20 @@ Instruction* Space::clone() const
 const char* Space::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match " << (mInvert ? "non " : "") << "space character... ";
+  std::cerr << "Match " << (mInvert ? "non " : "") << "space character... ";
 #endif
   if (preStep(cur, info))
   {
     if (mInvert ^ CHAR_IS(*cur, SPACE_CHAR))
     {
 #ifdef _DEBUG_REX
-      std::cout << "OK (Space)" << std::endl;
+      std::cerr << "OK (Space)" << std::endl;
 #endif
       return postStep(cur, info);
     }
   }
 #ifdef _DEBUG_REX
-  std::cout << "Failed" << std::endl;
+  std::cerr << "Failed" << std::endl;
 #endif
   return 0;
 }
@@ -703,7 +703,7 @@ void CharRange::toStream(std::ostream &os, const std::string &indent) const
 const char* CharRange::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match character in range " << mFrom << "-" << mTo << "... ";
+  std::cerr << "Match character in range " << mFrom << "-" << mTo << "... ";
 #endif
   register char cc;
   register int casediff = 0;
@@ -735,13 +735,13 @@ const char* CharRange::match(const char *cur, MatchInfo &info) const
     if (matched)
     {
 #ifdef _DEBUG_REX
-      std::cout << "OK (CharRange)" << std::endl;
+      std::cerr << "OK (CharRange)" << std::endl;
 #endif
       return postStep(cur, info);
     }
   }
 #ifdef _DEBUG_REX
-  std::cout << "Failed" << std::endl;
+  std::cerr << "Failed" << std::endl;
 #endif
   return 0;
 }
@@ -781,7 +781,7 @@ void CharClass::toStream(std::ostream &os, const std::string &indent) const
 const char* CharClass::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match character " << (mInvert ? "not " : "") << "in class... " << std::endl;
+  std::cerr << "Match character " << (mInvert ? "not " : "") << "in class... " << std::endl;
 #endif
   const char *rv = 0;
   Instruction *inst = mFirst;
@@ -805,13 +805,13 @@ const char* CharClass::match(const char *cur, MatchInfo &info) const
       if (preStep(cur, info))
       {
 #ifdef _DEBUG_REX
-        std::cout << "OK (character class)" << std::endl;
+        std::cerr << "OK (character class)" << std::endl;
 #endif
         return postStep(cur, info);
       }
     }
 #ifdef _DEBUG_REX
-    std::cout << "Failed (character class)" << std::endl;
+    std::cerr << "Failed (character class)" << std::endl;
 #endif
     return 0;
   }
@@ -821,7 +821,7 @@ const char* CharClass::match(const char *cur, MatchInfo &info) const
     if (rv != 0)
     {
 #ifdef _DEBUG_REX
-      std::cout << (rv ? "OK" : "Failed") << " (character class)" << std::endl;
+      std::cerr << (rv ? "OK" : "Failed") << " (character class)" << std::endl;
 #endif
       return matchRemain(rv, info);
     }
@@ -878,7 +878,7 @@ Instruction* Repeat::clone() const
 const char* Repeat::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match repeat... ";
+  std::cerr << "Match repeat... ";
 #endif
   register int count = 0;
   const char *rv = 0;
@@ -886,13 +886,13 @@ const char* Repeat::match(const char *cur, MatchInfo &info) const
   if (!mInst)
   {
 #ifdef _DEBUG_REX
-    std::cout << "Failed" << std::endl;
+    std::cerr << "Failed" << std::endl;
 #endif
     return 0;
   }
   
 #ifdef _DEBUG_REX
-  std::cout << std::endl;
+  std::cerr << std::endl;
 #endif
   // match at leat mMin times (same for greedy and lazy)
   
@@ -902,7 +902,7 @@ const char* Repeat::match(const char *cur, MatchInfo &info) const
     if (!rv)
     {
 #ifdef _DEBUG_REX
-      std::cout << "Failed" << std::endl;
+      std::cerr << "Failed" << std::endl;
 #endif
       return 0;
     }
@@ -943,7 +943,7 @@ const char* Repeat::match(const char *cur, MatchInfo &info) const
       if (!rv)
       {
 #ifdef _DEBUG_REX
-        std::cout << "Failed" << std::endl;
+        std::cerr << "Failed" << std::endl;
 #endif
         return 0;
       }
@@ -989,7 +989,7 @@ const char* Repeat::match(const char *cur, MatchInfo &info) const
         if (mGroup && info.gclosed[mGroup] == true)
         {
 #ifdef _DEBUG_REX
-          std::cout << "Repeat in group match remaining failed, re-open group " << mGroup->index() << std::endl;
+          std::cerr << "Repeat in group match remaining failed, re-open group " << mGroup->index() << std::endl;
 #endif
           info.flags = gflags;
           mGroup->open(gcur, info);
@@ -1005,7 +1005,7 @@ const char* Repeat::match(const char *cur, MatchInfo &info) const
     }
   }
 #ifdef _DEBUG_REX
-  std::cout << (rv ? "OK (Repeat)" : "Failed") << std::endl;
+  std::cerr << (rv ? "OK (Repeat)" : "Failed") << std::endl;
 #endif
   return rv;
 }
@@ -1121,7 +1121,7 @@ Group::~Group()
 bool Group::end(bool failure, const char *&cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Restore flags: " << info.flags << " -> " << info.fstack.back() << " (flags stack size = " << info.fstack.size() << ")" << std::endl;
+  std::cerr << "Restore flags: " << info.flags << " -> " << info.fstack.back() << " (flags stack size = " << info.fstack.size() << ")" << std::endl;
 #endif
   
   info.gclosed[this] = true;
@@ -1139,7 +1139,7 @@ bool Group::end(bool failure, const char *&cur, MatchInfo &info) const
   if (failure ^ mInvert) // invert=0, failure=1 || invert=1, failure=0
   {
 #ifdef _DEBUG_REX
-    std::cout << "Group end failed" << std::endl;
+    std::cerr << "Group end failed" << std::endl;
 #endif
     return false;
   }
@@ -1156,7 +1156,7 @@ bool Group::end(bool failure, const char *&cur, MatchInfo &info) const
       info.gmatch[mIndex].second = int(cur - info.beg);
     }
 #ifdef _DEBUG_REX
-    std::cout << "End capture " << mIndex+1 << " of " << info.gmatch.size() << ": [" << info.gmatch[mIndex].first << ", " << info.gmatch[mIndex].second << "]" << std::endl;
+    std::cerr << "End capture " << mIndex+1 << " of " << info.gmatch.size() << ": [" << info.gmatch[mIndex].first << ", " << info.gmatch[mIndex].second << "]" << std::endl;
 #endif
   }
   
@@ -1168,7 +1168,7 @@ bool Group::end(bool failure, const char *&cur, MatchInfo &info) const
   if (mZeroWidth)
   {
 #ifdef _DEBUG_REX
-    std::cout << "Zerowidth group, restore character pointer" << std::endl;
+    std::cerr << "Zerowidth group, restore character pointer" << std::endl;
 #endif
     cur = info.cstack.back();
     info.cstack.pop_back();
@@ -1311,7 +1311,7 @@ void Group::open(const char *cur, MatchInfo &info) const
 const char* Group::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match group (";
+  std::cerr << "Match group (";
 #endif
   
   //register unsigned short flags = mFlags;
@@ -1362,20 +1362,20 @@ const char* Group::match(const char *cur, MatchInfo &info) const
   }
   
 #ifdef _DEBUG_REX
-  std::cout << "group: " << mIndex << ", ";
-  std::cout << "invert: " << mInvert << ", ";
-  std::cout << "zerowidth: " << mZeroWidth << ", ";
-  std::cout << "reverse: " << ((mFlags & Rex::Reverse) == 1) << ", ";
-  std::cout << "nocase: " << mNoCase << ", ";
-  std::cout << "multiline: " << mMultiline << ", ";
-  std::cout << "dotmatchnewline: " << mDotNewline;
-  std::cout << ")... ";
+  std::cerr << "group: " << mIndex << ", ";
+  std::cerr << "invert: " << mInvert << ", ";
+  std::cerr << "zerowidth: " << mZeroWidth << ", ";
+  std::cerr << "reverse: " << ((mFlags & Rex::Reverse) == 1) << ", ";
+  std::cerr << "nocase: " << mNoCase << ", ";
+  std::cerr << "multiline: " << mMultiline << ", ";
+  std::cerr << "dotmatchnewline: " << mDotNewline;
+  std::cerr << ")... ";
 #endif
   
   if (mFirst)
   {
 #ifdef _DEBUG_REX
-    std::cout << std::endl;
+    std::cerr << std::endl;
 #endif
     
     // not enough, if group in a repeat need a counter?
@@ -1417,14 +1417,14 @@ const char* Group::match(const char *cur, MatchInfo &info) const
     if (info.gclosed[this] == false)
     {
 #ifdef _DEBUG_REX
-      std::cout << "... group not yet closed: rv = 0x" << std::hex << (void*)rv << std::dec << std::endl;
+      std::cerr << "... group not yet closed: rv = 0x" << std::hex << (void*)rv << std::dec << std::endl;
 #endif
       bool failed = (rv == 0);
       rv = failed ? cur : rv;
       if (end(failed, rv, info))
       {
 #ifdef _DEBUG_REX
-        std::cout << "OK (Group)" << std::endl;
+        std::cerr << "OK (Group)" << std::endl;
 #endif
         return matchRemain(rv, info);
       }
@@ -1436,7 +1436,7 @@ const char* Group::match(const char *cur, MatchInfo &info) const
     else
     {
 #ifdef _DEBUG_REX
-      std::cout << (rv == 0 ? "Failed" : "OK (Group)") << std::endl;
+      std::cerr << (rv == 0 ? "Failed" : "OK (Group)") << std::endl;
 #endif
       return rv;
     }
@@ -1447,7 +1447,7 @@ const char* Group::match(const char *cur, MatchInfo &info) const
     // the remaining of the expression
     info.flags = flags;
 #ifdef _DEBUG_REX
-    std::cout << "OK (Group, flag modify only)" << std::endl;
+    std::cerr << "OK (Group, flag modify only)" << std::endl;
 #endif
     return matchRemain(cur, info);
   }
@@ -1491,7 +1491,7 @@ void Backsubst::toStream(std::ostream &os, const std::string &indent) const
 const char* Backsubst::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match backsubstitution " << mIndex << "... ";
+  std::cerr << "Match backsubstitution " << mIndex << "... ";
 #endif
   
   size_t index = 0;
@@ -1506,7 +1506,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
     if (it == info.gnames.end() || it->second <= 0)
     {
 #ifdef _DEBUG_REX
-      std::cout << "Failed" << std::endl;
+      std::cerr << "Failed" << std::endl;
 #endif
       return 0;
     }
@@ -1516,7 +1516,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
   if (index >= info.gmatch.size())
   {
 #ifdef _DEBUG_REX
-    std::cout << "Failed (invalid group index)" << std::endl;
+    std::cerr << "Failed (invalid group index)" << std::endl;
 #endif
     return 0;
   }
@@ -1524,7 +1524,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
   if (info.gmatch[index].first < 0 || info.gmatch[index].second < 0)
   {
 #ifdef _DEBUG_REX
-    std::cout << "Failed (group not matched)" << std::endl;
+    std::cerr << "Failed (group not matched)" << std::endl;
 #endif
     return 0;
   }
@@ -1538,7 +1538,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
     if (rlen < bslen)
     {
 #ifdef _DEBUG_REX
-      std::cout << "Failed" << std::endl;
+      std::cerr << "Failed" << std::endl;
 #endif
       return 0;
     }
@@ -1558,7 +1558,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
           if (!CHAR_IS(*cur, LETTER_CHAR))
           {
 #ifdef _DEBUG_REX
-            std::cout << "Failed" << std::endl;
+            std::cerr << "Failed" << std::endl;
 #endif
             return 0;
           }
@@ -1569,7 +1569,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
           if (i0 != i1)
           {
 #ifdef _DEBUG_REX
-            std::cout << "Failed" << std::endl;
+            std::cerr << "Failed" << std::endl;
 #endif
             return 0;
           }
@@ -1577,7 +1577,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
         else if (*cur != *bs)
         {
 #ifdef _DEBUG_REX
-          std::cout << "Failed" << std::endl;
+          std::cerr << "Failed" << std::endl;
 #endif
           return 0;
         }
@@ -1585,7 +1585,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
         --cur;
       }
 #ifdef _DEBUG_REX
-      std::cout << "OK (Backsubst)" << std::endl;
+      std::cerr << "OK (Backsubst)" << std::endl;
 #endif
       return matchRemain(cur+1, info);
     }
@@ -1596,7 +1596,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
         if (*cur != *bs)
         {
 #ifdef _DEBUG_REX
-          std::cout << "Failed" << std::endl;
+          std::cerr << "Failed" << std::endl;
 #endif
           return 0;
         }
@@ -1604,7 +1604,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
         --cur;
       }
 #ifdef _DEBUG_REX
-      std::cout << "OK (Backsubst)" << std::endl;
+      std::cerr << "OK (Backsubst)" << std::endl;
 #endif
       return matchRemain(cur+1, info);
     }
@@ -1616,7 +1616,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
     if (rlen < bslen)
     {
 #ifdef _DEBUG_REX
-      std::cout << "Failed" << std::endl;
+      std::cerr << "Failed" << std::endl;
 #endif
       return 0;
     }
@@ -1626,12 +1626,12 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
       if (strncasecmp(cur, info.beg + info.gmatch[index].first, bslen) == 0)
       {
 #ifdef _DEBUG_REX
-        std::cout << "OK (Backsubst)" << std::endl;
+        std::cerr << "OK (Backsubst)" << std::endl;
 #endif
         return matchRemain(cur + bslen, info);
       }
 #ifdef _DEBUG_REX
-      std::cout << "Failed" << std::endl;
+      std::cerr << "Failed" << std::endl;
 #endif
       return 0;
     }
@@ -1640,19 +1640,19 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
       if (strncmp(cur, info.beg + info.gmatch[index].first, bslen) == 0)
       {
 #ifdef _DEBUG_REX
-        std::cout << "OK (Backsubst)" << std::endl;
+        std::cerr << "OK (Backsubst)" << std::endl;
 #endif
         return matchRemain(cur + bslen, info);
       }
 #ifdef _DEBUG_REX
-      std::cout << "Failed" << std::endl;
+      std::cerr << "Failed" << std::endl;
 #endif
       return 0;
     }
   }
 
 #ifdef _DEBUG_REX
-  std::cout << "Failed" << std::endl;
+  std::cerr << "Failed" << std::endl;
 #endif
   return 0;
 }
@@ -1682,18 +1682,18 @@ void WordStart::toStream(std::ostream &os, const std::string &indent) const
 const char* WordStart::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match word start... ";
+  std::cerr << "Match word start... ";
 #endif
   // same in reverse mode?
   if (CHAR_IS(*cur, WORD_CHAR) && ((cur <= info.beg) || !CHAR_IS(*(cur-1), WORD_CHAR)))
   {
 #ifdef _DEBUG_REX
-    std::cout << "OK (WordStart)" << std::endl;
+    std::cerr << "OK (WordStart)" << std::endl;
 #endif
     return matchRemain(cur, info);
   }
 #ifdef _DEBUG_REX
-  std::cout << "Failed" << std::endl;
+  std::cerr << "Failed" << std::endl;
 #endif
   return 0;
 }
@@ -1723,18 +1723,18 @@ void WordEnd::toStream(std::ostream &os, const std::string &indent) const
 const char* WordEnd::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match word end... ";
+  std::cerr << "Match word end... ";
 #endif
   // same in reverse mode?
   if (!CHAR_IS(*cur, WORD_CHAR) && ((cur <= info.beg) || CHAR_IS(*(cur-1), WORD_CHAR)))
   {
 #ifdef _DEBUG_REX
-    std::cout << "OK (WordEnd)" << std::endl;
+    std::cerr << "OK (WordEnd)" << std::endl;
 #endif
     return matchRemain(cur, info);
   }
 #ifdef _DEBUG_REX
-  std::cout << "Failed" << std::endl;
+  std::cerr << "Failed" << std::endl;
 #endif
   return 0;
 }
@@ -1764,7 +1764,7 @@ void WordBound::toStream(std::ostream &os, const std::string &indent) const
 const char* WordBound::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match " << (mInvert ? "not " : "") << "word bound... ";
+  std::cerr << "Match " << (mInvert ? "not " : "") << "word bound... ";
 #endif
   if (!mInvert)
   {
@@ -1774,7 +1774,7 @@ const char* WordBound::match(const char *cur, MatchInfo &info) const
         (!CHAR_IS(*cur, WORD_CHAR) &&  CHAR_IS(*(cur-1), WORD_CHAR)))
     {
 #ifdef _DEBUG_REX
-      std::cout << "OK (WordBound)" << std::endl;
+      std::cerr << "OK (WordBound)" << std::endl;
 #endif
       return matchRemain(cur, info);
     }
@@ -1788,13 +1788,13 @@ const char* WordBound::match(const char *cur, MatchInfo &info) const
          (!CHAR_IS(*cur, WORD_CHAR) && !CHAR_IS(*(cur-1), WORD_CHAR))))
     {
 #ifdef _DEBUG_REX
-      std::cout << "OK (WordBound)" << std::endl;
+      std::cerr << "OK (WordBound)" << std::endl;
 #endif
       return matchRemain(cur, info);
     }
   }
 #ifdef _DEBUG_REX
-  std::cout << "Failed" << std::endl;
+  std::cerr << "Failed" << std::endl;
 #endif
   return 0;
 }
@@ -1824,7 +1824,7 @@ void LineStart::toStream(std::ostream &os, const std::string &indent) const
 const char* LineStart::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match line start... ";
+  std::cerr << "Match line start... ";
 #endif
   // NL: \r, \n or \r\n
   
@@ -1833,7 +1833,7 @@ const char* LineStart::match(const char *cur, MatchInfo &info) const
   if (cur <= info.beg)
   {
 #ifdef _DEBUG_REX
-    std::cout << "OK (LineStart)" << std::endl;
+    std::cerr << "OK (LineStart)" << std::endl;
 #endif
     return matchRemain(cur, info);
   }
@@ -1843,13 +1843,13 @@ const char* LineStart::match(const char *cur, MatchInfo &info) const
     if (c0 == '\n' || c0 == '\r')
     {
 #ifdef _DEBUG_REX
-      std::cout << "OK (LineStart)" << std::endl;
+      std::cerr << "OK (LineStart)" << std::endl;
 #endif
       return matchRemain(cur, info);
     }
   }
 #ifdef _DEBUG_REX
-  std::cout << "Failed" << std::endl;
+  std::cerr << "Failed" << std::endl;
 #endif
   return 0;
 }
@@ -1879,14 +1879,14 @@ void LineEnd::toStream(std::ostream &os, const std::string &indent) const
 const char* LineEnd::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match line end... ";
+  std::cerr << "Match line end... ";
 #endif
   // NL: \r, \n or \r\n
   
   if (cur >= info.end)
   {
 #ifdef _DEBUG_REX
-    std::cout << "OK (LineEnd)" << std::endl;
+    std::cerr << "OK (LineEnd)" << std::endl;
 #endif
     return matchRemain(cur, info);
   }
@@ -1895,14 +1895,14 @@ const char* LineEnd::match(const char *cur, MatchInfo &info) const
     if (*cur == '\n' || *cur == '\r')
     {
 #ifdef _DEBUG_REX
-      std::cout << "OK (LineEnd)" << std::endl;
+      std::cerr << "OK (LineEnd)" << std::endl;
 #endif
       return matchRemain(cur, info);
     }
   }
 
 #ifdef _DEBUG_REX
-  std::cout << "Failed" << std::endl;
+  std::cerr << "Failed" << std::endl;
 #endif
   return 0;
 }
@@ -1932,17 +1932,17 @@ void StrStart::toStream(std::ostream &os, const std::string &indent) const
 const char* StrStart::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match string begin... ";
+  std::cerr << "Match string begin... ";
 #endif
   if (cur <= info.beg) // cur == info.beg
   {
 #ifdef _DEBUG_REX
-    std::cout << "OK (StrStart)" << std::endl;
+    std::cerr << "OK (StrStart)" << std::endl;
 #endif
     return matchRemain(cur, info);
   }
 #ifdef _DEBUG_REX
-  std::cout << "Failed" << std::endl;
+  std::cerr << "Failed" << std::endl;
 #endif
   return 0;
 }
@@ -1973,19 +1973,19 @@ void StrEnd::toStream(std::ostream &os, const std::string &indent) const
 const char* StrEnd::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match string end... ";
+  std::cerr << "Match string end... ";
 #endif
   if ((cur >= info.end) || // c == e
       ((cur+1 == info.end) && ((*cur == '\n') || (*cur == '\r'))) ||
       ((cur+2 == info.end) && (*cur == '\r') && (*(cur+1) == '\n')))
   {
 #ifdef _DEBUG_REX
-    std::cout << "OK (StrEnd)" << std::endl;
+    std::cerr << "OK (StrEnd)" << std::endl;
 #endif
     return matchRemain(cur, info);
   }
 #ifdef _DEBUG_REX
-  std::cout << "Failed" << std::endl;
+  std::cerr << "Failed" << std::endl;
 #endif
   return 0;
 }
@@ -2015,20 +2015,20 @@ void BufferEnd::toStream(std::ostream &os, const std::string &indent) const
 const char* BufferEnd::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-  std::cout << "Match buffer end... ";
+  std::cerr << "Match buffer end... ";
 #endif
   //if (!(info.flags & Rex::Reverse))
   //{
   if (cur == info.end)
   {
 #ifdef _DEBUG_REX
-    std::cout << "OK (BufferEnd)" << std::endl;
+    std::cerr << "OK (BufferEnd)" << std::endl;
 #endif
     return matchRemain(cur, info);
   }
   //}
 #ifdef _DEBUG_REX
-  std::cout << "Failed" << std::endl;
+  std::cerr << "Failed" << std::endl;
 #endif
   return 0;
 }

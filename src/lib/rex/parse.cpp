@@ -442,26 +442,26 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
       }
       
 #ifdef _DEBUG_REX
-      std::cout << "Create group" << std::endl;
-      std::cout << "  index: " << gidx << std::endl;
-      std::cout << "  invert: " << invert << std::endl;
-      std::cout << "  consume: " << consume << std::endl;
-      std::cout << "  flags: " << flags << std::endl;
-      std::cout << "  nc: " << nc << std::endl;
-      std::cout << "  ml: " << ml << std::endl;
-      std::cout << "  dnl: " << dnl << std::endl;
-      std::cout << "  name: \"" << name << "\"" << std::endl;
-      std::cout << "  code: " << std::endl;
+      std::cerr << "Create group" << std::endl;
+      std::cerr << "  index: " << gidx << std::endl;
+      std::cerr << "  invert: " << invert << std::endl;
+      std::cerr << "  consume: " << consume << std::endl;
+      std::cerr << "  flags: " << flags << std::endl;
+      std::cerr << "  nc: " << nc << std::endl;
+      std::cerr << "  ml: " << ml << std::endl;
+      std::cerr << "  dnl: " << dnl << std::endl;
+      std::cerr << "  name: \"" << name << "\"" << std::endl;
+      std::cerr << "  code: " << std::endl;
       if (i)
       {
-        i->toStream(std::cout, "    ");
+        i->toStream(std::cerr, "    ");
       }
 #endif
       
       i = new Group(gidx, i, !consume, invert, flags, nc, ml, dnl, name);
       
 #ifdef _DEBUG_REX
-      std::cout << "Group created" << std::endl;
+      std::cerr << "Group created" << std::endl;
 #endif
       ++pc;
       
@@ -484,7 +484,7 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
       if (*pc != ']')
       {
 #ifdef _DEBUG_REX
-        std::cout << "Invalid character in expression: " << *pc << ", expected ]" << std::endl;
+        std::cerr << "Invalid character in expression: " << *pc << ", expected ]" << std::endl;
 #endif
         if (i)
         {

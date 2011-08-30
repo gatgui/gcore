@@ -254,7 +254,7 @@ bool Rex::search(const String &s, RexMatch &m, unsigned short flags, size_t offs
   do
   {
 #ifdef _DEBUG_REX
-    std::cout << "Try match with \"" << cur << "\"" << std::endl;
+    std::cerr << "Try match with \"" << cur << "\"" << std::endl;
 #endif
     MatchInfo info(s.c_str(), s.c_str()+s.length(), flags, mNumGroups+1);
     const char *rv = code->match(cur, info);
@@ -276,14 +276,14 @@ bool Rex::search(const String &s, RexMatch &m, unsigned short flags, size_t offs
       m.mGroups[0].second = m.mRange.second;
       m.mStr = s;
 #ifdef _DEBUG_REX
-      std::cout << "  Matched string: \"" << m.mStr << "\"" << std::endl;
-      std::cout << "  Matched range: [" << m.mRange.first << ", " << m.mRange.second << "]" << std::endl;
+      std::cerr << "  Matched string: \"" << m.mStr << "\"" << std::endl;
+      std::cerr << "  Matched range: [" << m.mRange.first << ", " << m.mRange.second << "]" << std::endl;
       for (size_t i=0; i<m.mGroups.size(); ++i)
       {
-        std::cout << "  Matched group " << i << ": [" << m.mGroups[i].first << ", " << m.mGroups[i].second << "]: \"" << m.group(i) << "\"" << std::endl;
+        std::cerr << "  Matched group " << i << ": [" << m.mGroups[i].first << ", " << m.mGroups[i].second << "]: \"" << m.group(i) << "\"" << std::endl;
       }
-      std::cout << "  Pre: \"" << m.pre() << "\"" << std::endl;
-      std::cout << "  Post: \"" << m.post() << "\"" << std::endl;
+      std::cerr << "  Pre: \"" << m.pre() << "\"" << std::endl;
+      std::cerr << "  Post: \"" << m.post() << "\"" << std::endl;
 #endif
       return true;
     }

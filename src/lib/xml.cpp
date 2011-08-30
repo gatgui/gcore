@@ -467,7 +467,7 @@ bool XMLDoc::read(const String &fileName) {
         size_t plen = p1 - p0;
         memcpy(pendingBuffer, p0, plen);
         pendingBuffer[plen] = '\0';
-        //std::cout << "READ_OPEN | Add: \"" << pendingBuffer << "\" to pending buffer" << std::endl;
+        //std::cerr << "READ_OPEN | Add: \"" << pendingBuffer << "\" to pending buffer" << std::endl;
         pending += pendingBuffer;
         
         if (p1 != eob) {
@@ -487,7 +487,7 @@ bool XMLDoc::read(const String &fileName) {
           if ((p1+1) == eob) {
             
             // need to read more to decide what we want to read
-            // std::cout << "Read a new full line" << std::endl;
+            // std::cerr << "Read a new full line" << std::endl;
             nLastChar = eob - readBuffer;
             if (nLastChar > 16) {
               nLastChar = 16;
@@ -658,7 +658,7 @@ bool XMLDoc::read(const String &fileName) {
             goto failed;
           }
           pending.erase(pending.length()-2, 2);
-          //std::cout << "CDATA: \"" << pending << "\"" << std::endl;
+          //std::cerr << "CDATA: \"" << pending << "\"" << std::endl;
           cur->setText(pending, true);
           pending = "";
           state = READ_OPEN;
@@ -716,7 +716,7 @@ bool XMLDoc::read(const String &fileName) {
             goto failed;
           }
           pending.erase(pending.length()-2, 2);
-          std::cout << "Comment: \"" << pending << "\"" << std::endl;
+          //std::cerr << "Comment: \"" << pending << "\"" << std::endl;
           pending = "";
           state = READ_OPEN;
         }
@@ -780,14 +780,14 @@ bool XMLDoc::read(const String &fileName) {
             size_t p = pending.find('=', o);
             
             if (p == String::npos) {
-              std::cout << "Invalid XML file: missing = for attribute" << std::endl;
+              std::cerr << "Invalid XML file: missing = for attribute" << std::endl;
               delete elem;
               goto failed;
             }
             
             String attr = pending.substr(o, p-o);
             if (!IsValidAttribute(attr)) {
-              std::cout << "Invalid XML file: invalid attribute name \"" << attr << "\"" << std::endl;
+              std::cerr << "Invalid XML file: invalid attribute name \"" << attr << "\"" << std::endl;
               delete elem;
               goto failed;
             }
@@ -795,13 +795,13 @@ bool XMLDoc::read(const String &fileName) {
             ++p;
             
             if (p >= pending.length()) {
-              std::cout << "Invalid XML file: no value for attribute" << std::endl;
+              std::cerr << "Invalid XML file: no value for attribute" << std::endl;
               delete elem;
               goto failed;
             }
             
             if (pending[p] != '"') {
-              std::cout << "Invalid XML file: missing opening \" for attribute" << std::endl;
+              std::cerr << "Invalid XML file: missing opening \" for attribute" << std::endl;
               delete elem;
               goto failed;
             }
@@ -818,7 +818,7 @@ bool XMLDoc::read(const String &fileName) {
             }
             
             if (e == String::npos) {
-              std::cout << "Invalid XML file: missing closing \" for attribute" << std::endl;
+              std::cerr << "Invalid XML file: missing closing \" for attribute" << std::endl;
               delete elem;
               goto failed;
             }
@@ -882,7 +882,7 @@ bool XMLDoc::read(const String &fileName) {
             goto failed;
           }
           
-          //std::cout << "Closing element: \"" << pending << "\"" << std::endl;
+          //std::cerr << "Closing element: \"" << pending << "\"" << std::endl;
           
           cur = cur->getParent();
           

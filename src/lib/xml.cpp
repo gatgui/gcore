@@ -615,32 +615,37 @@ bool XMLDoc::read(const String &fileName) {
         // advance position until we reach the end of the buffer or the '<' char
         while (p1 != eob) {
           if (*p1 == '>') {
-          
+            
+            bool found = false;
+            
             if (p1 - 1 >= readBuffer) {
-              if (*(p1 - 1) != ']') {
-                std::cerr << "Invalid XML file: expected ']]>' (1)" << std::endl;
-                goto failed;
+              if (*(p1 - 1) == ']') {
+                found = true;
               }
             } else {
-              if (nLastChar < 1 || lastChars[15] != ']') {
-                std::cerr << "Invalid XML file: expected ']]>' (2)" << std::endl;
-                goto failed;
+              if (nLastChar >= 1 && lastChars[15] == ']') {
+                found = true;
               }
             }
             
-            if (p1 - 2 >= readBuffer) {
-              if (*(p1 - 2) != ']') {
-                std::cerr << "Invalid XML file: expected ']]>' (3)" << std::endl;
-                goto failed;
-              }
-            } else {
-              if (nLastChar < 2 || lastChars[14] != ']') {
-                std::cerr << "Invalid XML file: expected ']]>' (4)" << std::endl;
-                goto failed;
+            if (found) {
+              
+              found = false;
+              
+              if (p1 - 2 >= readBuffer) {
+                if (*(p1 - 2) == ']') {
+                  found = true;
+                }
+              } else {
+                if (nLastChar >= 2 && lastChars[14] == ']') {
+                  found = true;
+                }
               }
             }
             
-            break;
+            if (found) {
+              break;
+            }
           }
           ++p1;
         }
@@ -672,33 +677,39 @@ bool XMLDoc::read(const String &fileName) {
         
         // advance position until we reach the end of the buffer or the '<' char
         while (p1 != eob) {
+          
           if (*p1 == '>') {
             
+            bool found = false;
+            
             if (p1 - 1 >= readBuffer) {
-              if (*(p1 - 1) != '-') {
-                std::cerr << "Invalid XML file: expected '-->' (1)" << std::endl;
-                goto failed;
+              if (*(p1 - 1) == '-') {
+                found = true;
               }
             } else {
-              if (nLastChar < 1 || lastChars[15] != '-') {
-                std::cerr << "Invalid XML file: expected '-->' (2)" << std::endl;
-                goto failed;
+              if (nLastChar >= 1 && lastChars[15] == '-') {
+                found = true;
               }
             }
             
-            if (p1 - 2 >= readBuffer) {
-              if (*(p1 - 2) != '-') {
-                std::cerr << "Invalid XML file: expected '-->' (3)" << std::endl;
-                goto failed;
-              }
-            } else {
-              if (nLastChar < 2 || lastChars[14] != '-') {
-                std::cerr << "Invalid XML file: expected '-->' (4)" << std::endl;
-                goto failed;
+            if (found) {
+              
+              found = false;
+              
+              if (p1 - 2 >= readBuffer) {
+                if (*(p1 - 2) == '-') {
+                  found = true;
+                }
+              } else {
+                if (nLastChar >= 2 && lastChars[14] == '-') {
+                  found = true;
+                }
               }
             }
             
-            break;
+            if (found) {
+              break;
+            }
           }
           ++p1;
         }
@@ -800,25 +811,30 @@ bool XMLDoc::read(const String &fileName) {
               goto failed;
             }
             
-            if (pending[p] != '"') {
-              std::cerr << "Invalid XML file: missing opening \" for attribute" << std::endl;
+            if (pending[p] != '"' && pending[p] != '\'') {
+              std::cerr << "Invalid XML file: missing opening \" or ' for attribute" << std::endl;
               delete elem;
               goto failed;
             }
             
+            char quoteChar = pending[p];
+            
             ++p;
             
-            size_t e = pending.find('"', p);
+            size_t e = pending.find(quoteChar, p);
             while (e != String::npos) {
               if (pending[e-1] == '\\') {
-                e = pending.find('"', e+1);
+                e = pending.find(quoteChar, e+1);
               } else {
                 break;
               }
             }
             
             if (e == String::npos) {
-              std::cerr << "Invalid XML file: missing closing \" for attribute" << std::endl;
+              //std::cerr << "Invalid XML file: missing closing \" for attribute" << std::endl;
+              std::string cc;
+              cc.push_back(quoteChar);
+              std::cerr << "Invalid XML file: missing closing " << quoteChar << " for attribute" << std::endl;
               delete elem;
               goto failed;
             }

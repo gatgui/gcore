@@ -5,7 +5,11 @@ from excons.tools import threads
 from excons.tools import dl
 
 static = int(ARGUMENTS.get("static", "0"))
+debugrex = int(ARGUMENTS.get("debugRex", "0"))
 
+libdefs   = ["GCORE_STATIC"] if static else ["GCORE_EXPORT"]
+if debugrex:
+  libdefs.append("_DEBUG_REX")
 libcustom = []
 depcustom = []
 if static:
@@ -18,7 +22,7 @@ prjs = [
     "type"    : "staticlib" if static else "sharedlib",
     "incdirs" : ["include"],
     "srcs"    : glob.glob("src/lib/*.cpp") + glob.glob("src/lib/rex/*.cpp"),
-    "defs"    : ["GCORE_STATIC"] if static else ["GCORE_EXPORTS"],
+    "defs"    : libdefs,
     "custom"  : libcustom
   },
   { "name"    : "testmodule",

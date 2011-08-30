@@ -441,7 +441,7 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
         return 0;
       }
       
-#ifdef _DEBUG
+#ifdef _DEBUG_REX
       std::cout << "Create group" << std::endl;
       std::cout << "  index: " << gidx << std::endl;
       std::cout << "  invert: " << invert << std::endl;
@@ -460,7 +460,7 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
       
       i = new Group(gidx, i, !consume, invert, flags, nc, ml, dnl, name);
       
-#ifdef _DEBUG
+#ifdef _DEBUG_REX
       std::cout << "Group created" << std::endl;
 #endif
       ++pc;
@@ -483,7 +483,7 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
       }
       if (*pc != ']')
       {
-#ifdef _DEBUG
+#ifdef _DEBUG_REX
         std::cout << "Invalid character in expression: " << *pc << ", expected ]" << std::endl;
 #endif
         if (i)

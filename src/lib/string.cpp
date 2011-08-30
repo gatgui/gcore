@@ -154,66 +154,93 @@ String& String::operator=(char c) {
 }
 
 String& String::operator=(unsigned char uc) {
-  char buffer[64];
-  sprintf(buffer, "%hhu", uc);
-  *this = buffer;
+  //char buffer[64];
+  //sprintf(buffer, "%hhu", uc);
+  //*this = buffer;
+  std::ostringstream oss;
+  oss << uc;
+  assign(oss.str());
   return *this;
 }
 
 String& String::operator=(short s) {
-  char buffer[64];
-  sprintf(buffer, "%hd", s);
-  *this = buffer;
+  //char buffer[64];
+  //sprintf(buffer, "%hd", s);
+  //*this = buffer;
+  std::ostringstream oss;
+  oss << s;
+  assign(oss.str());
   return *this;
 }
 
 String& String::operator=(unsigned short us) {
-  char buffer[64];
-  sprintf(buffer, "%hu", us);
-  *this = buffer;
+  //char buffer[64];
+  //sprintf(buffer, "%hu", us);
+  //*this = buffer;
+  std::ostringstream oss;
+  oss << us;
+  assign(oss.str());
   return *this;
 }
 
 String& String::operator=(int i) {
-  char buffer[64];
-  sprintf(buffer, "%d", i);
-  *this = buffer;
+  //char buffer[64];
+  //sprintf(buffer, "%d", i);
+  //*this = buffer;
+  std::ostringstream oss;
+  oss << i;
+  assign(oss.str());
   return *this;
 }
 
 String& String::operator=(unsigned int ui) {
-  char buffer[64];
-  sprintf(buffer, "%u", ui);
-  *this = buffer;
+  //char buffer[64];
+  //sprintf(buffer, "%u", ui);
+  //*this = buffer;
+  std::ostringstream oss;
+  oss << ui;
+  assign(oss.str());
   return *this;
 }
 
 String& String::operator=(long l) {
-  char buffer[64];
-  sprintf(buffer, "%ld", l);
-  *this = buffer;
+  //char buffer[64];
+  //sprintf(buffer, "%ld", l);
+  //*this = buffer;
+  std::ostringstream oss;
+  oss << l;
+  assign(oss.str());
   return *this;
 }
 
 String& String::operator=(unsigned long ul) {
-  char buffer[64];
-  sprintf(buffer, "%lu", ul);
-  *this = buffer;
+  //char buffer[64];
+  //sprintf(buffer, "%lu", ul);
+  //*this = buffer;
+  std::ostringstream oss;
+  oss << ul;
+  assign(oss.str());
   return *this;
 }
 
 String& String::operator=(float f)
 {
-  char buffer[64];
-  sprintf(buffer, "%f", f);
-  *this = buffer;
+  //char buffer[64];
+  //sprintf(buffer, "%f", f);
+  //*this = buffer;
+  std::ostringstream oss;
+  oss << f;
+  assign(oss.str());
   return *this;
 }
 
 String& String::operator=(double d) {
-  char buffer[64];
-  sprintf(buffer, "%lf", d);
-  *this = buffer;
+  //char buffer[64];
+  //sprintf(buffer, "%lf", d);
+  //*this = buffer;
+  std::ostringstream oss;
+  oss << d;
+  assign(oss.str());
   return *this;
 }
 

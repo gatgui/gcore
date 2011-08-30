@@ -253,7 +253,7 @@ bool Rex::search(const String &s, RexMatch &m, unsigned short flags, size_t offs
   //while (cur < end)
   do
   {
-#ifdef _DEBUG
+#ifdef _DEBUG_REX
     std::cout << "Try match with \"" << cur << "\"" << std::endl;
 #endif
     MatchInfo info(s.c_str(), s.c_str()+s.length(), flags, mNumGroups+1);
@@ -275,7 +275,7 @@ bool Rex::search(const String &s, RexMatch &m, unsigned short flags, size_t offs
       m.mGroups[0].first = m.mRange.first;
       m.mGroups[0].second = m.mRange.second;
       m.mStr = s;
-#ifdef _DEBUG
+#ifdef _DEBUG_REX
       std::cout << "  Matched string: \"" << m.mStr << "\"" << std::endl;
       std::cout << "  Matched range: [" << m.mRange.first << ", " << m.mRange.second << "]" << std::endl;
       for (size_t i=0; i<m.mGroups.size(); ++i)

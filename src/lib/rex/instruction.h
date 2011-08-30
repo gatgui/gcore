@@ -90,7 +90,6 @@ class Instruction
     
   protected:
     
-    // nothing for now
     Instruction *mNext;
     Instruction *mPrev;
     class Group *mGroup;

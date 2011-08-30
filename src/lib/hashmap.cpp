@@ -69,7 +69,7 @@ unsigned int hash_murmur2(const unsigned char *data_in, size_t len)
   const int r = 24;
   
   // Initialize the hash to a 'random' value
-  unsigned int h = seed ^ len;
+  unsigned int h = seed ^ (unsigned int)len;
   
   // Mix 4 bytes at a time into the hash
   const unsigned char *data = data_in;
@@ -116,7 +116,7 @@ unsigned int hash_murmur2a(const unsigned char *data_in, size_t len)
   
   const unsigned int m = 0x5bd1e995;
   const int r = 24;
-  unsigned int l = len;
+  unsigned int l = (unsigned int)len;
   
   const unsigned char * data = data_in;
   

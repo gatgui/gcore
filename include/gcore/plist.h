@@ -105,7 +105,10 @@ namespace gcore {
     public:
   
       PropertyList();
+      PropertyList(const PropertyList &rhs);
       ~PropertyList();
+      
+      PropertyList& operator=(const PropertyList &rhs);
       
       void create();
       
@@ -149,6 +152,7 @@ namespace gcore {
         Value();
         virtual ~Value();
 
+        virtual Value* clone() const = 0;
         virtual bool fromXML(const gcore::XMLElement *elt) = 0;
         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const = 0;
 
@@ -194,6 +198,7 @@ namespace gcore {
         InvalidValue();
         virtual ~InvalidValue();
         
+        virtual Value* clone() const;
         virtual bool fromXML(const gcore::XMLElement *elt);
         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
     };
@@ -209,6 +214,7 @@ namespace gcore {
         String(const gcore::String &v);
         virtual ~String();
         
+        virtual Value* clone() const;
         virtual bool fromXML(const gcore::XMLElement *elt);
         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
         
@@ -241,6 +247,7 @@ namespace gcore {
         Real(double v);
         virtual ~Real();
         
+        virtual Value* clone() const;
         virtual bool fromXML(const gcore::XMLElement *elt);
         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
         
@@ -273,6 +280,7 @@ namespace gcore {
         Integer(long v);
         virtual ~Integer();
         
+        virtual Value* clone() const;
         virtual bool fromXML(const gcore::XMLElement *elt);
         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
         
@@ -305,6 +313,7 @@ namespace gcore {
         Boolean(bool v);
         virtual ~Boolean();
         
+        virtual Value* clone() const;
         virtual bool fromXML(const gcore::XMLElement *elt);
         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
         
@@ -337,6 +346,7 @@ namespace gcore {
         Array(InputType val);
         virtual ~Array();
         
+        virtual Value* clone() const;
         virtual bool fromXML(const gcore::XMLElement *elt);
         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
         
@@ -379,6 +389,7 @@ namespace gcore {
         Dictionary(InputType val);
         virtual ~Dictionary();
         
+        virtual Value* clone() const;
         virtual bool fromXML(const gcore::XMLElement *elt);
         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
         

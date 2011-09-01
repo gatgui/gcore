@@ -76,6 +76,10 @@ gcore::XMLElement* plist::InvalidValue::toXML(gcore::XMLElement *) const {
   return NULL;
 }
 
+plist::Value* plist::InvalidValue::clone() const {
+  return new plist::InvalidValue();
+}
+
 // ---
 
 
@@ -109,6 +113,10 @@ gcore::XMLElement* plist::String::toXML(gcore::XMLElement *elt) const {
   }
   elt->setText(mValue);
   return elt;
+}
+
+plist::Value* plist::String::clone() const {
+  return new plist::String(mValue);
 }
 
 plist::Value* plist::String::New() {
@@ -154,6 +162,10 @@ gcore::XMLElement* plist::Integer::toXML(gcore::XMLElement *elt) const {
   return elt;
 }
 
+plist::Value* plist::Integer::clone() const {
+  return new plist::Integer(mValue);
+}
+
 plist::Value* plist::Integer::New() {
   return new Integer();
 }
@@ -185,6 +197,10 @@ bool plist::Real::fromXML(const gcore::XMLElement *elt)  {
   }
   gcore::String txt = elt->getText();
   return txt.strip().toDouble(mValue);
+}
+
+plist::Value* plist::Real::clone() const {
+  return new plist::Real(mValue);
 }
 
 gcore::XMLElement* plist::Real::toXML(gcore::XMLElement *elt) const {
@@ -234,6 +250,10 @@ gcore::XMLElement* plist::Boolean::toXML(gcore::XMLElement *elt) const {
   }
   elt->setText(gcore::String(mValue));
   return elt;
+}
+
+plist::Value* plist::Boolean::clone() const {
+  return new plist::Boolean(mValue);
 }
 
 plist::Value* plist::Boolean::New() {
@@ -304,6 +324,19 @@ void plist::Array::set(size_t idx, Value *v, bool replace) {
     mValues.push(0);
   }
   mValues[idx] = v;
+}
+
+plist::Value* plist::Array::clone() const {
+  plist::Array *a = new plist::Array();
+  a->mValues.resize(mValues.size());
+  for (size_t i=0; i<mValues.size(); ++i) {
+    if (mValues[i]) {
+      a->mValues[i] = mValues[i]->clone();
+    } else {
+      a->mValues[i] = 0;
+    }
+  }
+  return a;
 }
 
 bool plist::Array::fromXML(const gcore::XMLElement *elt)  {
@@ -424,6 +457,16 @@ void plist::Dictionary::set(const gcore::String &key, Value *v, bool replace) {
   mPairs[key] = v;
 }
 
+plist::Value* plist::Dictionary::clone() const {
+  plist::Dictionary *d = new plist::Dictionary();
+  std::map<gcore::String, Value*>::const_iterator it = mPairs.begin();
+  while (it != mPairs.end()) {
+    d->mPairs[it->first] = (it->second ? it->second->clone() : 0);
+    ++it;
+  }
+  return d;
+}
+
 bool plist::Dictionary::fromXML(const gcore::XMLElement *elt)  {
   clear();
   if (!elt) {
@@ -533,10 +576,30 @@ PropertyList::PropertyList()
   RegisterBasicTypes();
 }
 
+PropertyList::PropertyList(const PropertyList &rhs)
+  : mTop(0) {
+  if (rhs.mTop != 0) {
+    mTop = (plist::Dictionary*) rhs.mTop->clone();
+  }
+}   
+
 PropertyList::~PropertyList() {
   if (mTop) {
     delete mTop;
   }
+}
+
+PropertyList& PropertyList::operator=(const PropertyList &rhs) {
+  if (this != &rhs) {
+    if (mTop) {
+      delete mTop;
+      mTop = 0;
+    }
+    if (rhs.mTop) {
+      mTop = (plist::Dictionary*) rhs.mTop->clone();
+    }
+  }
+  return *this;
 }
 
 void PropertyList::create() {

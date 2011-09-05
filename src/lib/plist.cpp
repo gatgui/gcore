@@ -1047,8 +1047,13 @@ size_t PropertyList::getDictKeys(const String &p, StringList &kl) const throw(pl
 
 bool PropertyList::has(const String &prop) const {
   try {
-    GetProperty(mTop, prop);
-    return true;
+    plist::Value *v = GetProperty(mTop, prop);
+    if (v != 0) {
+      plist::InvalidValue *iv = dynamic_cast<plist::InvalidValue*>(v);
+      return (iv == 0);
+    } else {
+      return false;
+    }
   } catch (...) {
     return false;
   }

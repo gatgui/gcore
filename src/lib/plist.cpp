@@ -240,15 +240,29 @@ bool plist::Boolean::fromXML(const gcore::XMLElement *elt)  {
   if (!elt) {
     return false;
   }
-  gcore::String txt = elt->getText();
-  return txt.strip().toBool(mValue);
+  if (elt->getTag() == "false") {
+    mValue = false;
+    return true;
+  } else if (elt->getTag() == "true") {
+    mValue = true;
+    return true;
+  } else {
+    gcore::String txt = elt->getText();
+    return txt.strip().toBool(mValue);
+  }
 }
 
 gcore::XMLElement* plist::Boolean::toXML(gcore::XMLElement *elt) const {
   if (!elt) {
-    elt = new gcore::XMLElement("boolean");
+    //elt = new gcore::XMLElement("boolean");
+    if (mValue) {
+      elt = new gcore::XMLElement("true");
+    } else {
+      elt = new gcore::XMLElement("false");
+    }
+  } else {
+    elt->setText(gcore::String(mValue));
   }
-  elt->setText(gcore::String(mValue));
   return elt;
 }
 
@@ -348,7 +362,11 @@ bool plist::Array::fromXML(const gcore::XMLElement *elt)  {
     const gcore::XMLElement *c = elt->getChild(i);
     Value *v = PropertyList::NewValue(c->getTag());
     if (v == 0) {
-      return false;
+      if (c->getTag() == "true" || c->getTag() == "false") {
+        v = new plist::Boolean();
+      } else {
+        return false;
+      }
     }
     if (!v->fromXML(c)) {
       delete v;
@@ -486,7 +504,11 @@ bool plist::Dictionary::fromXML(const gcore::XMLElement *elt)  {
     const gcore::XMLElement *v = elt->getChild(i+1);
     Value *val = PropertyList::NewValue(v->getTag());
     if (val == 0) {
-      return false;
+      if (v->getTag() == "true" || v->getTag() == "false") {
+        val = new plist::Boolean();
+      } else {
+        return false;
+      }
     }
     if (!val->fromXML(v)) {
       delete val;

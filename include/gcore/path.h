@@ -40,6 +40,14 @@ namespace gcore {
       
       typedef Functor1wR<bool, const Path &> EachFunc;
       
+      enum EachTarget
+      {
+        ET_FILE      = 0x01,
+        ET_DIRECTORY = 0x02,
+        ET_HIDDEN    = 0x04, // file/dir starting with a .
+        ET_ALL       = ET_FILE|ET_DIRECTORY|ET_HIDDEN
+      };
+      
     public:
       
       Path();
@@ -93,8 +101,8 @@ namespace gcore {
       bool createDir(bool recursive=false) const;
       bool removeFile() const;
       
-      void each(EachFunc cb, bool includeSubDirs=false) const;
-      size_t listDir(List<Path> &l, bool inclideSubDirs=false) const;
+      void each(EachFunc cb, bool recurse=false, unsigned short flags=ET_ALL) const;
+      size_t listDir(List<Path> &l, bool recurse=false, unsigned short flags=ET_ALL) const;
       
       String pop();
       Path& push(const String &s);

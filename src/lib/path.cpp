@@ -66,12 +66,12 @@ namespace gcore {
     while (i < mPaths.size()) {
       mPaths[i].strip();
       if (mPaths[i].length() == 0) {
-#ifndef _WIN32
+//#ifndef _WIN32
         if (i == 0) {
           ++i;
           continue;
         }
-#endif
+//#endif
         mPaths.erase(mPaths.begin()+i);
       } else {
         ++i;

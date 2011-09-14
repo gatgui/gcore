@@ -152,6 +152,10 @@ namespace gcore {
       static Date Minutes(int n);
       static Date Seconds(int n);
       
+      bool IsLeapYear(int year);
+      int DaysInYear(int year);
+      int DaysInMonth(int month, bool leapYear=false);
+      
     protected:
       
       struct tm mDateTime;

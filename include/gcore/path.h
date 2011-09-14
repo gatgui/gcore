@@ -28,6 +28,7 @@ USA.
 #include <gcore/string.h>
 #include <gcore/list.h>
 #include <gcore/platform.h>
+#include <gcore/date.h>
 
 namespace gcore {
   
@@ -92,6 +93,8 @@ namespace gcore {
       bool isFile() const;
       
       bool exists() const;
+      
+      Date lastModification() const;
       
       // file extension without .
       String getExtension() const;

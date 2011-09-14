@@ -230,6 +230,17 @@ namespace gcore {
     return tmp.join(mPaths);
   }
   
+  Date Path::lastModification() const {
+    Date lm;
+    struct stat st;
+    if (stat(mFullName.c_str(), &st) == 0) {
+      lm.set(st.st_mtime, false);
+    } else {
+      lm.set(0);
+    }
+    return lm;
+  }
+  
   bool Path::isDir() const {
 #ifdef _WIN32
     DWORD fa;

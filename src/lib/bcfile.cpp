@@ -5,38 +5,38 @@ namespace gcore
 
 void WriteInt32(std::ostream &os, long val)
 {
-   char buf[4];
-   buf[0] = val & 0x000000FF;
-   buf[1] = (val & 0x0000FF00) >> 8;
-   buf[2] = (val & 0x00FF0000) >> 16;
-   buf[3] = (val & 0xFF000000) >> 24;
-   os.write(buf, 4);
+   unsigned char buf[4];
+   buf[0] = (unsigned char)(val & 0x000000FF);
+   buf[1] = (unsigned char)((val & 0x0000FF00) >> 8);
+   buf[2] = (unsigned char)((val & 0x00FF0000) >> 16);
+   buf[3] = (unsigned char)((val & 0xFF000000) >> 24);
+   os.write((char*)buf, 4);
 }
 
 void WriteUint32(std::ostream &os, unsigned long val)
 {
-   char buf[4];
-   buf[0] = val & 0x000000FF;
-   buf[1] = (val & 0x0000FF00) >> 8;
-   buf[2] = (val & 0x00FF0000) >> 16;
-   buf[3] = (val & 0xFF000000) >> 24;
-   os.write(buf, 4);
+   unsigned char buf[4];
+   buf[0] = (unsigned char)(val & 0x000000FF);
+   buf[1] = (unsigned char)((val & 0x0000FF00) >> 8);
+   buf[2] = (unsigned char)((val & 0x00FF0000) >> 16);
+   buf[3] = (unsigned char)((val & 0xFF000000) >> 24);
+   os.write((char*)buf, 4);
 }
 
 void WriteInt16(std::ostream &os, short val)
 {
-   char buf[2];
-   buf[0] = val & 0x000000FF;
-   buf[1] = (val & 0x0000FF00) >> 8;
-   os.write(buf, 2);
+   unsigned char buf[2];
+   buf[0] = (unsigned char)(val & 0x000000FF);
+   buf[1] = (unsigned char)((val & 0x0000FF00) >> 8);
+   os.write((char*)buf, 2);
 }
 
 void WriteUint16(std::ostream &os, unsigned short val)
 {
-   char buf[2];
-   buf[0] = val & 0x000000FF;
-   buf[1] = (val & 0x0000FF00) >> 8;
-   os.write(buf, 2);
+   unsigned char buf[2];
+   buf[0] = (unsigned char)(val & 0x000000FF);
+   buf[1] = (unsigned char)((val & 0x0000FF00) >> 8);
+   os.write((char*)buf, 2);
 }
 
 void WriteFloat(std::ostream &os, float val)
@@ -53,7 +53,7 @@ void WriteString(std::ostream &os, const char *str)
 {
    char eos = '\0';
    size_t len = strlen(str);
-   WriteUint32(os, len+1);
+   WriteUint32(os, (unsigned long)len+1);
    os.write(str, len);
    os.write(&eos, 1);
 }
@@ -61,46 +61,60 @@ void WriteString(std::ostream &os, const char *str)
 void WriteString(std::ostream &os, const std::string &str)
 {
    char eos = '\0';
-   WriteUint32(os, str.length()+1);
+   WriteUint32(os, (unsigned long)str.length()+1);
    os.write(str.c_str(), str.length());
    os.write(&eos, 1);
 }
 
 bool ReadInt32(std::istream &is, long &val)
 {
-   char buf[4];
-   is.read(buf, 4);
-   val = (buf[0] +
-          (long(buf[1]) << 8) +
-          (long(buf[2]) << 16) +
-          (long(buf[3]) << 24));
+   unsigned char buf[4];
+   is.read((char*)buf, 4);
+   val = 0;
+   val |= buf[3];
+   val <<= 8;
+   val |= buf[2];
+   val <<= 8;
+   val |= buf[1];
+   val <<= 8;
+   val |= buf[0];
    return (!is.bad());
 }
 
 bool ReadUint32(std::istream &is, unsigned long &val)
 {
-   char buf[4];
-   is.read(buf, 4);
-   val = (buf[0] +
-          ((unsigned long)buf[1] << 8) +
-          ((unsigned long)buf[2] << 16) +
-          ((unsigned long)buf[3] << 24));
+   unsigned char buf[4];
+   is.read((char*)buf, 4);
+   val = 0;
+   val |= buf[3];
+   val <<= 8;
+   val |= buf[2];
+   val <<= 8;
+   val |= buf[1];
+   val <<= 8;
+   val |= buf[0];
    return (!is.bad());
 }
 
 bool ReadInt16(std::istream &is, short &val)
 {
-   char buf[2];
-   is.read(buf, 2);
-   val = (buf[0] + (short(buf[1]) << 8));
+   unsigned char buf[2];
+   is.read((char*)buf, 2);
+   val = 0;
+   val |= buf[1];
+   val <<= 8;
+   val |= buf[0];
    return (!is.bad());
 }
 
 bool ReadUint16(std::istream &is, unsigned short &val)
 {
-   char buf[2];
-   is.read(buf, 2);
-   val = (buf[0] + ((unsigned short)buf[1] << 8));
+   unsigned char buf[2];
+   is.read((char*)buf, 2);
+   val = 0;
+   val |= buf[1];
+   val <<= 8;
+   val |= buf[0];
    return (!is.bad());
 }
 
@@ -237,7 +251,7 @@ bool BCFile::write(const std::string &filepath) const
    }
    
    // BFC stands for "Binary File Container"
-   ofile.write("BFCv", 4);
+   ofile.write("BCFv", 4);
    // Major version
    WriteUint16(ofile, 0);
    // Minor version
@@ -256,12 +270,15 @@ bool BCFile::readTOC(const std::string &filepath)
 {
    char buffer[8];
    
-   mInFile.close();
+   if (mInFile.is_open())
+   {
+      mInFile.close();
+   }
    clearElements();
    
    mInFile.open(filepath.c_str(), std::ifstream::binary);
    
-   if (!mInFile.is_open())
+   if (!mInFile.good())
    {
       return false;
    }
@@ -276,7 +293,7 @@ bool BCFile::readTOC(const std::string &filepath)
       return false;
    }
    
-   if (!strncmp(buffer, "BFCv", 4))
+   if (!strncmp(buffer, "BCFv", 4))
    {
       unsigned short majVer, minVer;
 
@@ -379,13 +396,13 @@ void BCFile::write_0_1(std::ofstream &ofile, size_t baseOff) const
       ++elt;
    }
    
-   WriteUint32(ofile, mElements.size());
+   WriteUint32(ofile, (unsigned long)mElements.size());
    
    elt = mElements.begin();
    while (elt != mElements.end())
    {
       WriteString(ofile, elt->first);
-      WriteUint32(ofile, baseOff);
+      WriteUint32(ofile, (unsigned long)baseOff);
       baseOff += elt->second->getByteSize();
       ++elt;
    }

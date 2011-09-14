@@ -124,6 +124,30 @@ Date Date::Seconds(int n) {
   return Date(n, true);
 }
 
+bool Date::IsLeapYear(int year) {
+  return (((year % 4) == 0 && (year % 100) != 0) || (year % 400) == 0);
+}
+
+int Date::DaysInYear(int year) {
+  return (IsLeapYear(year) ? 366 : 365);
+}
+
+int Date::DaysInMonth(int month, bool leapYear) {
+  static int sDaysInMonth[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+  
+  if (month < 0 || month > 11) {
+    return 0;
+  }
+  
+  int ndays = sDaysInMonth[month];
+  
+  if (month == 1 && leapYear) {
+    ndays += 1;
+  }
+  
+  return ndays;
+}
+
 Date::Date() {
   set(time(NULL), false);
 }

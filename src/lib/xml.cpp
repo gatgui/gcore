@@ -414,14 +414,12 @@ void XMLDoc::write(std::ostream &os) const {
   }
 }
 
-bool XMLDoc::read(const String &fileName) {
+bool XMLDoc::read(std::istream &is) {
   
-  FILE *file = fopen(fileName.c_str(), "rb");
-  
-  if (!file) {
+  if (is.good()) {
     return false;
   }
-  
+
   enum {
     READ_OPEN = 0,
     READ_COMMENT,
@@ -430,32 +428,43 @@ bool XMLDoc::read(const String &fileName) {
     READ_CLOSING_ELEMENT,
     READ_HEADER,
   } state = READ_OPEN;
-  
+
   String pending;
-  
+
   char readBuffer[1024];
   char pendingBuffer[1024];
   size_t nLastChar = 0;
   char lastChars[16];
   size_t nread = 0;
-  
+
   XMLElement *root = 0; // only one allowed, if set all other elements are child
   XMLElement *cur = 0;
-  
-  
+
   // read 7 chars less you'll see after
-  while ((nread = fread(readBuffer, 1, 1024-7, file)) != 0) {
+  //while ((nread = fread(readBuffer, 1, 1024-7, file)) != 0) {
+  while (is.good()) {
     
+    is.read(readBuffer, 1024-7);
+    if (is.bad()) {
+      goto failed;
+    }
+    // fail and eof both set if we reached eof
+    nread = is.gcount();
+    
+    if (nread == 0) {
+      break;
+    }
+
     char *eob = readBuffer + nread;
-    
+
     char *p0 = readBuffer;
-    
+
     while (p0 < eob) {
-      
+
       if (state == READ_OPEN) {
-        
+
         char *p1 = p0;
-        
+
         // advance position until we reach the end of the buffer or the '<' char
         while (p1 != eob) {
           if (*p1 == '<') {
@@ -463,15 +472,15 @@ bool XMLDoc::read(const String &fileName) {
           }
           ++p1;
         }
-        
+
         size_t plen = p1 - p0;
         memcpy(pendingBuffer, p0, plen);
         pendingBuffer[plen] = '\0';
         //std::cerr << "READ_OPEN | Add: \"" << pendingBuffer << "\" to pending buffer" << std::endl;
         pending += pendingBuffer;
-        
+
         if (p1 != eob) {
-        
+
           // add the pending buffer as text to the current element
           if (cur) {
             // if only spaces do not add
@@ -482,10 +491,10 @@ bool XMLDoc::read(const String &fileName) {
             }
           }
           pending = "";
-          
+
           // we found the '<' char check following char
           if ((p1+1) == eob) {
-            
+
             // need to read more to decide what we want to read
             // std::cerr << "Read a new full line" << std::endl;
             nLastChar = eob - readBuffer;
@@ -493,85 +502,97 @@ bool XMLDoc::read(const String &fileName) {
               nLastChar = 16;
             }
             memcpy(lastChars, eob-nLastChar, nLastChar);
-            
-            nread = fread(readBuffer, 1, 1024-7, file);
-            if (nread == 0) {
+
+            //nread = fread(readBuffer, 1, 1024-7, file);
+            //if (nread == 0) {
+            //  std::cerr << "Invalid XML file: non-closed <" << std::endl;
+            //  goto failed;
+            //}
+            is.read(readBuffer, 1024-7);
+            nread = is.gcount();
+            if (is.bad() || nread == 0) {
               std::cerr << "Invalid XML file: non-closed <" << std::endl;
               goto failed;
             }
-            
+
             eob = readBuffer + nread;
             p0 = readBuffer;
             p1 = p0;
-          
+
           } else {
             ++p1;
           }
-            
+
           if (*p1 == '?') {
             ++p1;
             state = READ_HEADER;
-            
+
           } else if (*p1 == '!') {
             // could be "<!-- ... -->" or "<![CDATA[ ... ]]>"
             // need at most 7 more characters to decide ( == len("[CDATA[") )
-            
+
             size_t remain = eob - p1 - 1;
-            
+
             if (remain < 7) {
               // read required number of characters, at most 7 (we always leave place for 7)
-              size_t nr = fread(p1+2, 7-remain, 1, file);
               
+              //size_t nr = fread(p1+2, 7-remain, 1, file);
+              is.read(p1+2, 7-remain);
+              if (is.bad()) {
+                goto failed;
+              }
+              size_t nr = is.gcount();
+
               nread += nr;
               eob += nr;
-              
+
               remain = eob - p1 - 1;
             }
-            
+
             if (remain < 2) {
               std::cerr << "Invalid XML file: invalid <! construct" << std::endl;
               goto failed;
-            
+
             } else if (*(p1+1) == '-' && *(p1+2) == '-') {
               p1 += 3;
               state = READ_COMMENT;
-              
+
             } else if (remain >= 7) {
-              
+
               if (!strncmp(p1, "![CDATA[", 8)) {
                 p1 += 8;
                 state = READ_CDATA;
-              
+
               } else {
                 std::cerr << "Invalid XML file: invalid <! construct" << std::endl;
                 goto failed;
               }
-              
+
             } else {
-            
+
               std::cerr << "Invalid XML file: invalid <! construct" << std::endl;
             }
-          
+
           } else if (*p1 == '/') {
             p1 += 1;
             state = READ_CLOSING_ELEMENT;
-          
+
           } else {
             state = READ_ELEMENT;
-            
+
           }
         }
-        
+
         p0 = p1;
-        
+
       } else if (state == READ_HEADER) {
-        
+
         char *p1 = p0;
-        
+
         // advance position until we reach the end of the buffer or the '<' char
         while (p1 != eob) {
           if (*p1 == '>') {
-            
+
             if (p1 - 1 >= readBuffer) {
               if (*(p1 - 1) != '?') {
                 std::cerr << "Invalid XML file: expected '?>' (1)" << std::endl;
@@ -583,17 +604,17 @@ bool XMLDoc::read(const String &fileName) {
                 goto failed;
               }
             }
-            
+
             break;
           }
           ++p1;
         }
-        
+
         size_t plen = p1 - p0;
         memcpy(pendingBuffer, p0, plen);
         pendingBuffer[plen] = '\0';
         pending += pendingBuffer;
-        
+
         if (p1 != eob) {
           ++p1;
           // remove last ? characters
@@ -605,19 +626,19 @@ bool XMLDoc::read(const String &fileName) {
           pending = "";
           state = READ_OPEN;
         }
-        
+
         p0 = p1;
-        
+
       } else if (state == READ_CDATA) {
-        
+
         char *p1 = p0;
-        
+
         // advance position until we reach the end of the buffer or the '<' char
         while (p1 != eob) {
           if (*p1 == '>') {
-            
+
             bool found = false;
-            
+
             if (p1 - 1 >= readBuffer) {
               if (*(p1 - 1) == ']') {
                 found = true;
@@ -627,11 +648,11 @@ bool XMLDoc::read(const String &fileName) {
                 found = true;
               }
             }
-            
+
             if (found) {
-              
+
               found = false;
-              
+
               if (p1 - 2 >= readBuffer) {
                 if (*(p1 - 2) == ']') {
                   found = true;
@@ -642,19 +663,19 @@ bool XMLDoc::read(const String &fileName) {
                 }
               }
             }
-            
+
             if (found) {
               break;
             }
           }
           ++p1;
         }
-        
+
         size_t plen = p1 - p0;
         memcpy(pendingBuffer, p0, plen);
         pendingBuffer[plen] = '\0';
         pending += pendingBuffer;
-        
+
         if (p1 != eob) {
           ++p1;
           // remove the last ]] characters
@@ -668,20 +689,20 @@ bool XMLDoc::read(const String &fileName) {
           pending = "";
           state = READ_OPEN;
         }
-        
+
         p0 = p1;
-        
+
       } else if (state == READ_COMMENT) {
-        
+
         char *p1 = p0;
-        
+
         // advance position until we reach the end of the buffer or the '<' char
         while (p1 != eob) {
-          
+
           if (*p1 == '>') {
-            
+
             bool found = false;
-            
+
             if (p1 - 1 >= readBuffer) {
               if (*(p1 - 1) == '-') {
                 found = true;
@@ -691,11 +712,11 @@ bool XMLDoc::read(const String &fileName) {
                 found = true;
               }
             }
-            
+
             if (found) {
-              
+
               found = false;
-              
+
               if (p1 - 2 >= readBuffer) {
                 if (*(p1 - 2) == '-') {
                   found = true;
@@ -706,19 +727,19 @@ bool XMLDoc::read(const String &fileName) {
                 }
               }
             }
-            
+
             if (found) {
               break;
             }
           }
           ++p1;
         }
-        
+
         size_t plen = p1 - p0;
         memcpy(pendingBuffer, p0, plen);
         pendingBuffer[plen] = '\0';
         pending += pendingBuffer;
-        
+
         if (p1 != eob) {
           ++p1;
           // remove the last 2 characters '--'
@@ -731,14 +752,14 @@ bool XMLDoc::read(const String &fileName) {
           pending = "";
           state = READ_OPEN;
         }
-        
+
         // previous chars must be --
         p0 = p1;
-        
+
       } else if (state == READ_ELEMENT) {
-        
+
         char *p1 = p0;
-        
+
         // advance position until we reach the end of the buffer or the '<' char
         while (p1 != eob) {
           if (*p1 == '>') {
@@ -746,81 +767,81 @@ bool XMLDoc::read(const String &fileName) {
           }
           ++p1;
         }
-        
+
         size_t plen = p1 - p0;
         memcpy(pendingBuffer, p0, plen);
         pendingBuffer[plen] = '\0';
         pending += pendingBuffer;
-        
+
         if (p1 != eob) {
           ++p1;
-          
+
           if (pending.length() == 0) {
             std::cerr << "Invalid XML file: empty element" << std::endl;
             goto failed;
           }
-          
+
           bool close = (pending[pending.length()-1] == '/');
           if (close) {
             // remove last / if any
             pending.erase(pending.length()-1, 1);
           }
-          
+
           char *ts = (char*) pending.c_str();
           char *te = ts + pending.length();
           char *tc = SkipNonWS(ts, te);
           size_t len = tc - ts;
-          
+
           if (len == 0) {
             std::cerr << "Invalid XML file: invalid element name" << std::endl;
             goto failed;
           } 
-          
+
           String tag = pending.substr(0, len);
-          
+
           XMLElement *elem = new XMLElement(tag);
-          
+
           while (tc < te) {
-            
+
             tc = SkipWS(tc, te);
             if (tc >= te) {
               break;
             }
-            
+
             size_t o = tc - ts;
             size_t p = pending.find('=', o);
-            
+
             if (p == String::npos) {
               std::cerr << "Invalid XML file: missing = for attribute" << std::endl;
               delete elem;
               goto failed;
             }
-            
+
             String attr = pending.substr(o, p-o);
             if (!IsValidAttribute(attr)) {
               std::cerr << "Invalid XML file: invalid attribute name \"" << attr << "\"" << std::endl;
               delete elem;
               goto failed;
             }
-            
+
             ++p;
-            
+
             if (p >= pending.length()) {
               std::cerr << "Invalid XML file: no value for attribute" << std::endl;
               delete elem;
               goto failed;
             }
-            
+
             if (pending[p] != '"' && pending[p] != '\'') {
               std::cerr << "Invalid XML file: missing opening \" or ' for attribute" << std::endl;
               delete elem;
               goto failed;
             }
-            
+
             char quoteChar = pending[p];
-            
+
             ++p;
-            
+
             size_t e = pending.find(quoteChar, p);
             while (e != String::npos) {
               if (pending[e-1] == '\\') {
@@ -829,7 +850,7 @@ bool XMLDoc::read(const String &fileName) {
                 break;
               }
             }
-            
+
             if (e == String::npos) {
               //std::cerr << "Invalid XML file: missing closing \" for attribute" << std::endl;
               std::string cc;
@@ -838,14 +859,14 @@ bool XMLDoc::read(const String &fileName) {
               delete elem;
               goto failed;
             }
-            
+
             String val = pending.substr(p, e-p);
-            
+
             elem->setAttribute(attr, RemoveEntities(val));
-            
+
             tc = ts + e + 1;
           }
-          
+
           if (close) {
             if (cur) {
               cur->addChild(elem);
@@ -859,17 +880,17 @@ bool XMLDoc::read(const String &fileName) {
           if (!root) {
             root = elem;
           }
-          
+
           pending = "";
           state = READ_OPEN;
         }
-        
+
         p0 = p1;
-        
+
       } else if (state == READ_CLOSING_ELEMENT) {
-        
+
         char *p1 = p0;
-        
+
         // advance position until we reach the end of the buffer or the '<' char
         while (p1 != eob) {
           if (*p1 == '>') {
@@ -877,44 +898,44 @@ bool XMLDoc::read(const String &fileName) {
           }
           ++p1;
         }
-        
+
         size_t plen = p1 - p0;
         memcpy(pendingBuffer, p0, plen);
         pendingBuffer[plen] = '\0';
         pending += pendingBuffer;
-        
+
         if (p1 != eob) {
           ++p1;
-          
+
           if (!cur) {
             std::cerr << "Invalid XML file: Closing tag \"" << pending
                       << "\" has no counter-part opening" << std::endl;
             goto failed; 
           }
-          
+
           if (cur->getTag() != pending) {
             std::cerr << "Invalid XML file: Colsing tag \"" << pending
                       << "\" mismatches opening \"" << cur->getTag() << "\"" << std::endl;
             goto failed;
           }
-          
+
           //std::cerr << "Closing element: \"" << pending << "\"" << std::endl;
-          
+
           cur = cur->getParent();
-          
+
           pending = "";
           state = READ_OPEN;
         }
-        
+
         p0 = p1;
-        
+
       } else {
-        
+
         std::cerr << "Invalid parser state" << std::endl;
         goto failed;
       }
     }
-    
+
     // do we have 16 characters
     nLastChar = eob - readBuffer;
     if (nLastChar > 16) {
@@ -922,11 +943,13 @@ bool XMLDoc::read(const String &fileName) {
     }
     memcpy(lastChars, eob-nLastChar, nLastChar);  
   }
-    
-  fclose(file);
-  
+
+  if (state != READ_OPEN) {
+    goto failed;
+  }
+
   setRoot(root);
-  
+  //fclose(file);
   return true;
 
 failed:
@@ -937,7 +960,15 @@ failed:
       delete cur;
     }
   }
+  //if (file) {
+  //  fclose(file);
+  //}
   return false;
+}
+
+bool XMLDoc::read(const String &fileName) {
+  std::ifstream ifs(fileName.c_str(), std::ifstream::binary);
+  return read(ifs);
 }
 
 }

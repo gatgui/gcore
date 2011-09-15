@@ -949,6 +949,11 @@ bool XMLDoc::read(std::istream &is) {
     std::cerr << "Invalid XML: Missing closing tag" << std::endl;
     goto failed;
   }
+  
+  if (root == NULL) {
+    std::cerr << "Invalid XML: No root tag found" << std::endl;
+    return false;
+  }
 
   setRoot(root);
   //fclose(file);

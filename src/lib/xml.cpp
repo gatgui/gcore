@@ -416,7 +416,8 @@ void XMLDoc::write(std::ostream &os) const {
 
 bool XMLDoc::read(std::istream &is) {
   
-  if (is.good()) {
+  if (!is.good()) {
+    std::cerr << "Invalid XML: bad stream" << std::endl;
     return false;
   }
 
@@ -511,7 +512,7 @@ bool XMLDoc::read(std::istream &is) {
             is.read(readBuffer, 1024-7);
             nread = is.gcount();
             if (is.bad() || nread == 0) {
-              std::cerr << "Invalid XML file: non-closed <" << std::endl;
+              std::cerr << "Invalid XML: Unclosed <" << std::endl;
               goto failed;
             }
 
@@ -550,7 +551,7 @@ bool XMLDoc::read(std::istream &is) {
             }
 
             if (remain < 2) {
-              std::cerr << "Invalid XML file: invalid <! construct" << std::endl;
+              std::cerr << "Invalid XML: Invalid <! construct" << std::endl;
               goto failed;
 
             } else if (*(p1+1) == '-' && *(p1+2) == '-') {
@@ -564,13 +565,13 @@ bool XMLDoc::read(std::istream &is) {
                 state = READ_CDATA;
 
               } else {
-                std::cerr << "Invalid XML file: invalid <! construct" << std::endl;
+                std::cerr << "Invalid XML: Invalid <! construct" << std::endl;
                 goto failed;
               }
 
             } else {
 
-              std::cerr << "Invalid XML file: invalid <! construct" << std::endl;
+              std::cerr << "Invalid XML: Invalid <! construct" << std::endl;
             }
 
           } else if (*p1 == '/') {
@@ -595,12 +596,12 @@ bool XMLDoc::read(std::istream &is) {
 
             if (p1 - 1 >= readBuffer) {
               if (*(p1 - 1) != '?') {
-                std::cerr << "Invalid XML file: expected '?>' (1)" << std::endl;
+                std::cerr << "Invalid XML: Expected '?>' (1)" << std::endl;
                 goto failed;
               }
             } else {
               if (nLastChar < 1 || lastChars[15] != '?') {
-                std::cerr << "Invalid XML file: expected '?>' (2)" << std::endl;
+                std::cerr << "Invalid XML: Expected '?>' (2)" << std::endl;
                 goto failed;
               }
             }
@@ -619,7 +620,7 @@ bool XMLDoc::read(std::istream &is) {
           ++p1;
           // remove last ? characters
           if (pending.length() < 1) {
-            std::cerr << "Invalid XML file: missing ? closing character" << std::endl;
+            std::cerr << "Invalid XML: Missing ? closing character" << std::endl;
             goto failed;
           }
           pending.erase(pending.length()-1, 1);
@@ -680,7 +681,7 @@ bool XMLDoc::read(std::istream &is) {
           ++p1;
           // remove the last ]] characters
           if (pending.length() < 2) {
-            std::cerr << "Invalid XML file: missing CDATA ]] closing characters" << std::endl;
+            std::cerr << "Invalid XML: Missing CDATA ]] closing characters" << std::endl;
             goto failed;
           }
           pending.erase(pending.length()-2, 2);
@@ -744,7 +745,7 @@ bool XMLDoc::read(std::istream &is) {
           ++p1;
           // remove the last 2 characters '--'
           if (pending.length() < 2) {
-            std::cerr << "Invalid XML file: missing comment -- closing characters" << std::endl;
+            std::cerr << "Invalid XML: Missing comment -- closing characters" << std::endl;
             goto failed;
           }
           pending.erase(pending.length()-2, 2);
@@ -777,7 +778,7 @@ bool XMLDoc::read(std::istream &is) {
           ++p1;
 
           if (pending.length() == 0) {
-            std::cerr << "Invalid XML file: empty element" << std::endl;
+            std::cerr << "Invalid XML: Empty element" << std::endl;
             goto failed;
           }
 
@@ -793,7 +794,7 @@ bool XMLDoc::read(std::istream &is) {
           size_t len = tc - ts;
 
           if (len == 0) {
-            std::cerr << "Invalid XML file: invalid element name" << std::endl;
+            std::cerr << "Invalid XML: Invalid element name" << std::endl;
             goto failed;
           } 
 
@@ -812,14 +813,14 @@ bool XMLDoc::read(std::istream &is) {
             size_t p = pending.find('=', o);
 
             if (p == String::npos) {
-              std::cerr << "Invalid XML file: missing = for attribute" << std::endl;
+              std::cerr << "Invalid XML: Missing = for attribute" << std::endl;
               delete elem;
               goto failed;
             }
 
             String attr = pending.substr(o, p-o);
             if (!IsValidAttribute(attr)) {
-              std::cerr << "Invalid XML file: invalid attribute name \"" << attr << "\"" << std::endl;
+              std::cerr << "Invalid XML: Invalid attribute name \"" << attr << "\"" << std::endl;
               delete elem;
               goto failed;
             }
@@ -827,13 +828,13 @@ bool XMLDoc::read(std::istream &is) {
             ++p;
 
             if (p >= pending.length()) {
-              std::cerr << "Invalid XML file: no value for attribute" << std::endl;
+              std::cerr << "Invalid XML: No value for attribute" << std::endl;
               delete elem;
               goto failed;
             }
 
             if (pending[p] != '"' && pending[p] != '\'') {
-              std::cerr << "Invalid XML file: missing opening \" or ' for attribute" << std::endl;
+              std::cerr << "Invalid XML: Missing opening \" or ' for attribute" << std::endl;
               delete elem;
               goto failed;
             }
@@ -855,7 +856,7 @@ bool XMLDoc::read(std::istream &is) {
               //std::cerr << "Invalid XML file: missing closing \" for attribute" << std::endl;
               std::string cc;
               cc.push_back(quoteChar);
-              std::cerr << "Invalid XML file: missing closing " << quoteChar << " for attribute" << std::endl;
+              std::cerr << "Invalid XML: Missing closing " << quoteChar << " for attribute" << std::endl;
               delete elem;
               goto failed;
             }
@@ -908,13 +909,13 @@ bool XMLDoc::read(std::istream &is) {
           ++p1;
 
           if (!cur) {
-            std::cerr << "Invalid XML file: Closing tag \"" << pending
+            std::cerr << "Invalid XML: Closing tag \"" << pending
                       << "\" has no counter-part opening" << std::endl;
             goto failed; 
           }
 
           if (cur->getTag() != pending) {
-            std::cerr << "Invalid XML file: Colsing tag \"" << pending
+            std::cerr << "Invalid XML: Closing tag \"" << pending
                       << "\" mismatches opening \"" << cur->getTag() << "\"" << std::endl;
             goto failed;
           }
@@ -931,7 +932,7 @@ bool XMLDoc::read(std::istream &is) {
 
       } else {
 
-        std::cerr << "Invalid parser state" << std::endl;
+        std::cerr << "Invalid XML parser state" << std::endl;
         goto failed;
       }
     }
@@ -945,6 +946,7 @@ bool XMLDoc::read(std::istream &is) {
   }
 
   if (state != READ_OPEN) {
+    std::cerr << "Invalid XML: Missing closing tag" << std::endl;
     goto failed;
   }
 

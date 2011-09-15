@@ -70,7 +70,7 @@ namespace gcore
       {
       public:
          
-         ElementPlaceHolder(unsigned long off);
+         ElementPlaceHolder(unsigned long off, size_t sz=0);
          virtual ~ElementPlaceHolder();
 
          virtual size_t getByteSize() const;
@@ -84,6 +84,8 @@ namespace gcore
       protected:
          
          unsigned long mOffset;
+         size_t mSize;
+         char *mContent;
       };
    
    public:
@@ -96,7 +98,7 @@ namespace gcore
       bool hasElement(const std::string &name) const;
       bool readElement(const std::string &name, BCFileElement *elt);
 
-      bool write(const std::string &filepath) const;
+      bool write(const std::string &filepath, bool preserveData) const;
       // no read function, as we need the FileElement handlers to read properly
       // just bookkeep the offset if the different elements
       // -> that's the reason an internal file object is kept
@@ -108,15 +110,21 @@ namespace gcore
 
       // write file version 0.1
       void write_0_1(std::ofstream &ofile, size_t baseOff) const;
-
+      
+      // write file version 0.2
+      void write_0_2(std::ofstream &ofile, size_t baseOff) const;      
+      
       // read file version 0.1 TOC
       bool read_0_1(std::ifstream &ifile);
+      
+      // read file version 0.2 TOC
+      bool read_0_2(std::ifstream &ifile);
 
    protected:
 
-      std::map<std::string, BCFileElement*> mElements;
-      std::ifstream mInFile;
-      std::vector<ElementPlaceHolder*> mPlaceHolders;
+      mutable std::map<std::string, BCFileElement*> mElements;
+      mutable std::ifstream mInFile;
+      mutable std::vector<ElementPlaceHolder*> mPlaceHolders;
    };
    
 }

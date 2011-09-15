@@ -162,36 +162,61 @@ bool ReadString(std::istream &is, std::string &str)
 
 // ---
 
-BCFile::ElementPlaceHolder::ElementPlaceHolder(unsigned long off)
-   : mOffset(off)
+BCFile::ElementPlaceHolder::ElementPlaceHolder(unsigned long off, size_t sz)
+   : mOffset(off), mSize(sz), mContent(0)
 {
 }
 
 BCFile::ElementPlaceHolder::~ElementPlaceHolder()
 {
+   if (mContent)
+   {
+      delete[] mContent;
+      mContent = 0;
+   }
 }
 
 size_t BCFile::ElementPlaceHolder::getByteSize() const
 {
-   return 0;
+   return mSize;
 }
 
 void BCFile::ElementPlaceHolder::writeHeader(std::ostream &) const
 {
 }
 
-void BCFile::ElementPlaceHolder::write(std::ostream &) const
+void BCFile::ElementPlaceHolder::write(std::ostream &os) const
 {
+   if (mSize > 0 && mContent != 0)
+   {
+      os.write(mContent, mSize);
+   }
 }
 
 bool BCFile::ElementPlaceHolder::readHeader(std::istream &)
 {
-   return false;
+   return true;
 }
 
-bool BCFile::ElementPlaceHolder::read(std::istream &)
+bool BCFile::ElementPlaceHolder::read(std::istream &is)
 {
-   return false;
+   if (mSize > 0)
+   {
+      if (mContent == 0)
+      {
+         mContent = new char[mSize];
+         is.read(mContent, mSize);
+         return (is.good());
+      }
+      else
+      {
+         return true;
+      }
+   }
+   else
+   {
+      return false;
+   }
 }
 
 unsigned long BCFile::ElementPlaceHolder::offset() const
@@ -241,8 +266,47 @@ bool BCFile::hasElement(const std::string &name) const
    return (mElements.find(name) != mElements.end());
 }
 
-bool BCFile::write(const std::string &filepath) const
+bool BCFile::write(const std::string &filepath, bool preserveData) const
 {
+   // first read all placeholders data if mInFile is open
+   if (preserveData && mInFile.is_open())
+   {
+      std::cerr << "Read any pending placeholder" << std::endl;
+      std::map<std::string, BCFileElement*>::iterator elt = mElements.begin();
+      while (elt != mElements.end())
+      {
+         ElementPlaceHolder *feph = dynamic_cast<ElementPlaceHolder*>(elt->second);
+         if (feph)
+         {
+            std::cerr << "Read \"" << elt->first << "\" placeholder content (" << feph->getByteSize() << ")" << std::endl;
+            mInFile.seekg(feph->offset(), std::ios::beg);
+            if (!mInFile.good() || !feph->read(mInFile))
+            {
+               std::cout << "Could not read content, remove from container" << std::endl;
+               
+               // remove element
+               std::map<std::string, BCFileElement*>::iterator tmp = elt;
+               ++elt;
+               mElements.erase(tmp);
+               
+               // delete placeholder
+               std::vector<ElementPlaceHolder*>::iterator ph = std::find(mPlaceHolders.begin(), mPlaceHolders.end(), feph);
+               if (ph != mPlaceHolders.end())
+               {
+                  mPlaceHolders.erase(ph);
+               }
+               delete feph;
+               
+               // clear file error and continue looping for place holders
+               mInFile.clear();
+               
+               continue;
+            }
+         }
+         ++elt;
+      }
+   }
+   
    std::ofstream ofile(filepath.c_str(), std::ofstream::binary);
 
    if (!ofile.is_open())
@@ -255,11 +319,11 @@ bool BCFile::write(const std::string &filepath) const
    // Major version
    WriteUint16(ofile, 0);
    // Minor version
-   WriteUint16(ofile, 1);
+   WriteUint16(ofile, 2);
    
    size_t baseOff = 8; // 4 char + 2 shorts
    
-   write_0_1(ofile, baseOff);
+   write_0_2(ofile, baseOff);
    
    ofile.close();
    
@@ -308,7 +372,12 @@ bool BCFile::readTOC(const std::string &filepath)
       {
          if (minVer == 1)
          {
+            std::cerr << "Read TOC 0.1" << std::endl;
             rv = read_0_1(mInFile);
+         }
+         else if (minVer == 2)
+         {
+            rv = read_0_2(mInFile);
          }
       }
    }
@@ -416,6 +485,47 @@ void BCFile::write_0_1(std::ofstream &ofile, size_t baseOff) const
    }
 }
 
+// write file version 0.2
+void BCFile::write_0_2(std::ofstream &ofile, size_t baseOff) const
+{
+   baseOff += 4; // number of elements
+   
+   std::map<std::string, BCFileElement*>::const_iterator elt = mElements.begin();
+   
+   // optimize that by calculating index size as elements are added
+   while (elt != mElements.end())
+   {
+      baseOff += 4; // element name length
+      baseOff += elt->first.length() + 1; // element name (includes the \0)
+      baseOff += 4; // element data offset in file
+      baseOff += 4; // element size
+      ++elt;
+   }
+   
+   WriteUint32(ofile, (unsigned long)mElements.size());
+   
+   size_t sz;
+   
+   elt = mElements.begin();
+   while (elt != mElements.end())
+   {
+      sz = elt->second->getByteSize();
+      WriteString(ofile, elt->first);
+      WriteUint32(ofile, (unsigned long)baseOff);
+      WriteUint32(ofile, (unsigned long)sz);
+      baseOff += sz;
+      ++elt;
+   }
+   
+   elt = mElements.begin();
+   while (elt != mElements.end())
+   {
+      elt->second->writeHeader(ofile);
+      elt->second->write(ofile);
+      ++elt;
+   }
+}
+
 // read file version 0.1 TOC
 bool BCFile::read_0_1(std::ifstream &ifile)
 {
@@ -450,6 +560,51 @@ bool BCFile::read_0_1(std::ifstream &ifile)
       }
       
       mPlaceHolders.push_back(new ElementPlaceHolder(off));
+      mElements[name] = mPlaceHolders.back();
+   }
+     
+   return true;
+}
+
+// read file version 0.2 TOC
+bool BCFile::read_0_2(std::ifstream &ifile)
+{
+   // if any ElementPlaceHolder -> delete them
+   clearElements();
+   
+   unsigned long nelems = 0;
+   if (!ReadUint32(ifile, nelems) || ifile.eof())
+   {
+      return false;
+   }
+   
+   unsigned long off, sz;
+   
+   for (unsigned long i=0; i<nelems; ++i)
+   {
+      std::string name; // ReadString if dubious
+      
+      if (ifile.eof())
+      {
+         return false;
+      }
+      
+      if (!ReadString(ifile, name) || ifile.eof())
+      {
+         return false;
+      }
+      
+      if (!ReadUint32(ifile, off))
+      {
+         return false;
+      }
+      
+      if (!ReadUint32(ifile, sz))
+      {
+         return false;
+      }
+      
+      mPlaceHolders.push_back(new ElementPlaceHolder(off, sz));
       mElements[name] = mPlaceHolders.back();
    }
      

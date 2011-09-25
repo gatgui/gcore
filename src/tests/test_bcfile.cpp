@@ -271,7 +271,7 @@ int main(int, char**)
 
    fc.addElement("vertices", &verts);
    fc.addElement("polygons", &polys);
-   fc.write("./test.bfc");
+   fc.write("./test.bfc", false);
 
    fc.clearElements();
 

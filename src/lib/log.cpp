@@ -28,9 +28,41 @@
 
 static std::string MakeTermCode(int cmd, int fg, int bg)
 {
-   char tmp[13];
-   sprintf(tmp, "%c[%d;%d;%dm", 0x1B, cmd, TERM_COL_FGBASE+fg, TERM_COL_BGBASE+bg);
-   return tmp;
+   //char tmp[13];
+   //sprintf(tmp, "%c[%d;%d;%dm", 0x1B, cmd, TERM_COL_FGBASE+fg, TERM_COL_BGBASE+bg);
+   //return tmp;
+   char tmp[16];
+   
+   std::string code;
+   bool needSep = false;
+   code = "\033[";
+   if (cmd >= 0)
+   {
+      sprintf(tmp, "%d", cmd);
+      code += tmp;
+      needSep = true;
+   }
+   if (fg >= 0)
+   {
+      if (needSep)
+      {
+         code += ";";
+      }
+      sprintf(tmp, "%d", TERM_COL_FGBASE + fg);
+      code += tmp;
+      needSep = true;
+   }
+   if (bg >= 0)
+   {
+      if (needSep)
+      {
+         code += ";";
+      }
+      sprintf(tmp, "%d", TERM_COL_BGBASE + bg);
+      code += tmp;
+   }
+   code += "m";
+   return code;
 }
 
 #endif
@@ -262,8 +294,8 @@ void Log::print(Level lvl, const char *msg) const
 #ifdef _WIN32
          // TODO
 #else
-         heading += MakeTermCode(TERM_CMD_RESET, TERM_COL_RED, TERM_COL_BLACK);
-         trailing = MakeTermCode(TERM_CMD_RESET, TERM_COL_WHITE, TERM_COL_BLACK);
+         heading += MakeTermCode(-1, TERM_COL_RED, -1);
+         trailing = MakeTermCode(TERM_CMD_RESET, -1, -1);
 #endif
       }
       break;
@@ -272,8 +304,8 @@ void Log::print(Level lvl, const char *msg) const
 #ifdef _WIN32
          // TODO
 #else
-         heading += MakeTermCode(TERM_CMD_RESET, TERM_COL_YELLOW, TERM_COL_BLACK);
-         trailing = MakeTermCode(TERM_CMD_RESET, TERM_COL_WHITE, TERM_COL_BLACK);
+         heading += MakeTermCode(-1, TERM_COL_YELLOW, -1);
+         trailing = MakeTermCode(TERM_CMD_RESET, -1, -1);
 #endif
       break;
    case DEBUG:
@@ -281,8 +313,8 @@ void Log::print(Level lvl, const char *msg) const
 #ifdef _WIN32
          // TODO
 #else
-         heading += MakeTermCode(TERM_CMD_RESET, TERM_COL_CYAN, TERM_COL_BLACK);
-         trailing = MakeTermCode(TERM_CMD_RESET, TERM_COL_WHITE, TERM_COL_BLACK);
+         heading += MakeTermCode(-1, TERM_COL_CYAN, -1);
+         trailing = MakeTermCode(TERM_CMD_RESET, -1, -1);
 #endif
       break;
    case INFO:

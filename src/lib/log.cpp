@@ -281,10 +281,17 @@ void Log::print(Level lvl, const char *msg) const
       return;
    }
    
-   Date now;
    String heading = "";
+   String ts = "";
    String trailing = "";
    StringList lines;
+   
+   if (mTimeStamps)
+   {
+      Date now;
+      ts = now.format("%y/%m/%d %H:%M:%S");
+      ts += " ";
+   }
    
    bool useColors = (!mToFile && mColors);
    
@@ -300,7 +307,7 @@ void Log::print(Level lvl, const char *msg) const
          trailing = MakeTermCode(TERM_CMD_RESET, -1, -1);
 #endif
       }
-      heading += "[  ERROR  ] ";
+      heading += ts + "[  ERROR  ] ";
       break;
    case WARNING:
 #ifdef _WIN32
@@ -309,7 +316,7 @@ void Log::print(Level lvl, const char *msg) const
          heading += MakeTermCode(-1, TERM_COL_YELLOW, -1);
          trailing = MakeTermCode(TERM_CMD_RESET, -1, -1);
 #endif
-      heading += "[ WARNING ] ";
+      heading += ts + "[ WARNING ] ";
       break;
    case DEBUG:
 #ifdef _WIN32
@@ -318,18 +325,12 @@ void Log::print(Level lvl, const char *msg) const
          heading += MakeTermCode(-1, TERM_COL_CYAN, -1);
          trailing = MakeTermCode(TERM_CMD_RESET, -1, -1);
 #endif
-      heading += "[  DEBUG  ] ";
+      heading += ts + "[  DEBUG  ] ";
       break;
    case INFO:
    default:
-      heading += "[         ] ";
+      heading += ts + "[         ] ";
       break;
-   }
-   
-   if (mTimeStamps)
-   {
-      heading += now.format("%y/%m/%d %H:%M:%S");
-      heading += " ";
    }
    
    for (unsigned int i=0; i<mIndentLevel; ++i)

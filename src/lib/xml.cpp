@@ -22,6 +22,7 @@ USA.
 */
 
 #include <gcore/xml.h>
+#include <gcore/log.h>
 
 namespace gcore {
 
@@ -167,7 +168,7 @@ XMLElement::~XMLElement() {
 bool XMLElement::addChild(XMLElement *elt) {
   if (elt->mParent) {
     if (elt->mParent != this) {
-      std::cerr << "Element already has differennt parent" << std::endl;
+      Log::PrintError("[gcore] XMLElement::addChild: Element already has a different parent");
       return false;
     }
     return true;
@@ -237,7 +238,7 @@ void XMLElement::write(std::ostream &os, const String &indent) const {
 
 bool XMLElement::setAttribute(const String &name, const String &value) {
   if (!IsValidAttribute(name)) {
-    std::cerr << "Invalid attribute name: \"" << name << "\"" << std::endl;
+    Log::PrintError("[gcore] XMLElement::setAttribute: Invalid attribute name \"%s\"", name.c_str());
     return false;
   }
   mAttrs[name] = value;
@@ -259,7 +260,7 @@ bool XMLElement::setText(const String &str, bool asCDATA) {
 
 bool XMLElement::addText(const String &str) {
   if (mTextIsCDATA) {
-    std::cerr << "Element cannot have both text and CDATA" << std::endl;
+    Log::PrintError("[gcore] XMLElement::addText: Element cannot have both text and CDATA");
     return false;
   }
   mText += str;
@@ -417,7 +418,7 @@ void XMLDoc::write(std::ostream &os) const {
 bool XMLDoc::read(std::istream &is) {
   
   if (!is.good()) {
-    std::cerr << "Invalid XML: bad stream" << std::endl;
+    Log::PrintError("[gcore] XMLDoc::read: Bad stream");
     return false;
   }
 
@@ -477,7 +478,6 @@ bool XMLDoc::read(std::istream &is) {
         size_t plen = p1 - p0;
         memcpy(pendingBuffer, p0, plen);
         pendingBuffer[plen] = '\0';
-        //std::cerr << "READ_OPEN | Add: \"" << pendingBuffer << "\" to pending buffer" << std::endl;
         pending += pendingBuffer;
 
         if (p1 != eob) {
@@ -497,7 +497,6 @@ bool XMLDoc::read(std::istream &is) {
           if ((p1+1) == eob) {
 
             // need to read more to decide what we want to read
-            // std::cerr << "Read a new full line" << std::endl;
             nLastChar = eob - readBuffer;
             if (nLastChar > 16) {
               nLastChar = 16;
@@ -506,13 +505,12 @@ bool XMLDoc::read(std::istream &is) {
 
             //nread = fread(readBuffer, 1, 1024-7, file);
             //if (nread == 0) {
-            //  std::cerr << "Invalid XML file: non-closed <" << std::endl;
             //  goto failed;
             //}
             is.read(readBuffer, 1024-7);
             nread = is.gcount();
             if (is.bad() || nread == 0) {
-              std::cerr << "Invalid XML: Unclosed <" << std::endl;
+              Log::PrintError("[gcore] XMLDoc::read: Unclosed <");
               goto failed;
             }
 
@@ -551,7 +549,7 @@ bool XMLDoc::read(std::istream &is) {
             }
 
             if (remain < 2) {
-              std::cerr << "Invalid XML: Invalid <! construct" << std::endl;
+              Log::PrintError("[gcore] XMLDoc::read: Invalid <! construct");
               goto failed;
 
             } else if (*(p1+1) == '-' && *(p1+2) == '-') {
@@ -565,13 +563,12 @@ bool XMLDoc::read(std::istream &is) {
                 state = READ_CDATA;
 
               } else {
-                std::cerr << "Invalid XML: Invalid <! construct" << std::endl;
+                Log::PrintError("[gcore] XMLDoc::read: Invalid <! construct");
                 goto failed;
               }
 
             } else {
-
-              std::cerr << "Invalid XML: Invalid <! construct" << std::endl;
+              Log::PrintError("[gcore] XMLDoc::read: Invalid <! construct");
             }
 
           } else if (*p1 == '/') {
@@ -596,12 +593,12 @@ bool XMLDoc::read(std::istream &is) {
 
             if (p1 - 1 >= readBuffer) {
               if (*(p1 - 1) != '?') {
-                std::cerr << "Invalid XML: Expected '?>' (1)" << std::endl;
+                Log::PrintError("[gcore] XMLDoc::read: Expected '?>'");
                 goto failed;
               }
             } else {
               if (nLastChar < 1 || lastChars[15] != '?') {
-                std::cerr << "Invalid XML: Expected '?>' (2)" << std::endl;
+                Log::PrintError("[gcore] XMLDoc::read: Expected '?>'");
                 goto failed;
               }
             }
@@ -620,7 +617,7 @@ bool XMLDoc::read(std::istream &is) {
           ++p1;
           // remove last ? characters
           if (pending.length() < 1) {
-            std::cerr << "Invalid XML: Missing ? closing character" << std::endl;
+            Log::PrintError("[gcore] XMLDoc::read: Missing ? closing character");
             goto failed;
           }
           pending.erase(pending.length()-1, 1);
@@ -681,11 +678,10 @@ bool XMLDoc::read(std::istream &is) {
           ++p1;
           // remove the last ]] characters
           if (pending.length() < 2) {
-            std::cerr << "Invalid XML: Missing CDATA ]] closing characters" << std::endl;
+            Log::PrintError("[gcore] XMLDoc::read: Missing CDATA ]] closing characters");
             goto failed;
           }
           pending.erase(pending.length()-2, 2);
-          //std::cerr << "CDATA: \"" << pending << "\"" << std::endl;
           cur->setText(pending, true);
           pending = "";
           state = READ_OPEN;
@@ -745,11 +741,10 @@ bool XMLDoc::read(std::istream &is) {
           ++p1;
           // remove the last 2 characters '--'
           if (pending.length() < 2) {
-            std::cerr << "Invalid XML: Missing comment -- closing characters" << std::endl;
+            Log::PrintError("[gcore] XMLDoc::read: Missing comment -- closing characters");
             goto failed;
           }
           pending.erase(pending.length()-2, 2);
-          //std::cerr << "Comment: \"" << pending << "\"" << std::endl;
           pending = "";
           state = READ_OPEN;
         }
@@ -778,7 +773,7 @@ bool XMLDoc::read(std::istream &is) {
           ++p1;
 
           if (pending.length() == 0) {
-            std::cerr << "Invalid XML: Empty element" << std::endl;
+            Log::PrintError("[gcore] XMLDoc::read: Empty element");
             goto failed;
           }
 
@@ -794,7 +789,7 @@ bool XMLDoc::read(std::istream &is) {
           size_t len = tc - ts;
 
           if (len == 0) {
-            std::cerr << "Invalid XML: Invalid element name" << std::endl;
+            Log::PrintError("[gcore] XMLDoc::read: Invalid element name");
             goto failed;
           } 
 
@@ -813,14 +808,14 @@ bool XMLDoc::read(std::istream &is) {
             size_t p = pending.find('=', o);
 
             if (p == String::npos) {
-              std::cerr << "Invalid XML: Missing = for attribute" << std::endl;
+              Log::PrintError("[gcore] XMLDoc::read: Missing = for attribute");
               delete elem;
               goto failed;
             }
 
             String attr = pending.substr(o, p-o);
             if (!IsValidAttribute(attr)) {
-              std::cerr << "Invalid XML: Invalid attribute name \"" << attr << "\"" << std::endl;
+              Log::PrintError("[gcore] XMLDoc::read: Invalid attribute name \"%s\"", attr.c_str());
               delete elem;
               goto failed;
             }
@@ -828,13 +823,13 @@ bool XMLDoc::read(std::istream &is) {
             ++p;
 
             if (p >= pending.length()) {
-              std::cerr << "Invalid XML: No value for attribute" << std::endl;
+              Log::PrintError("[gcore] XMLDoc::read: No value for attribute");
               delete elem;
               goto failed;
             }
 
             if (pending[p] != '"' && pending[p] != '\'') {
-              std::cerr << "Invalid XML: Missing opening \" or ' for attribute" << std::endl;
+              Log::PrintError("[gcore] XMLDoc::read: Missing opening \" or ' for attribute");
               delete elem;
               goto failed;
             }
@@ -853,10 +848,9 @@ bool XMLDoc::read(std::istream &is) {
             }
 
             if (e == String::npos) {
-              //std::cerr << "Invalid XML file: missing closing \" for attribute" << std::endl;
               std::string cc;
               cc.push_back(quoteChar);
-              std::cerr << "Invalid XML: Missing closing " << quoteChar << " for attribute" << std::endl;
+              Log::PrintError("[gcore] XMLDoc::read: Missing closing %c for attribute", quoteChar);
               delete elem;
               goto failed;
             }
@@ -909,18 +903,14 @@ bool XMLDoc::read(std::istream &is) {
           ++p1;
 
           if (!cur) {
-            std::cerr << "Invalid XML: Closing tag \"" << pending
-                      << "\" has no counter-part opening" << std::endl;
+            Log::PrintError("[gcore] XMLDoc::read: Closing tag \"%s\" has no opening counter-part", pending.c_str());
             goto failed; 
           }
 
           if (cur->getTag() != pending) {
-            std::cerr << "Invalid XML: Closing tag \"" << pending
-                      << "\" mismatches opening \"" << cur->getTag() << "\"" << std::endl;
+            Log::PrintError("[gcore] XMLDoc::read: Closing tag \"%s\" mismatches opening \"%s\"", pending.c_str(), cur->getTag().c_str());
             goto failed;
           }
-
-          //std::cerr << "Closing element: \"" << pending << "\"" << std::endl;
 
           cur = cur->getParent();
 
@@ -932,7 +922,7 @@ bool XMLDoc::read(std::istream &is) {
 
       } else {
 
-        std::cerr << "Invalid XML parser state" << std::endl;
+        Log::PrintError("[gcore] XMLDoc::read: Invalid parser state");
         goto failed;
       }
     }
@@ -946,12 +936,12 @@ bool XMLDoc::read(std::istream &is) {
   }
 
   if (state != READ_OPEN) {
-    std::cerr << "Invalid XML: Missing closing tag" << std::endl;
+    Log::PrintError("[gcore] XMLDoc::read: Missing closing tag");
     goto failed;
   }
   
   if (root == NULL) {
-    std::cerr << "Invalid XML: No root tag found" << std::endl;
+    Log::PrintError("[gcore] XMLDoc::read: No root element found");
     return false;
   }
 

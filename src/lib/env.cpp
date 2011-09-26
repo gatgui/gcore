@@ -23,6 +23,7 @@ USA.
 
 #include <gcore/env.h>
 #include <gcore/platform.h>
+#include <gcore/log.h>
 
 namespace gcore {
 
@@ -209,7 +210,7 @@ size_t Env::asDict(StringDict &d) const {
         val.insert(0, es+1, vlen);
         d[key] = val;
       } else {
-        //std::cerr << "Ignore env string \"" << curvar << "\"" << std::endl;
+        Log::PrintInfo("[gcore] Env::asDict: Ignore env string \"%s\"", curvar);
       }
     }
     ++idx;
@@ -223,7 +224,7 @@ size_t Env::asDict(StringDict &d) const {
     char *es = strchr(curvar, '=');
     if (es != 0) {
       if (es == curvar) { 
-        //std::cerr << "Ignore env string \"" << curvar << "\"" << std::endl;
+        Log::PrintInfo("[gcore] Env::asDict: Ignore env string \"%s\"", curvar);
       } else {
         *es = '\0';
         if (strlen(curvar) > 0) {

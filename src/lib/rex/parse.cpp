@@ -25,6 +25,7 @@ USA.
 #include "charclass.h"
 #include "instruction.h"
 #include <gcore/rex.h>
+#include <gcore/log.h>
 
 namespace gcore {
 
@@ -356,7 +357,7 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
           }
           else
           {
-            std::cerr << "*** Invalid group format" << std::endl;
+            Log::PrintError("[gcore] rex/ParseAtom: Invalid group format");
             return 0;
           }
         }
@@ -407,7 +408,7 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
           if (*pc != ':' && *pc != ')')
           {
             // either followed by : or group end (meaning we just want to change exp exec flags)
-            std::cerr << "*** Invalid group format" << std::endl;
+            Log::PrintError("[gcore] rex/ParseAtom: Invalid group format");
             return 0;
           }
           
@@ -442,26 +443,33 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
       }
       
 #ifdef _DEBUG_REX
-      std::cerr << "Create group" << std::endl;
-      std::cerr << "  index: " << gidx << std::endl;
-      std::cerr << "  invert: " << invert << std::endl;
-      std::cerr << "  consume: " << consume << std::endl;
-      std::cerr << "  flags: " << flags << std::endl;
-      std::cerr << "  nc: " << nc << std::endl;
-      std::cerr << "  ml: " << ml << std::endl;
-      std::cerr << "  dnl: " << dnl << std::endl;
-      std::cerr << "  name: \"" << name << "\"" << std::endl;
-      std::cerr << "  code: " << std::endl;
+      Log::PrintDebug("[gcore] rex/ParseAtom: Create group");
+      Log::SetIndentLevel(Log::GetIndentLevel()+1);
+      Log::PrintDebug("index: %d", gidx);
+      Log::PrintDebug("invert: %d", invert);
+      Log::PrintDebug("consume: %d", consume);
+      Log::PrintDebug("flags: %d", flags);
+      Log::PrintDebug("nc: %d", nc);
+      Log::PrintDebug("ml: %d", ml);
+      Log::PrintDebug("dnl: %d", dnl);
+      Log::PrintDebug("name: %d", name.c_str());
+      Log::PrintDebug("code: ");
       if (i)
       {
-        i->toStream(std::cerr, "    ");
+        std::ostringstream oss;
+        
+        Log::SetIndentLevel(Log::GetIndentLevel()+1)
+        i->toStream(oss);
+        Log::PrintDebug(oss.str().c_str());
+        Log::SetIndentLevel(Log::GetIndentLevel()-1)
       }
+      Log::SetIndentLevel(Log::GetIndentLevel()-1);
 #endif
       
       i = new Group(gidx, i, !consume, invert, flags, nc, ml, dnl, name);
       
 #ifdef _DEBUG_REX
-      std::cerr << "Group created" << std::endl;
+      Log::PrintDebug("[gcore] rex/ParseAtom: Group created");
 #endif
       ++pc;
       
@@ -483,9 +491,7 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
       }
       if (*pc != ']')
       {
-#ifdef _DEBUG_REX
-        std::cerr << "Invalid character in expression: " << *pc << ", expected ]" << std::endl;
-#endif
+        Log::PrintError("[gcore] rex/ParseAtom: Invalid character '%c' in expression, expected ']'", *pc);
         if (i)
         {
           delete i;

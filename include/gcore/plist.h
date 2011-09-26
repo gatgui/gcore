@@ -27,6 +27,7 @@ USA.
 #include <gcore/string.h>
 #include <gcore/list.h>
 #include <gcore/xml.h>
+#include <gcore/log.h>
 
 namespace gcore {
   
@@ -77,15 +78,11 @@ namespace gcore {
         ValueDescIterator it = msValueDesc.find(name);
         if (it != msValueDesc.end()) {
           if (replace) {
-#ifdef _DEBUG
-            std::cout << "Replace registered type: \"" << name << "\"" << std::endl;
-#endif
+            Log::PrintDebug("[gcore] PropertyList::RegisterType: Replaced registered type \"%s\"", name.c_str());
             it->second.ctor = &T::New;
           }
         } else {
-#ifdef _DEBUG
-          std::cout << "Register type: \"" << name << "\"" << std::endl;
-#endif
+          Log::PrintDebug("[gcore] PropertyList::RegisterType: Registered new type \"%s\"", name.c_str());
           ValueDesc vd;
           vd.ctor = &T::New;
           vd.id = (long) msValueDesc.size();

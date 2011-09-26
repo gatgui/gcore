@@ -22,6 +22,7 @@ USA.
 */
 
 #include <gcore/rex.h>
+#include <gcore/log.h>
 #include "parse.h"
 #include "instruction.h"
 
@@ -254,7 +255,7 @@ bool Rex::search(const String &s, RexMatch &m, unsigned short flags, size_t offs
   do
   {
 #ifdef _DEBUG_REX
-    std::cerr << "Try match with \"" << cur << "\"" << std::endl;
+    Log::PrintDebug("[gcore] Rex::search: Try match with \"%s\"", cur);
 #endif
     MatchInfo info(s.c_str(), s.c_str()+s.length(), flags, mNumGroups+1);
     const char *rv = code->match(cur, info);
@@ -276,14 +277,16 @@ bool Rex::search(const String &s, RexMatch &m, unsigned short flags, size_t offs
       m.mGroups[0].second = m.mRange.second;
       m.mStr = s;
 #ifdef _DEBUG_REX
-      std::cerr << "  Matched string: \"" << m.mStr << "\"" << std::endl;
-      std::cerr << "  Matched range: [" << m.mRange.first << ", " << m.mRange.second << "]" << std::endl;
+      Log::SetIndentLevel(Log::GetIndentLevel()+1);
+      Log::PrintDebug("Matched string: \"%s\"", m.mStr.c_str());
+      Log::PrintDebug("Matched range: [%d, %d]", m.mRange.first, m.mRange.second);
       for (size_t i=0; i<m.mGroups.size(); ++i)
       {
-        std::cerr << "  Matched group " << i << ": [" << m.mGroups[i].first << ", " << m.mGroups[i].second << "]: \"" << m.group(i) << "\"" << std::endl;
+        Log::PrintDebug("Matched group %d: [%d, %d] \"%s\"", i, m.mGroups[i].first, m.mGroups[i]/second, m.group(i).c_str());
       }
-      std::cerr << "  Pre: \"" << m.pre() << "\"" << std::endl;
-      std::cerr << "  Post: \"" << m.post() << "\"" << std::endl;
+      Log::PrintDebug("Pre: \"%s\"", m.pre().c_str());
+      Log::PrintDebug("Post: \"%s\"", m.post().c_str());
+      Log::SetIndentLevel(Log::GetIndentLevel()-1);
 #endif
       return true;
     }

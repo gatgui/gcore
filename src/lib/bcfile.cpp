@@ -1,4 +1,5 @@
 #include <gcore/bcfile.h>
+#include <gcore/log.h>
 
 namespace gcore
 {
@@ -271,19 +272,15 @@ bool BCFile::write(const std::string &filepath, bool preserveData) const
    // first read all placeholders data if mInFile is open
    if (preserveData && mInFile.is_open())
    {
-      //std::cerr << "Read any pending placeholder" << std::endl;
       std::map<std::string, BCFileElement*>::iterator elt = mElements.begin();
       while (elt != mElements.end())
       {
          ElementPlaceHolder *feph = dynamic_cast<ElementPlaceHolder*>(elt->second);
          if (feph)
          {
-            //std::cerr << "Read \"" << elt->first << "\" placeholder content (" << feph->getByteSize() << ")" << std::endl;
             mInFile.seekg(feph->offset(), std::ios::beg);
             if (!mInFile.good() || !feph->read(mInFile))
             {
-               //std::cerr << "Could not read content, remove from container" << std::endl;
-               
                // remove element
                std::map<std::string, BCFileElement*>::iterator tmp = elt;
                ++elt;
@@ -372,7 +369,6 @@ bool BCFile::readTOC(const std::string &filepath)
       {
          if (minVer == 1)
          {
-            std::cerr << "Read TOC 0.1" << std::endl;
             rv = read_0_1(mInFile);
          }
          else if (minVer == 2)

@@ -67,6 +67,11 @@ static std::string MakeTermCode(int cmd, int fg, int bg)
 
 #endif
 
+static void PrintStdout(const char *msg)
+{
+   fprintf(stdout, msg);
+}
+
 namespace gcore
 {
 
@@ -181,6 +186,7 @@ Log::Log()
 #ifdef _DEBUG
    mOutputs |= DEBUG
 #endif
+   Bind(PrintStdout, mOutFunc);
 }
 
 Log::Log(const Path &path)
@@ -268,27 +274,23 @@ unsigned int Log::selectedOutputs() const
 
 void Log::print(Level lvl, const char *msg) const
 {
-   if ((mOutputs & lvl) == 0 || (mToFile && !mOutFile.good()))
+   if ((mOutputs & lvl) == 0 ||
+       ( mToFile && !mOutFile.good()) ||
+       (!mToFile &&  mOutFunc == 0))
    {
       return;
    }
    
    Date now;
-   String heading, trailing;
+   String heading = "";
+   String trailing = "";
    StringList lines;
-   
-   if (mTimeStamps)
-   {
-      heading += now.format("%y/%m/%d %H:%M:%S");
-      heading += " ";
-   }
    
    bool useColors = (!mToFile && mColors);
    
    switch (lvl)
    {
    case ERROR:
-      heading += "[  ERROR  ] ";
       if (useColors)
       {
 #ifdef _WIN32
@@ -298,29 +300,36 @@ void Log::print(Level lvl, const char *msg) const
          trailing = MakeTermCode(TERM_CMD_RESET, -1, -1);
 #endif
       }
+      heading += "[  ERROR  ] ";
       break;
    case WARNING:
-      heading += "[ WARNING ] ";
 #ifdef _WIN32
          // TODO
 #else
          heading += MakeTermCode(-1, TERM_COL_YELLOW, -1);
          trailing = MakeTermCode(TERM_CMD_RESET, -1, -1);
 #endif
+      heading += "[ WARNING ] ";
       break;
    case DEBUG:
-      heading += "[  DEBUG  ] ";
 #ifdef _WIN32
          // TODO
 #else
          heading += MakeTermCode(-1, TERM_COL_CYAN, -1);
          trailing = MakeTermCode(TERM_CMD_RESET, -1, -1);
 #endif
+      heading += "[  DEBUG  ] ";
       break;
    case INFO:
    default:
       heading += "[         ] ";
       break;
+   }
+   
+   if (mTimeStamps)
+   {
+      heading += now.format("%y/%m/%d %H:%M:%S");
+      heading += " ";
    }
    
    for (unsigned int i=0; i<mIndentLevel; ++i)
@@ -345,25 +354,12 @@ void Log::print(Level lvl, const char *msg) const
    }
    else
    {
-      if (mOutFunc != 0)
+      for (size_t i=0; i<lines.size(); ++i)
       {
-         for (size_t i=0; i<lines.size(); ++i)
-         {
-            mOutFunc(heading.c_str());
-            mOutFunc(lines[i].c_str());
-            mOutFunc(trailing.c_str());
-            mOutFunc("\n");
-         }
-      }
-      else
-      {
-         for (size_t i=0; i<lines.size(); ++i)
-         {
-            std::cout << heading;
-            std::cout << lines[i];
-            std::cout << trailing;
-            std::cout << std::endl;
-         }
+         mOutFunc(heading.c_str());
+         mOutFunc(lines[i].c_str());
+         mOutFunc(trailing.c_str());
+         mOutFunc("\n");
       }
    }
 }

@@ -43,6 +43,7 @@ USA.
 #include <gcore/argparser.h>
 #include <gcore/dirmap.h>
 #include <gcore/bcfile.h>
+#include <gcore/log.h>
 
 #endif 
 

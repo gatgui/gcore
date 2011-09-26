@@ -7,20 +7,21 @@
 
 namespace gcore
 {
+   enum LogLevel
+   {
+      LOG_ERROR = 0x01,
+      LOG_WARNING = 0x02,
+      LOG_DEBUG = 0x04,
+      LOG_INFO = 0x08,
+      LOG_ALL = LOG_ERROR|LOG_WARNING|LOG_DEBUG|LOG_INFO
+   };
+   
+   
    class GCORE_API Log
    {
    public:
       
       typedef Functor1<const char*> OutputFunc;
-      
-      enum Level
-      {
-         ERROR = 0x01,
-         WARNING = 0x02,
-         DEBUG = 0x04,
-         INFO = 0x08,
-         ALL = ERROR|WARNING|DEBUG|INFO
-      };
       
    public:
       
@@ -79,7 +80,7 @@ namespace gcore
       
    private:
       
-      void print(Level lvl, const char *msg) const;
+      void print(LogLevel lvl, const char *msg) const;
       
    private:
       

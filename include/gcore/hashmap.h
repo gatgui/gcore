@@ -671,7 +671,7 @@ gcore::HashMap<KeyType, ValueType, H>::find(const KeyType &key)
   Entry e;
   e.h = HashValue<KeyType, H>::Compute(key);
   e.key = key;
-  unsigned int idx = (e.h % mNumBuckets);
+  size_t idx = (e.h % mNumBuckets);
   EntryList &el = mBuckets[idx];
   typename EntryList::iterator it = std::find(el.begin(), el.end(), e);
   if (it == el.end())
@@ -732,7 +732,7 @@ bool gcore::HashMap<KeyType, ValueType, H>::insert(const KeyType &key, const Val
   Entry e;
   e.h = HashValue<KeyType, H>::Compute(key);
   e.key = key;
-  unsigned int idx = (e.h % mNumBuckets);
+  size_t idx = (e.h % mNumBuckets);
   EntryList &el = mBuckets[idx];
   typename EntryList::iterator it = std::find(el.begin(), el.end(), e);
   if (it == el.end())
@@ -806,7 +806,7 @@ ValueType& gcore::HashMap<KeyType, ValueType, H>::operator[](const KeyType &k)
   Entry e;
   e.h = HashValue<KeyType, H>::Compute(k);
   e.key = k;
-  unsigned int idx = (e.h % mNumBuckets);
+  size_t idx = (e.h % mNumBuckets);
   EntryList &el = mBuckets[idx];
   typename EntryList::iterator it = std::find(el.begin(), el.end(), e);
   if (it == el.end())
@@ -880,7 +880,7 @@ void gcore::HashMap<KeyType, ValueType, H>::rehash()
     typename EntryList::iterator it = el.begin();
     while (it != el.end())
     {
-      unsigned int idx = (it->h % mNumBuckets);
+      size_t idx = (it->h % mNumBuckets);
       mBuckets[idx].push_back(*it);
       ++it;
     }

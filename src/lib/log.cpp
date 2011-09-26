@@ -2,7 +2,53 @@
 
 #ifdef _WIN32
 
-// TODO
+static WORD gsDefaultAttrs = 0;
+static bool gsDefaultAttrsSet = false;
+
+#define TERM_COL_BLACK    0
+#define TERM_COL_BLUE     1
+#define TERM_COL_GREEN    2
+#define TERM_COL_CYAN     3
+#define TERM_COL_RED      4
+#define TERM_COL_MAGENTA  5
+#define TERM_COL_YELLOW   6
+#define TERM_COL_WHITE    7
+
+static void ChangeTermColors(int fg=-1, int bg=-1)
+{
+   HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+   
+   if (!gsDefaultAttrsSet)
+   {
+      CONSOLE_SCREEN_BUFFER_INFO csbi;
+      GetConsoleScreenBufferInfo(hStdOut, &csbi);
+      gsDefaultAttrs = csbi.wAttributes;
+      gsDefaultAttrsSet = true;
+   }
+   
+   WORD attrs = gsDefaultAttrs;
+   
+   if (fg >= 0)
+   {
+      attrs = (WORD)((attrs & 0xF0) | fg);
+   }
+   if (bg >= 0)
+   {
+      attrs = (WORD)((attrs & 0x0F) | (bg << 4));
+   }
+   
+   SetConsoleTextAttribute(hStdOut, attrs);
+}
+
+static void ResetTermColors()
+{
+   if (gsDefaultAttrsSet)
+   {
+      HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+      
+      SetConsoleTextAttribute(hStdOut, gsDefaultAttrs);
+   }
+}
 
 #else
 
@@ -100,7 +146,7 @@ void Log::PrintError(const char *fmt, ...)
    va_start(args, fmt);
    vsnprintf(msBuffer, 2048, fmt, args);
    va_end(args);
-   msSharedLog.print(ERROR, msBuffer);
+   msSharedLog.print(LOG_ERROR, msBuffer);
 }
 
 void Log::PrintWarning(const char *fmt, ...)
@@ -110,7 +156,7 @@ void Log::PrintWarning(const char *fmt, ...)
    va_start(args, fmt);
    vsnprintf(msBuffer, 2048, fmt, args);
    va_end(args);
-   msSharedLog.print(WARNING, msBuffer);
+   msSharedLog.print(LOG_WARNING, msBuffer);
 }
 
 void Log::PrintDebug(const char *fmt, ...)
@@ -120,7 +166,7 @@ void Log::PrintDebug(const char *fmt, ...)
    va_start(args, fmt);
    vsnprintf(msBuffer, 2048, fmt, args);
    va_end(args);
-   msSharedLog.print(DEBUG, msBuffer);
+   msSharedLog.print(LOG_DEBUG, msBuffer);
 }
 
 void Log::PrintInfo(const char *fmt, ...)
@@ -130,7 +176,7 @@ void Log::PrintInfo(const char *fmt, ...)
    va_start(args, fmt);
    vsnprintf(msBuffer, 2048, fmt, args);
    va_end(args);
-   msSharedLog.print(INFO, msBuffer);
+   msSharedLog.print(LOG_INFO, msBuffer);
 }
 
 void Log::SetIndentLevel(unsigned int n)
@@ -176,7 +222,7 @@ bool Log::TimeStampsShown()
 // ---
 
 Log::Log()
-   : mOutputs(ERROR|WARNING|INFO)
+   : mOutputs(LOG_ERROR|LOG_WARNING|LOG_INFO)
    , mColors(true)
    , mTimeStamps(true)
    , mIndentLevel(0)
@@ -184,13 +230,13 @@ Log::Log()
    , mToFile(false)
 {
 #ifdef _DEBUG
-   mOutputs |= DEBUG
+   mOutputs |= LOG_DEBUG
 #endif
    Bind(PrintStdout, mOutFunc);
 }
 
 Log::Log(const Path &path)
-   : mOutputs(ERROR|WARNING|INFO)
+   : mOutputs(LOG_ERROR|LOG_WARNING|LOG_INFO)
    , mColors(true)
    , mTimeStamps(true)
    , mIndentLevel(0)
@@ -199,7 +245,7 @@ Log::Log(const Path &path)
    , mFilePath(path)
 {
 #ifdef _DEBUG
-   mOutputs |= DEBUG
+   mOutputs |= LOG_DEBUG
 #endif
    mOutFile.open(path.fullname().c_str(), std::ofstream::app|std::ofstream::out);
 }
@@ -272,7 +318,7 @@ unsigned int Log::selectedOutputs() const
    return mOutputs;
 }
 
-void Log::print(Level lvl, const char *msg) const
+void Log::print(LogLevel lvl, const char *msg) const
 {
    if ((mOutputs & lvl) == 0 ||
        ( mToFile && !mOutFile.good()) ||
@@ -297,11 +343,11 @@ void Log::print(Level lvl, const char *msg) const
    
    switch (lvl)
    {
-   case ERROR:
+   case LOG_ERROR:
       if (useColors)
       {
 #ifdef _WIN32
-         // TODO
+         ChangeTermColors(TERM_COL_RED, -1);
 #else
          heading += MakeTermCode(-1, TERM_COL_RED, -1);
          trailing = MakeTermCode(TERM_CMD_RESET, -1, -1);
@@ -309,25 +355,25 @@ void Log::print(Level lvl, const char *msg) const
       }
       heading += ts + "[  ERROR  ] ";
       break;
-   case WARNING:
+   case LOG_WARNING:
 #ifdef _WIN32
-         // TODO
+         ChangeTermColors(TERM_COL_YELLOW, -1);
 #else
          heading += MakeTermCode(-1, TERM_COL_YELLOW, -1);
          trailing = MakeTermCode(TERM_CMD_RESET, -1, -1);
 #endif
       heading += ts + "[ WARNING ] ";
       break;
-   case DEBUG:
+   case LOG_DEBUG:
 #ifdef _WIN32
-         // TODO
+         ChangeTermColors(TERM_COL_CYAN, -1);
 #else
          heading += MakeTermCode(-1, TERM_COL_CYAN, -1);
          trailing = MakeTermCode(TERM_CMD_RESET, -1, -1);
 #endif
       heading += ts + "[  DEBUG  ] ";
       break;
-   case INFO:
+   case LOG_INFO:
    default:
       heading += ts + "[         ] ";
       break;
@@ -363,6 +409,13 @@ void Log::print(Level lvl, const char *msg) const
          mOutFunc("\n");
       }
    }
+   
+#ifdef _WIN32
+   if (useColors)
+   {
+      ResetTermColors();
+   }
+#endif
 }
 
 void Log::printError(const char *fmt, ...) const
@@ -372,7 +425,7 @@ void Log::printError(const char *fmt, ...) const
    va_start(args, fmt);
    vsnprintf(mBuffer, 2048, fmt, args);
    va_end(args);
-   print(ERROR, mBuffer);
+   print(LOG_ERROR, mBuffer);
 }
 
 void Log::printWarning(const char *fmt, ...) const
@@ -382,7 +435,7 @@ void Log::printWarning(const char *fmt, ...) const
    va_start(args, fmt);
    vsnprintf(mBuffer, 2048, fmt, args);
    va_end(args);
-   print(WARNING, mBuffer);
+   print(LOG_WARNING, mBuffer);
 }
 
 void Log::printDebug(const char *fmt, ...) const
@@ -392,7 +445,7 @@ void Log::printDebug(const char *fmt, ...) const
    va_start(args, fmt);
    vsnprintf(mBuffer, 2048, fmt, args);
    va_end(args);
-   print(DEBUG, mBuffer);
+   print(LOG_DEBUG, mBuffer);
 }
 
 void Log::printInfo(const char *fmt, ...) const
@@ -402,7 +455,7 @@ void Log::printInfo(const char *fmt, ...) const
    va_start(args, fmt);
    vsnprintf(mBuffer, 2048, fmt, args);
    va_end(args);
-   print(INFO, mBuffer);
+   print(LOG_INFO, mBuffer);
 }
 
 void Log::setIndentLevel(unsigned int l)

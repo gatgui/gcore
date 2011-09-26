@@ -157,7 +157,7 @@ int main(int argc, char **argv)
     numhits = 0;
     for (size_t i=0; i<nlookup; ++i)
     {
-      int keyi = RandomNumber(0, nkeys-1);
+      int keyi = RandomNumber(0, int(nkeys)-1);
       std::string &k = (RandomNumber(0, 1) == 0 ? allKeys[keyi] : extraKeys[keyi]);
       hit = hmap.find(k);
       if (hit != hmap.end())
@@ -185,7 +185,7 @@ int main(int argc, char **argv)
     numhits = 0;
     for (size_t i=0; i<nlookup; ++i)
     {
-      int keyi = RandomNumber(0, nkeys-1);
+      int keyi = RandomNumber(0, int(nkeys)-1);
       std::string &k = (RandomNumber(0, 1) == 0 ? allKeys[keyi] : extraKeys[keyi]);
       it = smap.find(k);
       if (it != smap.end())
@@ -202,7 +202,7 @@ int main(int argc, char **argv)
     bool consistent = true;
     for (size_t i=0; i<nkeys; ++i)
     {
-      int keyi = RandomNumber(0, nkeys-1);
+      int keyi = RandomNumber(0, int(nkeys)-1);
       std::string &k = (RandomNumber(0, 1) == 0 ? allKeys[keyi] : extraKeys[keyi]);
       hit = hmap.find(k);
       it = smap.find(k);

@@ -2,7 +2,8 @@
 
 #ifdef _WIN32
 
-static WORD gsDefaultAttrs = 0;
+static WORD gsDefaultOutAttrs = 0;
+static WORD gsDefaultErrAttrs = 0;
 static bool gsDefaultAttrsSet = false;
 
 #define TERM_COL_BLACK    0
@@ -17,17 +18,21 @@ static bool gsDefaultAttrsSet = false;
 static void ChangeTermColors(int fg=-1, int bg=-1)
 {
    HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+   HANDLE hStdErr = GetStdHandle(STD_ERROR_HANDLE);
    
    if (!gsDefaultAttrsSet)
    {
       CONSOLE_SCREEN_BUFFER_INFO csbi;
       GetConsoleScreenBufferInfo(hStdOut, &csbi);
-      gsDefaultAttrs = csbi.wAttributes;
+      gsDefaultOutAttrs = csbi.wAttributes;
+      GetConsoleScreenBufferInfo(hStdErr, &csbi);
+      gsDefaultErrAttrs = csbi.wAttributes;
       gsDefaultAttrsSet = true;
    }
    
-   WORD attrs = gsDefaultAttrs;
+   WORD attrs;
    
+   attrs = gsDefaultOutAttrs;
    if (fg >= 0)
    {
       attrs = (WORD)((attrs & 0xF0) | fg);
@@ -36,8 +41,18 @@ static void ChangeTermColors(int fg=-1, int bg=-1)
    {
       attrs = (WORD)((attrs & 0x0F) | (bg << 4));
    }
-   
    SetConsoleTextAttribute(hStdOut, attrs);
+   
+   attrs = gsDefaultErrAttrs;
+   if (fg >= 0)
+   {
+      attrs = (WORD)((attrs & 0xF0) | fg);
+   }
+   if (bg >= 0)
+   {
+      attrs = (WORD)((attrs & 0x0F) | (bg << 4));
+   }
+   SetConsoleTextAttribute(hStdErr, attrs);
 }
 
 static void ResetTermColors()
@@ -45,8 +60,10 @@ static void ResetTermColors()
    if (gsDefaultAttrsSet)
    {
       HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+      HANDLE hStdErr = GetStdHandle(STD_ERROR_HANDLE);
       
-      SetConsoleTextAttribute(hStdOut, gsDefaultAttrs);
+      SetConsoleTextAttribute(hStdOut, gsDefaultOutAttrs);
+      SetConsoleTextAttribute(hStdErr, gsDefaultErrAttrs);
    }
 }
 
@@ -375,7 +392,7 @@ void Log::print(LogLevel lvl, const char *msg) const
       break;
    case LOG_INFO:
    default:
-      heading += ts + "[         ] ";
+      heading += ts + "[ MESSAGE ] ";
       break;
    }
    

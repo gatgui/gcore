@@ -1,7 +1,17 @@
 #include <gcore/log.h>
 
+void PrintErr(const char *msg)
+{
+   std::cerr << msg;
+}
+
 int main(int, char**)
 {
+   gcore::Log::OutputFunc func;
+   
+   gcore::Bind(PrintErr, func);
+   
+   gcore::Log::SetOutputFunc(func);
    gcore::Log::EnableColors(true);
    gcore::Log::ShowTimeStamps(true);
    gcore::Log::SetIndentWidth(2);

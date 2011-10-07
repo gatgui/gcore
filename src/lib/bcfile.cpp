@@ -251,7 +251,12 @@ void BCFile::clearElements()
 
 bool BCFile::addElement(const std::string &name, BCFileElement *e)
 {
-   if (mElements.find(name) == mElements.end())
+   if (!e)
+   {
+      return false;
+   }
+   std::map<std::string, BCFileElement*>::iterator elt = mElements.find(name);
+   if (elt == mElements.end())
    {
       mElements[name] = e;
       return true;
@@ -259,6 +264,38 @@ bool BCFile::addElement(const std::string &name, BCFileElement *e)
    else
    {
       return false;
+   }
+}
+
+bool BCFile::replaceElement(const std::string &name, BCFileElement *e)
+{
+   if (!e)
+   {
+      return false;
+   }
+   std::map<std::string, BCFileElement*>::iterator elt = mElements.find(name);
+   if (elt == mElements.end())
+   {
+      return false;
+   }
+   else
+   {
+      if (elt->second == e)
+      {
+         return true;
+      }
+      ElementPlaceHolder *feph = dynamic_cast<ElementPlaceHolder*>(elt->second);
+      if (feph)
+      {
+         std::vector<ElementPlaceHolder*>::iterator ph = std::find(mPlaceHolders.begin(), mPlaceHolders.end(), feph);
+         if (ph != mPlaceHolders.end())
+         {
+            mPlaceHolders.erase(ph);
+         }
+         delete feph;
+      }
+      mElements[name] = e;
+      return true;
    }
 }
 
@@ -388,6 +425,11 @@ bool BCFile::readTOC(const std::string &filepath)
 
 bool BCFile::readElement(const std::string &name, BCFileElement *elt)
 {
+   if (!elt)
+   {
+      return false;
+   }
+   
    std::map<std::string, BCFileElement*>::iterator it = mElements.find(name);
    
    if (it == mElements.end())
@@ -413,11 +455,13 @@ bool BCFile::readElement(const std::string &name, BCFileElement *elt)
    
    if (!elt->readHeader(mInFile))
    {
+      Log::PrintError("[gcore] BCFile::readElement: Failed to read \"%s\" entry header", name.c_str());
       return false;
    }
    
    if (!elt->read(mInFile))
    {
+      Log::PrintError("[gcore] BCFile::readElement: Failed to read \"%s\" entry", name.c_str());
       return false;
    }
    
@@ -531,6 +575,7 @@ bool BCFile::read_0_1(std::ifstream &ifile)
    unsigned long nelems = 0;
    if (!ReadUint32(ifile, nelems) || ifile.eof())
    {
+      Log::PrintError("[gcore] BCFile::read_0_1: Could not read entry count");
       return false;
    }
    
@@ -542,16 +587,19 @@ bool BCFile::read_0_1(std::ifstream &ifile)
       
       if (ifile.eof())
       {
+         Log::PrintError("[gcore] BCFile::read_0_1: Reached EOF");
          return false;
       }
       
       if (!ReadString(ifile, name) || ifile.eof())
       {
+         Log::PrintError("[gcore] BCFile::read_0_1: Could not read entry string");
          return false;
       }
       
       if (!ReadUint32(ifile, off))
       {
+         Log::PrintError("[gcore] BCFile::read_0_1: Could not read entry offset");
          return false;
       }
       
@@ -571,6 +619,7 @@ bool BCFile::read_0_2(std::ifstream &ifile)
    unsigned long nelems = 0;
    if (!ReadUint32(ifile, nelems) || ifile.eof())
    {
+      Log::PrintError("[gcore] BCFile::read_0_1: Could not read entry count");
       return false;
    }
    
@@ -582,21 +631,25 @@ bool BCFile::read_0_2(std::ifstream &ifile)
       
       if (ifile.eof())
       {
+         Log::PrintError("[gcore] BCFile::read_0_2: Reached EOF");
          return false;
       }
       
       if (!ReadString(ifile, name) || ifile.eof())
       {
+         Log::PrintError("[gcore] BCFile::read_0_2: Could not read entry string");
          return false;
       }
       
       if (!ReadUint32(ifile, off))
       {
+         Log::PrintError("[gcore] BCFile::read_0_2: Could not read entry offset");
          return false;
       }
       
       if (!ReadUint32(ifile, sz))
       {
+         Log::PrintError("[gcore] BCFile::read_0_2: Could not read entry size");
          return false;
       }
       

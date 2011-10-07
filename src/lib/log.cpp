@@ -206,6 +206,16 @@ unsigned int Log::GetIndentLevel()
    return msSharedLog.getIndentLevel();
 }
 
+void Log::Indent()
+{
+   msSharedLog.indent();
+}
+
+void Log::UnIndent()
+{
+   msSharedLog.unIndent();
+}
+
 void Log::SetIndentWidth(unsigned int w)
 {
    msSharedLog.setIndentWidth(w);
@@ -352,7 +362,7 @@ void Log::print(LogLevel lvl, const char *msg) const
    if (mTimeStamps)
    {
       Date now;
-      ts = now.format("%y/%m/%d %H:%M:%S");
+      ts = now.format("%Y/%m/%d %H:%M:%S");
       ts += " ";
    }
    
@@ -373,21 +383,27 @@ void Log::print(LogLevel lvl, const char *msg) const
       heading += ts + "[  ERROR  ] ";
       break;
    case LOG_WARNING:
+      if (useColors)
+      {
 #ifdef _WIN32
          ChangeTermColors(TERM_COL_YELLOW, -1);
 #else
          heading += MakeTermCode(-1, TERM_COL_YELLOW, -1);
          trailing = MakeTermCode(TERM_CMD_RESET, -1, -1);
 #endif
+      }
       heading += ts + "[ WARNING ] ";
       break;
    case LOG_DEBUG:
+      if (useColors)
+      {
 #ifdef _WIN32
          ChangeTermColors(TERM_COL_CYAN, -1);
 #else
          heading += MakeTermCode(-1, TERM_COL_CYAN, -1);
          trailing = MakeTermCode(TERM_CMD_RESET, -1, -1);
 #endif
+      }
       heading += ts + "[  DEBUG  ] ";
       break;
    case LOG_INFO:
@@ -483,6 +499,19 @@ void Log::setIndentLevel(unsigned int l)
 unsigned int Log::getIndentLevel() const
 {
    return mIndentLevel;
+}
+
+void Log::indent()
+{
+   mIndentLevel += 1;
+}
+
+void Log::unIndent()
+{
+   if (mIndentLevel > 0)
+   {
+      mIndentLevel -= 1;
+   }
 }
 
 void Log::setIndentWidth(unsigned int w)

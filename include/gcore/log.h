@@ -37,6 +37,8 @@ namespace gcore
       
       static void SetIndentLevel(unsigned int n);
       static unsigned int GetIndentLevel();
+      static void Indent();
+      static void UnIndent();
       
       static void SetIndentWidth(unsigned int w);
       static unsigned int GetIndentWidth();
@@ -68,6 +70,8 @@ namespace gcore
       
       void setIndentLevel(unsigned int l);
       unsigned int getIndentLevel() const;
+      void indent();
+      void unIndent();
       
       void setIndentWidth(unsigned int w);
       unsigned int getIndentWidth() const;

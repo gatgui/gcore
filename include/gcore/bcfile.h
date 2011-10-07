@@ -95,6 +95,7 @@ namespace gcore
 
       void clearElements();
       bool addElement(const std::string &name, BCFileElement *e);
+      bool replaceElement(const std::string &name, BCFileElement *e);
       bool hasElement(const std::string &name) const;
       bool readElement(const std::string &name, BCFileElement *elt);
 

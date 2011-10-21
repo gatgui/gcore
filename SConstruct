@@ -12,10 +12,16 @@ if debugrex:
   libdefs.append("_DEBUG_REX")
 libcustom = []
 depcustom = []
+liblibs   = []
+deplibs   = []
 if static:
   depcustom = [threads.Require, dl.Require]
+  if not str(Platform()) in ["win32", "darwin"]:
+    deplibs = ["rt"]
 else:
   libcustom = [threads.Require, dl.Require]
+  if not str(Platform()) in ["win32", "darwin"]:
+    liblibs = ["rt"]
 
 prjs = [
   { "name"    : "gcore",
@@ -23,7 +29,8 @@ prjs = [
     "incdirs" : ["include"],
     "srcs"    : glob.glob("src/lib/*.cpp") + glob.glob("src/lib/rex/*.cpp"),
     "defs"    : libdefs,
-    "custom"  : libcustom
+    "custom"  : libcustom,
+    "libs"    : liblibs
   },
   { "name"    : "testmodule",
     "type"    : "dynamicmodule",
@@ -36,9 +43,9 @@ prjs = [
     "incdirs" : ["include"],
     "srcs"    : glob.glob("src/tests/*.cpp"),
     "defs"    : ["GCORE_STATIC"] if static else [],
-    "libs"    : ["gcore"],
+    "libs"    : ["gcore"]+deplibs,
     "deps"    : ["testmodule"],
-    "custom"  : depcustom
+    "custom"  : depcustom,
   }
 ]
 

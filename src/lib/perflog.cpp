@@ -1,4 +1,5 @@
 #include <gcore/perflog.h>
+#include <gcore/log.h>
 #ifdef __APPLE__
 #  include <mach/clock.h>
 #  include <mach/mach.h>
@@ -10,43 +11,34 @@ namespace gcore
 #ifndef _WIN32
 #ifdef __APPLE__
 
-class ClockService
+clock_serv_t gClockServ;
+
+class ClockServiceInitializer
 {
 public:
-   
-   ClockService()
+   ClockServiceInitializer()
    {
-      host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &mClockServ);
+      host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &gClockServ);
    }
-   
-   ~ClockService()
+   ~ClockServiceInitializer()
    {
-      mach_port_deallocate(mach_task_self(), mClockServ);
+      mach_port_deallocate(mach_task_self(), gClockServ);
    }
-   
-   void getTime(struct timespec *ts) const
-   {
-      mach_timespec_t mts;
-      clock_get_time(mClockServ, &mts);
-      ts->tv_sec = mts.tv_sec;
-      ts->tv_nsec = mts.tv_nsec;
-   }
-   
-private:
-   
-   clock_serv_t mClockServ;
 };
 
-ClockService gClockServ;
+ClockServiceInitializer _initializeClockService;
 
-static void clock_gettime(struct timespec *ts)
+static inline void clock_gettime(struct timespec *ts)
 {
-   gClockServ.getTime(ts);
+   mach_timespec_t mts;
+   clock_get_time(gClockServ, &mts);
+   ts->tv_sec = mts.tv_sec;
+   ts->tv_nsec = mts.tv_nsec;
 }
 
 #else
 
-static void clock_gettime(struct timespec *ts)
+static inline void clock_gettime(struct timespec *ts)
 {
    clock_getttime(CLOCK_PROCESS_CPUTIME_ID, ts);
 }
@@ -290,11 +282,11 @@ const char* PerfLog::UnitsString(PerfLog::Units units)
 double PerfLog::ConvertUnits(double val, PerfLog::Units srcUnits, PerfLog::Units dstUnits)
 {
    static const double sConvertUnits[][Hours+1] = {
-      {            1.0, 1.0/1000000.0, 1.0/1000000000, 1.0/60000000000, 1.0/3600000000000},
-      {      1000000.0,           1.0,     1.0/1000.0,       1.0/60000,       1.0/3600000},
-      {   1000000000.0,        1000.0,            1.0,        1.0/60.0,        1.0/3600.0},
-      {  60000000000.0,       60000.0,           60.0,             1.0,          1.0/60.0},
-      {3600000000000.0,     3600000.0,         3600.0,            60.0,               1.0}
+      {            1.0, 1.0/1000000.0, 1.0/1000000000.0, 1.0/60000000000.0, 1.0/3600000000000.0},
+      {      1000000.0,           1.0,       1.0/1000.0,       1.0/60000.0,       1.0/3600000.0},
+      {   1000000000.0,        1000.0,              1.0,          1.0/60.0,          1.0/3600.0},
+      {  60000000000.0,       60000.0,             60.0,               1.0,            1.0/60.0},
+      {3600000000000.0,     3600000.0,           3600.0,              60.0,                 1.0}
    };
    
    int src = int(srcUnits);
@@ -326,14 +318,19 @@ void PerfLog::End()
    SharedInstance().end();
 }
 
-void PerfLog::Print(int flags, int sortBy, PerfLog::Units units)
+void PerfLog::Print(PerfLog::Output output, int flags, int sortBy, PerfLog::Units units)
 {
-   SharedInstance().print(flags, sortBy, units);
+   SharedInstance().print(output, flags, sortBy, units);
 }
 
 void PerfLog::Print(std::ostream &os, int flags, int sortBy, PerfLog::Units units)
 {
    SharedInstance().print(os, flags, sortBy, units);
+}
+
+void PerfLog::Print(Log &log, int flags, int sortBy, PerfLog::Units units)
+{
+   SharedInstance().print(log, flags, sortBy, units);
 }
 
 void PerfLog::Clear()
@@ -500,9 +497,16 @@ double PerfLog::convertUnits(double val, PerfLog::Units srcUnits, PerfLog::Units
    return ConvertUnits(val, srcUnits, dstUnits);
 }
 
-void PerfLog::print(int flags, int sortBy, PerfLog::Units units)
+void PerfLog::print(PerfLog::Output output, int flags, int sortBy, PerfLog::Units units)
 {
-   print(std::cout, flags, sortBy, units);
+   if (output == ConsoleOutput)
+   {
+      print(std::cout, flags, sortBy, units);
+   }
+   else
+   {
+      print(Log::Shared(), flags, sortBy, units);
+   }
 }
 
 // ---
@@ -746,6 +750,16 @@ public:
       }
    }
    
+   void print(Log &log)
+   {
+      printLine(log, mHeader);
+      printHorizontalSeparator(log);
+      for (size_t i=0; i<mLines.size(); ++i)
+      {
+         printLine(log, mLines[i]);
+      }
+   }
+   
    size_t numLines() const
    {
       return mLines.size();
@@ -764,7 +778,7 @@ private:
       os << " | ";
    }
    
-   void printHorizontalSeparator(std::ostream &os)
+   void printHorizontalSeparator(std::ostream &os, bool noNewLine=false)
    {
       if (mFieldLengths.size() == 0)
       {
@@ -785,10 +799,22 @@ private:
          os << "-";
       }
       
-      os << std::endl;
+      if (!noNewLine)
+      {
+         os << std::endl;
+      }
    }
    
-   void printLine(std::ostream &os, const Line &lline)
+   void printHorizontalSeparator(Log &log)
+   {
+      std::ostringstream oss;
+      
+      printHorizontalSeparator(oss, true);
+      
+      log.printInfo(oss.str().c_str());
+   }
+   
+   void printLine(std::ostream &os, const Line &lline, bool noNewLine=false)
    {
       if (lline.size() != mFieldLengths.size())
       {
@@ -811,7 +837,19 @@ private:
          }
       }
       
-      os << std::endl;
+      if (!noNewLine)
+      {
+         os << std::endl;
+      }
+   }
+   
+   void printLine(Log &log, const Line &lline)
+   {
+      std::ostringstream oss;
+      
+      printLine(oss, lline, true);
+      
+      log.printInfo(oss.str().c_str());
    }
    
    template <typename T>
@@ -1032,6 +1070,51 @@ void PerfLog::print(std::ostream &os, int flags, int sortBy, PerfLog::Units unit
         os << "   " << mEntryStack[mEntryStack.size() - 1 - i].id << std::endl;
       }
       os << ")" << std::endl;
+   }
+}
+
+void PerfLog::print(Log &log, int flags, int sortBy, PerfLog::Units units)
+{
+   log.printInfo("Performances (in %s)", unitsString(units));
+   log.indent();
+   
+   Logger logger(flags, sortBy, mUnits, (units == CurrentUnits ? mUnits : units));
+   
+   if (flags & ShowFlat)
+   {
+      // flag type display
+      logger.appendLogLines(mEntries);
+   }
+   
+   if (flags & ShowDetailed)
+   {
+      if (logger.numLines() > 0)
+      {
+         logger.appendSeparator();
+      }
+      // graph type display
+      logger.appendLogLines(mRootEntries);
+   }
+   
+   if (logger.numLines() == 0)
+   {
+      // show flag view by default
+      logger.appendLogLines(mEntries);
+   }
+   
+   logger.print(log);
+   
+   log.unIndent();
+   
+   if (mEntryStack.size() > 0)
+   {
+      log.printWarning("[PerfLog] Still have %lu entry(ies) on stack", mEntryStack.size());
+      log.indent();
+      for (size_t i=0; i<mEntryStack.size(); ++i)
+      {
+         log.printWarning(mEntryStack[mEntryStack.size() - 1 - i].id.c_str());
+      }
+      log.unIndent();
    }
 }
 

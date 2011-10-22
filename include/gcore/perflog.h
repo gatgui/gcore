@@ -5,7 +5,8 @@
 
 namespace gcore
 {
-
+   class GCORE_API Log;
+   
    class GCORE_API PerfLog
    {
    public:
@@ -46,13 +47,20 @@ namespace gcore
          SortReverse = 0x1000
       };
       
+      enum Output
+      {
+         ConsoleOutput = 0,
+         LogOutput
+      };
+      
    public:
       
       static PerfLog& SharedInstance();
       static void Begin(const std::string &id);
       static void End();
-      static void Print(int flags=ShowDefaults, int sortBy=SortFuncTime, Units units=CurrentUnits);
+      static void Print(Output output=ConsoleOutput, int flags=ShowDefaults, int sortBy=SortFuncTime, Units units=CurrentUnits);
       static void Print(std::ostream &os, int flags=ShowDefaults, int sortBy=SortFuncTime, Units units=CurrentUnits);
+      static void Print(Log &log, int flags=ShowDefaults, int sortBy=SortFuncTime, Units units=CurrentUnits);
       static void Clear();
       
       static const char* UnitsString(Units units);
@@ -69,8 +77,9 @@ namespace gcore
       
       void begin(const std::string &id);
       void end();
-      void print(int flags=ShowDefaults, int sortBy=SortFuncTime, Units units=CurrentUnits);
+      void print(Output output=ConsoleOutput, int flags=ShowDefaults, int sortBy=SortFuncTime, Units units=CurrentUnits);
       void print(std::ostream &os, int flags=ShowDefaults, int sortBy=SortFuncTime, Units units=CurrentUnits);
+      void print(Log &log, int flags=ShowDefaults, int sortBy=SortFuncTime, Units units=CurrentUnits);
       void clear();
       
       

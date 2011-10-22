@@ -25,6 +25,8 @@ namespace gcore
       
    public:
       
+      static Log& Shared();
+      
       static void SelectOutputs(unsigned int flags);
       static unsigned int SelectedOutputs();
       

@@ -141,6 +141,11 @@ namespace gcore
 Log Log::msSharedLog;
 char Log::msBuffer[2048];
 
+Log& Log::Shared()
+{
+   return msSharedLog;
+}
+
 void Log::SelectOutputs(unsigned int flags)
 {
    msSharedLog.selectOutputs(flags);

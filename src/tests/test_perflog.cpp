@@ -1,4 +1,5 @@
 #include <gcore/perflog.h>
+#include <gcore/log.h>
 #include <cstdio>
 #include <cstring>
 
@@ -80,13 +81,15 @@ int main(int argc, char **argv)
       }
    }
    
+   LOG_PERF("Top");
+   
    for (unsigned long i=0; i<loop; ++i)
    {
       FuncA(n);
    }
    
    // default print out
-   PerfLog::Print(std::cout, PerfLog::ShowAll|PerfLog::ShowDetailed|PerfLog::ShowFlat, PerfLog::SortTotalTime);
+   PerfLog::Print(PerfLog::LogOutput, PerfLog::ShowAll|PerfLog::ShowDetailed|PerfLog::ShowFlat, PerfLog::SortTotalTime);
    
    return 0;
 }

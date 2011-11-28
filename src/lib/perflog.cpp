@@ -40,7 +40,7 @@ static inline void clock_gettime(struct timespec *ts)
 
 static inline void clock_gettime(struct timespec *ts)
 {
-   clock_getttime(CLOCK_PROCESS_CPUTIME_ID, ts);
+   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, ts);
 }
 
 #endif
@@ -60,7 +60,7 @@ PerfLog::StackItem::StackItem()
    selfStart = start;
 }
 
-PerfLog::StackItem::StackItem(const std::string &_id, struct Entry *_entry)
+PerfLog::StackItem::StackItem(const std::string &_id, Entry *_entry)
    : entry(_entry)
    , id(_id)
    , recursionCount(0)

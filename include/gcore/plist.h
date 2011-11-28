@@ -120,8 +120,10 @@ namespace gcore {
       double getReal(const String &prop) const throw(plist::Exception);
       bool getBoolean(const String &prop) const throw(plist::Exception);
       
-      size_t getArraySize(const String &prop) const throw(plist::Exception);
-      size_t getDictKeys(const String &prop, StringList &keys) const throw(plist::Exception);
+      size_t getSize(const String &prop) const throw(plist::Exception);
+      size_t getKeys(const String &prop, StringList &keys) const throw(plist::Exception);
+      void clear(const String &prop) throw(plist::Exception);
+      bool remove(const String &prop);
       
       bool has(const String &prop) const;
       
@@ -394,6 +396,7 @@ namespace gcore {
           return mPairs;
         }
         
+        size_t size() const;
         void clear();
         Value* value(const gcore::String &key);
         const Value* value(const gcore::String &key) const;

@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
     
     std::cout << "Font name: " << pl.getString("font.name") << std::endl;
     std::cout << "Font size: " << pl.getInteger("font.size") << std::endl;
-    std::cout << "Num schemes: " << pl.getArraySize("schemes.all") << std::endl;
+    std::cout << "Num schemes: " << pl.getSize("schemes.all") << std::endl;
     std::cout << "schemes.all[2].name = " << pl.getString("schemes.all[2].name") << std::endl;
     
     /*
@@ -67,9 +67,9 @@ int main(int argc, char **argv) {
     std::cout << pl.getReal("projection[2][3]") << std::endl;
     std::cout << pl.getReal("projection[3][3]") << std::endl;
     std::cout << pl.getString("projection[4][0].type") << std::endl;
-    std::cout << pl.getArraySize("projection") << std::endl;
-    std::cout << pl.getArraySize("projection[0]") << std::endl;
-    std::cout << pl.getArraySize("projection[4]") << std::endl;
+    std::cout << pl.getSize("projection") << std::endl;
+    std::cout << pl.getSize("projection[0]") << std::endl;
+    std::cout << pl.getSize("projection[4]") << std::endl;
     
     pl.setString("fonts[4][2][1].desc[0].name", "Monaco");
     std::cout << pl.getString("fonts[4][2][1].desc[0].name") << std::endl;

@@ -2,6 +2,7 @@
 #define __gcore_perfLog_h__
 
 #include <gcore/config.h>
+#include <gcore/platform.h>
 
 namespace gcore
 {
@@ -125,7 +126,7 @@ namespace gcore
          TimeCounter selfStart;
       
          StackItem();
-         StackItem(const std::string &_id, struct Entry *_entry);
+         StackItem(const std::string &_id, Entry *_entry);
          StackItem(const StackItem &);
          StackItem& operator=(const StackItem &);
       

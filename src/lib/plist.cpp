@@ -327,17 +327,40 @@ const plist::Value* plist::Array::at(size_t idx) const {
 
 void plist::Array::set(size_t idx, Value *v, bool replace) {
   if (idx < mValues.size()) {
+    // we already have a value at given index
+    if (!replace) {
+      return;
+    }
+    if (mValues[idx] == v) {
+      // same object
+      return;
+    }
     if (mValues[idx]) {
-      if (!replace) {
-        return;
-      }
+      // delete old value
       delete mValues[idx];
+      mValues[idx] = 0;
     }
   }
-  while (idx >= mValues.size()) {
-    mValues.push(0);
+  if (v != 0) {
+    if (idx >= mValues.size()) {
+      mValues.resize(idx+1, 0);
+    }
+    mValues[idx] = v;
+    
+  } else {
+    if (idx < mValues.size()) {
+      mValues[idx] = 0;
+    }
+    // adjust down array size if needed
+    long lastIdx = long(mValues.size()) - 1;
+    while (lastIdx >= 0 && mValues[lastIdx] == 0) {
+      --lastIdx;
+    }
+    size_t newSize = size_t(lastIdx + 1);
+    if (newSize != mValues.size()) {
+      mValues.resize(newSize);
+    }
   }
-  mValues[idx] = v;
 }
 
 plist::Value* plist::Array::clone() const {
@@ -413,7 +436,11 @@ plist::Dictionary::Dictionary(const std::map<gcore::String, Value*> &val)
 plist::Dictionary::~Dictionary() {
   clear();
 }
-  	
+
+size_t plist::Dictionary::size() const {
+  return mPairs.size();
+}
+
 void plist::Dictionary::clear() {
   std::map<gcore::String, Value*>::iterator it = mPairs.begin();
   while (it != mPairs.end()) {
@@ -466,13 +493,25 @@ const plist::Value* plist::Dictionary::value(const gcore::String &key) const {
 }
 
 void plist::Dictionary::set(const gcore::String &key, Value *v, bool replace) {
-  if (has(key)) {
+  std::map<gcore::String, Value*>::iterator it = mPairs.find(key);
+  if (it != mPairs.end()) {
     if (!replace) {
       return;
     }
-    delete mPairs[key];
+    if (it->second == v) {
+      return;
+    }
+    delete it->second;
+    if (v) {
+      it->second = v;
+    } else {
+      mPairs.erase(it);
+    }
+  } else {
+    if (v) {
+      mPairs[key] = v;
+    }
   }
-  mPairs[key] = v;
 }
 
 plist::Value* plist::Dictionary::clone() const {
@@ -990,6 +1029,73 @@ static plist::Value* GetProperty(plist::Dictionary *dict,
   return GetPropertyMember(cdict, pre, remain, true);
 }
 
+static bool RemoveProperty(plist::Dictionary *dict, const String &prop)
+{
+  if (!dict || prop.length() == 0) {
+    return false;
+  }
+  
+  size_t pos = prop.find('.');
+  
+  if (pos == String::npos) {
+    // final property
+    size_t sz = prop.length();
+    
+    if (prop[sz-1] == ']') {
+      pos = prop.rfind('[');
+      if (pos == String::npos) {
+        // invalid property specification
+        return false;
+      }
+      
+      String attr = prop.substr(0, pos);
+      plist::Array *array = 0;
+      if (!dict->value(attr)->checkType(array)) {
+        // property is not an array
+        return false;
+      }
+      
+      unsigned long index = 0;
+      String sindex = prop.substr(pos + 1, sz - pos - 2);
+      if (sscanf(sindex.c_str(), "%lu", &index) != 1) {
+        // invalid property index
+        return false;
+      }
+      
+      if (index >= array->size()) {
+         return false;
+      }
+      
+      array->set(index, 0);
+      return true;
+      
+    } else if (dict->has(prop)) {
+      dict->set(prop, 0);
+      return true;
+      
+    } else {
+      return false;
+    }
+    
+  } else {
+    String curProp = prop.substr(0, pos);
+    String subProp = prop.substr(pos+1);
+    plist::Dictionary *subDict = 0;
+    
+    if (!dict->value(curProp)->checkType(subDict)) {
+      return false;
+    }
+    
+    if (RemoveProperty(subDict, subProp)) {
+      dict->set(curProp, 0);
+      return true;
+      
+    } else {
+      return false;
+    }
+  }
+}
+
 static void SetProperty(plist::Dictionary *dict,
                         const String &prop,
                         plist::Value *value) throw(plist::Exception)
@@ -1051,12 +1157,24 @@ static void SetTypedProperty(plist::Dictionary *dict,
   }
 }
 
-size_t PropertyList::getArraySize(const String &p) const throw(plist::Exception) {
-  plist::Array::ReturnType ary = GetTypedProperty<plist::Array>(mTop, p);
-  return ary.size();
+size_t PropertyList::getSize(const String &p) const throw(plist::Exception) {
+  const plist::Value *val = GetProperty(mTop, p);
+  const plist::Dictionary *dict = 0;
+  const plist::Array *array = 0;
+  if (val->checkType(dict)) {
+    return dict->size();
+  } else if (val->checkType(array)) {
+    return array->size();
+  } else {
+    throw plist::Exception(p, "Invalid type (expected \"%s\" or \"%s\", got \"%s\")",
+                           plist::Array::TypeName(),
+                           plist::Dictionary::TypeName(),
+                           PropertyList::ValueTypeName(val->getType()).c_str());
+    return 0;
+  }
 }
 
-size_t PropertyList::getDictKeys(const String &p, StringList &kl) const throw(plist::Exception) {
+size_t PropertyList::getKeys(const String &p, StringList &kl) const throw(plist::Exception) {
   const plist::Value *val = GetProperty(mTop, p);
   const plist::Dictionary *dict=0;
   if (!val->checkType(dict)) {
@@ -1065,6 +1183,26 @@ size_t PropertyList::getDictKeys(const String &p, StringList &kl) const throw(pl
                            PropertyList::ValueTypeName(val->getType()).c_str());
   }
   return dict->keys(kl);
+}
+
+void PropertyList::clear(const String &p) throw(plist::Exception) {
+  plist::Value *val = GetProperty(mTop, p);
+  plist::Dictionary *dict = 0;
+  plist::Array *array = 0;
+  if (val->checkType(dict)) {
+    dict->clear();
+  } else if (val->checkType(array)) {
+    array->clear();
+  } else {
+    throw plist::Exception(p, "Invalid type (expected \"%s\" or \"%s\", got \"%s\")",
+                           plist::Array::TypeName(),
+                           plist::Dictionary::TypeName(),
+                           PropertyList::ValueTypeName(val->getType()).c_str());
+  }
+}
+
+bool PropertyList::remove(const String &p) {
+  return RemoveProperty(mTop, p);
 }
 
 bool PropertyList::has(const String &prop) const {

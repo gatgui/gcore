@@ -1067,6 +1067,9 @@ static bool RemoveProperty(plist::Dictionary *dict, const String &prop)
       }
       
       array->set(index, 0);
+      if (array->size() == 0) {
+        dict->set(attr, 0);
+      }
       return true;
       
     } else if (dict->has(prop)) {
@@ -1086,13 +1089,7 @@ static bool RemoveProperty(plist::Dictionary *dict, const String &prop)
       return false;
     }
     
-    if (RemoveProperty(subDict, subProp)) {
-      dict->set(curProp, 0);
-      return true;
-      
-    } else {
-      return false;
-    }
+    return RemoveProperty(subDict, subProp);
   }
 }
 

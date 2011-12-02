@@ -536,7 +536,7 @@ bool XMLDoc::read(std::istream &is) {
               // read required number of characters, at most 7 (we always leave place for 7)
               
               //size_t nr = fread(p1+2, 7-remain, 1, file);
-              is.read(p1+2, 7-remain);
+              is.read(eob, 7-remain);
               if (is.bad()) {
                 goto failed;
               }

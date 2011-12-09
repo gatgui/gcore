@@ -69,6 +69,8 @@ String Dirmap::Map(const String &path) {
   String lookuppath(path);
   StringDict *lookupmap;
   
+  lookuppath.replace('\\', '/');
+  
 #ifdef _WIN32
   
   if (!IsWindowsPath(path)) {
@@ -80,7 +82,7 @@ String Dirmap::Map(const String &path) {
 #else
 
   if (IsWindowsPath(path)) {
-    lookuppath.tolower().replace('\\', '/');
+    lookuppath.tolower();
     lookupmap = &msWin2Nix;
   } else {
     return path;
@@ -103,9 +105,6 @@ String Dirmap::Map(const String &path) {
   if (bestpath.length() > 0) {
     lookuppath = (*lookupmap)[bestpath];
     lookuppath += path.substr(bestpath.length());
-#ifndef _WIN32
-    lookuppath.replace('\\', '/');
-#endif
     return lookuppath;
   } else {
     return path;

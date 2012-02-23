@@ -438,6 +438,7 @@ bool XMLDoc::read(std::istream &is) {
   size_t nLastChar = 0;
   char lastChars[16];
   size_t nread = 0;
+  int taglevel = 0;
 
   XMLElement *root = 0; // only one allowed, if set all other elements are child
   XMLElement *cur = 0;
@@ -796,6 +797,9 @@ bool XMLDoc::read(std::istream &is) {
           String tag = pending.substr(0, len);
 
           XMLElement *elem = new XMLElement(tag);
+#ifdef _DEBUG
+          std::cout << "Open tag \"" << tag << "\" [level = " << taglevel << "]" << std::endl;
+#endif
 
           while (tc < te) {
 
@@ -871,6 +875,7 @@ bool XMLDoc::read(std::istream &is) {
               cur->addChild(elem);
             }
             cur = elem;
+            taglevel += 1;
           }
           if (!root) {
             root = elem;
@@ -912,6 +917,10 @@ bool XMLDoc::read(std::istream &is) {
             goto failed;
           }
 
+          taglevel -= 1;
+#ifdef _DEBUG
+          std::cout << "Close tag \"" << cur->getTag() << "\" [level = " << taglevel << "]" << std::endl;
+#endif
           cur = cur->getParent();
 
           pending = "";
@@ -937,6 +946,11 @@ bool XMLDoc::read(std::istream &is) {
 
   if (state != READ_OPEN) {
     Log::PrintError("[gcore] XMLDoc::read: Missing closing tag");
+    goto failed;
+  }
+  
+  if (taglevel != 0) {
+    Log::PrintError("[gcore] XMLDoc::read: Unclosed tag <%s>", (cur ? cur->getTag().c_str() : "UNKNOWN"));
     goto failed;
   }
   

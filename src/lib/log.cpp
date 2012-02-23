@@ -262,7 +262,7 @@ Log::Log()
    , mToFile(false)
 {
 #ifdef _DEBUG
-   mOutputs |= LOG_DEBUG
+   mOutputs |= LOG_DEBUG;
 #endif
    Bind(PrintStdout, mOutFunc);
 }
@@ -277,7 +277,7 @@ Log::Log(const Path &path)
    , mFilePath(path)
 {
 #ifdef _DEBUG
-   mOutputs |= LOG_DEBUG
+   mOutputs |= LOG_DEBUG;
 #endif
    mOutFile.open(path.fullname().c_str(), std::ofstream::app|std::ofstream::out);
 }

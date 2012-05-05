@@ -28,13 +28,13 @@ USA.
 // on this obejct call the dll function
 // DLL used this way do not have to be link at compile time
 // A possible use is for a plugin architecture
-BEGIN_MODULE_INTERFACE   ( MyDll                               )
-  DEFINE_MODULE_SYMBOL0  (       initialize                    )
-  DEFINE_MODULE_SYMBOL0  (       reset                         )
-  DEFINE_MODULE_SYMBOL0  (       update                        )
-  DEFINE_MODULE_SYMBOL0R ( bool, isLoaded                      )
-  DEFINE_MODULE_SYMBOL1R ( bool, load,      const std::string& )
-END_MODULE_INTERFACE
+GCORE_BEGIN_MODULE_INTERFACE   ( MyDll                               )
+  GCORE_DEFINE_MODULE_SYMBOL0  (       initialize                    )
+  GCORE_DEFINE_MODULE_SYMBOL0  (       reset                         )
+  GCORE_DEFINE_MODULE_SYMBOL0  (       update                        )
+  GCORE_DEFINE_MODULE_SYMBOL0R ( bool, isLoaded                      )
+  GCORE_DEFINE_MODULE_SYMBOL1R ( bool, load,      const std::string& )
+GCORE_END_MODULE_INTERFACE
 
 int main(int,char**)
 {

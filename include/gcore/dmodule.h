@@ -51,9 +51,9 @@ namespace gcore {
 }
 
 #ifdef WIN32
-# define MODULE_API extern "C" __declspec(dllexport)
-# define MODULE_DUMMY_MAIN \
-  MODULE_API BOOL __stdcall DllMain(HINSTANCE hInst, DWORD dwReason, LPVOID pvReserved) { \
+# define GCORE_MODULE_API extern "C" __declspec(dllexport)
+# define GCORE_MODULE_DUMMY_MAIN \
+  GCORE_MODULE_API BOOL __stdcall DllMain(HINSTANCE hInst, DWORD dwReason, LPVOID pvReserved) { \
     switch(dwReason) {\
       case DLL_PROCESS_ATTACH: \
       case DLL_PROCESS_DETACH: \
@@ -65,19 +65,19 @@ namespace gcore {
     return TRUE; \
   }
 #else
-# define MODULE_API extern "C"
-# define MODULE_DUMMY_MAIN
+# define GCORE_MODULE_API extern "C" __attribute__ ((visibility ("default")))
+# define GCORE_MODULE_DUMMY_MAIN
 #endif
 
 
-#define BEGIN_MODULE_INTERFACE(ClassName)\
+#define GCORE_BEGIN_MODULE_INTERFACE(ClassName)\
   class ClassName : public gcore::DynamicModule {\
     public:\
       ClassName() : gcore::DynamicModule() {}\
       ClassName(const gcore::String &name) : gcore::DynamicModule(name) {}\
       virtual ~ClassName() {}
 
-#define DEFINE_MODULE_SYMBOL0(Name)\
+#define GCORE_DEFINE_MODULE_SYMBOL0(Name)\
     public:\
       void Name() {\
         Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
@@ -88,7 +88,7 @@ namespace gcore {
     protected:\
       typedef void (*Name##_t)();
   
-#define DEFINE_MODULE_SYMBOL1(Name,Type1)\
+#define GCORE_DEFINE_MODULE_SYMBOL1(Name,Type1)\
     public:\
       void Name(Type1 p1) {\
         Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
@@ -99,7 +99,7 @@ namespace gcore {
     protected:\
       typedef void (*Name##_t)(Type1);
     
-#define DEFINE_MODULE_SYMBOL2(Name,Type1,Type2)\
+#define GCORE_DEFINE_MODULE_SYMBOL2(Name,Type1,Type2)\
     public:\
       void Name(Type1 p1,Type2 p2) {\
         Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
@@ -110,7 +110,7 @@ namespace gcore {
     protected:\
       typedef void (*Name##_t)(Type1,Type2);
 
-#define DEFINE_MODULE_SYMBOL3(Name,Type1,Type2,Type3)\
+#define GCORE_DEFINE_MODULE_SYMBOL3(Name,Type1,Type2,Type3)\
     public:\
       void Name(Type1 p1, Type2 p2, Type3 p3) {\
         Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
@@ -121,7 +121,7 @@ namespace gcore {
     protected:\
       typedef void (*Name##_t)(Type1,Type2,Type3);
 
-#define DEFINE_MODULE_SYMBOL4(Name,Type1,Type2,Type3,Type4)\
+#define GCORE_DEFINE_MODULE_SYMBOL4(Name,Type1,Type2,Type3,Type4)\
     public:\
       void Name(Type1 p1, Type2 p2, Type3 p3, Type4 p4) {\
         Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
@@ -132,7 +132,7 @@ namespace gcore {
     protected:\
       typedef void (*Name##_t)(Type1,Type2,Type3,Type4);
 
-#define DEFINE_MODULE_SYMBOL0R(RType,Name)\
+#define GCORE_DEFINE_MODULE_SYMBOL0R(RType,Name)\
     public:\
       RType Name() {\
         Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
@@ -144,7 +144,7 @@ namespace gcore {
     protected:\
       typedef RType (*Name##_t)();
   
-#define DEFINE_MODULE_SYMBOL1R(RType,Name,Type1)\
+#define GCORE_DEFINE_MODULE_SYMBOL1R(RType,Name,Type1)\
     public:\
       RType Name(Type1 p1) {\
         Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
@@ -156,7 +156,7 @@ namespace gcore {
     protected:\
       typedef RType (*Name##_t)(Type1);
     
-#define DEFINE_MODULE_SYMBOL2R(RType,Name,Type1,Type2)\
+#define GCORE_DEFINE_MODULE_SYMBOL2R(RType,Name,Type1,Type2)\
     public:\
       RType Name(Type1 p1,Type2 p2) {\
         Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
@@ -168,7 +168,7 @@ namespace gcore {
     protected:\
       typedef RType (*Name##_t)(Type1,Type2);
 
-#define DEFINE_MODULE_SYMBOL3R(RType,Name,Type1,Type2,Type3)\
+#define GCORE_DEFINE_MODULE_SYMBOL3R(RType,Name,Type1,Type2,Type3)\
     public:\
       RType Name(Type1 p1, Type2 p2, Type3 p3) {\
         Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
@@ -180,7 +180,7 @@ namespace gcore {
     protected:\
       typedef RType (*Name##_t)(Type1,Type2,Type3);
 
-#define DEFINE_MODULE_SYMBOL4R(RType,Name,Type1,Type2,Type3,Type4)\
+#define GCORE_DEFINE_MODULE_SYMBOL4R(RType,Name,Type1,Type2,Type3,Type4)\
     public:\
       RType Name(Type1 p1, Type2 p2, Type3 p3, Type4 p4) {\
         Name##_t ptr = FPTR_CAST(Name##_t, _getSymbol(#Name));\
@@ -192,7 +192,7 @@ namespace gcore {
     protected:\
       typedef RType (*Name##_t)(Type1,Type2,Type3,Type4);
 
-#define END_MODULE_INTERFACE \
+#define GCORE_END_MODULE_INTERFACE \
   };
 
 #endif

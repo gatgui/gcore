@@ -43,7 +43,7 @@ DLLAPI BOOL __stdcall DllMain(HINSTANCE /*hInst*/, DWORD dwReason, LPVOID /*pvRe
   return TRUE;
 }
 #else  //WIN32
-#  define DLLAPI extern "C"
+#  define DLLAPI extern "C" __attribute__ ((visibility ("default")))
 #endif //WIN32
 
 #include <string>

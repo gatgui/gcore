@@ -403,8 +403,10 @@ void XMLDoc::write(const String &fileName) const {
       ofile << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" << std::endl;
       mRoot->write(ofile, "");
       ofile << std::endl;
+      return;
     }
   }
+  Log::PrintError("[gcore] XMLDoc::write: Could not write file \"%s\"", fileName.c_str());
 }
 
 void XMLDoc::write(std::ostream &os) const {
@@ -979,7 +981,12 @@ failed:
 
 bool XMLDoc::read(const String &fileName) {
   std::ifstream ifs(fileName.c_str(), std::ifstream::binary);
-  return read(ifs);
+  if (!read(ifs)) {
+    Log::PrintError("[gcore] XMLDoc::read: Could not read file \"%s\"", fileName.c_str());
+    return false;
+  } else {
+    return true;
+  }
 }
 
 }

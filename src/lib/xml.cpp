@@ -600,7 +600,7 @@ bool XMLDoc::read(std::istream &is) {
                 goto failed;
               }
             } else {
-              if (nLastChar < 1 || lastChars[15] != '?') {
+              if (nLastChar < 1 || lastChars[nLastChar-1] != '?') {
                 Log::PrintError("[gcore] XMLDoc::read: Expected '?>'");
                 goto failed;
               }
@@ -639,14 +639,16 @@ bool XMLDoc::read(std::istream &is) {
           if (*p1 == '>') {
 
             bool found = false;
+            int lastCharOff = 1;
 
             if (p1 - 1 >= readBuffer) {
               if (*(p1 - 1) == ']') {
                 found = true;
               }
             } else {
-              if (nLastChar >= 1 && lastChars[15] == ']') {
+              if (nLastChar >= 1 && lastChars[nLastChar-lastCharOff] == ']') {
                 found = true;
+                ++lastCharOff;
               }
             }
 
@@ -659,7 +661,7 @@ bool XMLDoc::read(std::istream &is) {
                   found = true;
                 }
               } else {
-                if (nLastChar >= 2 && lastChars[14] == ']') {
+                if (nLastChar >= 2 && lastChars[nLastChar-lastCharOff] == ']') {
                   found = true;
                 }
               }
@@ -702,14 +704,16 @@ bool XMLDoc::read(std::istream &is) {
           if (*p1 == '>') {
 
             bool found = false;
+            int lastCharOff = 1;
 
             if (p1 - 1 >= readBuffer) {
               if (*(p1 - 1) == '-') {
                 found = true;
               }
             } else {
-              if (nLastChar >= 1 && lastChars[15] == '-') {
+              if (nLastChar >= 1 && lastChars[nLastChar-lastCharOff] == '-') {
                 found = true;
+                ++lastCharOff;
               }
             }
 
@@ -722,7 +726,7 @@ bool XMLDoc::read(std::istream &is) {
                   found = true;
                 }
               } else {
-                if (nLastChar >= 2 && lastChars[14] == '-') {
+                if (nLastChar >= 2 && lastChars[nLastChar-lastCharOff] == '-') {
                   found = true;
                 }
               }

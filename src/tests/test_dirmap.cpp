@@ -26,8 +26,8 @@ USA.
 int main(int argc, char **argv) {
   
   if (argc <= 1) {
-    gcore::Dirmap::AddMapping("Z:/Home", "/Users");
-    gcore::Dirmap::AddMapping("Z:/Work", "/Work");
+    gcore::Dirmap::AddMapping("z:/home", "/Users");
+    gcore::Dirmap::AddMapping("z:/work", "/Work");
   } else {
     gcore::Dirmap::ReadMappingsFromFile(gcore::Path(argv[1]));
   }

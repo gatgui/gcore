@@ -40,7 +40,8 @@ int main(int argc, char **argv) {
     spl.setString("schemes.all[0].name", "Hello");
     spl.setString("schemes.all[1].name", "World");
     spl.setString("schemes.all[2].name", "Goodbye");
-    spl.setString("aaa.bbb1.2.ccc.d2.4", 3.4);
+    spl.setString("aaa.bbb1.2.ccc.d2.4", "3.4");
+    spl.setString("aaa.bbb1.3[2].ccc.d2.4", "6.8");
     spl.write(filename);
   } catch (gcore::plist::Exception &e) {
     std::cerr << e.what() << std::endl;
@@ -62,6 +63,8 @@ int main(int argc, char **argv) {
     std::cout << "Num schemes: " << pl.getSize("schemes.all") << std::endl;
     std::cout << "schemes.all[2].name = " << pl.getString("schemes.all[2].name") << std::endl;
     std::cout << "aaa.bbb1.2.ccc.d2.4 = " << pl.getString("aaa.bbb1.2.ccc.d2.4") << std::endl;
+    // there were only one element in bbb1.3 array, after serialization, index are adjusted
+    std::cout << "aaa.bbb1.3[0].ccc.d2.4 = " << pl.getString("aaa.bbb1.3[0].ccc.d2.4") << std::endl;
 
     pl.remove("aaa.bbb1.2.ccc.d2.4");
     pl.remove("schemes.all[1]");

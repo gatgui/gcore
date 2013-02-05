@@ -785,7 +785,7 @@ static plist::Value* GetPropertyMember(plist::Dictionary* &cdict,
         b = strchr(c, '[');
         
         if (idx >= long(ary->size())) {
-          throw plist::Exception(cprop, "Invalid index %ld", idx);
+          throw plist::Exception(cprop, "Invalid index %ld (array size is %lu)", idx, ary->size());
         }
         
         if (!b) {
@@ -1006,6 +1006,18 @@ static bool IsValidPropertyName(const String &s)
   return nameExp.match(s);
 }
 
+static bool IsValidDottedPropertyName(const String &s)
+{
+  static Rex nameExp(RAW("[a-zA-Z][.a-zA-Z0-9_-]*(\[\d+\])?"));
+  return nameExp.match(s);
+}
+
+static bool IsValidDottedPropertyNamePart(const String &s)
+{
+  static Rex partExp(RAW("[a-zA-Z0-9_-]+"));
+  return partExp.match(s);
+}
+
 static bool GetPropertyNameParts(const String &prop, StringList &parts)
 {
   prop.split('.', parts);
@@ -1022,9 +1034,14 @@ static bool GetPropertyNameParts(const String &prop, StringList &parts)
       if (parts[i].length() == 0) {
         // found .. pattern or . at end of prop
         return false;
+
+      } else if (!IsValidDottedPropertyNamePart(parts[i])) {
+        // invalid part
+        return false;
+
       }
       parts[j] += "." + parts[i];
-      if (!IsValidPropertyName(parts[j])) {
+      if (!IsValidDottedPropertyName(parts[j])) {
         // merged property name is still invalid
         return false;
       }

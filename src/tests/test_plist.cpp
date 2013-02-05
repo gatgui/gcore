@@ -40,6 +40,7 @@ int main(int argc, char **argv) {
     spl.setString("schemes.all[0].name", "Hello");
     spl.setString("schemes.all[1].name", "World");
     spl.setString("schemes.all[2].name", "Goodbye");
+    spl.setString("aaa.bbb1.2.ccc.d2.4", 3.4);
     spl.write(filename);
   } catch (gcore::plist::Exception &e) {
     std::cerr << e.what() << std::endl;
@@ -60,7 +61,16 @@ int main(int argc, char **argv) {
     std::cout << "Font size: " << pl.getInteger("font.size") << std::endl;
     std::cout << "Num schemes: " << pl.getSize("schemes.all") << std::endl;
     std::cout << "schemes.all[2].name = " << pl.getString("schemes.all[2].name") << std::endl;
-    
+    std::cout << "aaa.bbb1.2.ccc.d2.4 = " << pl.getString("aaa.bbb1.2.ccc.d2.4") << std::endl;
+
+    pl.remove("aaa.bbb1.2.ccc.d2.4");
+    pl.remove("schemes.all[1]");
+    std::cout << "Num schemes: " << pl.getSize("schemes.all") << std::endl;
+    //pl.remove("schemes.all");
+    //std::cout << "aaa.bbb1.2.ccc.d2.4 = " << pl.getString("aaa.bbb1.2.ccc.d2.4") << std::endl;
+    std::cout << "schemes.all[0].name = " << pl.getString("schemes.all[0].name") << std::endl;
+    std::cout << "schemes.all[1].name = " << pl.getString("schemes.all[1].name") << std::endl;
+    std::cout << "schemes.all[2].name = " << pl.getString("schemes.all[2].name") << std::endl;
     /*
     std::cout << pl.getReal("projection[0][3]") << std::endl;
     std::cout << pl.getReal("projection[1][3]") << std::endl;

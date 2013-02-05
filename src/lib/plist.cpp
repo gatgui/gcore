@@ -342,6 +342,7 @@ void plist::Array::set(size_t idx, Value *v, bool replace) {
     }
   }
   if (v != 0) {
+    // sizing up, filling with zeros
     if (idx >= mValues.size()) {
       mValues.resize(idx+1, 0);
     }
@@ -350,8 +351,10 @@ void plist::Array::set(size_t idx, Value *v, bool replace) {
   } else {
     if (idx < mValues.size()) {
       mValues[idx] = 0;
+      for (size_t i=idx+1; i<mValues.size(); ++i) {
+        std::swap(mValues[i-1], mValues[i]);
+      }
     }
-    // adjust down array size if needed
     long lastIdx = long(mValues.size()) - 1;
     while (lastIdx >= 0 && mValues[lastIdx] == 0) {
       --lastIdx;
@@ -997,6 +1000,46 @@ static void SetPropertyMember(plist::Dictionary* &cdict,
   }
 }
 
+static bool IsValidPropertyName(const String &s)
+{
+  static Rex nameExp(RAW("[a-zA-Z][a-zA-Z0-9_-]*(\[\d+\])?"));
+  return nameExp.match(s);
+}
+
+static bool GetPropertyNameParts(const String &prop, StringList &parts)
+{
+  prop.split('.', parts);
+
+  if (!IsValidPropertyName(parts[0])) {
+    return false;
+  }
+
+  size_t j = 0;
+
+  for (size_t i=1; i<parts.size(); ++i) {
+
+    if (!IsValidPropertyName(parts[i])) {
+      if (parts[i].length() == 0) {
+        // found .. pattern or . at end of prop
+        return false;
+      }
+      parts[j] += "." + parts[i];
+      if (!IsValidPropertyName(parts[j])) {
+        // merged property name is still invalid
+        return false;
+      }
+
+    } else {
+      ++j;
+      parts[j] = parts[i];
+    }
+  }
+
+  parts.resize(j + 1);
+
+  return true;
+}
+
 static plist::Value* GetProperty(plist::Dictionary *dict,
                                  const String &prop) throw(plist::Exception)
 {
@@ -1004,29 +1047,24 @@ static plist::Value* GetProperty(plist::Dictionary *dict,
     throw plist::Exception("", "Passed null dictionary pointer");
   }
   
+  StringList parts;
+
+  if (!GetPropertyNameParts(prop, parts)) {
+    throw plist::Exception("", "Invalid property \"%s\"", prop.c_str());
+  }
+
+  String pre = "";
   plist::Dictionary *cdict = dict;
-  
-  String current, pre = "", remain = prop;
-  
-  size_t pos = remain.find('.');
-  
-  while (pos != String::npos) {
-    
-    current = remain.substr(0, pos);
-    
-    remain = remain.substr(pos+1);
-    
-    GetPropertyMember(cdict, pre, current);
-    
-    pos = remain.find('.');
-    
+
+  for (size_t i=0; i+1<parts.size(); ++i) {
+    GetPropertyMember(cdict, pre, parts[i]);
     if (pre.length() > 0) {
       pre += ".";
     }
-    pre += current;
+    pre += parts[i];
   }
-  
-  return GetPropertyMember(cdict, pre, remain, true);
+
+  return GetPropertyMember(cdict, pre, parts.back(), true);
 }
 
 static bool RemoveProperty(plist::Dictionary *dict, const String &prop)
@@ -1035,61 +1073,66 @@ static bool RemoveProperty(plist::Dictionary *dict, const String &prop)
     return false;
   }
   
-  size_t pos = prop.find('.');
-  
-  if (pos == String::npos) {
-    // final property
-    size_t sz = prop.length();
-    
-    if (prop[sz-1] == ']') {
-      pos = prop.rfind('[');
-      if (pos == String::npos) {
-        // invalid property specification
-        return false;
+  StringList parts;
+
+  if (!GetPropertyNameParts(prop, parts)) {
+    return false;
+  }
+
+  String pre = "";
+  plist::Dictionary *cdict = dict;
+
+  try {
+    for (size_t i=0; i+1<parts.size(); ++i) {
+      GetPropertyMember(cdict, pre, parts[i]);
+      if (pre.length() > 0) {
+        pre += ".";
       }
-      
-      String attr = prop.substr(0, pos);
-      plist::Array *array = 0;
-      if (!dict->value(attr)->checkType(array)) {
-        // property is not an array
-        return false;
-      }
-      
-      unsigned long index = 0;
-      String sindex = prop.substr(pos + 1, sz - pos - 2);
-      if (sscanf(sindex.c_str(), "%lu", &index) != 1) {
-        // invalid property index
-        return false;
-      }
-      
-      if (index >= array->size()) {
-         return false;
-      }
-      
-      array->set(index, 0);
-      if (array->size() == 0) {
-        dict->set(attr, 0);
-      }
+      pre += parts[i];
+    }
+  } catch (std::exception &) {
+    // invalid property
+    return false;
+  }
+
+  String &leaf = parts.back();
+  size_t len = leaf.length();
+
+  if (leaf[len-1] == ']') {
+    // remove array element
+    size_t pos = leaf.rfind('[');
+    if (pos == String::npos) {
+      return false;
+    }
+    String arrayAttr = leaf.substr(0, pos);
+    plist::Array *array = 0;
+    if (!cdict->value(arrayAttr)->checkType(array)) {
+      // property is not an array
+      return false;
+    }
+    unsigned long index = 0;
+    String sindex = leaf.substr(pos + 1, len - pos - 2);
+    if (sscanf(sindex.c_str(), "%lu", &index) != 1) {
+      // invalid property index
+      return false;
+    }
+    if (index >= array->size()) {
+      return false;
+    }
+    array->set(index, 0);
+    if (array->size() == 0) {
+      cdict->set(arrayAttr, 0);
+    }
+    return true;
+
+  } else {
+    // remove simple element
+    if (cdict->has(leaf)) {
+      cdict->set(leaf, 0);
       return true;
-      
-    } else if (dict->has(prop)) {
-      dict->set(prop, 0);
-      return true;
-      
     } else {
       return false;
     }
-    
-  } else {
-    String curProp = prop.substr(0, pos);
-    String subProp = prop.substr(pos+1);
-    plist::Dictionary *subDict = 0;
-    
-    if (!dict->value(curProp)->checkType(subDict)) {
-      return false;
-    }
-    
-    return RemoveProperty(subDict, subProp);
   }
 }
 
@@ -1100,30 +1143,25 @@ static void SetProperty(plist::Dictionary *dict,
   if (!dict) {
     throw plist::Exception("", "Passed null dictionary pointer");
   }
-                          
+  
+  StringList parts;
+
+  if (!GetPropertyNameParts(prop, parts)) {
+    throw plist::Exception("", "Invalid property name \"%s\"", prop.c_str());
+  }
+
+  String pre = "";
   plist::Dictionary *cdict = dict;
-  
-  String current, pre = "", remain = prop;
-  
-  size_t pos = remain.find('.');
-  
-  while (pos != String::npos) {
-    
-    current = remain.substr(0, pos);
-    
-    remain = remain.substr(pos+1);
-  
-    SetPropertyMember(cdict, pre, current);
-  
-    pos = remain.find('.');
-    
+
+  for (size_t i=0; i+1<parts.size(); ++i) {
+    SetPropertyMember(cdict, pre, parts[i]);
     if (pre.length() > 0) {
       pre += ".";
     }
-    pre += current;
+    pre += parts[i];
   }
-  
-  SetPropertyMember(cdict, pre, remain, value);
+
+  SetPropertyMember(cdict, pre, parts.back(), value);
 }
 
 template <typename T>

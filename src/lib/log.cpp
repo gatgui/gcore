@@ -132,7 +132,7 @@ static std::string MakeTermCode(int cmd, int fg, int bg)
 
 static void PrintStdout(const char *msg)
 {
-   fprintf(stdout, msg);
+   fprintf(stdout, "%s", msg);
 }
 
 namespace gcore

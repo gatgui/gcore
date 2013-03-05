@@ -161,6 +161,50 @@ cdef extern from "<gcore/env.h>" namespace "gcore::Env":
    size_t ListPaths(String&, List[Path]&)
    
 
+cdef extern from "<gcore/argparser.h>" namespace "gcore::FlagDesc":
+   
+   cdef enum Option:
+      FT_OPTIONAL, FT_NEEDED, FT_MULTI
+
+
+cdef extern from "<gcore/argparser.h>" namespace "gcore":
+   
+   cdef cppclass FlagDesc:
+      int opts
+      String longname
+      String shortname
+      int arity
+
+   cdef cppclass ArgParser:
+      ArgParser(FlagDesc*, int)
+
+      size_t getArgumentCount()
+      bint getArgument(size_t, String&)
+      bint getArgument(size_t, float&)
+      bint getArgument(size_t, double&)
+      bint getArgument(size_t, int&)
+      bint getArgument(size_t, unsigned int&)
+      bint getArgument(size_t, bint&)
+
+      bint isFlagSet(String&)
+      size_t getFlagOccurenceCount(String&)
+      size_t getFlagArgumentCount(String&, size_t)
+      bint getFlagArgument(String&, size_t, String&)
+      bint getFlagArgument(String&, size_t, float&)
+      bint getFlagArgument(String&, size_t, double&)
+      bint getFlagArgument(String&, size_t, int&)
+      bint getFlagArgument(String&, size_t, unsigned int&)
+      bint getFlagArgument(String&, size_t, bint&)
+      bint getMultiFlagArgument(String&, size_t, size_t, String&)
+      bint getMultiFlagArgument(String&, size_t, size_t, float&)
+      bint getMultiFlagArgument(String&, size_t, size_t, double&)
+      bint getMultiFlagArgument(String&, size_t, size_t, int&)
+      bint getMultiFlagArgument(String&, size_t, size_t, unsigned int&)
+      bint getMultiFlagArgument(String&, size_t, size_t, bint&)
+
+      void parse(int, char **) except +
+
+
 cdef extern from "<gcore/log.h>" namespace "gcore":
    
    cdef enum LogLevel:

@@ -241,3 +241,16 @@ cdef extern from "log.h":
    void PyLog_SetOutputFunc(PyObject*) except +
    
 
+cdef extern from "<gcore/md5.h>" namespace "gcore":
+   
+   cdef cppclass MD5:
+      MD5()
+      MD5(MD5&)
+      MD5(String&)
+      
+      void update(char*, int)
+      void update(String&)
+      void clear()
+      
+      String asString()
+      

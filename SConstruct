@@ -43,7 +43,7 @@ prjs = [
     "bldprefix" : python.Version(),
     "incdirs"   : ["include"],
     "defs"      : ["GCORE_STATIC"] if static else [],
-    "srcs"      : ["src/py/_gcore.cpp", "src/py/log.cpp"],
+    "srcs"      : ["src/py/_gcore.cpp", "src/py/log.cpp", "src/py/pathenumerator.cpp"],
     "libs"      : ["gcore"],
     "custom"    : [dl.Require, threads.Require, python.Require],
   },

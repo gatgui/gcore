@@ -1,6 +1,12 @@
 from libcpp.map cimport map
 from cpython cimport PyObject
 
+cdef extern from "<gcore/platform.h>":
+   
+   cdef char DIR_SEP 
+   cdef char PATH_SEP
+
+
 cdef extern from "<string>" namespace "std":
   
    cdef cppclass string:
@@ -49,8 +55,57 @@ cdef extern from "<gcore/path.h>" namespace "gcore":
       Path()
       Path(char*)
       Path(Path&)
-      String fullname(char)
+      
+      Path& assign "operator=" (Path&)
+      Path& plus_eq "operator+=" (Path&)
+      
+      bint operator==(Path&)
+      bint operator!=(Path&)
+      
+      String& to_string "operator gcore::String&" ()
+      
+      String& operator[](int)
+      
+      bint isAbsolute()
+      Path& makeAbsolute()
+      Path& normalize()
+      
+      String basename()
+      String dirname(char) # char sep=DIR_SEP
+      String fullname(char) # char sep=DIR_SEP
+      String getExtension()
+      bint checkExtension(String&)
+      size_t fileSize()
+      
+      bint createDir(bint) # bool recursive=false
+      bint removeFile()
+      
+      String pop()
+      Path& push(String&)
+      
+      bint isDir()
+      bint isFile()
+      bint exists()
+      # Date lastModification()
+      
+      size_t listDir(List[Path]&, bint, int) # as above
    
+
+cdef extern from "<gcore/path.h>" namespace "gcore::Path":
+   
+   cdef Path GetCurrentDir()
+   
+   cdef enum EachTarget:
+      ET_FILE, ET_DIRECTORY, ET_HIDDEN, ET_ALL
+
+
+cdef extern from "pathenumerator.h":
+   
+   cdef cppclass PathEnumerator:
+      PathEnumerator()
+      PathEnumerator(PyObject*)
+      void apply(Path, bint, int)
+
 
 cdef extern from "<gcore/xml.h>" namespace "gcore":
    

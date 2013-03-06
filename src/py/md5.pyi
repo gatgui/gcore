@@ -22,7 +22,7 @@ ctypedef public class MD5 [object PyMD5, type PyMD5Type]:
          else:
             self._cobj = new gcore.MD5(deref((<MD5?> args[0])._cobj))
       else:
-         raise Exception("_gcore.MD5 accepts at most 1 argument")
+         raise Exception("_gcore.MD5() accepts at most 1 argument")
       
       self._own = True
    

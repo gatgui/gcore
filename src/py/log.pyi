@@ -87,9 +87,12 @@ ctypedef public class Log [object PyLog, type PyLogType]:
       self._own = False
    
    def __init__(self, *args, noalloc=False, **kwargs):
+      self._outfunc = new gcore.LogOutputFunc()
+
       if noalloc:
          self._cobj = NULL
          self._own = False
+         return
       
       if len(args) == 0:
          self._cobj = new gcore.Log()
@@ -104,8 +107,6 @@ ctypedef public class Log [object PyLog, type PyLogType]:
             raise Exception("_gcore.Log() invalid argument type %s" % type(str))
       else:
          raise Exception("_gcore.Log() accepts at most 1 argument")
-      
-      self._outfunc = new gcore.LogOutputFunc()
       
       self._own = True
    

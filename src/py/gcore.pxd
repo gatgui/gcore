@@ -161,7 +161,9 @@ cdef extern from "<gcore/plist.h>" namespace "gcore":
       void create()
       
       bint read(String&)
+      bint read(XMLElement*)
       void write(String&)
+      XMLElement* write(XMLElement*)
       
       bint has(String&)
       

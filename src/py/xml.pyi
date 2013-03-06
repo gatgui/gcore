@@ -13,6 +13,7 @@ ctypedef public class XMLElement [object PyXMLElement, type PyXMLElementType]:
       if noalloc:
          self._cobj = NULL
          self._own = False
+         return
 
       if len(args) == 0:
          self._cobj = new gcore.XMLElement()

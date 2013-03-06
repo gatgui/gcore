@@ -27,6 +27,7 @@ ctypedef public class Path [object PyPath, type PyPathType]:
       if noalloc:
          self._cobj = NULL
          self._own = False
+         return
       
       if len(args) == 0:
          self._cobj = new gcore.Path()

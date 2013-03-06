@@ -13,6 +13,7 @@ ctypedef public class MD5 [object PyMD5, type PyMD5Type]:
       if noalloc:
          self._cobj = NULL
          self._own = False
+         return
       
       if len(args) == 0:
          self._cobj = new gcore.MD5()

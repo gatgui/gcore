@@ -48,8 +48,16 @@ ctypedef public class PerfLog [object PyPerfLog, type PyPerfLogType]:
       if noalloc:
          self._cobj = NULL
          self._own = False
+         return
       
-      # TODO
+      if len(args) == 0:
+         self._cobj = new gcore.PerfLog()
+      elif len(args) == 1:
+         self._cobj = new gcore.PerfLog(<gcore.Units>args[0])
+      else:
+         raise Exception("_gcore.PerfLog() accepts at most 1 argument")
+      
+      self._own = True
    
    def __dealloc__(self):
       if self._own and self._cobj != NULL:

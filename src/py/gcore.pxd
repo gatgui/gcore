@@ -265,6 +265,35 @@ cdef extern from "<gcore/log.h>" namespace "gcore":
    cdef enum LogLevel:
       LOG_ERROR, LOG_WARNING, LOG_DEBUG, LOG_INFO, LOG_ALL
    
+   cdef cppclass Log:
+      Log()
+      Log(Path&)
+      Log(Log&)
+      
+      Log& assign "operator=" (Log&)
+      
+      void selectOutputs(unsigned int)
+      unsigned int selectedOutputs()
+      
+      void printError(char*)
+      void printWarning(char*)
+      void printDebug(char*)
+      void printInfo(char*)
+      
+      void setIndentLevel(unsigned int)
+      unsigned int getIndentLevel()
+      void indent()
+      void unIndent()
+      
+      void setIndentWidth(unsigned int)
+      unsigned int getIndentWidth()
+      
+      void enableColors(bint)
+      bint colorsEnabled()
+      
+      void showTimeStamps(bint)
+      bint timeStampsShown()
+
 
 cdef extern from "<gcore/log.h>" namespace "gcore::Log":
    
@@ -295,6 +324,15 @@ cdef extern from "log.h":
    
    void PyLog_SetOutputFunc(PyObject*) except +
    
+   cdef cppclass LogOutputFunc:
+      LogOutputFunc()
+      LogOutputFunc(LogOutputFunc&)
+      
+      LogOutputFunc& assign "operator=" (LogOutputFunc&)
+      
+      void setPyFunc(PyObject*)
+      void assign(Log&)
+   
 
 cdef extern from "<gcore/md5.h>" namespace "gcore":
    
@@ -309,3 +347,47 @@ cdef extern from "<gcore/md5.h>" namespace "gcore":
       
       String asString()
       
+
+cdef extern from "<gcore/perflog.h>" namespace "gcore::PerfLog":
+   
+   cdef enum Units:
+      CurrentUnits, NanoSeconds, MilliSeconds, Seconds, Minutes, Hours
+   
+   cdef enum ShowFlags:
+      ShowTotalTime, ShowFuncTime, ShowAvgTotalTime, ShowAvgFuncTime, ShowNumCalls, ShowDetailed, ShowFlag, ShowDefaults, ShowAll
+   
+   cdef enum SortCriteria:
+      SortIdentifier, SortTotalTime, SortFuncTime, SortAvgTotalTime, SortAvgFuncTime, SortNumCalls, SortReverse
+   
+   cdef enum Output:
+      ConsoleOutput, LogOutput
+
+
+cdef extern from "<gcore/perflog.h>" namespace "gcore":
+   
+   cdef cppclass PerfLog:
+      PerfLog()
+      PerfLog(Units)
+      PerfLog(PerfLog&)
+      
+      PerfLog& assign "operator=" (PerfLog&)
+      
+      void begin(string&)
+      void end()
+      void _print "print" (Output, int, int, Units)
+      void _print "print" (Log&, int, int, Units)
+      void clear()
+   
+
+
+cdef extern from "<gcore/perflog.h>" namespace "gcore::PerfLog":
+   
+   PerfLog& SharedInstance()
+   void Begin(string&)
+   void End()
+   void Print(Output, int, int, Units)
+   void Print(Log&, int, int, Units)
+   void Clear()
+   char* UnitsString(Units)
+   double ConvertUnits(double, Units, Units)
+

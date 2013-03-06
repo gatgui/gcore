@@ -1,6 +1,9 @@
 #include "pathenumerator.h"
 #include <gcore/gcore>
+#include <gcore/perflog.h>
+#include "log.h"
 #include "_gcore.h"
+
 
 PathEnumerator::PathEnumerator()
    : mPyFunc(0), mPyPath(0), mPyArgs(0)
@@ -51,7 +54,7 @@ PathEnumerator& PathEnumerator::operator=(const PathEnumerator &rhs)
    {
       Py_XDECREF(mPyFunc);
       mPyFunc = rhs.mPyFunc;
-      Py_INCREF(mPyFunc);
+      Py_XINCREF(mPyFunc);
    }
    return *this;
 }

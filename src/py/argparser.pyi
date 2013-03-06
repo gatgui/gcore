@@ -100,7 +100,7 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
       return rv.c_str()
    
    def getFloatArgument(self, idx):
-      cdef float rv
+      cdef float rv = 0
       if not self._cobj.getArgument(<size_t?>idx, rv):
          if idx < 0 or idx >= self.getArgumentCount():
             raise Exception("_gcore.ArgParser.getFloatArgument: Invalid argument index %d" % idx)
@@ -109,7 +109,7 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
       return rv
    
    def getDoubleArgument(self, idx):
-      cdef double rv
+      cdef double rv = 0
       if not self._cobj.getArgument(<size_t?>idx, rv):
          if idx < 0 or idx >= self.getArgumentCount():
             raise Exception("_gcore.ArgParser.getDoubleArgument: Invalid argument index %d" % idx)
@@ -118,7 +118,7 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
       return rv
    
    def getIntArgument(self, idx):
-      cdef int rv
+      cdef int rv = 0
       if not self._cobj.getArgument(<size_t?>idx, rv):
          if idx < 0 or idx >= self.getArgumentCount():
             raise Exception("_gcore.ArgParser.getIntArgument: Invalid argument index %d" % idx)
@@ -127,7 +127,7 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
       return rv
    
    def getUIntArgument(self, idx):
-      cdef unsigned int rv
+      cdef unsigned int rv = 0
       if not self._cobj.getArgument(<size_t?>idx, rv):
          if idx < 0 or idx >= self.getArgumentCount():
             raise Exception("_gcore.ArgParser.getUIntArgument: Invalid argument index %d" % idx)
@@ -136,7 +136,7 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
       return rv 
    
    def getBoolArgument(self, idx):
-      cdef bint rv
+      cdef bint rv = False
       if not self._cobj.getArgument(<size_t?>idx, rv):
          if idx < 0 or idx >= self.getArgumentCount():
             raise Exception("_gcore.ArgParser.getBoolArgument: Invalid argument index %d" % idx)
@@ -172,35 +172,35 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
    
    def getFlagFloatArgument(self, name, idx):
       cdef gcore.String cname = gcore.String(<char*?> name)
-      cdef float rv
+      cdef float rv = 0
       if not self._cobj.getFlagArgument(cname, <size_t?>idx, rv):
          self._flagError(name, 0, idx, "getFlagFloatArgument", "float")
       return rv
    
    def getFlagDoubleArgument(self, name, idx):
       cdef gcore.String cname = gcore.String(<char*?> name)
-      cdef double rv
+      cdef double rv = 0
       if not self._cobj.getFlagArgument(cname, <size_t?>idx, rv):
          self._flagError(name, 0, idx, "getFlagDoubleArgument", "double")
       return rv
    
    def getFlagIntArgument(self, name, idx):
       cdef gcore.String cname = gcore.String(<char*?> name)
-      cdef int rv
+      cdef int rv = 0
       if not self._cobj.getFlagArgument(cname, <size_t?>idx, rv):
          self._flagError(name, 0, idx, "getFlagIntArgument", "int")
       return rv
    
    def getFlagUIntArgument(self, name, idx):
       cdef gcore.String cname = gcore.String(<char*?> name)
-      cdef unsigned int rv
+      cdef unsigned int rv = 0
       if not self._cobj.getFlagArgument(cname, <size_t?>idx, rv):
          self._flagError(name, 0, idx, "getFlagUIntArgument", "unsigned int")
       return rv 
    
    def getFlagBoolArgument(self, name, idx):
       cdef gcore.String cname = gcore.String(<char*?> name)
-      cdef bint rv
+      cdef bint rv = False
       if not self._cobj.getFlagArgument(cname, <size_t?>idx, rv):
          self._flagError(name, 0, idx, "getFlagBoolArgument", "bool")
       return rv
@@ -214,35 +214,35 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
    
    def getMultiFlagFloatArgument(self, name, occ, idx):
       cdef gcore.String cname = gcore.String(<char*?> name)
-      cdef float rv
+      cdef float rv = 0
       if not self._cobj.getMultiFlagArgument(cname, <size_t?>occ, <size_t?>idx, rv):
          self._flagError(name, occ, idx, "getMultiFlagFloatArgument", "float")
       return rv
    
    def getMultiFlagDoubleArgument(self, name, occ, idx):
       cdef gcore.String cname = gcore.String(<char*?> name)
-      cdef double rv
+      cdef double rv = 0
       if not self._cobj.getMultiFlagArgument(cname, <size_t?>occ, <size_t?>idx, rv):
          self._flagError(name, occ, idx, "getMultiFlagDoubleArgument", "double")
       return rv
    
    def getMultiFlagIntArgument(self, name, occ, idx):
       cdef gcore.String cname = gcore.String(<char*?> name)
-      cdef int rv
+      cdef int rv = 0
       if not self._cobj.getMultiFlagArgument(cname, <size_t?>occ, <size_t?>idx, rv):
          self._flagError(name, occ, idx, "getMultiFlagIntArgument", "int")
       return rv
    
    def getMultiFlagUIntArgument(self, name, occ, idx):
       cdef gcore.String cname = gcore.String(<char*?> name)
-      cdef unsigned int rv
+      cdef unsigned int rv = 0
       if not self._cobj.getMultiFlagArgument(cname, <size_t?>occ, <size_t?>idx, rv):
          self._flagError(name, occ, idx, "getMultiFlagUIntArgument", "unsigned int")
       return rv 
    
    def getMultiFlagBoolArgument(self, name, occ, idx):
       cdef gcore.String cname = gcore.String(<char*?> name)
-      cdef bint rv
+      cdef bint rv = False
       if not self._cobj.getMultiFlagArgument(cname, <size_t?>occ, <size_t?>idx, rv):
          self._flagError(name, occ, idx, "getMultiFlagBoolArgument", "bool")
       return rv
@@ -262,3 +262,6 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
       argv[argc] = NULL
 
       self._cobj.parse(argc, &argv[0])
+
+      free(argv)
+

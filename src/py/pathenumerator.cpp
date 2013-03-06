@@ -59,6 +59,13 @@ PathEnumerator& PathEnumerator::operator=(const PathEnumerator &rhs)
    return *this;
 }
 
+void PathEnumerator::setPyFunc(PyObject *func)
+{
+   Py_XDECREF(mPyFunc);
+   mPyFunc = func;
+   Py_XINCREF(mPyFunc);
+}
+
 bool PathEnumerator::visit(const gcore::Path &path)
 {
    if (!mPyFunc)

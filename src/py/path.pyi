@@ -82,7 +82,8 @@ ctypedef public class Path [object PyPath, type PyPathType]:
       return self
    
    def each(self, func, recursive=False, flags=Path.ET_ALL):
-      cdef gcore.PathEnumerator enumerator = gcore.PathEnumerator(<gcore.PyObject*>func)
+      cdef gcore.PathEnumerator enumerator
+      enumerator.setPyFunc(<gcore.PyObject*>func)
       enumerator.apply(deref(self._cobj), <bint?>recursive, <int>flags)
    
    def listDir(self, recursive=False, flags=Path.ET_ALL):

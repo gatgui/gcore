@@ -1,6 +1,6 @@
 cimport gcore
 from cython.operator cimport dereference as deref
-from cython.operator cimport preincrement as pinc
+from libc.stdlib cimport malloc, free
 from libcpp.vector cimport vector
 
 ctypedef public class FlagDesc [object PyFlagDesc, type PyFlagDescType]:
@@ -249,14 +249,16 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
    
    def parse(self, args):
       cdef int argc = len(args)
+      cdef char **argv = <char**> malloc((argc + 1) * sizeof(char*))
       cdef int i = 0
-      cdef vector[char*] argv
-      if argc > 0:
-         argv.resize(argc+1)
-         while i < argc:
-            argv[i] = <char*?> args[i]
-            i += 1
-      else:
-         argv.resize(1)
+      cdef char *arg = NULL
+      
+      if not argv:
+         raise MemoryError()
+
+      while i < argc:
+         argv[i] = <char*?> args[i]
+         i += 1
       argv[argc] = NULL
+
       self._cobj.parse(argc, &argv[0])

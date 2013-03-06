@@ -104,6 +104,7 @@ cdef extern from "pathenumerator.h":
    cdef cppclass PathEnumerator:
       PathEnumerator()
       PathEnumerator(PyObject*)
+      void setPyFunc(PyObject*)
       void apply(Path, bint, int)
 
 

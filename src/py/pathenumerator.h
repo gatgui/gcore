@@ -15,6 +15,8 @@ public:
    
    PathEnumerator& operator=(const PathEnumerator &rhs);
    
+   void setPyFunc(PyObject *func);
+
    bool visit(const gcore::Path &path);
    void apply(const gcore::Path &path, bool recurse=false, unsigned short flags=gcore::Path::ET_ALL);
    

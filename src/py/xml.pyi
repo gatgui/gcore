@@ -81,7 +81,7 @@ ctypedef public class XMLElement [object PyXMLElement, type PyXMLElementType]:
       return self._cobj.getText().c_str()
 
    def setTag(self, t):
-      return self._cobj.setTag(gcore.String(<char*?>t))
+      self._cobj.setTag(gcore.String(<char*?>t))
 
    def getTag(self):
       return self._cobj.getTag().c_str()

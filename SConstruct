@@ -46,6 +46,7 @@ prjs = [
     "srcs"      : ["src/py/_gcore.cpp", "src/py/log.cpp", "src/py/pathenumerator.cpp"],
     "libs"      : ["gcore"],
     "custom"    : [dl.Require, threads.Require, python.Require],
+    "install"   : {python.ModulePrefix(): ["src/py/gcore.py", "src/py/tests"]}
   },
   { "name"    : "testmodule",
     "type"    : "dynamicmodule",

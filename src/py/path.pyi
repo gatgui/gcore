@@ -35,7 +35,7 @@ ctypedef public class Path [object PyPath, type PyPathType]:
          if type(args[0]) in [str, unicode]:
             self._cobj = new gcore.Path(<char*>args[0])
          else:
-            self._cobj = new gcore.Path(deref((<Path>args[0])._cobj))
+            self._cobj = new gcore.Path(deref((<Path?>args[0])._cobj))
       else:
          raise Exception("_gcore.Path() accepts at most 1 argument")
       
@@ -119,6 +119,11 @@ ctypedef public class Path [object PyPath, type PyPathType]:
       else:
          self._cobj.plus_eq(deref((<Path?>rhs)._cobj))
       return self
+   
+   def __add__(self, rhs):
+      rv = Path(self)
+      rv += rhs
+      return rv
    
    def basename(self):
       return self._cobj.basename().c_str()

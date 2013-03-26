@@ -146,11 +146,17 @@ ctypedef public class XMLDoc [object PyXMLDoc, type PyXMLDocType]:
          del(self._cobj)
          self._cobj = NULL
 
+   def numRoots(self):
+      return self._cobj.numRoots()
+   
    def setRoot(self, e):
       self._cobj.setRoot((<XMLElement>e)._cobj)
 
-   def getRoot(self):
-      cdef gcore.XMLElement *r = self._cobj.getRoot()
+   def addRoot(self, e):
+      self._cobj.addRoot((<XMLElement>e)._cobj)
+
+   def getRoot(self, idx=0):
+      cdef gcore.XMLElement *r = self._cobj.getRoot(<size_t?>idx)
       if r != NULL:
          rv = XMLElement(noalloc=True)
          SetXMLElementPtr(rv, r, False)

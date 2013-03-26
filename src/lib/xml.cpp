@@ -375,33 +375,61 @@ const XMLElement* XMLElement::getChildWithTag(const String &tag, size_t n) const
 
 // ---
 
-XMLDoc::XMLDoc()
-  : mRoot(0) {
+XMLDoc::XMLDoc() {
 }
 
 XMLDoc::~XMLDoc() {
-  if (mRoot) {
-    delete mRoot;
+  for (size_t i=0; i<mRoots.size(); ++i) {
+    delete mRoots[i];
   }
+  mRoots.clear();
 }
 
 void XMLDoc::setRoot(XMLElement *elt) {
-  if (mRoot) {
-    delete mRoot;
+  for (size_t i=0; i<mRoots.size(); ++i) {
+    if (mRoots[i] != elt) {
+      delete mRoots[i];
+    }
   }
-  mRoot = elt;
+  mRoots.clear();
+  if (elt) {
+    mRoots.push_back(elt);
+  }
 }
 
 XMLElement* XMLDoc::getRoot() const {
-  return mRoot;
+  if (mRoots.size() >= 1) {
+    return mRoots[0];
+  } else {
+    return NULL;
+  }
+}
+
+size_t XMLDoc::numRoots() const {
+  return mRoots.size();
+}
+
+XMLElement* XMLDoc::getRoot(size_t i) const {
+  if (i < mRoots.size()) {
+    return mRoots[i];
+  } else {
+    return NULL;
+  }
+}
+void XMLDoc::addRoot(XMLElement *elt) {
+  if (elt) {
+    mRoots.push_back(elt);
+  }
 }
 
 void XMLDoc::write(const String &fileName) const {
-  if (mRoot) {
+  if (mRoots.size() > 0) {
     std::ofstream ofile(fileName.c_str());
     if (ofile.is_open()) {
       ofile << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" << std::endl;
-      mRoot->write(ofile, "");
+      for (size_t i=0; i<mRoots.size(); ++i) {
+        mRoots[i]->write(ofile, "");
+      }
       ofile << std::endl;
       return;
     }
@@ -410,9 +438,11 @@ void XMLDoc::write(const String &fileName) const {
 }
 
 void XMLDoc::write(std::ostream &os) const {
-  if (mRoot) {
+  if (mRoots.size() > 0) {
     os << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" << std::endl;
-    mRoot->write(os, "");
+    for (size_t i=0; i<mRoots.size(); ++i) {
+      mRoots[i]->write(os, "");
+    }
     os << std::endl;
   }
 }
@@ -442,7 +472,7 @@ bool XMLDoc::read(std::istream &is) {
   size_t nread = 0;
   int taglevel = 0;
 
-  XMLElement *root = 0; // only one allowed, if set all other elements are child
+  //XMLElement *root = 0;
   XMLElement *cur = 0;
 
   // read 7 chars less you'll see after
@@ -872,6 +902,16 @@ bool XMLDoc::read(std::istream &is) {
             tc = ts + e + 1;
           }
 
+          if (cur) {
+            cur->addChild(elem);
+          } else {
+            addRoot(elem);
+          }
+          if (!close) {
+            cur = elem;
+            taglevel += 1;
+          }
+          /*
           if (close) {
             if (cur) {
               cur->addChild(elem);
@@ -886,6 +926,7 @@ bool XMLDoc::read(std::istream &is) {
           if (!root) {
             root = elem;
           }
+          */
 
           pending = "";
           state = READ_OPEN;
@@ -960,16 +1001,18 @@ bool XMLDoc::read(std::istream &is) {
     goto failed;
   }
   
-  if (root == NULL) {
+  //if (root == NULL) {
+  if (numRoots() == 0) {
     Log::PrintError("[gcore] XMLDoc::read: No root element found");
     return false;
   }
 
-  setRoot(root);
-  //fclose(file);
+  //setRoot(root);
+
   return true;
 
 failed:
+  /*
   if (root) {
     delete root;
   } else {
@@ -977,9 +1020,12 @@ failed:
       delete cur;
     }
   }
-  //if (file) {
-  //  fclose(file);
-  //}
+  */
+  for (size_t i=0; i<mRoots.size(); ++i) {
+    delete mRoots[i];
+  }
+  mRoots.clear();
+  
   return false;
 }
 

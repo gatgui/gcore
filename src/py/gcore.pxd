@@ -143,7 +143,10 @@ cdef extern from "<gcore/xml.h>" namespace "gcore":
       XMLDoc()
       
       void setRoot(XMLElement*)
-      XMLElement* getRoot()
+      XMLElement* getRoot(size_t)
+
+      size_t numRoots()
+      void addRoot(XMLElement*)
       
       void write(String&)
       bint read(String&)

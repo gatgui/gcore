@@ -25,6 +25,7 @@ USA.
 #define __gcore_xml_h_
 
 #include <gcore/string.h>
+#include <gcore/list.h>
 
 namespace gcore {
   
@@ -89,6 +90,10 @@ namespace gcore {
       
       void setRoot(XMLElement *elt);
       XMLElement* getRoot() const;
+
+      size_t numRoots() const;
+      XMLElement* getRoot(size_t i) const;
+      void addRoot(XMLElement *elt);
       
       void write(const String &fileName) const;
       void write(std::ostream &os) const;
@@ -97,7 +102,7 @@ namespace gcore {
     
     protected:
       
-      XMLElement *mRoot;
+      List<XMLElement*> mRoots;
   };
 }
 

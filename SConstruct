@@ -10,7 +10,7 @@ cython = ARGUMENTS.get("with-cython", "cython")
 static = int(ARGUMENTS.get("static", "0"))
 debugrex = int(ARGUMENTS.get("debugRex", "0"))
 
-libdefs   = ["GCORE_STATIC"] if static else ["GCORE_EXPORT"]
+libdefs   = ["GCORE_STATIC"] if static else ["GCORE_EXPORTS"]
 if debugrex:
   libdefs.append("_DEBUG_REX")
 libcustom = []

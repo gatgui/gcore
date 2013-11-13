@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2013  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -21,30 +21,25 @@ USA.
 
 */
 
-#ifndef __gcore_
-#define __gcore_
+#ifndef __gcore_base64_h_
+#define __gcore_base64_h_
 
-#include <gcore/pipe.h>
-#include <gcore/process.h>
-#include <gcore/threads.h>
-#include <gcore/threadpool.h>
-#include <gcore/dmodule.h>
-#include <gcore/path.h>
-#include <gcore/rex.h>
-#include <gcore/tokenizer.h>
-#include <gcore/plist.h>
-#include <gcore/md5.h>
-#include <gcore/xml.h>
-#include <gcore/string.h>
-#include <gcore/date.h>
-#include <gcore/env.h>
-#include <gcore/typetraits.h>
-#include <gcore/list.h>
-#include <gcore/argparser.h>
-#include <gcore/dirmap.h>
-#include <gcore/bcfile.h>
-#include <gcore/log.h>
-#include <gcore/base64.h>
+#include <gcore/config.h>
+#include <string>
 
-#endif 
+namespace gcore {
+  
+  class GCORE_API Base64 {
+    public:
+    
+      static size_t EncodeLength(size_t inlen);
+      static std::string Encode(const void *data, size_t len);
+      static std::string Encode(const std::string &in);
+      
+      static size_t DecodeLength(const char *in, size_t inlen);
+      static size_t Decode(const std::string &in, void *data, size_t maxlen);
+      static std::string Decode(const std::string &in);
+  };
+}
 
+#endif

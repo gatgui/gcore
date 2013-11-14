@@ -33,22 +33,32 @@ namespace gcore {
     
       MD5();
       MD5(const MD5 &rhs);
-      MD5(const String &str);
+      MD5(const String &str, bool final=true);
       ~MD5();
   
       MD5& operator=(const MD5 &rhs);
+
+      bool operator==(const MD5 &rhs) const;
+      bool operator!=(const MD5 &rhs) const;
+      bool operator<(const MD5 &rhs) const;
+      bool operator<=(const MD5 &rhs) const;
+      bool operator>(const MD5 &rhs) const;
+      bool operator>=(const MD5 &rhs) const;
   
       void update(const char *buf, long len=-1);
       void update(const String &str);
       void clear();
     
       String asString();
+      String asString() const;
+
+      bool isFinal() const;
+      void finalize();
   
     private:
     
       void transform();
-      void final();
-  
+      
     private:
     
       unsigned long mBuf[4];

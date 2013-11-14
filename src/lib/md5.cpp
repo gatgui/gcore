@@ -53,9 +53,12 @@ MD5::MD5(const MD5 &rhs)
   memcpy(mIn, rhs.mIn, 64*sizeof(unsigned char));
 }
 
-MD5::MD5(const String &str) {
+MD5::MD5(const String &str, bool final) {
   clear();
   update(str);
+  if (final) {
+    finalize();
+  }
 }
 
 MD5::~MD5() {
@@ -69,6 +72,69 @@ MD5& MD5::operator=(const MD5 &rhs) {
     memcpy(mIn, rhs.mIn, 64*sizeof(unsigned char));
   }
   return *this;
+}
+
+bool MD5::operator==(const MD5 &rhs) const {
+  return (mBuf[0] == rhs.mBuf[0] &&
+          mBuf[1] == rhs.mBuf[1] &&
+          mBuf[2] == rhs.mBuf[2] &&
+          mBuf[3] == rhs.mBuf[3]);
+}
+
+bool MD5::operator!=(const MD5 &rhs) const {
+  return !operator==(rhs);
+}
+
+bool MD5::operator<(const MD5 &rhs) const {
+  for (int i=0; i<4; ++i) {
+    if (mBuf[i] < rhs.mBuf[i]) {
+      return true;
+    } else if (mBuf[i] > rhs.mBuf[i]) {
+      return false;
+    }
+  }
+  // all equal
+  return false;
+}
+
+bool MD5::operator<=(const MD5 &rhs) const {
+  for (int i=0; i<4; ++i) {
+    if (mBuf[i] < rhs.mBuf[i]) {
+      return true;
+    } else if (mBuf[i] > rhs.mBuf[i]) {
+      return false;
+    }
+  }
+  // all equal
+  return true;
+}
+
+bool MD5::operator>(const MD5 &rhs) const {
+  for (int i=0; i<4; ++i) {
+    if (mBuf[i] > rhs.mBuf[i]) {
+      return true;
+    } else if (mBuf[i] < rhs.mBuf[i]) {
+      return false;
+    }
+  }
+  // all equal
+  return false;
+}
+
+bool MD5::operator>=(const MD5 &rhs) const {
+  for (int i=0; i<4; ++i) {
+    if (mBuf[i] > rhs.mBuf[i]) {
+      return true;
+    } else if (mBuf[i] < rhs.mBuf[i]) {
+      return false;
+    }
+  }
+  // all equal
+  return true;
+}
+
+bool MD5::isFinal() const {
+  return mFinalized;
 }
 
 void MD5::clear() {
@@ -220,7 +286,7 @@ void MD5::transform() {
   mBuf[3] += d;
 }
 
-void MD5::final() {
+void MD5::finalize() {
   unsigned count;
   unsigned char *p;
 
@@ -254,7 +320,7 @@ String MD5::asString() {
   unsigned char digest[16];
   
   if (!mFinalized) {
-    final();
+    finalize();
   }
   
   Put32(mBuf[0], digest);
@@ -271,6 +337,31 @@ String MD5::asString() {
     digest[12], digest[13], digest[14], digest[15]);
   
   return String(md5s);
+}
+
+String MD5::asString() const {
+  
+  if (!mFinalized) {
+    return "";
+  
+  } else {
+    unsigned char digest[16];
+
+    Put32(mBuf[0], digest);
+    Put32(mBuf[1], digest + 4);
+    Put32(mBuf[2], digest + 8);
+    Put32(mBuf[3], digest + 12);
+      
+    char md5s[33];
+    sprintf(md5s,
+      "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+      digest[ 0], digest[ 1], digest[ 2], digest[ 3],
+      digest[ 4], digest[ 5], digest[ 6], digest[ 7],
+      digest[ 8], digest[ 9], digest[10], digest[11],
+      digest[12], digest[13], digest[14], digest[15]);
+      
+    return String(md5s);
+  }
 }
 
 }

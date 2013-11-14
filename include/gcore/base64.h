@@ -33,11 +33,27 @@ namespace gcore {
     public:
     
       static size_t EncodeLength(size_t inlen);
+      
+      static bool Encode(const void *in, size_t inlen, char *out, size_t outlen);
+      static char* Encode(const void *in, size_t inlen, size_t &outlen);
+      static bool Encode(const void *in, size_t inlen, std::string &out);
+      static bool Encode(const std::string &in, char *out, size_t outlen);
+      static char* Encode(const std::string &in, size_t &outlen);
+      static bool Encode(const std::string &in, std::string &out);
       static std::string Encode(const void *data, size_t len);
       static std::string Encode(const std::string &in);
       
-      static size_t DecodeLength(const char *in, size_t inlen);
-      static size_t Decode(const std::string &in, void *data, size_t maxlen);
+      // ---
+
+      static size_t DecodeLength(const char *in, size_t len);
+
+      static bool Decode(const char *in, size_t len, void *out, size_t outlen);
+      static void* Decode(const char *in, size_t len, size_t &outlen);
+      static bool Decode(const char *in, size_t len, std::string &out);
+      static bool Decode(const std::string &in, void *out, size_t outlen);
+      static void* Decode(const std::string &in, size_t &outlen);
+      static bool Decode(const std::string &in, std::string &out);
+      static std::string Decode(const char *in, size_t len);
       static std::string Decode(const std::string &in);
   };
 }

@@ -97,7 +97,7 @@ ctypedef public class XMLElement [object PyXMLElement, type PyXMLElementType]:
    def numChildrenWithTag(self, t):
       return self._cobj.numChildrenWithTag(gcore.String(<char*?>t))
    
-   def getChildWithTag(self, t, i):
+   def getChildWithTag(self, t, i=0):
       cdef gcore.XMLElement *pe = self._cobj.getChildWithTag(gcore.String(<char*?>t), <size_t?>i)
       if pe != NULL:
          rv = XMLElement(noalloc=True)

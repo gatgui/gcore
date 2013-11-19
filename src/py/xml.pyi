@@ -31,13 +31,17 @@ ctypedef public class XMLElement [object PyXMLElement, type PyXMLElementType]:
 
    def addChild(self, c):
       # Steal ref from c
-      return self._cobj.addChild((<XMLElement>c)._cobj)
+      if self._cobj.addChild((<XMLElement?>c)._cobj):
+         (<XMLElement>c)._own = False
+         return True
+      else:
+         return False
 
    def removeChild(self, c):
       if isinstance(c, XMLElement):
          self._cobj.removeChild((<XMLElement>c)._cobj)
       else:
-         self._cobj.removeChild(<size_t>c)
+         self._cobj.removeChild(<size_t?>c)
 
    def getParent(self):
       cdef gcore.XMLElement *pe = self._cobj.getParent()
@@ -52,7 +56,7 @@ ctypedef public class XMLElement [object PyXMLElement, type PyXMLElementType]:
       return self._cobj.numChildren()
 
    def getChild(self, idx):
-      cdef gcore.XMLElement *pe = self._cobj.getChild(<size_t>idx)
+      cdef gcore.XMLElement *pe = self._cobj.getChild(<size_t?>idx)
       if pe != NULL:
          rv = XMLElement(noalloc=True)
          SetXMLElementPtr(rv, pe, False)
@@ -94,7 +98,7 @@ ctypedef public class XMLElement [object PyXMLElement, type PyXMLElementType]:
       return self._cobj.numChildrenWithTag(gcore.String(<char*?>t))
    
    def getChildWithTag(self, t, i):
-      cdef gcore.XMLElement *pe = self._cobj.getChildWithTag(gcore.String(<char*?>t), <size_t>i)
+      cdef gcore.XMLElement *pe = self._cobj.getChildWithTag(gcore.String(<char*?>t), <size_t?>i)
       if pe != NULL:
          rv = XMLElement(noalloc=True)
          SetXMLElementPtr(rv, pe, False)
@@ -150,10 +154,14 @@ ctypedef public class XMLDoc [object PyXMLDoc, type PyXMLDocType]:
       return self._cobj.numRoots()
    
    def setRoot(self, e):
-      self._cobj.setRoot((<XMLElement>e)._cobj)
+      if e:
+         (<XMLElement?>e)._own = False
+      self._cobj.setRoot((<XMLElement?>e)._cobj)
 
    def addRoot(self, e):
-      self._cobj.addRoot((<XMLElement>e)._cobj)
+      if e:
+         (<XMLElement?>e)._own = False
+      self._cobj.addRoot((<XMLElement?>e)._cobj)
 
    def getRoot(self, idx=0):
       cdef gcore.XMLElement *r = self._cobj.getRoot(<size_t?>idx)

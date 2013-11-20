@@ -98,6 +98,9 @@ namespace gcore
       void showConsole(bool sc);
       bool showConsole() const;
 
+      void keepAlive(bool ka);
+      bool keepAlive() const;
+
     private:
 
       static void std_output(const char*);
@@ -121,6 +124,7 @@ namespace gcore
       String      mCmdLine;
       bool        mCaptureErr;
       bool        mErrToOut;
+      bool        mKeepAlive;
       StringDict  mEnv;
   };
 }

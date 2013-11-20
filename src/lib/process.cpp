@@ -50,13 +50,13 @@ void gcore::Process::std_output(const char *str) {
 gcore::Process::Process()
   : mPID(INVALID_PID), mCapture(false), mRedirect(false),
     mVerbose(false), mShowConsole(true), mStdArgs(0), mCmdLine(""),
-    mCaptureErr(false), mErrToOut(false) {
+    mCaptureErr(false), mErrToOut(false), mKeepAlive(false) {
   mOutFunc = &std_output;
 }
 
 gcore::Process::~Process() {
   closePipes();
-  if (running()) {
+  if (!mKeepAlive && running()) {
     kill();
   }
   mArgs.clear();
@@ -120,6 +120,14 @@ bool gcore::Process::running() {
   } else {
     return false;
   }
+}
+
+void gcore::Process::keepAlive(bool ka) {
+  mKeepAlive = ka;
+}
+
+bool gcore::Process::keepAlive() const {
+  return mKeepAlive;
 }
 
 void gcore::Process::captureOut(bool co) {

@@ -1,5 +1,7 @@
 cimport gcore
+from libcpp.map cimport map
 from cython.operator cimport dereference as deref
+from cython.operator cimport preincrement as pinc
 
 ctypedef public class XMLElement [object PyXMLElement, type PyXMLElementType]:
    cdef gcore.XMLElement *_cobj
@@ -76,6 +78,20 @@ ctypedef public class XMLElement [object PyXMLElement, type PyXMLElementType]:
    def getAttribute(self, name):
       return self._cobj.getAttribute(gcore.String(<char*?>name)).c_str()
    
+   def getAttributes(self):
+      cdef map[gcore.String,gcore.String] cattrs
+      cdef map[gcore.String,gcore.String].iterator it
+
+      self._cobj.getAttributes(cattrs)
+      pattrs = {}
+
+      it = cattrs.begin()
+      while it != cattrs.end():
+         pattrs[deref(it).first.c_str()] = deref(it).second.c_str()
+         pinc(it)
+
+      return pattrs
+
    def setText(self, v, asCDATA=False):
       return self._cobj.setText(gcore.String(<char*?>v), <bint?>asCDATA)
 

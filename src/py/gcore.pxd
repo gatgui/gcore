@@ -126,6 +126,7 @@ cdef extern from "<gcore/xml.h>" namespace "gcore":
       void removeAttribute(String&)
       bint hasAttribute(String&)
       String& getAttribute(String&)
+      size_t getAttributes(map[String,String]&)
       
       bint setText(String&, bint)
       bint addText(String&)

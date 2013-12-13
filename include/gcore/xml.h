@@ -57,6 +57,7 @@ namespace gcore {
       
       bool hasAttribute(const String &name) const;
       const String& getAttribute(const String &name) const;
+      size_t getAttributes(StringDict &) const;
       
       const String& getText() const;
       

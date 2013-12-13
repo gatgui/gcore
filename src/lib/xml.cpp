@@ -304,7 +304,17 @@ const String& XMLElement::getAttribute(const String &name) const {
   } else {
     return Empty;
   }
-}  
+}
+
+size_t XMLElement::getAttributes(StringDict &attrs) const {
+  attrs.clear();
+  StringDict::const_iterator it = mAttrs.begin();
+  while (it != mAttrs.end()) {
+    attrs[it->first] = it->second;
+    ++it;
+  }
+  return attrs.size();
+}
 
 const String& XMLElement::getText() const {
   return mText;

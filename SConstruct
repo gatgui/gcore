@@ -1,6 +1,13 @@
+try:
+    import excons
+except:
+    import subprocess
+    subprocess.Popen("git submodule init", shell=True).communicate()
+    subprocess.Popen("git submodule update", shell=True).communicate()
+    import excons
+
 import re
 import glob
-import excons
 import excons.tools
 from excons.tools import threads
 from excons.tools import dl

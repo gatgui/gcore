@@ -164,6 +164,12 @@ Date::Date(const Date &rhs)
 Date::~Date() {
 }
 
+void Date::set(struct tm &timedate) {
+  // use mktime?
+  mDateTime = timedate;
+  mIsDiff = false;
+}
+
 void Date::set(Int64 t, bool asDiff) {
   mIsDiff = asDiff;
   

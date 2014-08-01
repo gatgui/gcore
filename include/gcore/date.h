@@ -142,6 +142,7 @@ namespace gcore {
       void setSecond(int s);
       
       void set(Int64 t, bool asDiff=false);
+      void set(struct tm &timedate);
       Int64 get() const;
       
       static Date Days(int n);

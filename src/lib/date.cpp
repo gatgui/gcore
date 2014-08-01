@@ -463,11 +463,21 @@ String Date::format(const String &fmt) const {
 
 void Date::setYear(int year) {
   // if not a diff, need to add 1900 to tm_year
-  set(get() + ((year - (mIsDiff ? 0 : 1900)) - mDateTime.tm_year) * gsSecsPerYear, mIsDiff);
+  if (mIsDiff) {
+    set(get() + ((year - (mIsDiff ? 0 : 1900)) - mDateTime.tm_year) * gsSecsPerYear, true);
+  } else {
+    mDateTime.tm_year = year - 1900;
+    set(get());
+  }
 }
 
 void Date::setMonth(int m) {
-  set(get() + (m - mDateTime.tm_mon) * gsSecsPerMonth, mIsDiff);
+  if (mIsDiff) {
+    set(get() + (m - mDateTime.tm_mon) * gsSecsPerMonth, true);
+  } else {
+    mDateTime.tm_mon = m;
+    set(get());
+  }
 }
 
 void Date::setDayOfWeek(int d) {

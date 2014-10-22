@@ -537,7 +537,7 @@ static bool _DecodeChunk(const CharSetData &cs,
       return false;
     }
     
-    std::cout << "Decoded value: 0x" << std::setw(8) << std::setfill('0') << std::hex << val << std::dec << " [" << nbytes << " byte(s)]" << std::endl;
+    //std::cout << "Decoded value: 0x" << std::setw(8) << std::setfill('0') << std::hex << val << std::dec << " [" << nbytes << " byte(s)]" << std::endl;
     
     //if (out + dup * nbytes > outend) {
     //  return false;

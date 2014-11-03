@@ -150,7 +150,8 @@ class EncodingRegistry {
         return false;
       }
       
-      if (enc->pack != 1 && enc->pack != 2 && enc->pack != 4) {
+      //if (enc->pack != 1 && enc->pack != 2 && enc->pack != 4) {
+      if (enc->pack < 1 || enc->pack > 4) {
         return false;
       }
       
@@ -593,6 +594,29 @@ static bool _ValueToBytes(Base85::Decoder *d, unsigned int pack, unsigned int va
     
     return true;
   
+  } else if (pack == 3) {
+    unsigned int nbits = nbytes * 8;
+    
+    if (nbits >= 30) {
+      if (!_ValueToBytes(d, 1, (val & 0x000003FF), 4)) {
+        return false;
+      }
+    }
+    
+    if (nbits >= 20) {
+      if (!_ValueToBytes(d, 1, (val & 0x000FFC00) >> 10, 4)) {
+        return false;
+      }
+    }
+    
+    if (nbits >= 10) {
+      if (!_ValueToBytes(d, 1, (val & 0x3FF00000) >> 20, 4)) {
+        return false;
+      }
+    }
+    
+    return true;
+    
   } else if (pack == 4) {
     if (nbytes >= 4) {
       if (!_ValueToBytes(d, 1, (val & 0x000000FF), 4)) {

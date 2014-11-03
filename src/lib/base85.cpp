@@ -289,12 +289,9 @@ void Base85::DestroyDecoder(Base85::Decoder *decoder) {
 
 // ---
 
-static bool _EncodeValue(//const CharSetData &cs,
-                         Base85::Encoder *e,
-                         unsigned int val, unsigned int nchars) { //,
-                         //char *&out, size_t outmaxlen, size_t &outlen) {
+static bool _EncodeValue(Base85::Encoder *e, unsigned int val, unsigned int nchars) {
   
-  std::map<unsigned int, char>::const_iterator it = e->encoding->schars.find(val); //cs.schars.find(val);
+  std::map<unsigned int, char>::const_iterator it = e->encoding->schars.find(val);
   unsigned int divisor = 85 * 85 * 85 * 85;
   
   if (it != e->encoding->schars.end()) {
@@ -302,20 +299,14 @@ static bool _EncodeValue(//const CharSetData &cs,
     *(e->out) = it->second;
     
     e->out += 1;
-    
-    //out[outlen++] = it->second;
   
   } else {
     
-    //if (outlen+nchars > outmaxlen) {
-    //  return false;
-    //}
     if (e->out + nchars > e->outend) {
       return false;
     }
     
     for (unsigned int i=0; i<nchars; ++i) {
-      //out[outlen++] = cs.enc[(val / divisor) % 85];
       e->out[i] = e->encoding->enc[(val / divisor) % 85];
       divisor /= 85;
     }
@@ -326,16 +317,13 @@ static bool _EncodeValue(//const CharSetData &cs,
   return true;
 }
 
-static unsigned int _BytesToValue(//const CharSetData &cs,
-                                  //const unsigned char *bytes, size_t nbytes) {
-                                  Base85::Encoder *e, size_t nbytes) {
+static unsigned int _BytesToValue(Base85::Encoder *e, size_t nbytes) {
   unsigned int val = 0;
-  // this is where the packing takes place
+  // this is where the packing should takes place (extra state in e)
   
   if (!e->encoding->revbytes) {
     unsigned int multiplier = 256 * 256 * 256;
     for (size_t i=0; i<nbytes; ++i) {
-      //val += multiplier * bytes[i];
       val += multiplier * e->in[i];
       multiplier /= 256;
     }
@@ -346,19 +334,17 @@ static unsigned int _BytesToValue(//const CharSetData &cs,
       multiplier *= 256;
     }
     for (size_t i=0; i<nbytes; ++i) {
-      //val += multiplier * bytes[i];
       val += multiplier * e->in[i];
       multiplier *= 256;
     }
   }
   
+  e->in += nbytes;
+  
   return val;
 }
 
-static bool _EncodeRepeat(//const CharSetData &cs,
-                          Base85::Encoder *e,
-                          unsigned int val, unsigned int count) {//,
-                          //char *&out, size_t outmaxlen, size_t &outlen) {
+static bool _EncodeRepeat(Base85::Encoder *e, unsigned int val, unsigned int count) {
   
   // Because of the addition of the rlemarker, count must be at least 3 for standard values
   // For special values, count should be at least 8
@@ -369,20 +355,16 @@ static bool _EncodeRepeat(//const CharSetData &cs,
   
   if (count >= minrepeat) {
     
-    //out[outlen++] = cs.rlemarker;
     *(e->out++) = e->encoding->rlemarker;
     
-    //if (outlen >= outmaxlen) {
     if (e->out >= e->outend) {
       return false;
     }
     
-    //if (!_EncodeValue(cs, val, 5, out, outmaxlen, outlen)) {
     if (!_EncodeValue(e, val, 5)) {
       return false;
     }
     
-    //if (!_EncodeValue(cs, count, 5, out, outmaxlen, outlen)) {
     if (!_EncodeValue(e, count, 5)) {
       return false;
     }
@@ -392,7 +374,6 @@ static bool _EncodeRepeat(//const CharSetData &cs,
   } else {
     
     for (unsigned int i=0; i<count; ++i) {
-      //if (!_EncodeValue(cs, val, 5, out, outmaxlen, outlen)) {
       if (!_EncodeValue(e, val, 5)) {
         return false;
       }
@@ -402,15 +383,10 @@ static bool _EncodeRepeat(//const CharSetData &cs,
   }
 }
 
-static bool _EncodeChunk(//const CharSetData &cs,
-                         //const unsigned char *in, const unsigned char *inend,
-                         //char *&out, size_t outmaxlen, size_t &outlen,
-                         //unsigned int &lastval, unsigned int &repeat) {
-                         Base85::Encoder *e) {
+static bool _EncodeChunk(Base85::Encoder *e) {
   
   size_t nbytes = std::min<size_t>(4, e->inend - e->in);
   
-  //unsigned int val = _BytesToValue(cs, in, nbytes);
   unsigned int val = _BytesToValue(e, nbytes);
   
   if (e->encoding->rle) {
@@ -419,19 +395,15 @@ static bool _EncodeChunk(//const CharSetData &cs,
       return true;
       
     } else {
-      //if (!_EncodeRepeat(cs, lastval, repeat, out, outmaxlen, outlen)) {
       if (!_EncodeRepeat(e, e->last, e->repeat)) {
         return false;
       }
       
-      //lastval = val;
       e->last = val;
       
-      //if (in+nbytes >= inend) {
       if (e->in + nbytes >= e->inend) {
         // last chunk (partial or not)
         e->repeat = 0;
-        //return _EncodeValue(cs, val, nbytes+1, out, outmaxlen, outlen);
         return _EncodeValue(e, val, nbytes+1);
         
       } else {
@@ -440,15 +412,12 @@ static bool _EncodeChunk(//const CharSetData &cs,
       }
     }
   } else {
-    //return _EncodeValue(cs, val, nbytes+1, out, outmaxlen, outlen);
     return _EncodeValue(e, val, nbytes+1);
   }
 }
 
 // If out is provided, its size should be outlen+1 (+1 for the final '\0')
-static bool _Encode(Base85::Encoder *e, //const CharSetData &cs,
-                    const void *data, size_t len,
-                    char *&out, size_t &outlen) {
+static bool _Encode(Base85::Encoder *e, const void *data, size_t len, char *&out, size_t &outlen) {
   
   if (!data) {
     if (!out) {
@@ -462,12 +431,11 @@ static bool _Encode(Base85::Encoder *e, //const CharSetData &cs,
     ++count;
   }
   
-  //bool allocated = false;
   size_t _outlen = 0;
   
   if (!out) {
-    // max number of bytes
-    // Note: take paking into account: divide by e->encoding->pack value
+    // Compute the maximum number of bytes required (i.e. without compression)
+    // Note: Take packing into account (divide by e->encoding->pack value)
     _outlen = count * 5;
     
     out = (char*) malloc(_outlen + 1);
@@ -476,8 +444,6 @@ static bool _Encode(Base85::Encoder *e, //const CharSetData &cs,
     #ifdef _DEBUG
     std::cout << "Encode: Allocated " << _outlen << " character(s) string" << std::endl;
     #endif
-    
-    //allocated = true;
     
     e->allocated_size = _outlen + 1;
     
@@ -504,35 +470,23 @@ static bool _Encode(Base85::Encoder *e, //const CharSetData &cs,
   e->outend = out + _outlen;
   e->out = e->outbeg;
   
-  //unsigned char *cur = (unsigned char*) data;
-  //unsigned char *last = cur + len;
-  //unsigned int lastval = 0;
-  //unsigned int repeat = 0;
-  
-  //for (unsigned int i=0; i<count && outlen<_outlen; ++i, cur+=4) {
   for (unsigned int i=0; i<count && e->out<e->outend; ++i) {
     
-    //if (!_EncodeChunk(cs, cur, last, out, _outlen, outlen, lastval, repeat)) {
     if (!_EncodeChunk(e)) {
-      //outlen = _outlen;
       // Force a failure
       e->out = e->outend + 1;
       break;
     }
   }
   
-  //if (cs.rle && repeat >= 1) {
   if (e->encoding->rle && e->repeat >= 1) {
-    // have a pending repeat
-    //if (!_EncodeRepeat(cs, lastval, repeat, out, _outlen, outlen)) {
+    // Have a pending repeat
     if (!_EncodeRepeat(e, e->last, e->repeat)) {
-      //_outlen = outlen;
       // Force a failure
       e->out = e->outend + 1;
     }
   }
   
-  //if (outlen > _outlen) {
   if (e->out > e->outend) {
     outlen = 0;
     if (e->allocated_size > 0) {

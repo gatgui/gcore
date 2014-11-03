@@ -205,7 +205,6 @@ struct Base85::Encoder {
   char *outend;
   char *out;
   
-  unsigned int packed; // current number of packed values
   unsigned int last; // last encoded value
   unsigned int repeat; // repeat count
   
@@ -318,31 +317,73 @@ static bool _EncodeValue(Base85::Encoder *e, unsigned int val, unsigned int ncha
   return true;
 }
 
-static unsigned int _BytesToValue(Base85::Encoder *e, size_t nbytes) {
-  unsigned int val = 0;
-  // this is where the packing should takes place (extra state in e)
+static bool _BytesToValue(Base85::Encoder *e, unsigned int &outval, unsigned int &nchars) {
+  static unsigned int sPackMask[4] = {0xFFFFFFFF, 0x0000FFFF, 0x000003FF, 0x000000FF};
+  static unsigned int sPackBits[4] = {32, 16, 10, 8};
   
-  if (!e->encoding->revbytes) {
-    unsigned int multiplier = 256 * 256 * 256;
-    for (size_t i=0; i<nbytes; ++i) {
-      val += multiplier * e->in[i];
-      multiplier /= 256;
+  unsigned int mask = sPackMask[e->encoding->pack - 1];
+  unsigned int shift = sPackBits[e->encoding->pack - 1];
+  
+  unsigned int nbits = 0;
+  
+  unsigned int val = 0;
+  unsigned int nbytes = 0;
+  unsigned int p = 0;
+  
+  outval = 0;
+  nchars = 0;
+  
+  for (; p<e->encoding->pack; ++p) {
+    
+    nbytes = std::min<unsigned int>(4, e->inend - e->in);
+    
+    val = 0;
+    
+    if (!e->encoding->revbytes) {
+      unsigned int multiplier = 256 * 256 * 256;
+      for (unsigned int i=0; i<nbytes; ++i) {
+        val += multiplier * e->in[i];
+        multiplier /= 256;
+      }
+      
+    } else {
+      unsigned int multiplier = 1;
+      for (unsigned int i=nbytes; i<4; ++i) {
+        multiplier *= 256;
+      }
+      for (unsigned int i=0; i<nbytes; ++i) {
+        val += multiplier * e->in[i];
+        multiplier *= 256;
+      }
     }
-     
-  } else {
-    unsigned int multiplier = 1;
-    for (size_t i=nbytes; i<4; ++i) {
-      multiplier *= 256;
+    
+    if ((val & mask) != val) {
+      std::cout << "Value to encode is too big for given packing setup: " << val << " > " << mask << std::endl;
+      outval = 0;
+      return false;
     }
-    for (size_t i=0; i<nbytes; ++i) {
-      val += multiplier * e->in[i];
-      multiplier *= 256;
+    
+    outval = outval | ((val & mask) << (shift * p));
+    
+    nbits += shift;
+    
+    e->in += nbytes;
+    
+    if (e->in >= e->inend) {
+      break;
     }
   }
   
-  e->in += nbytes;
+  nbytes = (nbits / 8) + (nbits % 8 ? 1 : 0);
   
-  return val;
+  nchars = nbytes + 1;
+  
+  // pad right with zeros
+  while (++p < e->encoding->pack) {
+    outval = outval << shift;
+  }
+  
+  return true;
 }
 
 static bool _EncodeRepeat(Base85::Encoder *e, unsigned int val, unsigned int count) {
@@ -386,9 +427,12 @@ static bool _EncodeRepeat(Base85::Encoder *e, unsigned int val, unsigned int cou
 
 static bool _EncodeChunk(Base85::Encoder *e) {
   
-  size_t nbytes = std::min<size_t>(4, e->inend - e->in);
+  unsigned int nchars = 0;
+  unsigned int val = 0;
   
-  unsigned int val = _BytesToValue(e, nbytes);
+  if (!_BytesToValue(e, val, nchars)) {
+    return false;
+  }
   
   if (e->encoding->rle) {
     if (e->repeat > 0 && val == e->last) {
@@ -402,10 +446,10 @@ static bool _EncodeChunk(Base85::Encoder *e) {
       
       e->last = val;
       
-      if (e->in + nbytes >= e->inend) {
+      if (e->in >= e->inend) {
         // last chunk (partial or not)
         e->repeat = 0;
-        return _EncodeValue(e, val, nbytes+1);
+        return _EncodeValue(e, val, nchars);
         
       } else {
         e->repeat = 1;
@@ -413,7 +457,7 @@ static bool _EncodeChunk(Base85::Encoder *e) {
       }
     }
   } else {
-    return _EncodeValue(e, val, nbytes+1);
+    return _EncodeValue(e, val, nchars);
   }
 }
 
@@ -427,17 +471,17 @@ static bool _Encode(Base85::Encoder *e, const void *data, size_t len, char *&out
     return false;
   }
   
-  size_t count = len / 4;
-  if (len % 4 > 0) {
-    ++count;
-  }
-  
   size_t _outlen = 0;
   
   if (!out) {
+    size_t count = len / 4;
+    
+    if (len % 4 > 0) {
+      ++count;
+    }
+    
     // Compute the maximum number of bytes required (i.e. without compression)
-    // Note: Take packing into account (divide by e->encoding->pack value)
-    _outlen = count * 5;
+    _outlen = ((count / e->encoding->pack) + (count % e->encoding->pack ? 1 : 0)) * 5;
     
     out = (char*) malloc(_outlen + 1);
     memset(out, 0, _outlen + 1);
@@ -458,12 +502,9 @@ static bool _Encode(Base85::Encoder *e, const void *data, size_t len, char *&out
     e->allocated_size = 0;
   }
   
-  //outlen = 0;
-  
   e->inbeg = (unsigned char*) data;
   e->inend = e->inbeg + len;
   e->in = e->inbeg;
-  e->packed = 0;
   e->last = 0;
   e->repeat = 0;
   
@@ -471,7 +512,7 @@ static bool _Encode(Base85::Encoder *e, const void *data, size_t len, char *&out
   e->outend = out + _outlen;
   e->out = e->outbeg;
   
-  for (unsigned int i=0; i<count && e->out<e->outend; ++i) {
+  while (e->in < e->inend && e->out < e->outend) {
     
     if (!_EncodeChunk(e)) {
       // Force a failure

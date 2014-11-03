@@ -307,7 +307,9 @@ int main(int argc, char **argv) {
     es = gcore::Base85::Encode(enc, outdata, outlen);
     std::cout << "=> Re-encoded to: " << es << std::endl;
     if (es != decstr) {
-      // Expected
+      // Expected: The difference is in the higher 2 bits of each 4 bytes chunk
+      //           which are actually ignored by the pack3 10 bits mask
+      //           Data is actually perfectly identical
       std::cout << "!!! DIFFERS FROM ORIGINAL !!!" << std::endl;
     }
     
@@ -812,12 +814,19 @@ int main(int argc, char **argv) {
   if (gcore::Base85::Decode(dec, decstr, outdata, outlen)) {
     float *vals = (float*) outdata;
     unsigned int count = (outlen / 4) / 3;
+    unsigned int idx = 0;
     std::cout << "Decoded " << count << " points" << std::endl;
     std::cout << "  [0] " << vals[0] << ", " << vals[1] << ", " << vals[2] << std::endl;
     std::cout << "  [1] " << vals[3] << ", " << vals[4] << ", " << vals[5] << std::endl;
     std::cout << "  [2] " << vals[6] << ", " << vals[7] << ", " << vals[8] << std::endl;
     std::cout << "  ..." << std::endl;
-    std::cout << "  [" << (count / 2) << "] " << vals[3*count/2] << ", " << vals[1+3*count/2] << ", " << vals[2+3*count/2] << std::endl;
+    //std::cout << "  [" << (count / 2) << "] " << vals[3*count/2] << ", " << vals[1+3*count/2] << ", " << vals[2+3*count/2] << std::endl;
+    idx = (count / 2) - 1;
+    std::cout << "  [" << idx << "] " << vals[3*idx] << ", " << vals[1+3*idx] << ", " << vals[2+3*idx] << std::endl;
+    idx = (count / 2);
+    std::cout << "  [" << idx << "] " << vals[3*idx] << ", " << vals[1+3*idx] << ", " << vals[2+3*idx] << std::endl;
+    idx = (count / 2) + 1;
+    std::cout << "  [" << idx << "] " << vals[3*idx] << ", " << vals[1+3*idx] << ", " << vals[2+3*idx] << std::endl;
     std::cout << "  ..." << std::endl;
     std::cout << "  [" << (count - 3) << "] " << vals[3*(count-3)] << ", " << vals[1+3*(count-3)] << ", " << vals[2+3*(count-3)] << std::endl;
     std::cout << "  [" << (count - 2) << "] " << vals[3*(count-2)] << ", " << vals[1+3*(count-2)] << ", " << vals[2+3*(count-2)] << std::endl;
@@ -826,12 +835,43 @@ int main(int argc, char **argv) {
     es = gcore::Base85::Encode(enc, outdata, outlen);
     std::cout << "=> Re-encoded to: " << es << std::endl;
     if (es != decstr) {
+      // it is actually true, but the data match
+      // it has to do with RLE encoding:
+      //   in the sample data 0 5 times is !$$$$$$$$$(
+      //   while this encoder would encode !z$$$$$(, be because zzzzz is yet smaller
+      //   the repeat pattern is ignored
       std::cout << "!!! DIFFERS FROM ORIGINAL !!!" << std::endl;
       std::cout << "length: " << decstr.length() << " / " << es.length() << std::endl;
-      // check data?
+      
+      free(outdata);
+      outdata = 0;
+      outlen = 0;
+      
+      if (gcore::Base85::Decode(dec, es, outdata, outlen)) {
+        float *vals = (float*) outdata;
+        unsigned int count = (outlen / 4) / 3;
+        std::cout << "Decoded " << count << " points" << std::endl;
+        std::cout << "  [0] " << vals[0] << ", " << vals[1] << ", " << vals[2] << std::endl;
+        std::cout << "  [1] " << vals[3] << ", " << vals[4] << ", " << vals[5] << std::endl;
+        std::cout << "  [2] " << vals[6] << ", " << vals[7] << ", " << vals[8] << std::endl;
+        std::cout << "  ..." << std::endl;
+        idx = (count / 2) - 1;
+        std::cout << "  [" << idx << "] " << vals[3*idx] << ", " << vals[1+3*idx] << ", " << vals[2+3*idx] << std::endl;
+        idx = (count / 2);
+        std::cout << "  [" << idx << "] " << vals[3*idx] << ", " << vals[1+3*idx] << ", " << vals[2+3*idx] << std::endl;
+        idx = (count / 2) + 1;
+        std::cout << "  [" << idx << "] " << vals[3*idx] << ", " << vals[1+3*idx] << ", " << vals[2+3*idx] << std::endl;
+        std::cout << "  ..." << std::endl;
+        std::cout << "  [" << (count - 3) << "] " << vals[3*(count-3)] << ", " << vals[1+3*(count-3)] << ", " << vals[2+3*(count-3)] << std::endl;
+        std::cout << "  [" << (count - 2) << "] " << vals[3*(count-2)] << ", " << vals[1+3*(count-2)] << ", " << vals[2+3*(count-2)] << std::endl;
+        std::cout << "  [" << (count - 1) << "] " << vals[3*(count-1)] << ", " << vals[1+3*(count-1)] << ", " << vals[2+3*(count-1)] << std::endl;
+        
+        free(outdata);
+      }
+      
+    } else {
+      free(outdata);
     }
-    
-    free(outdata);
   }
   
   gcore::Base85::DestroyEncoder(enc);

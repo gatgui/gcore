@@ -167,6 +167,7 @@ int main(int argc, char **argv) {
   e_pack1.pack = 1;
   gcore::Base85::AddEncoding("pack1", &e_pack1);
   
+  enc = gcore::Base85::CreateEncoder("pack4");
   dec = gcore::Base85::CreateDecoder("pack4");
   
   std::cout << "=== UINT arrays test 1/4" << std::endl;
@@ -187,6 +188,13 @@ int main(int argc, char **argv) {
      std::cout << "  [" << (count - 3) << "] " << vals[count-3] << std::endl;
      std::cout << "  [" << (count - 2) << "] " << vals[count-2] << std::endl;
      std::cout << "  [" << (count - 1) << "] " << vals[count-1] << std::endl;
+     
+     es = gcore::Base85::Encode(enc, outdata, outlen);
+     std::cout << "=> Re-encoded to: " << es << std::endl;
+     if (es != decstr) {
+       std::cout << "!!! DIFFERS FROM ORIGINAL !!!" << std::endl;
+     }
+     
      free(outdata);
   }
    
@@ -202,6 +210,13 @@ int main(int argc, char **argv) {
     for (unsigned int i=0; i<count; ++i) {
       std::cout << "  [" << i << "] " << vals[i] << std::endl;
     }
+    
+    es = gcore::Base85::Encode(enc, outdata, outlen);
+    std::cout << "=> Re-encoded to: " << es << std::endl;
+    if (es != decstr) {
+      std::cout << "!!! DIFFERS FROM ORIGINAL !!!" << std::endl;
+    }
+    
     free(outdata);
   }
   
@@ -223,12 +238,21 @@ int main(int argc, char **argv) {
     std::cout << "  [" << (count - 3) << "] " << vals[count-3] << std::endl;
     std::cout << "  [" << (count - 2) << "] " << vals[count-2] << std::endl;
     std::cout << "  [" << (count - 1) << "] " << vals[count-1] << std::endl;
+    
+    es = gcore::Base85::Encode(enc, outdata, outlen);
+    std::cout << "=> Re-encoded to: " << es << std::endl;
+    if (es != decstr) {
+      std::cout << "!!! DIFFERS FROM ORIGINAL !!!" << std::endl;
+    }
+    
     free(outdata);
   }
   
+  gcore::Base85::DestroyEncoder(enc);
   gcore::Base85::DestroyDecoder(dec);
   
   dec = gcore::Base85::CreateDecoder("pack3");
+  enc = gcore::Base85::CreateEncoder("pack3");
   
   std::cout << "=== UINT arrays test 4/4" << std::endl;
   outdata = 0;
@@ -279,12 +303,22 @@ int main(int argc, char **argv) {
     std::cout << "  [" << (count - 3) << "] " << vals[count-3] << std::endl;
     std::cout << "  [" << (count - 2) << "] " << vals[count-2] << std::endl;
     std::cout << "  [" << (count - 1) << "] " << vals[count-1] << std::endl;
+    
+    es = gcore::Base85::Encode(enc, outdata, outlen);
+    std::cout << "=> Re-encoded to: " << es << std::endl;
+    if (es != decstr) {
+      // Expected
+      std::cout << "!!! DIFFERS FROM ORIGINAL !!!" << std::endl;
+    }
+    
     free(outdata);
   }
   
   gcore::Base85::DestroyDecoder(dec);
+  gcore::Base85::DestroyEncoder(enc);
   
   dec = gcore::Base85::CreateDecoder("pack2");
+  enc = gcore::Base85::CreateEncoder("pack2");
   
   outdata = 0;
   outlen = 0;
@@ -681,11 +715,20 @@ int main(int argc, char **argv) {
     std::cout << "  [" << (count - 3) << "] " << vals[count-3] << std::endl;
     std::cout << "  [" << (count - 2) << "] " << vals[count-2] << std::endl;
     std::cout << "  [" << (count - 1) << "] " << vals[count-1] << std::endl;
+    
+    es = gcore::Base85::Encode(enc, outdata, outlen);
+    std::cout << "=> Re-encoded to: " << es << std::endl;
+    if (es != decstr) {
+      std::cout << "!!! DIFFERS FROM ORIGINAL !!!" << std::endl;
+    }
+    
     free(outdata);
   }
   
   gcore::Base85::DestroyDecoder(dec);
+  gcore::Base85::DestroyEncoder(enc);
   
+  enc = gcore::Base85::CreateEncoder("pack1");
   dec = gcore::Base85::CreateDecoder("pack1");
   outdata = 0;
   outlen = 0;
@@ -779,9 +822,19 @@ int main(int argc, char **argv) {
     std::cout << "  [" << (count - 3) << "] " << vals[3*(count-3)] << ", " << vals[1+3*(count-3)] << ", " << vals[2+3*(count-3)] << std::endl;
     std::cout << "  [" << (count - 2) << "] " << vals[3*(count-2)] << ", " << vals[1+3*(count-2)] << ", " << vals[2+3*(count-2)] << std::endl;
     std::cout << "  [" << (count - 1) << "] " << vals[3*(count-1)] << ", " << vals[1+3*(count-1)] << ", " << vals[2+3*(count-1)] << std::endl;
+    
+    es = gcore::Base85::Encode(enc, outdata, outlen);
+    std::cout << "=> Re-encoded to: " << es << std::endl;
+    if (es != decstr) {
+      std::cout << "!!! DIFFERS FROM ORIGINAL !!!" << std::endl;
+      std::cout << "length: " << decstr.length() << " / " << es.length() << std::endl;
+      // check data?
+    }
+    
     free(outdata);
   }
   
+  gcore::Base85::DestroyEncoder(enc);
   gcore::Base85::DestroyDecoder(dec);
   
   return 0;

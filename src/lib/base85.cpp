@@ -415,6 +415,12 @@ static bool _EncodeRepeat(Base85::Encoder *e, unsigned int val, unsigned int cou
     
   } else {
     
+    #ifdef _DEBUG
+    if (count > 1) {
+      std::cout << "Value repeat count not big enough to justify repeat pattern (" << count << " < " << minrepeat << ")" << std::endl;
+    }
+    #endif
+    
     for (unsigned int i=0; i<count; ++i) {
       if (!_EncodeValue(e, val, 5)) {
         return false;
@@ -457,6 +463,7 @@ static bool _EncodeChunk(Base85::Encoder *e) {
       }
     }
   } else {
+    e->last = val;
     return _EncodeValue(e, val, nchars);
   }
 }
@@ -726,6 +733,10 @@ static bool _DecodeRepeat(Base85::Decoder *d) {
   if (!_DecodeValue(d, count, nbytes)) {
     return false;
   }
+  
+  #ifdef _DEBUG
+  std::cout << "Decode value " << value << " " << count << " time(s)" << std::endl;
+  #endif
   
   for (unsigned int i=0; i<count; ++i) {
     if (!_ValueToBytes(d, d->encoding->pack, value, nbytes)) {

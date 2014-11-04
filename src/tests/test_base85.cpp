@@ -126,14 +126,16 @@ int main(int argc, char **argv) {
       std::cout << "Failed" << std::endl;
     
     } else {
-      std::cout << "\"" << decstr << "\" => - ";
+      std::cout << "\"" << decstr << "\" => \"" << ds << "\" ( - ";
       for (size_t i=0; i<ds.length(); ++i) {
         std::cout << std::hex << int((unsigned char)ds[i]) << std::dec << " - ";
       }
-      std::cout << std::endl;
+      std::cout << ")" << std::endl;
       
       es = gcore::Base85::Encode(enc, ds);
-      std::cout << "=> \"" << es << "\"" << std::endl;
+      if (es != decstr) {
+        std::cerr << "Decode -> Encode -> Decode failed" << std::endl;
+      }
     }
   }
   

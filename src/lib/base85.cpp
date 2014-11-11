@@ -392,7 +392,6 @@ static bool _EncodeRepeat(Base85::Encoder *e, unsigned int val, unsigned int cou
   // For special values, count should be at least 8
   //   1 ('!') + 1 (special char) + 5 (count)  = 7
   
-  // Should I take packing into account here?
   unsigned int minrepeat = (e->encoding->schars.find(val) == e->encoding->schars.end() ? 3 : 8);
   
   if (count >= minrepeat) {
@@ -414,12 +413,6 @@ static bool _EncodeRepeat(Base85::Encoder *e, unsigned int val, unsigned int cou
     return true;
     
   } else {
-    
-    #ifdef _DEBUG
-    if (count > 1) {
-      std::cout << "Value repeat count not big enough to justify repeat pattern (" << count << " < " << minrepeat << ")" << std::endl;
-    }
-    #endif
     
     for (unsigned int i=0; i<count; ++i) {
       if (!_EncodeValue(e, val, 5)) {
@@ -492,10 +485,6 @@ static bool _Encode(Base85::Encoder *e, const void *data, size_t len, char *&out
     
     out = (char*) malloc(_outlen + 1);
     memset(out, 0, _outlen + 1);
-    
-    #ifdef _DEBUG
-    std::cout << "Encode: Allocated " << _outlen << " character(s) string" << std::endl;
-    #endif
     
     e->allocated_size = _outlen + 1;
     
@@ -614,7 +603,8 @@ static bool _DecodeValue(Base85::Decoder *d, unsigned int &val, size_t &nbytes) 
 
 static bool _ValueToBytes(Base85::Decoder *d, unsigned int pack, unsigned int val, size_t nbytes) {
   
-  // Reminder: When input chunk is not a full 5 char sequence (last chunk), decoded value is right padded
+  // Reminder: When input chunk is not a full 5 char sequence (last chunk),
+  //   decoded value is right padded with zeros
   if (d->out >= d->outend) {
     return false;
   }
@@ -734,10 +724,6 @@ static bool _DecodeRepeat(Base85::Decoder *d) {
     return false;
   }
   
-  #ifdef _DEBUG
-  std::cout << "Decode value " << value << " " << count << " time(s)" << std::endl;
-  #endif
-  
   for (unsigned int i=0; i<count; ++i) {
     if (!_ValueToBytes(d, d->encoding->pack, value, nbytes)) {
       return false;
@@ -799,10 +785,6 @@ static bool _Decode(Base85::Decoder *d, const char *in, size_t len, void *&data,
     outlen = 0;
     size_t l = len;
     
-    #ifdef _DEBUG
-    std::cout << "Input string length: " << len << std::endl;
-    #endif
-    
     itbeg = d->encoding->svals.begin();
     itend = d->encoding->svals.end();
     
@@ -812,12 +794,6 @@ static bool _Decode(Base85::Decoder *d, const char *in, size_t len, void *&data,
         l -= c;
         
         outlen += (4 * c) * d->encoding->pack;
-        
-        #ifdef _DEBUG
-        std::cout << "Found " << c << " time(s) special character '" << it->first << "'" << std::endl;
-        std::cout << "  Reduce string length to: " << l << std::endl;
-        std::cout << "  Increased output buffer size to: " << outlen << std::endl;
-        #endif
       }
     }
     
@@ -827,10 +803,6 @@ static bool _Decode(Base85::Decoder *d, const char *in, size_t len, void *&data,
       const char *p1 = strchr(p0, d->encoding->rlemarker);
       
       while (p1 != NULL) {
-        #ifdef _DEBUG
-        std::cout << "Found repeat pattern start @" << (p1 - in) << std::endl;
-        #endif
-        
         // remember start postiion of repeat pattern
         const char *ps = p1;
         
@@ -860,17 +832,8 @@ static bool _Decode(Base85::Decoder *d, const char *in, size_t len, void *&data,
           const char *p2 = strchr(ps, it->first);
           
           while (p2 != NULL && p2 < p1) {
-            #ifdef _DEBUG
-            std::cout << "  Found special char '" << it->first << "' in repeat pattern" << std::endl;
-            #endif
-            
             l += 1;
             outlen -= 4 * d->encoding->pack;
-            
-            #ifdef _DEBUG
-            std::cout << "    Increased string length to: " << l << std::endl;
-            std::cout << "    Reduced output buffer size to: " << outlen << std::endl;
-            #endif
             
             p2 = strchr(p2+1, it->first);
           }
@@ -878,10 +841,6 @@ static bool _Decode(Base85::Decoder *d, const char *in, size_t len, void *&data,
         
         n = p1 - ps;
         if (l < n) {
-          #ifdef _DEBUG
-          std::cout << "Failed to compute required output buffer size" << std::endl;
-          #endif
-          
           return false;
           
         } else {
@@ -889,11 +848,6 @@ static bool _Decode(Base85::Decoder *d, const char *in, size_t len, void *&data,
         }
         
         outlen += 4 * count * d->encoding->pack;
-        
-        #ifdef _DEBUG
-        std::cout << "  Reduce string length to: " << l << std::endl;
-        std::cout << "  Increased output buffer size to: " << outlen << std::endl;
-        #endif
         
         p0 = p1;
         p1 = strchr(p0, d->encoding->rlemarker);
@@ -906,16 +860,8 @@ static bool _Decode(Base85::Decoder *d, const char *in, size_t len, void *&data,
     // Last chunk case
     l = l % 5;
     if (l > 0) {
-      #ifdef _DEBUG
-      std::cout << "  " << l << " remaining character(s) [expands to " << ((l - 1) * d->encoding->pack) << " byte(s)]" << std::endl;
-      #endif
-      
       outlen += (l - 1) * d->encoding->pack;
     }
-    
-    #ifdef _DEBUG
-    std::cout << "Decode: Allocated " << outlen << " byte(s)" << std::endl;
-    #endif
     
     data = (void*) malloc(outlen);
     
@@ -946,10 +892,6 @@ static bool _Decode(Base85::Decoder *d, const char *in, size_t len, void *&data,
   }
   
   // adjust outlen to real byte size
-  #ifdef _DEBUG
-  std::cout << "Final output size: " << (d->out - d->outbeg) << " (allocated " << d->allocated_size << ")" << std::endl;
-  #endif
-  
   outlen = (d->out - d->outbeg);
   
   return true;

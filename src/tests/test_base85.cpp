@@ -312,7 +312,7 @@ int main(int argc, char **argv) {
       // Expected: The difference is in the higher 2 bits of each 4 bytes chunk
       //           which are actually ignored by the pack3 10 bits mask
       //           Data is actually perfectly identical
-      std::cout << "!!! DIFFERS FROM ORIGINAL !!!" << std::endl;
+      std::cout << "!!! DIFFERS FROM ORIGINAL !!! (expected)" << std::endl;
     }
     
     free(outdata);
@@ -842,7 +842,7 @@ int main(int argc, char **argv) {
       //   in the sample data 0 5 times is !$$$$$$$$$(
       //   while this encoder would encode !z$$$$$(, be because zzzzz is yet smaller
       //   the repeat pattern is ignored
-      std::cout << "!!! DIFFERS FROM ORIGINAL !!!" << std::endl;
+      std::cout << "!!! DIFFERS FROM ORIGINAL !!! (expected)" << std::endl;
       std::cout << "length: " << decstr.length() << " / " << es.length() << std::endl;
       
       free(outdata);

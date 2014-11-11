@@ -60,24 +60,8 @@ namespace gcore {
       static Decoder* CreateDecoder(int builtinEncoding);
       static Decoder* CreateDecoder(const char *encodingName);
       static void DestroyDecoder(Decoder *decodec);
-      /*
-      Base85::Encoding encoding;
       
-      encoding.charset = "xxdfdgsh";
-      encoding.rlemarker = '!';
-      encoding.revbytes = true;
-      encoding.specials['z'] = 0;
-      encoding.specials['y'] = ' ';
-      
-      Base85::AddEncoding("myencoding", &encoding);
-      
-      Base85::Encoder *enc = Base85::CreateEncoder("myencoding", true, 1);
-      
-      std::string out = Base85::Encode(enc, data, len);
-      
-      Base85::DestroyEncoder(enc);
-      
-      */
+      // ---
       
       static bool Encode(Encoder *e, const void *in, size_t inlen, char *out, size_t outlen);
       static char* Encode(Encoder *e, const void *in, size_t inlen, size_t &outlen);

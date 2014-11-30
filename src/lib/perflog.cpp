@@ -238,6 +238,13 @@ PerfLog::BaseEntry& PerfLog::BaseEntry::operator=(const PerfLog::BaseEntry &rhs)
    return *this;
 }
 
+void PerfLog::BaseEntry::merge(const BaseEntry &rhs)
+{
+   totalTime += rhs.totalTime;
+   selfTime += rhs.selfTime;
+   callCount += rhs.callCount;
+}
+
 // ---
 
 PerfLog::Entry::Entry()
@@ -259,6 +266,32 @@ PerfLog::Entry& PerfLog::Entry::operator=(const PerfLog::Entry &rhs)
       subs = rhs.subs;
    }
    return *this;
+}
+
+void PerfLog::Entry::merge(const Entry &rhs)
+{
+   BaseEntry::merge(rhs);
+   
+   std::map<std::string, Entry>::iterator it;
+   std::map<std::string, Entry>::const_iterator rit;
+   
+   for (it = subs.begin(); it != subs.end(); ++it)
+   {
+      rit = rhs.subs.find(it->first);
+      if (rit != rhs.subs.end())
+      {
+         it->second.merge(rit->second);
+      }
+   }
+   
+   for (rit = rhs.subs.begin(); rit != rhs.subs.end(); ++rit)
+   {
+      it = subs.find(rit->first);
+      if (it == subs.end())
+      {
+         subs[rit->first] = rit->second;
+      }
+   }
 }
 
 // ---
@@ -468,6 +501,56 @@ void PerfLog::end()
       else
       {
          // keep timers going on until first recurence call
+      }
+   }
+}
+
+bool PerfLog::empty() const
+{
+   return (mEntries.size() == 0);
+}
+
+void PerfLog::merge(const PerfLog &rhs)
+{
+   BaseEntryMap::iterator eit;
+   BaseEntryMap::const_iterator reit;
+   
+   for (eit=mEntries.begin(); eit!=mEntries.end(); ++eit)
+   {
+      reit = rhs.mEntries.find(eit->first);
+      if (reit != rhs.mEntries.end())
+      {
+         eit->second.merge(reit->second);
+      }
+   }
+   
+   for (reit=rhs.mEntries.begin(); reit!=rhs.mEntries.end(); ++reit)
+   {
+      eit = mEntries.find(reit->first);
+      if (eit == mEntries.end())
+      {
+         mEntries[reit->first] = reit->second;
+      }
+   }
+   
+   EntryMap::iterator rit;
+   EntryMap::const_iterator rrit;
+   
+   for (rit=mRootEntries.begin(); rit!=mRootEntries.end(); ++rit)
+   {
+      rrit = rhs.mRootEntries.find(rit->first);
+      if (rrit != rhs.mRootEntries.end())
+      {
+         rit->second.merge(rrit->second);
+      }
+   }
+   
+   for (rrit=rhs.mRootEntries.begin(); rrit!=rhs.mRootEntries.end(); ++rrit)
+   {
+      rit = mRootEntries.find(rrit->first);
+      if (rit == mRootEntries.end())
+      {
+         mRootEntries[rrit->first] = rrit->second;
       }
    }
 }

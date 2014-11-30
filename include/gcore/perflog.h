@@ -82,7 +82,8 @@ namespace gcore
       void print(std::ostream &os, int flags=ShowDefaults, int sortBy=SortFuncTime, Units units=CurrentUnits);
       void print(Log &log, int flags=ShowDefaults, int sortBy=SortFuncTime, Units units=CurrentUnits);
       void clear();
-      
+      bool empty() const;
+      void merge(const PerfLog &rhs);
       
    public:
       
@@ -97,6 +98,8 @@ namespace gcore
          BaseEntry();
          BaseEntry(const BaseEntry &);
          BaseEntry& operator=(const BaseEntry &rhs);
+         
+         void merge(const BaseEntry &rhs);
       };
    
       class GCORE_API Entry : public BaseEntry
@@ -108,16 +111,18 @@ namespace gcore
          Entry();
          Entry(const Entry &);
          Entry& operator=(const Entry &);
+         
+         void merge(const Entry &rhs);
       };
    
       class GCORE_API StackItem
       {
       public:
-#ifdef _WIN32
+         #ifdef _WIN32
          typedef LARGE_INTEGER TimeCounter;
-#else
+         #else
          typedef struct timespec TimeCounter;
-#endif
+         #endif
       
          Entry *entry;
          std::string id;

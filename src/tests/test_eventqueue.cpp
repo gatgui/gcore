@@ -37,9 +37,9 @@ void safePrint(const char *fmt, ...)
   gPrintMutex.unlock();
 }
 
+#ifdef _DEBUG
 void safeDebugPrint(const char *fmt, ...)
 {
-#ifdef _DEBUG
   va_list args;
   
   gPrintMutex.lock();
@@ -51,8 +51,12 @@ void safeDebugPrint(const char *fmt, ...)
   va_end(args);
   
   gPrintMutex.unlock();
-#endif
 }
+#else
+void safeDebugPrint(const char *, ...)
+{
+}
+#endif
 
 void thread1SyncEvent()
 {

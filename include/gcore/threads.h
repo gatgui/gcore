@@ -199,7 +199,10 @@ namespace gcore {
       template <typename R>
       Thread(R (*run)(), void (*done)(int)=0, bool waitStart=false)
         : mRunning(false), mStarted(false) {
-        Bind(run, mProc);  
+        Bind(run, mProc);
+        if (done) {
+          Bind(done, mEndCB);
+        }
         restart(waitStart);
       }
       

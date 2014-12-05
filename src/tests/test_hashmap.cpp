@@ -9,7 +9,7 @@
 
 #define MAX_STRING_LENGTH 512
 
-const size_t  MaxStringLength = 512;
+//const size_t  MaxStringLength = 512;
 const char   *ValidChars      = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-";
 const size_t  NumValidChars   = strlen(ValidChars);
 

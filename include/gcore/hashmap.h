@@ -341,7 +341,7 @@ gcore::HashMap<KeyType, ValueType, H>::iterator::operator++()
   if (mBucket < nbuckets)
   {
     ++mEntry;
-    if (mEntry == hash->mBuckets[mBucket].end())
+    if (mEntry == mHash->mBuckets[mBucket].end())
     {
       ++mBucket;
       while (mBucket < nbuckets && mHash->mBuckets[mBucket].size() == 0)
@@ -365,7 +365,7 @@ gcore::HashMap<KeyType, ValueType, H>::iterator::operator++(int)
   long nbuckets = long(mHash->mNumBuckets);
   if (mBucket < nbuckets)
   {
-    ++entry;
+    ++mEntry;
     if (mEntry == mHash->mBuckets[mBucket].end())
     {
       ++mBucket;
@@ -375,7 +375,7 @@ gcore::HashMap<KeyType, ValueType, H>::iterator::operator++(int)
       }
       if (mBucket < nbuckets)
       {
-        mEntry = hash->mBuckets[mBucket].begin();
+        mEntry = mHash->mBuckets[mBucket].begin();
       }
     }
   }

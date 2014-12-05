@@ -985,7 +985,7 @@ void* gcore::Thread::_ThreadEntryFunc(void *data) {
     }  
   }
   
-  return (void*)ret;
+  return reinterpret_cast<void*>(ret);
 }
 
 gcore::Thread::Thread()
@@ -1228,15 +1228,15 @@ gcore::ThreadID gcore::Thread::CurrentID() {
 }
 
 int gcore::Thread::GetProcessorCount() {
-#if defined(__APPLE__)
-  return MPProcessors();
-#else
+//#if defined(__APPLE__)
+//  return MPProcessors();
+//#else
   int result = sysconf(_SC_NPROCESSORS_ONLN);
   if (result < 0) {
     result = 1;
   }
   return result;
-#endif
+//#endif
 }
 
 #endif

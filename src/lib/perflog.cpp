@@ -601,8 +601,7 @@ public:
    typedef std::vector<std::string> Line;
    
    Logger(int showFlags, int sortFlags, PerfLog::Units srcUnits, PerfLog::Units dstUnits)
-      : mNumFields(0)
-      , mShowFlags(showFlags)
+      : mShowFlags(showFlags)
       , mSortFlags(sortFlags)
       , mSortReverse(false)
       , mSrcUnits(srcUnits)
@@ -1102,7 +1101,6 @@ private:
    
 private:
    
-   size_t mNumFields;
    int mShowFlags;
    int mSortFlags;
    bool mSortReverse;

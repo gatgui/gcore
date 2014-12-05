@@ -116,19 +116,19 @@ namespace gcore {
       String mFullName;
   };
   
+  inline Path operator+(const Path &p0, const Path &p1) {
+    gcore::Path rv(p0);
+    rv += p1;
+    return rv;
+  }
+
+  inline std::ostream& operator<<(std::ostream &os, const Path &p) {
+    os << p.fullname();
+    return os;
+  }
+  
   typedef List<Path> PathList;
   
-}
-
-inline gcore::Path operator+(const gcore::Path &p0, const gcore::Path &p1) {
-  gcore::Path rv(p0);
-  rv += p1;
-  return rv;
-}
-
-inline std::ostream& operator<<(std::ostream &os, const gcore::Path &p) {
-  os << p.fullname();
-  return os;
 }
 
 #endif

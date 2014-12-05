@@ -144,7 +144,7 @@ Instruction* ParseBranch(const char **ppc, ParseInfo &info)
       {
         delete first;
       }
-      return false;
+      return 0;
     }
     if (!first)
     {

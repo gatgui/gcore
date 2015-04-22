@@ -184,10 +184,10 @@ namespace std {
 
 // --- inline members ---
 
-inline half::half() {
+inline half::half() : bits(0) {
 }
 
-inline half::half(float f) {
+inline half::half(float f) : bits(0) {
   uif x;
   x.f = f;
   bits = fromFloatBits(x.i);

@@ -39,7 +39,9 @@ const char* ArgParserError::what() const throw() {
 
 
 ArgParser::ArgParser(const FlagDesc *flags, int n)
-  : mNoFlagOn(false) {
+  : mNoFlagOn(false)
+  , mNoFlagCount(0) {
+  
   // Better flag check
   for (int i=0; i<n; ++i) {
     bool exists = false;

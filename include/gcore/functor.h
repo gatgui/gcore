@@ -69,7 +69,8 @@ class GCORE_API Functor {
       memcpy(ptr.mem, rhs.ptr.mem, sizeof(_Method));
     }
     
-    inline Functor(const void *c, const void *f, size_t sz) {
+    inline Functor(const void *c, const void *f, size_t sz)
+      : callee(0) {
       if (c) {
         callee = (void*)c;
         memcpy(ptr.mem, f, sz);
@@ -111,7 +112,7 @@ class GCORE_API Functor0 : public Functor {
   
   public:
     
-    inline Functor0() : Functor() {}
+    inline Functor0() : Functor(), translator(0) {}
     
     inline Functor0(const Functor0 &rhs)
       : Functor(rhs), translator(rhs.translator) {
@@ -193,7 +194,7 @@ class Functor0wR : public Functor {
   
   public:
     
-    Functor0wR() : Functor() {}
+    Functor0wR() : Functor(), translator(0) {}
     
     Functor0wR(const Functor0wR<R> &rhs)
       : Functor(rhs), translator(rhs.translator) {
@@ -276,7 +277,7 @@ template <typename P1>
 class Functor1 : public Functor {
   public:
     
-    Functor1() : Functor() {}
+    Functor1() : Functor(), translator(0) {}
     
     Functor1(const Functor1<P1> &rhs)
       : Functor(rhs), translator(rhs.translator) {
@@ -360,7 +361,7 @@ class Functor1wR : public Functor {
   
   public:
     
-    Functor1wR() : Functor() {}
+    Functor1wR() : Functor(), translator(0) {}
     
     Functor1wR(const Functor1wR<R,P1> &rhs)
       : Functor(rhs), translator(rhs.translator) {
@@ -444,7 +445,7 @@ class Functor2 : public Functor {
   
   public:
     
-    Functor2() : Functor() {}
+    Functor2() : Functor(), translator(0) {}
     
     Functor2(const Functor2<P1,P2> &rhs)
       : Functor(rhs), translator(rhs.translator) {
@@ -527,7 +528,7 @@ class Functor2wR : public Functor {
   
   public:
     
-    Functor2wR() : Functor() {}
+    Functor2wR() : Functor(), translator(0) {}
     
     Functor2wR(const Functor2wR<R,P1,P2> &rhs)
       : Functor(rhs), translator(rhs.translator) {
@@ -611,7 +612,7 @@ template <typename P1, typename P2, typename P3>
 class Functor3 : public Functor {
   public:
     
-    Functor3() : Functor() {}
+    Functor3() : Functor(), translator(0) {}
     
     Functor3(const Functor3<P1,P2,P3> &rhs)
       : Functor(rhs), translator(rhs.translator) {
@@ -694,7 +695,7 @@ class Functor3wR : public Functor {
   
   public:
     
-    Functor3wR() : Functor() {}
+    Functor3wR() : Functor(), translator(0) {}
     
     Functor3wR(const Functor3wR<R,P1,P2,P3> &rhs)
       : Functor(rhs), translator(rhs.translator) {
@@ -779,7 +780,7 @@ class Functor4 : public Functor {
   
   public:
     
-    Functor4() : Functor() {}
+    Functor4() : Functor(), translator(0) {}
     
     Functor4(const Functor4<P1,P2,P3,P4> &rhs)
       : Functor(rhs), translator(rhs.translator) {
@@ -862,7 +863,7 @@ class Functor4wR : public Functor {
   
   public:
     
-    Functor4wR() : Functor() {}
+    Functor4wR() : Functor(), translator(0) {}
     
     Functor4wR(const Functor4wR<R,P1,P2,P3,P4> &rhs)
       : Functor(rhs), translator(rhs.translator) {

@@ -682,15 +682,7 @@ Instruction* ParseRange(const char **ppc, bool inv, ParseInfo &)
   if (*pc == ']')
   {
     i = new Single(']');
-    if (last)
-    {
-      last->setNext(i);
-      last = i;
-    }
-    else
-    {
-      first = last = i;
-    }
+    first = last = i;
     ++pc;
   }
   

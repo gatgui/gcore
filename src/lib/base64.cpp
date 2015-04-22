@@ -118,7 +118,7 @@ static bool _Encode(const void *data, size_t len, char *&out, size_t &outlen) {
 }
 
 bool Base64::Encode(const void *data, size_t len, char *out, size_t outlen) {
-  return _Encode(data, len, out, outlen);
+  return (out ? _Encode(data, len, out, outlen) : false);
 }
 
 char* Base64::Encode(const void *data, size_t len, size_t &outlen) {
@@ -133,18 +133,27 @@ char* Base64::Encode(const void *data, size_t len, size_t &outlen) {
 
 bool Base64::Encode(const void *data, size_t len, std::string &out) {
   size_t outlen = EncodeLength(len);
-  out.resize(outlen);
-  char *outbytes = (char*) out.data();
-  if (!_Encode(data, len, outbytes, outlen)) {
+  if (outlen == 0) {
     out = "";
-    return false;
-  } else {
     return true;
+  } else {
+    out.resize(outlen);
+    char *outbytes = (char*) out.data();
+    if (!outbytes) {
+      out = "";
+      return false;
+    }
+    if (!_Encode(data, len, outbytes, outlen)) {
+      out = "";
+      return false;
+    } else {
+      return true;
+    }
   }
 }
 
 bool Base64::Encode(const std::string &in, char *out, size_t outlen) {
-  return _Encode(in.c_str(), in.length(), out, outlen);
+  return (out ? _Encode(in.c_str(), in.length(), out, outlen) : false);
 }
 
 char* Base64::Encode(const std::string &in, size_t &outlen) {
@@ -242,7 +251,7 @@ static bool _Decode(const char *in, size_t len, void* &out, size_t &outlen) {
 }
 
 bool Base64::Decode(const char *in, size_t len, void *out, size_t outlen) {
-  return _Decode(in, len, out, outlen);
+  return (out ? _Decode(in, len, out, outlen) : false);
 }
 
 void* Base64::Decode(const char *in, size_t len, size_t &outlen) {
@@ -257,18 +266,28 @@ void* Base64::Decode(const char *in, size_t len, size_t &outlen) {
 
 bool Base64::Decode(const char *in, size_t len, std::string &out) {
   size_t outlen = DecodeLength(in, len);
-  out.resize(outlen);
-  void *outbytes = (void*) out.data();
-  if (!_Decode(in, len, outbytes, outlen)) {
+  if (outlen == 0) {
     out = "";
-    return false;
-  } else {
     return true;
+  } else {
+    out.resize(outlen);
+    void *outbytes = (void*) out.data();
+    if (!outbytes) {
+      out = "";
+      return false;
+    }
+    // Note: _Decode won't allocate as outbytes is a not null
+    if (!_Decode(in, len, outbytes, outlen)) {
+      out = "";
+      return false;
+    } else {
+      return true;
+    }
   }
 }
 
 bool Base64::Decode(const std::string &in, void *out, size_t outlen) {
-  return _Decode(in.c_str(), in.length(), out, outlen);
+  return (out ? _Decode(in.c_str(), in.length(), out, outlen) : false);
 }
 
 void* Base64::Decode(const std::string &in, size_t &outlen) {

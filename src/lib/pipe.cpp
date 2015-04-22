@@ -113,9 +113,9 @@ int gcore::Pipe::read(String &str) const {
 
   if (canRead()) {
 #ifndef _WIN32
-    int bytesRead = ::read(mDesc[0], rdbuf, 256);
+    int bytesRead = ::read(mDesc[0], rdbuf, 255);
     while (bytesRead == -1 && errno == EAGAIN) {
-      bytesRead = ::read(mDesc[0], rdbuf, 256);
+      bytesRead = ::read(mDesc[0], rdbuf, 255);
     }
     if (bytesRead >= 0) {
       rdbuf[bytesRead] = '\0';
@@ -124,11 +124,11 @@ int gcore::Pipe::read(String &str) const {
     return bytesRead;
 #else
     DWORD bytesRead = 0;
-    BOOL rv = ReadFile(mDesc[0], rdbuf, 256, &bytesRead, NULL);
+    BOOL rv = ReadFile(mDesc[0], rdbuf, 255, &bytesRead, NULL);
     while (rv == FALSE) {
       DWORD lastErr = GetLastError();
       if (lastErr == ERROR_IO_PENDING) {
-        rv = ReadFile(mDesc[0], rdbuf, 256, &bytesRead, NULL);
+        rv = ReadFile(mDesc[0], rdbuf, 255, &bytesRead, NULL);
       } else {
         if (lastErr == ERROR_HANDLE_EOF || lastErr == ERROR_BROKEN_PIPE) {
           rv = TRUE;

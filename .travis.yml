@@ -1,0 +1,11 @@
+language: cpp
+compiler:
+  - gcc
+  - clang
+git:
+  submodules: false
+before_install:
+  - git submodule update --init --recursive
+script:
+  - scons static=1 gcore
+  - scons static=0 gcore

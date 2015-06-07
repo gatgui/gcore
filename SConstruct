@@ -58,6 +58,7 @@ prjs = [
   { "name"    : "testmodule",
     "type"    : "dynamicmodule",
     "prefix"  : "bin",
+    "rpath"   : "../lib",
     "incdirs" : ["include"],
     "srcs"    : ["src/tests/modules/module.cpp"]
   },

@@ -67,11 +67,16 @@ namespace gcore
       
       ProcessID getId() const;
 
+      int read(char *buffer, int size) const;
       int read(String &str) const;
+      int write(const char *buffer, int size) const;
       int write(const String &str) const;
       int readErr(String &str) const;
       int writeErr(const String &str) const;
-
+      
+      PipeID readID() const;
+      PipeID writeID() const;
+      
       inline const String& getCmdLine() const {
         return mCmdLine;
       } 

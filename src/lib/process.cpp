@@ -71,9 +71,23 @@ void gcore::Process::closePipes() {
   mErrorPipe.close();
 }
 
+int gcore::Process::read(char *buffer, int size) const {
+  if (mReadPipe.canRead()) {
+    return mReadPipe.read(buffer, size);
+  }
+  return -1;
+}
+
 int gcore::Process::read(String &str) const {
   if (mReadPipe.canRead()) {
     return mReadPipe.read(str);
+  }
+  return -1;
+}
+
+int gcore::Process::write(const char *buffer, int size) const {
+  if (mWritePipe.canWrite()) {
+    return mWritePipe.write(buffer, size);
   }
   return -1;
 }
@@ -97,6 +111,22 @@ int gcore::Process::writeErr(const String &str) const {
     return mErrorPipe.write(str);
   }
   return -1;
+}
+
+gcore::PipeID gcore::Process::readID() const {
+  if (mReadPipe.canRead()) {
+    return mReadPipe.readID();
+  } else {
+    return gcore::INVALID_PIPE;
+  }
+}
+
+gcore::PipeID gcore::Process::writeID() const {
+  if (mWritePipe.canWrite()) {
+    return mWritePipe.writeID();
+  } else {
+    return gcore::INVALID_PIPE;
+  }
 }
 
 gcore::ProcessID gcore::Process::getId() const {
@@ -225,7 +255,7 @@ gcore::ProcessID gcore::Process::run() {
       oPipe.closeRead();
       mWritePipe = oPipe;
       if (mCapture) {
-        dup2(mWritePipe.writeId(), 1);
+        dup2(mWritePipe.writeID(), 1);
         // writing to stdout will write to mWritePipe
       }
       
@@ -236,13 +266,13 @@ gcore::ProcessID gcore::Process::run() {
     if (mCaptureErr) {
       if (mErrToOut) {
         ePipe.close();
-        dup2(mWritePipe.writeId(), 2);
+        dup2(mWritePipe.writeID(), 2);
         // writing to stderr will write to mWritePipe
       
       } else {
         ePipe.closeRead();
         mErrorPipe = ePipe;
-        dup2(mErrorPipe.writeId(), 2);
+        dup2(mErrorPipe.writeID(), 2);
         // writing to stderr will write to mErrorPipe
       }
     } else {
@@ -252,7 +282,7 @@ gcore::ProcessID gcore::Process::run() {
     if (mRedirect) {
       iPipe.closeWrite();
       mReadPipe = iPipe;
-      dup2(mReadPipe.readId(), 0);
+      dup2(mReadPipe.readID(), 0);
       // reading from stdin will read from this pipe
     } else {
       iPipe.close();
@@ -322,8 +352,8 @@ gcore::ProcessID gcore::Process::run() {
   // Child STDIN pipe [if redirect only] --> parent write to this pipe
   if (mRedirect) {
     inPipe.create();
-    SetHandleInformation(inPipe.writeId(), HANDLE_FLAG_INHERIT, 0);
-    sinfo.hStdInput = inPipe.readId();
+    SetHandleInformation(inPipe.writeID(), HANDLE_FLAG_INHERIT, 0);
+    sinfo.hStdInput = inPipe.readID();
     mWritePipe = inPipe;
   } else {
     sinfo.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
@@ -333,12 +363,12 @@ gcore::ProcessID gcore::Process::run() {
   //if (mCapture) {
   if (mCapture || (mCaptureErr && mErrToOut)) {
     outPipe.create();
-    SetHandleInformation(outPipe.readId(), HANDLE_FLAG_INHERIT, 0);
+    SetHandleInformation(outPipe.readID(), HANDLE_FLAG_INHERIT, 0);
     if (mCapture) {
-      sinfo.hStdOutput = outPipe.writeId();
+      sinfo.hStdOutput = outPipe.writeID();
     }
-    //sinfo.hStdError = outPipe.writeId();
-    //sinfo.hStdOutput = outPipe.writeId();
+    //sinfo.hStdError = outPipe.writeID();
+    //sinfo.hStdOutput = outPipe.writeID();
     mReadPipe = outPipe;
   } else {
     //sinfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
@@ -347,11 +377,11 @@ gcore::ProcessID gcore::Process::run() {
   
   if (mCaptureErr) {
     if (mErrToOut) {
-      sinfo.hStdError = outPipe.writeId();
+      sinfo.hStdError = outPipe.writeID();
     } else {
       errPipe.create();
-      SetHandleInformation(errPipe.readId(), HANDLE_FLAG_INHERIT, 0);
-      sinfo.hStdError = errPipe.writeId();
+      SetHandleInformation(errPipe.readID(), HANDLE_FLAG_INHERIT, 0);
+      sinfo.hStdError = errPipe.writeID();
       mErrorPipe = errPipe;
     }
   } else {

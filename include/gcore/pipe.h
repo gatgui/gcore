@@ -49,10 +49,16 @@ namespace gcore {
 #endif
   
   class GCORE_API Pipe {
+    public:
+      
+      static PipeID StdInID();
+      static PipeID StdOutID();
+      static PipeID StdErrID();
     
     public:
     
       Pipe();
+      Pipe(PipeID readId, PipeID writeId);
       Pipe(const Pipe &rhs);
       virtual ~Pipe();
       
@@ -62,10 +68,12 @@ namespace gcore {
       void create();
       void closeRead();
       void closeWrite();
+      int read(char *buffer, int size) const;
       int read(String &str) const;
+      int write(const char *buffer, int size) const;
       int write(const String &str) const;
-      PipeID readId() const;
-      PipeID writeId() const;
+      PipeID readID() const;
+      PipeID writeID() const;
       
       Pipe& operator=(const Pipe &rhs);
       

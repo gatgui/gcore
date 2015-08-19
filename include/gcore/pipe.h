@@ -43,7 +43,7 @@ namespace gcore {
   const PipeID INVALID_PIPE = -1;
   
   inline bool IsValidPipeID(PipeID pi) {
-    return (pi > 0);
+    return (pi >= 0);
   }
   
 #endif

@@ -1,11 +1,5 @@
-try:
-    import excons
-except:
-    import subprocess
-    subprocess.Popen("git submodule init", shell=True).communicate()
-    subprocess.Popen("git submodule update", shell=True).communicate()
-    import excons
-
+import excons
+import os
 import re
 import glob
 import excons.tools
@@ -13,25 +7,45 @@ from excons.tools import threads
 from excons.tools import dl
 from excons.tools import python
 
-cython = ARGUMENTS.get("with-cython", "cython")
-static = int(ARGUMENTS.get("static", "0"))
-debugrex = int(ARGUMENTS.get("debugRex", "0"))
+cython = excons.GetArgument("with-cython", "cython")
+static = excons.GetArgument("static", 0, int)
+debugrex = excons.GetArgument("debug-rex", 0, int)
 
-libdefs   = ["GCORE_STATIC"] if static else ["GCORE_EXPORTS"]
+libdefs = ["GCORE_STATIC"] if static else ["GCORE_EXPORTS"]
 if debugrex:
   libdefs.append("_DEBUG_REX")
+liblibs = []
 libcustom = []
-depcustom = []
-liblibs   = []
-deplibs   = []
-if static:
-  depcustom = [threads.Require, dl.Require]
-  if not str(Platform()) in ["win32", "darwin"]:
-    deplibs = ["rt"]
-else:
+if not static:
   libcustom = [threads.Require, dl.Require]
   if not str(Platform()) in ["win32", "darwin"]:
     liblibs = ["rt"]
+
+
+def RequireGcore(subdir=None):
+  if subdir and type(subdir) in (str, unicode):
+    if not (subdir.endswith("/") or subdir.endswith("\\")):
+      subdir += "/"
+  else:
+    subdir = ""
+
+  def _Require(env):
+    env.Append(CPPPATH=[subdir+"include"])
+    # Don't need to set LIBPATH, library output directory is automatically added by excons
+    env.Append(LIBS=["gcore"])
+    
+    if static:
+      env.Append(CPPDEFINES=["GCORE_STATIC"])
+      threads.Require(env)
+      dl.Require(env)
+
+    if not str(Platform()) in ["win32", "darwin"]:
+      env.Append(LIBS=["rt"])
+
+  return _Require
+
+Export("RequireGcore")
+
 
 prjs = [
   { "name"    : "gcore",
@@ -48,11 +62,8 @@ prjs = [
     "prefix"    : python.ModulePrefix() + "/" + python.Version(),
     "ext"       : python.ModuleExtension(),
     "bldprefix" : python.Version(),
-    "incdirs"   : ["include"],
-    "defs"      : ["GCORE_STATIC"] if static else [],
     "srcs"      : ["src/py/_gcore.cpp", "src/py/log.cpp", "src/py/pathenumerator.cpp"],
-    "libs"      : ["gcore"],
-    "custom"    : [dl.Require, threads.Require, python.SoftRequire],
+    "custom"    : [RequireGcore(), python.SoftRequire],
     "install"   : {python.ModulePrefix(): ["src/py/gcore.py", "src/py/tests"]}
   },
   { "name"    : "testmodule",
@@ -64,12 +75,9 @@ prjs = [
   },
   { "name"    : "gcore_tests",
     "type"    : "testprograms",
-    "incdirs" : ["include"],
     "srcs"    : glob.glob("src/tests/*.cpp"),
-    "defs"    : ["GCORE_STATIC"] if static else [],
-    "libs"    : ["gcore"]+deplibs,
     "deps"    : ["testmodule"],
-    "custom"  : depcustom,
+    "custom"  : [RequireGcore()],
   }
 ]
 

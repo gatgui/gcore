@@ -62,10 +62,15 @@ namespace gcore {
       Pipe(const Pipe &rhs);
       virtual ~Pipe();
       
+      bool isNamed() const;
+      const String& getName() const;
+      bool isOwned() const;
       bool canRead() const;
       bool canWrite() const;
+      bool open(const String &name);
       void close();
-      void create();
+      bool create();
+      bool create(const String &name);
       void closeRead();
       void closeWrite();
       int read(char *buffer, int size) const;
@@ -78,8 +83,10 @@ namespace gcore {
       Pipe& operator=(const Pipe &rhs);
       
     private:
-    
+
       PipeID mDesc[2];
+      mutable bool mOwn; // Ownership transferred by copy constructor and assignment
+      String mName;
   };
 }
 

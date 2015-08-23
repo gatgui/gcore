@@ -51,30 +51,36 @@ gcore::PipeID gcore::Pipe::StdErrID()
 #endif
 }
 
-gcore::Pipe::Pipe() {
+gcore::Pipe::Pipe()
+  : mOwn(false) {
   mDesc[0] = INVALID_PIPE;
   mDesc[1] = INVALID_PIPE;
 }
 
-gcore::Pipe::Pipe(gcore::PipeID rid, gcore::PipeID wid) {
+gcore::Pipe::Pipe(gcore::PipeID rid, gcore::PipeID wid)
+  : mOwn(false) {
   mDesc[0] = rid;
   mDesc[1] = wid;
 }
 
-gcore::Pipe::Pipe(const gcore::Pipe &rhs) {
+gcore::Pipe::Pipe(const gcore::Pipe &rhs)
+  : mOwn(rhs.mOwn), mName(rhs.mName) {
   mDesc[0] = rhs.mDesc[0];
   mDesc[1] = rhs.mDesc[1];
+  rhs.mOwn = false;
 }
 
 gcore::Pipe::~Pipe() {
-  // Don't close pipe, leave responsability to client
-  //close();
+  // Don't close pipes (leave responsability to client)
 }
 
 gcore::Pipe& gcore::Pipe::operator=(const gcore::Pipe &rhs) {
   if (this != &rhs) {
+    mOwn = rhs.mOwn;
+    mName = rhs.mName;
     mDesc[0] = rhs.mDesc[0];
     mDesc[1] = rhs.mDesc[1];
+    rhs.mOwn = false;
   }
   return *this;
 }
@@ -91,9 +97,36 @@ gcore::PipeID gcore::Pipe::writeID() const
 void gcore::Pipe::close() {
   closeRead();
   closeWrite();
+  if (isNamed() && isOwned()) {
+#ifndef _WIN32
+    gcore::String path = "/tmp/" + mName;
+    unlink(path.c_str());
+#else
+    // TODO: Nothing. CloseHandle is sufficient
+#endif
+  }
+  mName = "";
+  mOwn = false;
 }
 
-void gcore::Pipe::create() {
+bool gcore::Pipe::open(const gcore::String &name) {
+  close();
+#ifndef _WIN32
+  gcore::String path = "/tmp/" + name;
+  int fd = ::open(path.c_str(), O_RDWR);
+  if (fd != -1) {
+    mName = name;
+    mDesc[0] = fd;
+    mDesc[1] = mDesc[0];
+    return true;
+  }
+#else
+  // TODO: CreateFile
+#endif
+  return false;
+}
+
+bool gcore::Pipe::create() {
   close();
 #ifndef _WIN32
   if (pipe(mDesc) == -1) {
@@ -106,7 +139,42 @@ void gcore::Pipe::create() {
 #endif
     mDesc[0] = INVALID_PIPE;
     mDesc[1] = INVALID_PIPE;
+    return false;
+  } else {
+    mOwn = true;
+    return true;
   }
+}
+
+bool gcore::Pipe::create(const gcore::String &name) {
+  close();
+#ifndef _WIN32
+  gcore::String path = "/tmp/" + name;
+  mkfifo(path.c_str(), 0666);
+  int fd = ::open(path.c_str(), O_RDWR);
+  if (fd != -1) {
+    mOwn = true;
+    mName = name;
+    mDesc[0] = fd;
+    mDesc[1] = mDesc[0];
+    return true;
+  }
+#else
+  // TODO: CreateNamedPipe
+#endif
+  return false;
+}
+
+bool gcore::Pipe::isNamed() const {
+  return (mName.length() > 0);
+}
+
+const gcore::String& gcore::Pipe::getName() const {
+  return mName;
+}
+
+bool gcore::Pipe::isOwned() const {
+  return mOwn;
 }
 
 bool gcore::Pipe::canRead() const {
@@ -124,6 +192,9 @@ void gcore::Pipe::closeRead() {
 #else
     CloseHandle(mDesc[0]);
 #endif
+    if (mDesc[1] == mDesc[0]) {
+      mDesc[1] = INVALID_PIPE;
+    }
     mDesc[0] = INVALID_PIPE;
   }
 }
@@ -135,6 +206,9 @@ void gcore::Pipe::closeWrite() {
 #else 
     CloseHandle(mDesc[1]);
 #endif
+    if (mDesc[0] == mDesc[1]) {
+      mDesc[0] = INVALID_PIPE;
+    }
     mDesc[1] = INVALID_PIPE;
   }
 }

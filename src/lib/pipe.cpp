@@ -150,14 +150,15 @@ bool gcore::Pipe::create(const gcore::String &name) {
   close();
 #ifndef _WIN32
   gcore::String path = "/tmp/" + name;
-  mkfifo(path.c_str(), 0666);
-  int fd = ::open(path.c_str(), O_RDWR);
-  if (fd != -1) {
-    mOwn = true;
-    mName = name;
-    mDesc[0] = fd;
-    mDesc[1] = mDesc[0];
-    return true;
+  if (mkfifo(path.c_str(), 0666) == 0) {
+    int fd = ::open(path.c_str(), O_RDWR);
+    if (fd != -1) {
+      mOwn = true;
+      mName = name;
+      mDesc[0] = fd;
+      mDesc[1] = mDesc[0];
+      return true;
+    }
   }
 #else
   // TODO: CreateNamedPipe

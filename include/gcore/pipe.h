@@ -87,6 +87,9 @@ namespace gcore {
       PipeID mDesc[2];
       mutable bool mOwn; // Ownership transferred by copy constructor and assignment
       String mName;
+#ifdef _WIN32
+      mutable bool mConnected;
+#endif
   };
 }
 

@@ -52,19 +52,32 @@ gcore::PipeID gcore::Pipe::StdErrID()
 }
 
 gcore::Pipe::Pipe()
-  : mOwn(false) {
+  : mOwn(false)
+#ifdef _WIN32
+  , mConnected(false)
+#endif
+{
   mDesc[0] = INVALID_PIPE;
   mDesc[1] = INVALID_PIPE;
 }
 
 gcore::Pipe::Pipe(gcore::PipeID rid, gcore::PipeID wid)
-  : mOwn(false) {
+  : mOwn(false)
+#ifdef _WIN32
+  , mConnected(false)
+#endif
+{
   mDesc[0] = rid;
   mDesc[1] = wid;
 }
 
 gcore::Pipe::Pipe(const gcore::Pipe &rhs)
-  : mOwn(rhs.mOwn), mName(rhs.mName) {
+  : mOwn(rhs.mOwn)
+  , mName(rhs.mName)
+#ifdef _WIN32
+  , mConnected(rhs.mConnected)
+#endif
+{
   mDesc[0] = rhs.mDesc[0];
   mDesc[1] = rhs.mDesc[1];
   rhs.mOwn = false;
@@ -80,6 +93,9 @@ gcore::Pipe& gcore::Pipe::operator=(const gcore::Pipe &rhs) {
     mName = rhs.mName;
     mDesc[0] = rhs.mDesc[0];
     mDesc[1] = rhs.mDesc[1];
+#ifdef _WIN32
+    mConnected = rhs.mConnected;
+#endif
     rhs.mOwn = false;
   }
   return *this;
@@ -95,18 +111,29 @@ gcore::PipeID gcore::Pipe::writeID() const
 }
 
 void gcore::Pipe::close() {
-  closeRead();
-  closeWrite();
   if (isNamed() && isOwned()) {
 #ifndef _WIN32
     gcore::String path = "/tmp/" + mName;
+    closeRead();
+    closeWrite();
     unlink(path.c_str());
 #else
-    // TODO: Nothing. CloseHandle is sufficient
+    if (mConnected) {
+      FlushFileBuffers(mDesc[1]);
+      DisconnectNamedPipe(mDesc[0]);
+    }
+    closeRead();
+    closeWrite();
 #endif
+  } else {
+    closeRead();
+    closeWrite();
   }
   mName = "";
   mOwn = false;
+#ifdef _WIN32
+  mConnected = false;
+#endif
 }
 
 bool gcore::Pipe::open(const gcore::String &name) {
@@ -121,7 +148,15 @@ bool gcore::Pipe::open(const gcore::String &name) {
     return true;
   }
 #else
-  // TODO: CreateFile
+  gcore::String pipename = "\\\\.\\pipe\\" + name;
+  HANDLE hdl = CreateFile(pipename.c_str(), GENERIC_READ | GENERIC_WRITE,
+                          0, NULL, OPEN_EXISTING, 0, NULL);
+  if (hdl != INVALID_HANDLE_VALUE) {
+    mName = name;
+    mDesc[0] = hdl;
+    mDesc[1] = mDesc[0];
+    return true;
+  }
 #endif
   return false;
 }
@@ -129,14 +164,15 @@ bool gcore::Pipe::open(const gcore::String &name) {
 bool gcore::Pipe::create() {
   close();
 #ifndef _WIN32
-  if (pipe(mDesc) == -1) {
+  if (pipe(mDesc) == -1)
 #else
   SECURITY_ATTRIBUTES sattr;
   sattr.nLength = sizeof(sattr);
   sattr.lpSecurityDescriptor = NULL;
   sattr.bInheritHandle = TRUE;
-  if (!CreatePipe(&mDesc[0], &mDesc[1], &sattr, 0)) {
+  if (!CreatePipe(&mDesc[0], &mDesc[1], &sattr, 0))
 #endif
+  {
     mDesc[0] = INVALID_PIPE;
     mDesc[1] = INVALID_PIPE;
     return false;
@@ -161,7 +197,19 @@ bool gcore::Pipe::create(const gcore::String &name) {
     }
   }
 #else
-  // TODO: CreateNamedPipe
+  // Note: May want to expose in/out buffer size
+  gcore::String pipename = "\\\\.\\pipe\\" + name;
+  HANDLE hdl = CreateNamedPipe(pipename.c_str(), PIPE_ACCESS_DUPLEX,
+                               PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
+                               1, 4096, 4096, 0, NULL);
+  if (hdl != INVALID_HANDLE_VALUE) {
+    mOwn = true;
+    mName = name;
+    mConnected = false;
+    mDesc[0] = hdl;
+    mDesc[1] = mDesc[0];
+    return true;
+  }
 #endif
   return false;
 }
@@ -223,6 +271,14 @@ int gcore::Pipe::read(char *buffer, int size) const {
     }
     return bytesRead;
 #else
+    bool namedPipeServer = (isNamed() && isOwned());
+    if (namedPipeServer && !mConnected) {
+      if (ConnectNamedPipe(mDesc[0], NULL)) {
+        mConnected = true;
+      } else {
+        return -1;
+      }
+    }
     DWORD bytesRead = 0;
     BOOL rv = ReadFile(mDesc[0], buffer, size, &bytesRead, NULL);
     while (rv == FALSE) {
@@ -230,9 +286,13 @@ int gcore::Pipe::read(char *buffer, int size) const {
       if (lastErr == ERROR_IO_PENDING) {
         rv = ReadFile(mDesc[0], buffer, size, &bytesRead, NULL);
       } else {
+        if (namedPipeServer) {
+          DisconnectNamedPipe(mDesc[0]);
+          mConnected = false;
+        }
         if (lastErr == ERROR_HANDLE_EOF || lastErr == ERROR_BROKEN_PIPE) {
-           rv = TRUE;
-           bytesRead = 0;
+          rv = TRUE;
+          bytesRead = 0;
         }
         break;
       }
@@ -260,6 +320,14 @@ int gcore::Pipe::read(String &str) const {
     }
     return bytesRead;
 #else
+    bool namedPipeServer = (isNamed() && isOwned());
+    if (namedPipeServer && !mConnected) {
+      if (ConnectNamedPipe(mDesc[0], NULL)) {
+        mConnected = true;
+      } else {
+        return -1;
+      }
+    }
     DWORD bytesRead = 0;
     BOOL rv = ReadFile(mDesc[0], rdbuf, 255, &bytesRead, NULL);
     while (rv == FALSE) {
@@ -267,6 +335,10 @@ int gcore::Pipe::read(String &str) const {
       if (lastErr == ERROR_IO_PENDING) {
         rv = ReadFile(mDesc[0], rdbuf, 255, &bytesRead, NULL);
       } else {
+        if (namedPipeServer) {
+          DisconnectNamedPipe(mDesc[0]);
+          mConnected = false;
+        }
         if (lastErr == ERROR_HANDLE_EOF || lastErr == ERROR_BROKEN_PIPE) {
           rv = TRUE;
           bytesRead = 0;
@@ -287,25 +359,42 @@ int gcore::Pipe::read(String &str) const {
 }
 
 int gcore::Pipe::write(const char *buffer, int size) const {
-   if (canWrite()) {
-   #ifndef _WIN32
-       int bytesToWrite = size;
-       int rv = ::write(mDesc[1], buffer, bytesToWrite);
-       while (rv == -1 && errno == EAGAIN) {
-         rv = ::write(mDesc[1], buffer, bytesToWrite);
-       }
-       return rv;
-   #else
-       DWORD bytesToWrite = (DWORD)size;
-       DWORD bytesWritten = 0;
-       BOOL rv = WriteFile(mDesc[1], buffer, bytesToWrite, &bytesWritten, NULL);
-       if (rv == FALSE && GetLastError() == ERROR_IO_PENDING) {
-         rv = WriteFile(mDesc[1], buffer, bytesToWrite, &bytesWritten, NULL);
-       }
-       return (rv == TRUE ? bytesWritten : -1);
-   #endif
-     }
-     return -1;
+  if (canWrite()) {
+#ifndef _WIN32
+    int bytesToWrite = size;
+    int rv = ::write(mDesc[1], buffer, bytesToWrite);
+    while (rv == -1 && errno == EAGAIN) {
+      rv = ::write(mDesc[1], buffer, bytesToWrite);
+    }
+    return rv;
+#else
+    bool namedPipeServer = (isNamed() && isOwned());
+    if (namedPipeServer && !mConnected) {
+      if (ConnectNamedPipe(mDesc[1], NULL)) {
+        mConnected = true;
+      } else {
+        return -1;
+      }
+    }
+    DWORD bytesToWrite = (DWORD)size;
+    DWORD bytesWritten = 0;
+    BOOL rv = WriteFile(mDesc[1], buffer, bytesToWrite, &bytesWritten, NULL);
+    while (rv == FALSE) {
+      DWORD lastErr = GetLastError();
+      if (lastErr == ERROR_IO_PENDING) {
+        rv = WriteFile(mDesc[1], buffer, bytesToWrite, &bytesWritten, NULL);
+      } else {
+        if (namedPipeServer) {
+          DisconnectNamedPipe(mDesc[1]);
+          mConnected = false;
+        }
+        break;
+      }
+    }
+    return (rv == TRUE ? bytesWritten : -1);
+#endif
+  }
+return -1;
 }
 
 int gcore::Pipe::write(const String &str) const {

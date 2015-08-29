@@ -262,11 +262,11 @@ void gcore::Pipe::closeWrite() {
   }
 }
 
-int gcore::Pipe::read(char *buffer, int size) const {
+int gcore::Pipe::read(char *buffer, int size, bool retryOnInterrupt) const {
   if (canRead()) {
 #ifndef _WIN32
     int bytesRead = ::read(mDesc[0], buffer, size);
-    while (bytesRead == -1 && errno == EAGAIN) {
+    while (bytesRead == -1 && (errno == EAGAIN || (errno == EINTR && retryOnInterrupt))) {
       bytesRead = ::read(mDesc[0], buffer, size);
     }
     return bytesRead;
@@ -305,13 +305,13 @@ int gcore::Pipe::read(char *buffer, int size) const {
   return -1;
 }
 
-int gcore::Pipe::read(String &str) const {
+int gcore::Pipe::read(String &str, bool retryOnInterrupt) const {
   char rdbuf[256];
 
   if (canRead()) {
 #ifndef _WIN32
     int bytesRead = ::read(mDesc[0], rdbuf, 255);
-    while (bytesRead == -1 && errno == EAGAIN) {
+    while (bytesRead == -1 && (errno == EAGAIN || (errno == EINTR && retryOnInterrupt))) {
       bytesRead = ::read(mDesc[0], rdbuf, 255);
     }
     if (bytesRead >= 0) {

@@ -73,8 +73,8 @@ namespace gcore {
       bool create(const String &name);
       void closeRead();
       void closeWrite();
-      int read(char *buffer, int size) const;
-      int read(String &str) const;
+      int read(char *buffer, int size, bool retryOnInterrupt=false) const;
+      int read(String &str, bool retryOnInterrupt=false) const;
       int write(const char *buffer, int size) const;
       int write(const String &str) const;
       PipeID readID() const;

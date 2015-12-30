@@ -113,6 +113,8 @@ namespace gcore
          const_iterator<Array> aend() const throw(std::runtime_error);
          const Value& operator[](size_t idx) const throw(std::runtime_error);
          Value& operator[](size_t idx) throw(std::runtime_error);
+         void insert(size_t pos, const Value &value) throw(std::runtime_error);
+         void erase(size_t pos, size_t cnt=1) throw(std::runtime_error);
          
          iterator<Object> obegin() throw(std::runtime_error);
          const_iterator<Object> obegin() const throw(std::runtime_error);
@@ -732,6 +734,35 @@ gcore::json::Value& gcore::json::Value::operator[](size_t idx) throw(std::runtim
    return mArr->at(idx);
 }
 
+void gcore::json::Value::insert(size_t pos, const Value &value) throw(std::runtime_error)
+{
+   if (mType != ArrayType)
+   {
+      throw std::runtime_error("Value is not an array");
+   }
+   mArr->insert(mArr->begin() + pos, value);
+}
+
+void gcore::json::Value::erase(size_t pos, size_t cnt) throw(std::runtime_error)
+{
+   if (mType != ArrayType)
+   {
+      throw std::runtime_error("Value is not an array");
+   }
+   size_t n = mArr->size();
+   if (pos >= n)
+   {
+      return;
+   }
+   if (pos + cnt > n)
+   {
+      cnt = n - pos;
+   }
+   Array::iterator first = mArr->begin() + pos;
+   Array::iterator last = first + cnt;
+   mArr->erase(first, last);
+}
+
 gcore::json::ObjectConstIterator gcore::json::Value::obegin() const throw(std::runtime_error)
 {
    if (mType != ObjectType)
@@ -1008,6 +1039,7 @@ int main(int, char**)
    json::Array ary2;
    json::Object obj1;
    json::Object obj2;
+   json::Object obj3;
    
    ary1.push_back("Hello");
    ary1.push_back("World");
@@ -1021,6 +1053,9 @@ int main(int, char**)
    
    obj2["name"] = "Philip";
    obj2["age"] = 21;
+   
+   obj3["name"] = "Chloe";
+   obj3["age"] = 27;
    
    ary2.push_back(obj1);
    ary2.push_back(obj2);
@@ -1036,7 +1071,13 @@ int main(int, char**)
    // --- generic access ---
    
    json::Value all(top);
-   const json::Value &v = all["objarray"];
+   json::Value &v = all["objarray"];
+   
+   json::Array &_v = all["objarray"];
+   _v.push_back(obj3);
+   
+   v.insert(0, obj3);
+   v.erase(3);
    
    for (json::ArrayConstIterator ait=v.abegin(); ait!=v.aend(); ++ait)
    {

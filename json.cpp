@@ -90,21 +90,17 @@ namespace gcore
          
          Type type() const;
          
-         bool asBool() const throw(std::runtime_error);
-         int asInt() const throw(std::runtime_error);
-         float asFloat() const throw(std::runtime_error);
-         double asDouble() const throw(std::runtime_error);
-         const gcore::String& asString() const throw(std::runtime_error);
-         const Object& asObject() const throw(std::runtime_error);
-         const Array& asArray() const throw(std::runtime_error);
-         
          operator bool () const throw(std::runtime_error);
          operator int () const throw(std::runtime_error);
          operator float () const throw(std::runtime_error);
          operator double () const throw(std::runtime_error);
          operator const gcore::String& () const throw(std::runtime_error);
+         operator const char* () const throw(std::runtime_error);
          operator const Object& () const throw(std::runtime_error);
          operator const Array& () const throw(std::runtime_error);
+         
+         operator Object& () throw(std::runtime_error);
+         operator Array& () throw(std::runtime_error);
          
          void reset();
          
@@ -564,7 +560,7 @@ gcore::json::Value::Type gcore::json::Value::type() const
    return mType;
 }
 
-bool gcore::json::Value::asBool() const throw(std::runtime_error)
+gcore::json::Value::operator bool () const throw(std::runtime_error)
 {
    if (mType != BooleanType)
    {
@@ -573,7 +569,7 @@ bool gcore::json::Value::asBool() const throw(std::runtime_error)
    return mBool;
 }
 
-int gcore::json::Value::asInt() const throw(std::runtime_error)
+gcore::json::Value::operator int () const throw(std::runtime_error)
 {
    if (mType != NumberType)
    {
@@ -582,7 +578,7 @@ int gcore::json::Value::asInt() const throw(std::runtime_error)
    return int(mNum);
 }
 
-float gcore::json::Value::asFloat() const throw(std::runtime_error)
+gcore::json::Value::operator float () const throw(std::runtime_error)
 {
    if (mType != NumberType)
    {
@@ -591,7 +587,7 @@ float gcore::json::Value::asFloat() const throw(std::runtime_error)
    return float(mNum);
 }
 
-double gcore::json::Value::asDouble() const throw(std::runtime_error)
+gcore::json::Value::operator double () const throw(std::runtime_error)
 {
    if (mType != NumberType)
    {
@@ -600,7 +596,7 @@ double gcore::json::Value::asDouble() const throw(std::runtime_error)
    return mNum;
 }
 
-const gcore::String& gcore::json::Value::asString() const throw(std::runtime_error)
+gcore::json::Value::operator const gcore::String& () const throw(std::runtime_error)
 {
    if (mType != StringType)
    {
@@ -609,7 +605,16 @@ const gcore::String& gcore::json::Value::asString() const throw(std::runtime_err
    return mStr;
 }
 
-const gcore::json::Object& gcore::json::Value::asObject() const throw(std::runtime_error)
+gcore::json::Value::operator const char* () const throw(std::runtime_error)
+{
+   if (mType != StringType)
+   {
+      throw std::runtime_error("JSON value is not a string");
+   }
+   return mStr.c_str();
+}
+
+gcore::json::Value::operator const Object& () const throw(std::runtime_error)
 {
    if (mType != ObjectType)
    {
@@ -618,7 +623,7 @@ const gcore::json::Object& gcore::json::Value::asObject() const throw(std::runti
    return *mObj;
 }
 
-const gcore::json::Array& gcore::json::Value::asArray() const throw(std::runtime_error)
+gcore::json::Value::operator const Array& () const throw(std::runtime_error)
 {
    if (mType != ArrayType)
    {
@@ -627,44 +632,22 @@ const gcore::json::Array& gcore::json::Value::asArray() const throw(std::runtime
    return *mArr;
 }
 
-gcore::json::Value::operator bool () const throw(std::runtime_error)
+gcore::json::Value::operator Object& () throw(std::runtime_error)
 {
-   return asBool();
+   if (mType != ObjectType)
+   {
+      throw std::runtime_error("JSON value is not an object");
+   }
+   return *mObj;
 }
 
-gcore::json::Value::operator int () const throw(std::runtime_error)
+gcore::json::Value::operator Array& () throw(std::runtime_error)
 {
-   return asInt();
-}
-
-gcore::json::Value::operator float () const throw(std::runtime_error)
-{
-   return asFloat();
-}
-
-gcore::json::Value::operator double () const throw(std::runtime_error)
-{
-   return asDouble();
-}
-
-// gcore::json::Value::operator const char* () const throw(std::runtime_error)
-// {
-//    return asString().c_str();
-// }
-
-gcore::json::Value::operator const gcore::String& () const throw(std::runtime_error)
-{
-   return asString();
-}
-
-gcore::json::Value::operator const Object& () const throw(std::runtime_error)
-{
-   return asObject();
-}
-
-gcore::json::Value::operator const Array& () const throw(std::runtime_error)
-{
-   return asArray();
+   if (mType != ArrayType)
+   {
+      throw std::runtime_error("JSON value is not an array");
+   }
+   return *mArr;
 }
 
 size_t gcore::json::Value::size() const
@@ -858,19 +841,19 @@ std::ostream& operator<<(std::ostream &os, const gcore::json::Value &value)
       os << "null";
       break;
    case gcore::json::Value::BooleanType:
-      os << (value.asBool() ? "true" : "false");
+      os << (bool(value) ? "true" : "false");
       break;
    case gcore::json::Value::NumberType:
-      os << value.asDouble();
+      os << double(value);
       break;
    case gcore::json::Value::StringType:
-      os << "\"" << value.asString().c_str() << "\"";
+      os << "\"" << (const char*)value << "\"";
       break;
    case gcore::json::Value::ObjectType:
-      os << value.asObject();
+      os << (const gcore::json::Object&)value;
       break;
    case gcore::json::Value::ArrayType:
-      os << value.asArray();
+      os << (const gcore::json::Array&)value;
       break;
    default:
       break;

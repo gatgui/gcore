@@ -157,11 +157,11 @@ namespace gcore
          
          bool read(const char *path);
          
-         Object& top();
-         const Object& top() const;
+         Value& top();
+         const Value& top() const;
          
       private:
-         Object mTop;
+         Value mTop;
       };
       
       // Schema and Validator
@@ -835,12 +835,7 @@ gcore::json::Value& gcore::json::Value::operator[](const gcore::String &name) th
    {
       throw std::runtime_error("Value is not an object");
    }
-   Object::iterator it = mObj->find(name);
-   if (it == mObj->end())
-   {
-      throw std::runtime_error("Invalid object key '" + name + "'");
-   }
-   return it->second;
+   return (*mObj)[name];
 }
 
 const gcore::json::Value& gcore::json::Value::operator[](const char *name) const throw(std::runtime_error)
@@ -1009,12 +1004,12 @@ bool gcore::json::Parser::read(const char *path)
    return false;
 }
 
-gcore::json::Object& gcore::json::Parser::top()
+gcore::json::Value& gcore::json::Parser::top()
 {
    return mTop;
 }
 
-const gcore::json::Object& gcore::json::Parser::top() const
+const gcore::json::Value& gcore::json::Parser::top() const
 {
    return mTop;
 }

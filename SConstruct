@@ -78,6 +78,11 @@ prjs = [
     "srcs"    : glob.glob("src/tests/*.cpp"),
     "deps"    : ["testmodule"],
     "custom"  : [RequireGcore()],
+  },
+  { "name"    : "json",
+    "type"    : "program",
+    "srcs"    : ["json.cpp"],
+    "custom"  : [RequireGcore()]
   }
 ]
 

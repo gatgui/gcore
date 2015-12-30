@@ -2,5 +2,6 @@
 .sconsign.dblite
 release
 debug
+excons.cache
 *.xml
 *.bfc

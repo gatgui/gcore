@@ -63,6 +63,7 @@ namespace gcore
       public:
          
          Value();
+         Value(Type t);
          Value(bool b);
          Value(int num);
          Value(float num);
@@ -104,9 +105,26 @@ namespace gcore
          
          void reset();
          
+         bool read(const char *path);
+         bool read(std::istream &is);
+          
+         bool write(const char *path) const;
+         void write(std::ostream &os, const gcore::String indent="", bool skipFirstIndent=false) const;
+         
+         // The remaining methods are shortcuts for Array and Object type values
+         // size()  => ((const Array&)value).size()
+         //            ((const Object&)value).size()
+         // clear() => ((Array&)value).clear()
+         //            ((Object&)value).clear()
+         // ...
+         
+         // ArrayType or ObjectType.
+         // - size returns 0 for any other type
+         // - clear does nothing for ant other type
          size_t size() const;
          void clear();
          
+         // ArrayType only
          iterator<Array> abegin() throw(std::runtime_error);
          const_iterator<Array> abegin() const throw(std::runtime_error);
          iterator<Array> aend() throw(std::runtime_error);
@@ -116,6 +134,7 @@ namespace gcore
          void insert(size_t pos, const Value &value) throw(std::runtime_error);
          void erase(size_t pos, size_t cnt=1) throw(std::runtime_error);
          
+         // ObjectType only
          iterator<Object> obegin() throw(std::runtime_error);
          const_iterator<Object> obegin() const throw(std::runtime_error);
          iterator<Object> oend() throw(std::runtime_error);
@@ -130,6 +149,20 @@ namespace gcore
          Value& operator[](const char *name) throw(std::runtime_error);
          
       private:
+         
+         enum ParserState
+         {
+            Begin = 0,
+            ReadObject,
+            ReadObjectKey,
+            ReadArray,
+            ReadString,
+            ReadValue,
+            End
+         };
+         
+      private:
+         
          Type mType;
          bool mBool;
          double mNum;
@@ -159,6 +192,9 @@ namespace gcore
          const Value& top() const;
          
       private:
+         
+      
+      private:
          Value mTop;
       };
       
@@ -179,6 +215,16 @@ gcore::json::Value::Value()
    , mStr("")
    , mObj(0)
    , mArr(0)
+{
+}
+
+gcore::json::Value::Value(Type t)
+   : mType(t)
+   , mBool(false)
+   , mNum(0.0)
+   , mStr("")
+   , mObj(t == ObjectType ? new gcore::json::Object() : 0)
+   , mArr(t == ArrayType ? new gcore::json::Array() : 0)
 {
 }
 
@@ -864,6 +910,513 @@ gcore::json::Value& gcore::json::Value::operator[](const char *name) throw(std::
    return this->operator[](_name);
 }
 
+bool gcore::json::Value::write(const char *path) const
+{
+   std::ofstream out(path);
+   
+   if (out.is_open())
+   {
+      write(out);
+      return true;
+   }
+   else
+   {
+      return false;
+   }
+}
+
+void gcore::json::Value::write(std::ostream &os, const gcore::String indent, bool skipFirstIndent) const
+{
+   switch (type())
+   {
+   case NullType:
+      os << (skipFirstIndent ? "" : indent) << "null";
+      break;
+   case BooleanType:
+      os << (skipFirstIndent ? "" : indent) << (mBool ? "true" : "false");
+      break;
+   case NumberType:
+      os << (skipFirstIndent ? "" : indent) << mNum;
+      break;
+   case StringType:
+      os << (skipFirstIndent ? "" : indent) << "\"" << mStr << "\"";
+      break;
+   case ObjectType:
+      {
+         size_t i=0, n=mObj->size();
+         os << (skipFirstIndent ? "" : indent) << "{" << std::endl;
+         for (Object::const_iterator it=mObj->begin(); it!=mObj->end(); ++it, ++i)
+         {
+            os << indent << "  \"" << it->first.c_str() << "\": ";
+            it->second.write(os, indent + "  ", true);
+            if (i + 1 < n) os << ", ";
+            os << std::endl;
+         }
+         os << indent << "}";
+      }
+      break;
+   case ArrayType:
+      {
+         size_t i=0, n=mArr->size();
+         os << (skipFirstIndent ? "" : indent) << "[" << std::endl;
+         for (Array::const_iterator it=mArr->begin(); it!=mArr->end(); ++it, ++i)
+         {
+            it->write(os, indent + "  ");
+            if (i + 1 < n) os << ", ";
+            os << std::endl;
+         }
+         os << indent << "]";
+      }
+      break;
+   default:
+      break;
+   }
+}
+
+bool gcore::json::Value::read(const char *path)
+{
+   std::ifstream in(path);
+   
+   if (!in.is_open())
+   {
+      reset();
+      return false;
+   }
+   else
+   {
+      return read(in);
+   }
+}
+
+bool gcore::json::Value::read(std::istream &in)
+{
+   static const char *sSpaces = " \t\r\n";
+   
+   reset();
+   
+   // only keep previous line?
+   gcore::String curLine, prevLine, remain;
+   size_t p0, p1, lineno = 0;
+   
+   std::vector<Value*> valueStack;
+   Value *curValue = 0;
+   gcore::String str = "";
+   gcore::String key = "";
+   ParserState state = Begin;
+   
+   while (in.good())
+   {
+      if (remain.length() == 0)
+      {
+         // Note: getline discards the trailing '\n'
+         prevLine = curLine;
+         std::getline(in, curLine);
+         remain = curLine;
+         //std::cout << "Parse| Read line '" << remain << "'" << std::endl;
+         ++lineno;
+      }
+      
+      switch (state)
+      {
+      case Begin:
+         //std::cout << "Parse|Begin" << std::endl;
+         
+         p0 = remain.find_first_not_of(sSpaces);
+         
+         if (p0 == std::string::npos)
+         {
+            remain = "";
+         }
+         else
+         {
+            if (remain[p0] != '{')
+            {
+               std::cerr << "Mal-formed JSON: Expect single object at top level "
+                         << "(line " << lineno << ")" << std::endl;
+               reset();
+               return false;
+            }
+            else
+            {
+               remain = remain.substr(p0 + 1);
+               mType = ObjectType;
+               mObj = new Object();
+               curValue = this;
+               state = ReadObject;
+            }
+         }
+         
+         break;
+      
+      case ReadObject:
+         //std::cout << "Parse|ReadObject (remain = '" << remain << "')" << std::endl;
+         
+         p0 = remain.find_first_not_of(sSpaces);
+         
+         if (p0 != std::string::npos && remain[p0] == ',')
+         {
+            if (curValue->size() == 0)
+            {
+               std::cerr << "Mal-formed JSON: Unexpected , "
+                         << "(line " << lineno << ")" << std::endl;
+               reset();
+               return false;
+            }
+            
+            p0 = remain.find_first_not_of(sSpaces, p0 + 1);
+         }
+         
+         if (p0 == std::string::npos)
+         {
+            remain = "";
+         }
+         else if (remain[p0] == '}')
+         {
+            if (valueStack.size() == 0)
+            {
+               state = End;
+            }
+            else
+            {
+               curValue = valueStack.back();
+               valueStack.pop_back();
+               
+               if (curValue->type() == ObjectType)
+               {
+                  state = ReadObject;
+               }
+               else if (curValue->type() == ArrayType)
+               {
+                  state = ReadArray;
+               }
+               else
+               {
+                  std::cerr << "Mal-formed JSON: Object parent must be either an object or an array "
+                            << "(line " << lineno << ")" << std::endl;
+                  reset();
+                  return false;
+               }
+            }
+            
+            remain = remain.substr(p0 + 1);
+         }
+         else if (remain[p0] == '"')
+         {
+            state = ReadObjectKey;
+            
+            str = "";
+            key = "";
+            
+            remain = remain.substr(p0 + 1);
+         }
+         else
+         {
+            std::cerr << "Mal-formed JSON: Expect string "
+                      << "(line " << lineno << ")" << std::endl;
+            reset();
+            return false;
+         }
+         
+         break;
+      
+      case ReadArray:
+         //std::cout << "Parse|ReadArray (remain = '" << remain << "')" << std::endl;
+         
+         p0 = remain.find_first_not_of(sSpaces);
+         
+         if (p0 != std::string::npos && remain[p0] == ',')
+         {
+            if (curValue->size() == 0)
+            {
+               std::cerr << "Mal-formed JSON: Unexpected , "
+                         << "(line " << lineno << ")" << std::endl;
+               reset();
+               return false;
+            }
+            
+            p0 = remain.find_first_not_of(sSpaces, p0 + 1);
+         }
+         
+         if (p0 == std::string::npos)
+         {
+            remain = "";
+         }
+         else if (remain[p0] == ']')
+         {
+            if (valueStack.size() == 0)
+            {
+               std::cerr << "Mal-formed JSON: Orphan array "
+                         << "(line " << lineno << ")" << std::endl;
+               reset();
+               return false;
+            }
+            else
+            {
+               curValue = valueStack.back();
+               valueStack.pop_back();
+               
+               if (curValue->type() == ObjectType)
+               {
+                  state = ReadObject;
+               }
+               else if (curValue->type() == ArrayType)
+               {
+                  state = ReadArray;
+               }
+               else
+               {
+                  std::cerr << "Mal-formed JSON: Array parent must be either an object or an array "
+                            << "(line " << lineno << ")" << std::endl;
+                  reset();
+                  return false;
+               }
+               
+               remain = remain.substr(p0 + 1);
+            }
+         }
+         else
+         {
+            state = ReadValue;
+            remain = remain.substr(p0);
+         }
+         
+         break;
+      
+      case ReadObjectKey:
+      case ReadString:
+         //std::cout << "Parse|" << (state == ReadString ? "ReadString" : "ReadObjectKey") << " (remain = '" << remain << "')" << std::endl;
+         
+         p0 = 0;
+         p1 = remain.find('"', p0);
+         
+         while (p1 != std::string::npos)
+         {
+            if (p1 == 0)
+            {
+               break;
+            }
+            else if (remain[p1 - 1] != '\\')
+            {
+               str += remain.substr(p0, p1 - p0);
+               remain = remain.substr(p1 + 1);
+               break;
+            }
+            else
+            {
+               p0 = p1 + 1;
+               p1 = remain.find('"', p0);
+            }
+         }
+         
+         if (p1 == std::string::npos)
+         {
+            // couldn't find closing "
+            str += remain + "\n";
+            remain = "";
+         }
+         else
+         {
+            if (state == ReadObjectKey)
+            {
+               key = str;
+               //std::cout << "Parse|ReadObjectKey -> " << key << std::endl;
+               
+               p1 = remain.find_first_not_of(sSpaces);
+               
+               if (p1 == std::string::npos || remain[p1] != ':')
+               {
+                  std::cerr << "Mal-formed JSON: Expected : after object key "
+                            << "(line " << lineno << ")" << std::endl;
+                  reset();
+                  return false;
+               }
+               
+               remain = remain.substr(p1 + 1);
+               
+               state = ReadValue;
+            }
+            else
+            {
+               *curValue = str;
+               
+               if (valueStack.size() == 0)
+               {
+                  std::cerr << "Mal-formed JSON: Orphan string "
+                            << "(line " << lineno << ")" << std::endl;
+                  reset();
+                  return false;
+               }
+               
+               curValue = valueStack.back();
+               valueStack.pop_back();
+               
+               if (curValue->type() == ObjectType)
+               {
+                  state = ReadObject;
+               }
+               else if (curValue->type() == ArrayType)
+               {
+                  state = ReadArray;
+               }
+               else
+               {
+                  std::cerr << "Mal-formed JSON: String parent must be either an object or an array "
+                            << "(line " << lineno << ")" << std::endl;
+                  reset();
+                  return false;
+               }
+            }
+         }
+         
+         break;
+      
+      case ReadValue:
+         //std::cout << "Parse|ReadValue (remain = '" << remain << "')" << std::endl;
+         
+         p0 = remain.find_first_not_of(sSpaces);
+         
+         if (p0 == std::string::npos)
+         {
+            remain = "";
+         }
+         else
+         {
+            valueStack.push_back(curValue);
+            
+            if (curValue->type() == ObjectType)
+            {
+               if (key.length() == 0)
+               {
+                  std::cerr << "Mal-formed JSON: Empty key "
+                            << "(line " << lineno << ")" << std::endl;
+                  reset();
+                  return false;
+               }
+               
+               curValue = &((*curValue)[key]);
+               
+               // reset key
+               key = "";
+            }
+            else if (curValue->type() == ArrayType)
+            {
+               size_t idx = curValue->size();
+               curValue->insert(idx, Value());
+               
+               curValue = &((*curValue)[idx]);
+            }
+            else
+            {
+               std::cerr << "Mal-formed JSON: Value parent must be either an object or an array "
+                         << "(line " << lineno << ")" << std::endl;
+               reset();
+               return false;
+            }
+            
+            if (remain[p0] == '{')
+            {
+               *curValue = Object();
+               state = ReadObject;
+               remain = remain.substr(p0 + 1);
+            }
+            else if (remain[p0] == '[')
+            {
+               *curValue = Array();
+               state = ReadArray;
+               remain = remain.substr(p0 + 1);
+            }
+            else if (remain[p0] == '"')
+            {
+               *curValue = "";
+               state = ReadString;
+               str = "";
+               remain = remain.substr(p0 + 1);
+            }
+            else
+            {
+               if (!strncmp(remain.c_str(), "null", 4))
+               {
+                  remain = remain.substr(p0 + 4);
+               }
+               else if (!strncmp(remain.c_str(), "true", 4))
+               {
+                  *curValue = true;
+                  remain = remain.substr(p0 + 4);
+               }
+               else if (!strncmp(remain.c_str(), "false", 5))
+               {
+                  *curValue = false;
+                  remain = remain.substr(p0 + 5);
+               }
+               else
+               {
+                  // must be a number
+                  gcore::String numstr;
+                  
+                  p1 = remain.find_first_of(sSpaces);
+                  
+                  if (p1 == std::string::npos)
+                  {
+                     numstr = remain.substr(p0);
+                     remain = "";
+                  }
+                  else
+                  {
+                     numstr = remain.substr(p0, p1 - p0);
+                     remain = remain.substr(p1);
+                  }
+                  
+                  double val = 0.0;
+                  
+                  if (sscanf(numstr.c_str(), "%lf", &val) != 1)
+                  {
+                     std::cerr << "Mal-formed JSON: Expected a number "
+                               << "(line " << lineno << ")" << std::endl;
+                     reset();
+                     return false;
+                  }
+                  
+                  *curValue = val;
+               }
+               
+               // at this point we know stack is not empty
+               // and that last element is either an object or an array
+               curValue = valueStack.back();
+               valueStack.pop_back();
+               
+               if (curValue->type() == ObjectType)
+               {
+                  state = ReadObject;
+               }
+               else
+               {
+                  state = ReadArray;
+               }
+            }
+         }
+         
+         break;
+      
+      case End:
+         //std::cout << "Parse|End (remain = '" << remain << "')" << std::endl;
+         p0 = remain.find_first_not_of(sSpaces);
+         
+         if (p0 != std::string::npos)
+         {
+            std::cerr << "Mal-formed JSON: Content after top-level object "
+                      << "(line " << lineno << ")" << std::endl;
+            reset();
+            return false;
+         }
+         
+      default:
+         break;
+      }
+   }
+   
+   return (mType != NullType);
+}
+
 std::ostream& operator<<(std::ostream &os, const gcore::json::Value &value)
 {
    switch (value.type())
@@ -928,111 +1481,11 @@ std::ostream& operator<<(std::ostream &os, const gcore::json::Array &array)
    return os;
 }
 
-gcore::json::Parser::Parser()
-{
-}
-
-gcore::json::Parser::Parser(const char *path)
-{
-   read(path);
-}
-
-gcore::json::Parser::~Parser()
-{
-}
-
-bool gcore::json::Parser::read(const char *path)
-{
-   // read line by line
-   
-   // first rule: 
-   //   -> object
-   // OR
-   //   -> members
-   // # => comment
-   
-   // object
-   //    { }
-   //    { members }
-   // members
-   //    pair
-   //    pair, members
-   // pair
-   //    string : value
-   // array
-   //    [ ]
-   //    [ elements ]
-   // elements
-   //    value
-   //    value, elements
-   // value
-   //    string
-   //    number
-   //    object
-   //    array
-   //    true
-   //    false
-   //    null
-   // string
-   //    " "
-   //    " chars "
-   // chars
-   //    char
-   //    char chars
-   // char
-   //    any unicode character except " and \ or control char
-   //    \"
-   //    \\
-   //    \/
-   //    \b
-   //    \f
-   //    \n
-   //    \r
-   //    \t
-   //    \u four-hex-digits
-   // number
-   //    int
-   //    int frac
-   //    int exp
-   //    int frac exp
-   // int
-   //    digit
-   //    digit1-9 digits
-   //    - digit
-   //    - digit1-9 digits
-   // frac
-   //    . digits
-   // exp
-   //    e digits
-   // digits
-   //    digit
-   //    digit digits
-   // e
-   //    e
-   //    e+
-   //    e-
-   //    E
-   //    E+
-   //    E-
-   
-   return false;
-}
-
-gcore::json::Value& gcore::json::Parser::top()
-{
-   return mTop;
-}
-
-const gcore::json::Value& gcore::json::Parser::top() const
-{
-   return mTop;
-}
-
 // ---
 
 using namespace gcore;
 
-int main(int, char**)
+int main(int argc, char **argv)
 {
    json::Object top;
    json::Array ary1;
@@ -1087,5 +1540,25 @@ int main(int, char**)
          std::cout << "  " << oit->first << ": " << oit->second << std::endl;
       }
    }
+   
+   if (argc > 1)
+   {
+      const char *path = argv[1];
+      
+      std::cout << "Read '" << path << "'..." << std::endl;
+      
+      json::Value top;
+      
+      bool success = top.read(path);
+      
+      std::cout << "  " << (success ? "Succeeded" : "Failed") << std::endl;
+      
+      if (success)
+      {
+         top.write(std::cout);
+         std::cout << std::endl;
+      }
+   }
+   
    return 0;
 }

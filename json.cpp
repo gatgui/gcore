@@ -106,7 +106,8 @@ namespace gcore
          void reset();
          
          bool read(const char *path);
-         bool read(std::istream &is);
+         bool read(std::istream &is, bool consumeAll=false);
+         const char* lastError() const;
           
          bool write(const char *path) const;
          void write(std::ostream &os, const gcore::String indent="", bool skipFirstIndent=false) const;
@@ -169,6 +170,7 @@ namespace gcore
          gcore::String mStr;
          Object *mObj;
          Array *mArr;
+         gcore::String mErr;
       };
       
       typedef Value::Object Object;
@@ -215,6 +217,7 @@ gcore::json::Value::Value()
    , mStr("")
    , mObj(0)
    , mArr(0)
+   , mErr("")
 {
 }
 
@@ -225,6 +228,7 @@ gcore::json::Value::Value(Type t)
    , mStr("")
    , mObj(t == ObjectType ? new gcore::json::Object() : 0)
    , mArr(t == ArrayType ? new gcore::json::Array() : 0)
+   , mErr("")
 {
 }
 
@@ -235,6 +239,7 @@ gcore::json::Value::Value(bool b)
    , mStr("")
    , mObj(0)
    , mArr(0)
+   , mErr("")
 {
 }
 
@@ -245,6 +250,7 @@ gcore::json::Value::Value(int num)
    , mStr("")
    , mObj(0)
    , mArr(0)
+   , mErr("")
 {
 }
 
@@ -255,6 +261,7 @@ gcore::json::Value::Value(float num)
    , mStr("")
    , mObj(0)
    , mArr(0)
+   , mErr("")
 {
 }
 
@@ -265,6 +272,7 @@ gcore::json::Value::Value(double num)
    , mStr("")
    , mObj(0)
    , mArr(0)
+   , mErr("")
 {
 }
 
@@ -275,6 +283,7 @@ gcore::json::Value::Value(const char *str)
    , mStr(str ? str : "")
    , mObj(0)
    , mArr(0)
+   , mErr("")
 {
 }
 
@@ -285,6 +294,7 @@ gcore::json::Value::Value(const gcore::String &str)
    , mStr(str)
    , mObj(0)
    , mArr(0)
+   , mErr("")
 {
 }
 
@@ -295,6 +305,7 @@ gcore::json::Value::Value(Object *obj)
    , mStr("")
    , mObj(obj)
    , mArr(0)
+   , mErr("")
 {
 }
 
@@ -305,6 +316,7 @@ gcore::json::Value::Value(const Object &obj)
    , mStr("")
    , mObj(new gcore::json::Object(obj))
    , mArr(0)
+   , mErr("")
 {
 }
 
@@ -315,6 +327,7 @@ gcore::json::Value::Value(Array *arr)
    , mStr("")
    , mObj(0)
    , mArr(arr)
+   , mErr("")
 {
 }
 
@@ -325,6 +338,7 @@ gcore::json::Value::Value(const Array &arr)
    , mStr("")
    , mObj(0)
    , mArr(new gcore::json::Array(arr))
+   , mErr("")
 {
 }
 
@@ -335,6 +349,7 @@ gcore::json::Value::Value(const gcore::json::Value &rhs)
    , mStr(rhs.mStr)
    , mObj(0)
    , mArr(0)
+   , mErr(rhs.mErr)
 {
    if (rhs.mObj)
    {
@@ -973,6 +988,11 @@ void gcore::json::Value::write(std::ostream &os, const gcore::String indent, boo
    }
 }
 
+const char* gcore::json::Value::lastError() const
+{
+   return mErr.c_str();
+}
+
 bool gcore::json::Value::read(const char *path)
 {
    std::ifstream in(path);
@@ -984,43 +1004,48 @@ bool gcore::json::Value::read(const char *path)
    }
    else
    {
-      return read(in);
+      return read(in, true);
    }
 }
 
-bool gcore::json::Value::read(std::istream &in)
+bool gcore::json::Value::read(std::istream &in, bool consumeAll)
 {
    static const char *sSpaces = " \t\r\n";
    
    reset();
+   mErr = "";
    
    // only keep previous line?
-   gcore::String curLine, prevLine, remain;
-   size_t p0, p1, lineno = 0;
+   gcore::String remain;
+   size_t p0, p1, lineno = 0, coloff = 0;
    
    std::vector<Value*> valueStack;
    Value *curValue = 0;
    gcore::String str = "";
    gcore::String key = "";
    ParserState state = Begin;
+   bool readSep = true;
+   bool hasSep = false;
    
    while (in.good())
    {
       if (remain.length() == 0)
       {
          // Note: getline discards the trailing '\n'
-         prevLine = curLine;
-         std::getline(in, curLine);
-         remain = curLine;
-         //std::cout << "Parse| Read line '" << remain << "'" << std::endl;
+         std::getline(in, remain);
+         #ifdef _DEBUG
+         std::cout << "Parse| Read line '" << remain << "'" << std::endl;
+         #endif
          ++lineno;
+         coloff = 1;
       }
       
       switch (state)
       {
       case Begin:
-         //std::cout << "Parse|Begin" << std::endl;
-         
+         #ifdef _DEBUG
+         std::cout << "Parse|Begin" << std::endl;
+         #endif
          p0 = remain.find_first_not_of(sSpaces);
          
          if (p0 == std::string::npos)
@@ -1031,39 +1056,75 @@ bool gcore::json::Value::read(std::istream &in)
          {
             if (remain[p0] != '{')
             {
-               std::cerr << "Mal-formed JSON: Expect single object at top level "
-                         << "(line " << lineno << ")" << std::endl;
+               mErr = "Expect object at top level (line " + gcore::String(lineno)
+                    + ", column " + gcore::String(coloff+p0) + ")";
                reset();
                return false;
             }
             else
             {
-               remain = remain.substr(p0 + 1);
                mType = ObjectType;
                mObj = new Object();
+               
                curValue = this;
+               
                state = ReadObject;
+               readSep = true;
+               
+               remain = remain.substr(p0 + 1);
+               coloff += p0 + 1;
             }
          }
          
          break;
       
       case ReadObject:
-         //std::cout << "Parse|ReadObject (remain = '" << remain << "')" << std::endl;
+         #ifdef _DEBUG
+         std::cout << "Parse|ReadObject (remain = '" << remain << "')" << std::endl;
+         #endif
          
          p0 = remain.find_first_not_of(sSpaces);
          
-         if (p0 != std::string::npos && remain[p0] == ',')
+         if (readSep)
          {
-            if (curValue->size() == 0)
+            if (p0 != std::string::npos)
             {
-               std::cerr << "Mal-formed JSON: Unexpected , "
-                         << "(line " << lineno << ")" << std::endl;
-               reset();
-               return false;
+               if (curValue->size() == 0)
+               {
+                  if (remain[p0] == ',')
+                  {
+                     mErr = "Unexpected , (line " + gcore::String(lineno)
+                          + ", column " + gcore::String(coloff+p0) + ")";
+                     reset();
+                     return false;
+                  }
+                  
+                  hasSep = false;
+               }
+               else
+               {
+                  if (remain[p0] != ',' && remain[p0] != '}')
+                  {
+                     mErr = "Expected , or } (line " + gcore::String(lineno)
+                          + ", column " + gcore::String(coloff+p0) + ")";
+                     reset();
+                     return false;
+                  }
+                  
+                  hasSep = (remain[p0] == ',');
+                  
+                  if (hasSep)
+                  {
+                     p0 = remain.find_first_not_of(sSpaces, p0 + 1);
+                  }
+               }
+               
+               readSep = false;
             }
-            
-            p0 = remain.find_first_not_of(sSpaces, p0 + 1);
+            else
+            {
+               hasSep = false;
+            }
          }
          
          if (p0 == std::string::npos)
@@ -1072,9 +1133,36 @@ bool gcore::json::Value::read(std::istream &in)
          }
          else if (remain[p0] == '}')
          {
+            if (hasSep)
+            {
+               mErr = "Unexpected , before } (line " + gcore::String(lineno)
+                    + ", column " + gcore::String(coloff+p0)+ ")";
+               reset();
+               return false;
+            }
+            
             if (valueStack.size() == 0)
             {
-               state = End;
+               if (consumeAll)
+               {
+                  state = End;
+               }
+               else
+               {
+                  remain = remain.substr(p0 + 1);
+                  
+                  if (remain.strip().length() > 0)
+                  {
+                     mErr = "Unexpected characters after top level object's end (line "
+                          + gcore::String(lineno) + ", column " + gcore::String(coloff+p0) + ")";
+                     reset();
+                     return false;
+                  }
+                  else
+                  {
+                     return true;
+                  }
+               }
             }
             else
             {
@@ -1084,21 +1172,24 @@ bool gcore::json::Value::read(std::istream &in)
                if (curValue->type() == ObjectType)
                {
                   state = ReadObject;
+                  readSep = true;
                }
                else if (curValue->type() == ArrayType)
                {
                   state = ReadArray;
+                  readSep = true;
                }
                else
                {
-                  std::cerr << "Mal-formed JSON: Object parent must be either an object or an array "
-                            << "(line " << lineno << ")" << std::endl;
+                  mErr = "Parent value must be either an object or an array (line "
+                       + gcore::String(lineno) + ", column " + gcore::String(coloff+p0) + ")";
                   reset();
                   return false;
                }
             }
             
             remain = remain.substr(p0 + 1);
+            coloff += p0 + 1;
          }
          else if (remain[p0] == '"')
          {
@@ -1108,11 +1199,12 @@ bool gcore::json::Value::read(std::istream &in)
             key = "";
             
             remain = remain.substr(p0 + 1);
+            coloff += p0 + 1;
          }
          else
          {
-            std::cerr << "Mal-formed JSON: Expect string "
-                      << "(line " << lineno << ")" << std::endl;
+            mErr = "Expect string value (line " + gcore::String(lineno)
+                 + ", column " + gcore::String(coloff+p0) + ")";
             reset();
             return false;
          }
@@ -1120,21 +1212,52 @@ bool gcore::json::Value::read(std::istream &in)
          break;
       
       case ReadArray:
-         //std::cout << "Parse|ReadArray (remain = '" << remain << "')" << std::endl;
+         #ifdef _DEBUG
+         std::cout << "Parse|ReadArray (remain = '" << remain << "')" << std::endl;
+         #endif
          
          p0 = remain.find_first_not_of(sSpaces);
          
-         if (p0 != std::string::npos && remain[p0] == ',')
+         if (readSep)
          {
-            if (curValue->size() == 0)
+            if (p0 != std::string::npos)
             {
-               std::cerr << "Mal-formed JSON: Unexpected , "
-                         << "(line " << lineno << ")" << std::endl;
-               reset();
-               return false;
+               if (curValue->size() == 0)
+               {
+                  if (remain[p0] == ',')
+                  {
+                     mErr = "Unexpected , (line " + gcore::String(lineno)
+                          + ", column " + gcore::String(coloff+p0) + ")";
+                     reset();
+                     return false;
+                  }
+                  
+                  hasSep = false;
+               }
+               else
+               {
+                  if (remain[p0] != ',' && remain[p0] != ']')
+                  {
+                     mErr = "Expected , or ] (line " + gcore::String(lineno)
+                          + ", column " + gcore::String(coloff+p0) + ")";
+                     reset();
+                     return false;
+                  }
+                  
+                  hasSep = (remain[p0] == ',');
+                  
+                  if (hasSep)
+                  {
+                     p0 = remain.find_first_not_of(sSpaces, p0 + 1);
+                  }
+               }
+               
+               readSep = false;
             }
-            
-            p0 = remain.find_first_not_of(sSpaces, p0 + 1);
+            else
+            {
+               hasSep = false;
+            }
          }
          
          if (p0 == std::string::npos)
@@ -1143,10 +1266,18 @@ bool gcore::json::Value::read(std::istream &in)
          }
          else if (remain[p0] == ']')
          {
+            if (hasSep)
+            {
+               mErr = "Unexpected , before ] (line " + gcore::String(lineno)
+                    + ", column " + gcore::String(coloff+p0)+ ")";
+               reset();
+               return false;
+            }
+            
             if (valueStack.size() == 0)
             {
-               std::cerr << "Mal-formed JSON: Orphan array "
-                         << "(line " << lineno << ")" << std::endl;
+               mErr = "Orphan array value (line " + gcore::String(lineno)
+                    + ", column " + gcore::String(coloff+p0) + ")";
                reset();
                return false;
             }
@@ -1158,33 +1289,39 @@ bool gcore::json::Value::read(std::istream &in)
                if (curValue->type() == ObjectType)
                {
                   state = ReadObject;
+                  readSep = true;
                }
                else if (curValue->type() == ArrayType)
                {
                   state = ReadArray;
+                  readSep = true;
                }
                else
                {
-                  std::cerr << "Mal-formed JSON: Array parent must be either an object or an array "
-                            << "(line " << lineno << ")" << std::endl;
+                  mErr = "Parent value must be either an object or an array (line "
+                       + gcore::String(lineno) + ", column " + gcore::String(coloff+p0) + ")";
                   reset();
                   return false;
                }
                
                remain = remain.substr(p0 + 1);
+               coloff += p0 + 1;
             }
          }
          else
          {
             state = ReadValue;
             remain = remain.substr(p0);
+            coloff += p0;
          }
          
          break;
       
       case ReadObjectKey:
       case ReadString:
-         //std::cout << "Parse|" << (state == ReadString ? "ReadString" : "ReadObjectKey") << " (remain = '" << remain << "')" << std::endl;
+         #ifdef _DEBUG
+         std::cout << "Parse|" << (state == ReadString ? "ReadString" : "ReadObjectKey") << " (remain = '" << remain << "')" << std::endl;
+         #endif
          
          p0 = 0;
          p1 = remain.find('"', p0);
@@ -1199,6 +1336,7 @@ bool gcore::json::Value::read(std::istream &in)
             {
                str += remain.substr(p0, p1 - p0);
                remain = remain.substr(p1 + 1);
+               coloff += p1 + 1;
                break;
             }
             else
@@ -1219,14 +1357,16 @@ bool gcore::json::Value::read(std::istream &in)
             if (state == ReadObjectKey)
             {
                key = str;
-               //std::cout << "Parse|ReadObjectKey -> " << key << std::endl;
+               #ifdef _DEBUG
+               std::cout << "Parse|ReadObjectKey -> " << key << std::endl;
+               #endif
                
                p1 = remain.find_first_not_of(sSpaces);
                
                if (p1 == std::string::npos || remain[p1] != ':')
                {
-                  std::cerr << "Mal-formed JSON: Expected : after object key "
-                            << "(line " << lineno << ")" << std::endl;
+                  mErr = "Expected : after string value (line " + gcore::String(lineno)
+                       + ", column " + gcore::String(coloff+p1) + ")";
                   reset();
                   return false;
                }
@@ -1241,8 +1381,8 @@ bool gcore::json::Value::read(std::istream &in)
                
                if (valueStack.size() == 0)
                {
-                  std::cerr << "Mal-formed JSON: Orphan string "
-                            << "(line " << lineno << ")" << std::endl;
+                  mErr = "Orphan string (line " + gcore::String(lineno)
+                       + ", column " + gcore::String(coloff) + ")";
                   reset();
                   return false;
                }
@@ -1253,15 +1393,17 @@ bool gcore::json::Value::read(std::istream &in)
                if (curValue->type() == ObjectType)
                {
                   state = ReadObject;
+                  readSep = true;
                }
                else if (curValue->type() == ArrayType)
                {
                   state = ReadArray;
+                  readSep = true;
                }
                else
                {
-                  std::cerr << "Mal-formed JSON: String parent must be either an object or an array "
-                            << "(line " << lineno << ")" << std::endl;
+                  mErr = "Parent value must be either an object or an array (line "
+                       + gcore::String(lineno) + ", column " + gcore::String(coloff) + ")";
                   reset();
                   return false;
                }
@@ -1271,7 +1413,9 @@ bool gcore::json::Value::read(std::istream &in)
          break;
       
       case ReadValue:
-         //std::cout << "Parse|ReadValue (remain = '" << remain << "')" << std::endl;
+         #ifdef _DEBUG
+         std::cout << "Parse|ReadValue (remain = '" << remain << "')" << std::endl;
+         #endif
          
          p0 = remain.find_first_not_of(sSpaces);
          
@@ -1287,8 +1431,8 @@ bool gcore::json::Value::read(std::istream &in)
             {
                if (key.length() == 0)
                {
-                  std::cerr << "Mal-formed JSON: Empty key "
-                            << "(line " << lineno << ")" << std::endl;
+                  mErr = "Undefined or empty object member name (line " + gcore::String(lineno)
+                       + ", column " + gcore::String(coloff+p0) + ")";
                   reset();
                   return false;
                }
@@ -1307,8 +1451,8 @@ bool gcore::json::Value::read(std::istream &in)
             }
             else
             {
-               std::cerr << "Mal-formed JSON: Value parent must be either an object or an array "
-                         << "(line " << lineno << ")" << std::endl;
+               mErr = "Parent value must be either an object or an array (line "
+                    + gcore::String(lineno) + ", column " + gcore::String(coloff+p0) + ")";
                reset();
                return false;
             }
@@ -1317,13 +1461,17 @@ bool gcore::json::Value::read(std::istream &in)
             {
                *curValue = Object();
                state = ReadObject;
+               readSep = true;
                remain = remain.substr(p0 + 1);
+               coloff += p0 + 1;
             }
             else if (remain[p0] == '[')
             {
                *curValue = Array();
                state = ReadArray;
+               readSep = true;
                remain = remain.substr(p0 + 1);
+               coloff += p0 + 1;
             }
             else if (remain[p0] == '"')
             {
@@ -1331,22 +1479,26 @@ bool gcore::json::Value::read(std::istream &in)
                state = ReadString;
                str = "";
                remain = remain.substr(p0 + 1);
+               coloff += p0 + 1;
             }
             else
             {
                if (!strncmp(remain.c_str(), "null", 4))
                {
                   remain = remain.substr(p0 + 4);
+                  coloff += p0 + 4;
                }
                else if (!strncmp(remain.c_str(), "true", 4))
                {
                   *curValue = true;
                   remain = remain.substr(p0 + 4);
+                  coloff += p0 + 4;
                }
                else if (!strncmp(remain.c_str(), "false", 5))
                {
                   *curValue = false;
                   remain = remain.substr(p0 + 5);
+                  coloff += p0 + 5;
                }
                else
                {
@@ -1359,19 +1511,21 @@ bool gcore::json::Value::read(std::istream &in)
                   {
                      numstr = remain.substr(p0);
                      remain = "";
+                     coloff += p0;
                   }
                   else
                   {
                      numstr = remain.substr(p0, p1 - p0);
                      remain = remain.substr(p1);
+                     coloff += p1;
                   }
                   
                   double val = 0.0;
                   
                   if (sscanf(numstr.c_str(), "%lf", &val) != 1)
                   {
-                     std::cerr << "Mal-formed JSON: Expected a number "
-                               << "(line " << lineno << ")" << std::endl;
+                     mErr = "Expected number value (line " + gcore::String(lineno)
+                          + ", column " + gcore::String(coloff) + ")";
                      reset();
                      return false;
                   }
@@ -1387,10 +1541,12 @@ bool gcore::json::Value::read(std::istream &in)
                if (curValue->type() == ObjectType)
                {
                   state = ReadObject;
+                  readSep = true;
                }
                else
                {
                   state = ReadArray;
+                  readSep = true;
                }
             }
          }
@@ -1398,13 +1554,16 @@ bool gcore::json::Value::read(std::istream &in)
          break;
       
       case End:
-         //std::cout << "Parse|End (remain = '" << remain << "')" << std::endl;
+         #ifdef _DEBUG
+         std::cout << "Parse|End (remain = '" << remain << "')" << std::endl;
+         #endif
+         
          p0 = remain.find_first_not_of(sSpaces);
          
          if (p0 != std::string::npos)
          {
-            std::cerr << "Mal-formed JSON: Content after top-level object "
-                      << "(line " << lineno << ")" << std::endl;
+            mErr = "Content after top level object (line " + gcore::String(lineno)
+                 + ", column " + gcore::String(coloff+p0) + ")";
             reset();
             return false;
          }
@@ -1557,6 +1716,10 @@ int main(int argc, char **argv)
       {
          top.write(std::cout);
          std::cout << std::endl;
+      }
+      else
+      {
+         std::cerr << top.lastError() << std::endl;
       }
    }
    

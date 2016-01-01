@@ -254,6 +254,14 @@ String& String::operator+=(const String &rhs) {
   return *this;
 }
 
+String& String::operator*=(size_t n) {
+  String base = *this;
+  for (size_t i=1; i<n; ++i) {
+    operator+=(base);
+  }
+  return *this;
+}
+
 String String::operator()(long from, long to) const {
   long len = long(length());
   if (len == 0) {
@@ -289,6 +297,26 @@ String& String::strip() {
     if (p != npos) {
       erase(p+1);
     }
+  }
+  return *this;
+}
+
+String& String::rstrip() {
+  size_t p = find_last_not_of(" \t\r\n\v");
+  if (p == npos) {
+    assign("");
+  } else {
+    erase(p+1);
+  }
+  return *this;
+}
+
+String& String::lstrip() {
+  size_t p = find_first_not_of(" \t\r\n\v");
+  if (p == npos) {
+    assign("");
+  } else {
+    erase(0, p);
   }
   return *this;
 }

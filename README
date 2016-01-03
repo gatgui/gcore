@@ -4,6 +4,6 @@ gcore: Core FrameWork
 A multi-platform library to wrap system specific API and a bit more:
 Processes, pipes, threads, path handling, file enumeration, dynamic loading,
 generic callbacks, argument parser, string tokenizer, property list,
-regular expressions
+regular expressions, xml, json
 
 

@@ -46,6 +46,7 @@ USA.
 #include <gcore/log.h>
 #include <gcore/base64.h>
 #include <gcore/base85.h>
+#include <gcore/json.h>
 
 #endif 
 

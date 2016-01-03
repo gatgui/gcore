@@ -144,6 +144,7 @@ namespace gcore
          Value(int num);
          Value(float num);
          Value(double num);
+         Value(gcore::String *str); // steals ownership
          Value(const char *str);
          Value(const gcore::String &str);
          Value(Object *obj); // steals ownership
@@ -160,6 +161,7 @@ namespace gcore
          Value& operator=(int num);
          Value& operator=(float num);
          Value& operator=(double num);
+         Value& operator=(gcore::String *str); // steals ownership
          Value& operator=(const char *str);
          Value& operator=(const gcore::String &str);
          Value& operator=(Object *obj); // steals ownership
@@ -178,6 +180,7 @@ namespace gcore
          operator const char* () const;
          operator const Object& () const;
          operator const Array& () const;
+         operator gcore::String& ();
          operator Object& ();
          operator Array& ();
          
@@ -245,11 +248,14 @@ namespace gcore
       private:
          
          Type mType;
-         bool mBool;
-         double mNum;
-         gcore::String mStr;
-         Object *mObj;
-         Array *mArr;
+         union
+         {
+            bool boo;
+            double num;
+            gcore::String *str;
+            Object *obj;
+            Array *arr;
+         } mValue;
       };
       
       typedef Value::Object Object;

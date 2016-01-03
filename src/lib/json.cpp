@@ -22,6 +22,7 @@ USA.
 */
 
 #include <gcore/json.h>
+#include <gcore/plist.h>
 
 gcore::json::Exception::Exception(const gcore::String &msg)
    : std::exception()
@@ -254,6 +255,80 @@ gcore::json::Value::Value(const gcore::json::Value &rhs)
 gcore::json::Value::~Value()
 {
    reset();
+}
+
+bool gcore::json::Value::toPropertyList(gcore::PropertyList &pl) const
+{
+   if (mType != ObjectType)
+   {
+      return false;
+   }
+   
+   pl.create();
+   
+   return toPropertyList(pl, "");
+}
+
+bool gcore::json::Value::toPropertyList(gcore::PropertyList &pl, const gcore::String &cprop) const
+{
+   try
+   {
+      switch (mType)
+      {
+      case ObjectType:
+         {
+            gcore::String prop, bprop = cprop;
+            
+            if (cprop.length() > 0)
+            {
+               bprop += ".";
+            }
+            
+            for (Object::const_iterator it=obegin(); it!=oend(); ++it)
+            {
+               prop = bprop + it->first;
+               it->second.toPropertyList(pl, prop);
+            }
+         }
+         break;
+      
+      case ArrayType:
+         {
+            gcore::String prop, bprop = cprop + "[";
+            size_t i = 0;
+            
+            for (Array::const_iterator it=abegin(); it!=aend(); ++it, ++i)
+            {
+               prop = bprop + gcore::String(i) + "]";
+               it->toPropertyList(pl, prop);
+            }
+         }
+         break;
+      
+      case BooleanType:
+         pl.setBoolean(cprop, mBool);
+         break;
+      
+      case NumberType:
+         pl.setReal(cprop, mNum);
+         break;
+      
+      case StringType:
+         pl.setString(cprop, mStr);
+         break;
+      
+      case NullType:
+         // Ignore key
+      default:
+         break;
+      }
+      
+      return true;
+   }
+   catch (gcore::plist::Exception &)
+   {
+      return false;
+   }
 }
 
 void gcore::json::Value::reset()

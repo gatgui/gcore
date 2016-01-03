@@ -28,6 +28,8 @@ USA.
 
 namespace gcore
 {
+   class PropertyList;
+   
    namespace json
    {
       class GCORE_API Exception : public std::exception
@@ -151,6 +153,8 @@ namespace gcore
          Value(const Value &rhs);
          ~Value();
          
+         bool toPropertyList(gcore::PropertyList &pl) const;
+         
          Value& operator=(const Value &rhs);
          Value& operator=(bool b);
          Value& operator=(int num);
@@ -235,6 +239,8 @@ namespace gcore
             ReadValue,
             End
          };
+         
+         bool toPropertyList(gcore::PropertyList &pl, const gcore::String &cprop) const;
          
       private:
          

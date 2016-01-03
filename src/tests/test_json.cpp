@@ -96,6 +96,12 @@ int main(int argc, char **argv)
          
          top.write(std::cout);
          std::cout << std::endl;
+         
+         PropertyList pl;
+         if (top.toPropertyList(pl))
+         {
+            pl.write("out.xml");
+         }
       }
       catch (json::ParserError &e)
       {

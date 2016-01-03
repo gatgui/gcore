@@ -31,6 +31,10 @@ USA.
 
 namespace gcore {
   
+  namespace json {
+    class Value;
+  }
+  
   namespace plist {
     class Value;
     class Dictionary;
@@ -115,6 +119,8 @@ namespace gcore {
       bool read(const XMLElement *elt);
       XMLElement* write(XMLElement *elt=NULL) const;
       
+      bool toJSON(json::Value &v) const;
+      
       // The following 7 methods may throw plist::Exception
       const String& getString(const String &prop) const;
       long getInteger(const String &prop) const;
@@ -140,6 +146,10 @@ namespace gcore {
         return mTop;
       }
   
+    protected:
+      
+      bool toJSON(plist::Value *in, json::Value &out) const;
+      
     protected:
       
       class plist::Dictionary *mTop;

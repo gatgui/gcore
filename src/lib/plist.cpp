@@ -23,6 +23,7 @@ USA.
 
 #include <gcore/plist.h>
 #include <gcore/rex.h>
+#include <gcore/json.h>
 #include <cstdarg>
 
 namespace gcore {
@@ -1301,6 +1302,79 @@ void PropertyList::setInteger(const String &prop, long val) {
 
 void PropertyList::setBoolean(const String &prop, bool val) {
   SetTypedProperty<plist::Boolean>(mTop, prop, val);
+}
+
+bool PropertyList::toJSON(json::Value &v) const {
+  if (!mTop) {
+    return false;
+  }
+  
+  v.reset();
+  
+  if (!toJSON(mTop, v)) {
+    v.reset();
+    return false;
+    
+  } else {
+    return true;
+  }
+}
+
+bool PropertyList::toJSON(plist::Value *in, json::Value &out) const {
+  plist::Dictionary *dval = 0;
+  plist::Array *aval = 0;
+  plist::Boolean *bval = 0;
+  plist::Integer *ival = 0;
+  plist::Real *rval = 0;
+  plist::String *sval = 0;
+  
+  if (in->checkType(dval)) {
+    out = new json::Object();
+    
+    std::map<gcore::String, plist::Value*>::const_iterator it = dval->get().begin();
+    std::map<gcore::String, plist::Value*>::const_iterator itend = dval->get().end();
+    
+    while (it != itend) {
+      json::Value &member = out[it->first];
+      if (!toJSON(it->second, member)) {
+        return false;
+      }
+      ++it;
+    }
+  } else if (in->checkType(aval)) {
+    out = new json::Array();
+    
+    List<plist::Value*>::const_iterator it = aval->get().begin();
+    List<plist::Value*>::const_iterator itend = aval->get().end();
+    size_t i = 0;
+    
+    while (it != itend) {
+      out.insert(i, json::Value());
+      json::Value &member = out[i];
+      if (!toJSON(*it, member)) {
+        return false;
+      }
+      ++it;
+      ++i;
+    }
+    
+  } else if (in->checkType(bval)) {
+    out = bval->get();
+    
+  } else if (in->checkType(ival)) {
+    out = double(ival->get());
+    
+  } else if (in->checkType(rval)) {
+    out = rval->get();
+    
+  } else if (in->checkType(sval)) {
+    out = sval->get();
+    
+  } else {
+    return false;
+  }
+  
+  return true;
 }
 
 }

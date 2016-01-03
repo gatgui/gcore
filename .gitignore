@@ -4,4 +4,5 @@ release
 debug
 excons.cache
 *.xml
+*.json
 *.bfc

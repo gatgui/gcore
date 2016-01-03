@@ -255,9 +255,13 @@ String& String::operator+=(const String &rhs) {
 }
 
 String& String::operator*=(size_t n) {
-  String base = *this;
-  for (size_t i=1; i<n; ++i) {
-    operator+=(base);
+  if (n == 0) {
+    assign("");
+  } else {
+    String base = *this;
+    for (size_t i=1; i<n; ++i) {
+      operator+=(base);
+    }
   }
   return *this;
 }

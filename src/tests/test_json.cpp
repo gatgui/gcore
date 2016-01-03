@@ -25,6 +25,89 @@ USA.
 
 using namespace gcore;
 
+class Parser
+{
+public:
+   Parser()
+      : mDepth(0)
+      , mIndent("  ")
+   {
+      Bind(this, METHOD(Parser, objectBegin), mCallbacks.objectBegin);
+      Bind(this, METHOD(Parser, objectKey), mCallbacks.objectKey);
+      Bind(this, METHOD(Parser, objectEnd), mCallbacks.objectEnd);
+      Bind(this, METHOD(Parser, arrayBegin), mCallbacks.arrayBegin);
+      Bind(this, METHOD(Parser, arrayEnd), mCallbacks.arrayEnd);
+      Bind(this, METHOD(Parser, booleanScalar), mCallbacks.booleanScalar);
+      Bind(this, METHOD(Parser, numberScalar), mCallbacks.numberScalar);
+      Bind(this, METHOD(Parser, stringScalar), mCallbacks.stringScalar);
+      Bind(this, METHOD(Parser, nullScalar), mCallbacks.nullScalar);
+   }
+   
+   ~Parser()
+   {
+   }
+   
+   void objectBegin()
+   {
+      std::cout << (mIndent * mDepth) << "Object begin" << std::endl;
+      ++mDepth;
+   }
+   
+   void objectKey(const char *name)
+   {
+      std::cout << (mIndent * mDepth) << "Object key: '" << name << "'" << std::endl;
+   }
+   
+   void objectEnd()
+   {
+      --mDepth;
+      std::cout << (mIndent * mDepth) << "Object end" << std::endl;
+   }
+   
+   void arrayBegin()
+   {
+      std::cout << (mIndent * mDepth) << "Array begin" << std::endl;
+      ++mDepth;
+   }
+   
+   void arrayEnd()
+   {
+      --mDepth;
+      std::cout << (mIndent * mDepth) << "Array end" << std::endl;
+   }
+   
+   void booleanScalar(bool v)
+   {
+      std::cout << (mIndent * mDepth) << "Boolean scalar: " << v << std::endl;
+   }
+   
+   void numberScalar(double v)
+   {
+      std::cout << (mIndent * mDepth) << "Number scalar: " << v << std::endl;
+   }
+   
+   void stringScalar(const char *v)
+   {
+      std::cout << (mIndent * mDepth) << "String scalar: " << v << std::endl;
+   }
+   
+   void nullScalar()
+   {
+      std::cout << (mIndent * mDepth) << "Null scalar" << std::endl;
+   }
+   
+   void parse(const char *path)
+   {
+      mDepth = 0;
+      json::Value::Parse(path, &mCallbacks);
+   }
+
+private:
+   json::Value::ParserCallbacks mCallbacks;
+   long mDepth;
+   gcore::String mIndent;
+};
+
 int main(int argc, char **argv)
 {
    json::Object top;
@@ -102,6 +185,9 @@ int main(int argc, char **argv)
          {
             pl.write("out.xml");
          }
+         
+         Parser parser;
+         parser.parse(path);
       }
       catch (json::ParserError &e)
       {

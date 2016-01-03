@@ -997,11 +997,34 @@ void gcore::json::Value::read(const char *path)
    }
    else
    {
-      read(in, true);
+      read(in, true, 0);
    }
 }
 
-void gcore::json::Value::read(std::istream &in, bool consumeAll)
+void gcore::json::Value::read(std::istream &in)
+{
+   read(in, false, 0);
+}
+
+void gcore::json::Value::Parse(const char *path, ParserCallbacks *callbacks)
+{
+   if (!callbacks)
+   {
+      return;
+   }
+   
+   json::Value val;
+   
+   std::ifstream in(path);
+   
+   if (in.is_open())
+   {
+      val.read(in, true, callbacks);
+      val.reset();
+   }
+}
+
+void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Value::ParserCallbacks *cb)
 {
    static const char *sSpaces = " \t\r\n";
    
@@ -1057,6 +1080,11 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll)
                mValue.obj = new Object();
                
                curValue = this;
+               
+               if (cb && cb->objectBegin)
+               {
+                  cb->objectBegin();
+               }
                
                state = ReadObject;
                readSep = true;
@@ -1123,6 +1151,11 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll)
             {
                reset();
                throw ParserError(lineno, coloff+p0, "Unexpected , before }");
+            }
+            
+            if (cb && cb->objectEnd)
+            {
+               cb->objectEnd();
             }
             
             if (valueStack.size() == 0)
@@ -1253,6 +1286,11 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll)
             }
             else
             {
+               if (cb && cb->arrayEnd)
+               {
+                  cb->arrayEnd();
+               }
+               
                curValue = valueStack.back();
                valueStack.pop_back();
                
@@ -1329,6 +1367,11 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll)
                std::cout << "Parse|ReadObjectKey -> " << key << std::endl;
                #endif
                
+               if (cb && cb->objectKey)
+               {
+                  cb->objectKey(key.c_str());
+               }
+               
                p1 = remain.find_first_not_of(sSpaces);
                
                if (p1 == std::string::npos || remain[p1] != ':')
@@ -1349,6 +1392,11 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll)
                {
                   reset();
                   throw ParserError(lineno, coloff, "Orphan string");
+               }
+               
+               if (cb && cb->stringScalar)
+               {
+                  cb->stringScalar(str.c_str());
                }
                
                curValue = valueStack.back();
@@ -1418,6 +1466,10 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll)
             if (remain[p0] == '{')
             {
                *curValue = Object();
+               if (cb && cb->objectBegin)
+               {
+                  cb->objectBegin();
+               }
                state = ReadObject;
                readSep = true;
                remain = remain.substr(p0 + 1);
@@ -1426,6 +1478,10 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll)
             else if (remain[p0] == '[')
             {
                *curValue = Array();
+               if (cb && cb->arrayBegin)
+               {
+                  cb->arrayBegin();
+               }
                state = ReadArray;
                readSep = true;
                remain = remain.substr(p0 + 1);
@@ -1443,17 +1499,29 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll)
             {
                if (!strncmp(remain.c_str(), "null", 4))
                {
+                  if (cb && cb->nullScalar)
+                  {
+                     cb->nullScalar();
+                  }
                   remain = remain.substr(p0 + 4);
                   coloff += p0 + 4;
                }
                else if (!strncmp(remain.c_str(), "true", 4))
                {
+                  if (cb && cb->booleanScalar)
+                  {
+                     cb->booleanScalar(true);
+                  }
                   *curValue = true;
                   remain = remain.substr(p0 + 4);
                   coloff += p0 + 4;
                }
                else if (!strncmp(remain.c_str(), "false", 5))
                {
+                  if (cb && cb->booleanScalar)
+                  {
+                     cb->booleanScalar(false);
+                  }
                   *curValue = false;
                   remain = remain.substr(p0 + 5);
                   coloff += p0 + 5;
@@ -1484,6 +1552,11 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll)
                   {
                      reset();
                      throw ParserError(lineno, coloff, "Expected number value");
+                  }
+                  
+                  if (cb && cb->numberScalar)
+                  {
+                     cb->numberScalar(val);
                   }
                   
                   *curValue = val;

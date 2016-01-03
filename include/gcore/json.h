@@ -25,6 +25,7 @@ USA.
 #define __gcore_json_h_
 
 #include <gcore/string.h>
+#include <gcore/functor.h>
 
 namespace gcore
 {
@@ -188,7 +189,7 @@ namespace gcore
          
          // Read methods may throw ParserError exception
          void read(const char *path);
-         void read(std::istream &is, bool consumeAll=false);
+         void read(std::istream &is);
           
          bool write(const char *path) const;
          void write(std::ostream &os, const gcore::String indent="", bool skipFirstIndent=false) const;
@@ -229,7 +230,24 @@ namespace gcore
          Value& operator[](const gcore::String &name);
          const Value& operator[](const char *name) const;
          Value& operator[](const char *name);
+      
+      public:
          
+         struct ParserCallbacks
+         {
+            gcore::Functor0 objectBegin;
+            gcore::Functor1<const char*> objectKey;
+            gcore::Functor0 objectEnd;
+            gcore::Functor0 arrayBegin;
+            gcore::Functor0 arrayEnd;
+            gcore::Functor1<bool> booleanScalar;
+            gcore::Functor1<double> numberScalar;
+            gcore::Functor1<const char*> stringScalar;
+            gcore::Functor0 nullScalar;
+         };
+         
+         static void Parse(const char *path, ParserCallbacks *callbacks);
+      
       private:
          
          enum ParserState
@@ -242,6 +260,8 @@ namespace gcore
             ReadValue,
             End
          };
+         
+         void read(std::istream &is, bool consumeAll, ParserCallbacks *cb);
          
          bool toPropertyList(gcore::PropertyList &pl, const gcore::String &cprop) const;
          

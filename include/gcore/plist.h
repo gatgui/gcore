@@ -115,22 +115,26 @@ namespace gcore {
       bool read(const XMLElement *elt);
       XMLElement* write(XMLElement *elt=NULL) const;
       
-      const String& getString(const String &prop) const throw(plist::Exception);
-      long getInteger(const String &prop) const throw(plist::Exception);
-      double getReal(const String &prop) const throw(plist::Exception);
-      bool getBoolean(const String &prop) const throw(plist::Exception);
+      // The following 7 methods may throw plist::Exception
+      const String& getString(const String &prop) const;
+      long getInteger(const String &prop) const;
+      double getReal(const String &prop) const;
+      bool getBoolean(const String &prop) const;
+      // For arrays and dictionaries
+      size_t getSize(const String &prop) const;
+      // For dictionaries
+      size_t getKeys(const String &prop, StringList &keys) const;
+      // For arrays and dictionaries
+      void clear(const String &prop);
       
-      size_t getSize(const String &prop) const throw(plist::Exception);
-      size_t getKeys(const String &prop, StringList &keys) const throw(plist::Exception);
-      void clear(const String &prop) throw(plist::Exception);
       bool remove(const String &prop);
-      
       bool has(const String &prop) const;
       
-      void setString(const String &prop, const String &str) throw(plist::Exception);
-      void setReal(const String &prop, double val) throw(plist::Exception);
-      void setInteger(const String &prop, long val) throw(plist::Exception);
-      void setBoolean(const String &prop, bool val) throw(plist::Exception);
+      // The following 4 methods may throw plist::Exception
+      void setString(const String &prop, const String &str);
+      void setReal(const String &prop, double val);
+      void setInteger(const String &prop, long val);
+      void setBoolean(const String &prop, bool val);
       
       inline class plist::Dictionary* top() {
         return mTop;

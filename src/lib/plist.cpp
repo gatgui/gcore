@@ -727,7 +727,7 @@ bool PropertyList::read(const String &filename) {
 static plist::Value* GetPropertyMember(plist::Dictionary* &cdict,
                                        const String &pre,
                                        const String &current,
-                                       bool final=false) throw(plist::Exception)
+                                       bool final=false)
 {
   String cprop = pre;
 
@@ -856,7 +856,7 @@ static plist::Value* GetPropertyMember(plist::Dictionary* &cdict,
 static void SetPropertyMember(plist::Dictionary* &cdict,
                               const String &pre,
                               const String &current,
-                              plist::Value *value=0) throw(plist::Exception)
+                              plist::Value *value=0)
 {
   String cprop = pre;
 
@@ -1058,7 +1058,7 @@ static bool GetPropertyNameParts(const String &prop, StringList &parts)
 }
 
 static plist::Value* GetProperty(plist::Dictionary *dict,
-                                 const String &prop) throw(plist::Exception)
+                                 const String &prop)
 {
   if (!dict) {
     throw plist::Exception("", "Passed null dictionary pointer");
@@ -1155,7 +1155,7 @@ static bool RemoveProperty(plist::Dictionary *dict, const String &prop)
 
 static void SetProperty(plist::Dictionary *dict,
                         const String &prop,
-                        plist::Value *value) throw(plist::Exception)
+                        plist::Value *value)
 {
   if (!dict) {
     throw plist::Exception("", "Passed null dictionary pointer");
@@ -1183,7 +1183,7 @@ static void SetProperty(plist::Dictionary *dict,
 
 template <typename T>
 static typename T::ReturnType GetTypedProperty(plist::Dictionary *dict,
-                                               const String &prop) throw(plist::Exception)
+                                               const String &prop)
 {
   const plist::Value *val = GetProperty(dict, prop);
   const T *rv=0;
@@ -1198,7 +1198,7 @@ static typename T::ReturnType GetTypedProperty(plist::Dictionary *dict,
 template <typename T>
 static void SetTypedProperty(plist::Dictionary *dict,
                              const String &prop,
-                             typename T::InputType value) throw(plist::Exception)
+                             typename T::InputType value)
 {
   T *v = new T(value);
   try {
@@ -1209,7 +1209,7 @@ static void SetTypedProperty(plist::Dictionary *dict,
   }
 }
 
-size_t PropertyList::getSize(const String &p) const throw(plist::Exception) {
+size_t PropertyList::getSize(const String &p) const {
   const plist::Value *val = GetProperty(mTop, p);
   const plist::Dictionary *dict = 0;
   const plist::Array *array = 0;
@@ -1226,7 +1226,7 @@ size_t PropertyList::getSize(const String &p) const throw(plist::Exception) {
   }
 }
 
-size_t PropertyList::getKeys(const String &p, StringList &kl) const throw(plist::Exception) {
+size_t PropertyList::getKeys(const String &p, StringList &kl) const {
   const plist::Value *val = GetProperty(mTop, p);
   const plist::Dictionary *dict=0;
   if (!val->checkType(dict)) {
@@ -1237,7 +1237,7 @@ size_t PropertyList::getKeys(const String &p, StringList &kl) const throw(plist:
   return dict->keys(kl);
 }
 
-void PropertyList::clear(const String &p) throw(plist::Exception) {
+void PropertyList::clear(const String &p) {
   plist::Value *val = GetProperty(mTop, p);
   plist::Dictionary *dict = 0;
   plist::Array *array = 0;
@@ -1271,35 +1271,35 @@ bool PropertyList::has(const String &prop) const {
   }
 }
 
-const String& PropertyList::getString(const String &p) const throw(plist::Exception) {
+const String& PropertyList::getString(const String &p) const {
   return GetTypedProperty<plist::String>(mTop, p);
 }
 
-long PropertyList::getInteger(const String &p) const throw(plist::Exception) {
+long PropertyList::getInteger(const String &p) const {
   return GetTypedProperty<plist::Integer>(mTop, p);
 }
 
-double PropertyList::getReal(const String &p) const throw(plist::Exception) {
+double PropertyList::getReal(const String &p) const {
   return GetTypedProperty<plist::Real>(mTop, p);
 }
 
-bool PropertyList::getBoolean(const String &p) const throw(plist::Exception) {
+bool PropertyList::getBoolean(const String &p) const {
   return GetTypedProperty<plist::Boolean>(mTop, p);
 }
 
-void PropertyList::setString(const String &prop, const String &str) throw(plist::Exception) {
+void PropertyList::setString(const String &prop, const String &str) {
   SetTypedProperty<plist::String>(mTop, prop, str);
 }
 
-void PropertyList::setReal(const String &prop, double val) throw(plist::Exception) {
+void PropertyList::setReal(const String &prop, double val) {
   SetTypedProperty<plist::Real>(mTop, prop, val);
 }
 
-void PropertyList::setInteger(const String &prop, long val) throw(plist::Exception) {
+void PropertyList::setInteger(const String &prop, long val) {
   SetTypedProperty<plist::Integer>(mTop, prop, val);
 }
 
-void PropertyList::setBoolean(const String &prop, bool val) throw(plist::Exception) {
+void PropertyList::setBoolean(const String &prop, bool val) {
   SetTypedProperty<plist::Boolean>(mTop, prop, val);
 }
 

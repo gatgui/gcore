@@ -71,10 +71,13 @@ namespace gcore {
       String& operator=(bool b);
       
       String& operator+=(const String &rhs);
+      String& operator*=(size_t n);
       
       String operator()(long from, long to) const;
       
       String& strip();
+      String& rstrip();
+      String& lstrip();
       //size_t split(char c, List &l) const;
       size_t split(char c, StringList &l) const;
       String& tolower();
@@ -126,6 +129,18 @@ namespace gcore {
   };
   
   typedef std::map<String, String> StringDict;
+}
+
+inline gcore::String operator*(const gcore::String &s, size_t n) {
+  gcore::String rv(s);
+  rv *= n;
+  return rv;
+}
+
+inline gcore::String operator*(size_t n, const gcore::String &s) {
+  gcore::String rv(s);
+  rv *= n;
+  return rv;
 }
 
 #endif

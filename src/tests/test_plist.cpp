@@ -22,6 +22,7 @@ USA.
 */
 
 #include <gcore/plist.h>
+#include <gcore/json.h>
 
 int main(int argc, char **argv) {
   if (argc != 2) {
@@ -56,6 +57,12 @@ int main(int argc, char **argv) {
     if (!pl.read(filename)) {
       std::cerr << "Could not read file: \"" << filename << "\"" << std::endl;
       return -1;
+    }
+    
+    gcore::json::Value json;
+    if (pl.toJSON(json)) {
+      std::cout << "Write JSON file..." << std::endl;
+      json.write("out.json");
     }
     
     std::cout << "Font name: " << pl.getString("font.name") << std::endl;

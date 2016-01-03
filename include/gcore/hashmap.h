@@ -182,7 +182,8 @@ namespace gcore
     virtual ~HashMap();
     
     HashMap<KeyType, ValueType, H>& operator=(const HashMap<KeyType, ValueType, H> &rhs);
-    const ValueType& operator[](const KeyType &k) const throw(KeyError);
+    // May throw KeyError exception
+    const ValueType& operator[](const KeyType &k) const;
     ValueType& operator[](const KeyType &k);
     
     double loadFactor() const;
@@ -785,7 +786,7 @@ void gcore::HashMap<KeyType, ValueType, H>::erase(typename gcore::HashMap<KeyTyp
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
-const ValueType& gcore::HashMap<KeyType, ValueType, H>::operator[](const KeyType &k) const throw(KeyError)
+const ValueType& gcore::HashMap<KeyType, ValueType, H>::operator[](const KeyType &k) const
 {
   Entry e;
   e.h = HashValue<KeyType, H>::Compute(k);

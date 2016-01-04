@@ -233,6 +233,17 @@ namespace gcore
       
       public:
          
+         enum ParserState
+         {
+            Begin = 0,
+            ReadObject,
+            ReadObjectKey,
+            ReadArray,
+            ReadString,
+            ReadValue,
+            End
+         };
+         
          struct ParserCallbacks
          {
             gcore::Functor0 objectBegin;
@@ -249,17 +260,6 @@ namespace gcore
          static void Parse(const char *path, ParserCallbacks *callbacks);
       
       private:
-         
-         enum ParserState
-         {
-            Begin = 0,
-            ReadObject,
-            ReadObjectKey,
-            ReadArray,
-            ReadString,
-            ReadValue,
-            End
-         };
          
          void read(std::istream &is, bool consumeAll, ParserCallbacks *cb);
          

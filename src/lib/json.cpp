@@ -1024,23 +1024,40 @@ void gcore::json::Value::Parse(const char *path, ParserCallbacks *callbacks)
    }
 }
 
+struct ParserStackItem
+{
+   gcore::json::Value::ParserState state;
+   gcore::json::Value *value;
+   size_t count;
+   
+   inline ParserStackItem(gcore::json::Value::ParserState s)
+      : state(s)
+      , value(0)
+      , count(0)
+   {
+   }
+   
+   inline ParserStackItem(gcore::json::Value::ParserState s, gcore::json::Value *v)
+      : state(s)
+      , value(v)
+      , count(0)
+   {
+   }
+};
+
 void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Value::ParserCallbacks *cb)
 {
    static const char *sSpaces = " \t\r\n";
    
    reset();
    
-   // only keep previous line?
    gcore::String remain;
    size_t p0, p1, lineno = 0, coloff = 0;
    
-   std::vector<std::pair<ParserState, size_t> > stateStack;
-   size_t curSize = 0;
-   std::vector<Value*> valueStack;
-   Value *curValue = 0;
+   std::vector<ParserStackItem> stack;
+   ParserState state = Begin;
    gcore::String str = "";
    gcore::String key = "";
-   ParserState state = Begin;
    bool readSep = true;
    bool hasSep = false;
    
@@ -1082,12 +1099,12 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
                {
                   mType = ObjectType;
                   mValue.obj = new Object();
-                  curValue = this;
+                  stack.push_back(ParserStackItem(ReadObject, this));
                }
                else if (cb->objectBegin)
                {
                   cb->objectBegin();
-                  curSize = 0;
+                  stack.push_back(ParserStackItem(ReadObject));
                }
                
                state = ReadObject;
@@ -1111,9 +1128,7 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
          {
             if (p0 != std::string::npos)
             {
-               size_t sz = (cb ? curSize : curValue->size());
-               
-               if (sz == 0)
+               if (stack.back().count == 0)
                {
                   if (remain[p0] == ',')
                   {
@@ -1159,21 +1174,14 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
                throw ParserError(lineno, coloff+p0, "Unexpected , before }");
             }
             
-            size_t sz = 0;
-            if (!cb)
+            stack.pop_back();
+            
+            if (cb && cb->objectEnd)
             {
-               sz = valueStack.size();
-            }
-            else
-            {
-               sz = stateStack.size();
-               if (cb->objectEnd)
-               {
-                  cb->objectEnd();
-               }
+               cb->objectEnd();
             }
             
-            if (sz == 0)
+            if (stack.size() == 0)
             {
                if (consumeAll)
                {
@@ -1196,39 +1204,13 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
             }
             else
             {
-               if (cb)
+               state = stack.back().state;
+               readSep = true;
+               
+               if (state != ReadObject && state != ReadArray)
                {
-                  state = stateStack.back().first;
-                  curSize = stateStack.back().second;
-                  stateStack.pop_back();
-                  readSep = true;
-                  
-                  if (state != ReadObject && state != ReadArray)
-                  {
-                     reset();
-                     throw ParserError(lineno, coloff+p0, "Parent value must be either an object or an array");
-                  }
-               }
-               else
-               {
-                  curValue = valueStack.back();
-                  valueStack.pop_back();
-                  
-                  if (curValue->type() == ObjectType)
-                  {
-                     state = ReadObject;
-                     readSep = true;
-                  }
-                  else if (curValue->type() == ArrayType)
-                  {
-                     state = ReadArray;
-                     readSep = true;
-                  }
-                  else
-                  {
-                     reset();
-                     throw ParserError(lineno, coloff+p0, "Parent value must be either an object or an array");
-                  }
+                  reset();
+                  throw ParserError(lineno, coloff+p0, "Parent value must be either an object or an array");
                }
             }
             
@@ -1237,11 +1219,6 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
          }
          else if (remain[p0] == '"')
          {
-            if (cb)
-            {
-               stateStack.push_back(std::pair<ParserState, size_t>(state, curSize));
-            }
-            
             state = ReadObjectKey;
             
             str = "";
@@ -1269,9 +1246,7 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
          {
             if (p0 != std::string::npos)
             {
-               size_t sz = (cb ? curSize : curValue->size());
-               
-               if (sz == 0)
+               if (stack.back().count == 0)
                {
                   if (remain[p0] == ',')
                   {
@@ -1317,53 +1292,27 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
                throw ParserError(lineno, coloff+p0, "Unexpected , before ]");
             }
             
-            size_t sz = (cb ? stateStack.size() : valueStack.size());
+            stack.pop_back();
             
-            if (sz == 0)
+            if (stack.size() == 0)
             {
                reset();
                throw ParserError(lineno, coloff+p0, "Orphan array value");
             }
             else
             {
-               if (cb)
+               if (cb && cb->arrayEnd)
                {
-                  if (cb->arrayEnd)
-                  {
-                     cb->arrayEnd();
-                  }
-                  
-                  state = stateStack.back().first;
-                  curSize = stateStack.back().second;
-                  stateStack.pop_back();
-                  readSep = true;
-                  
-                  if (state != ReadObject && state != ReadArray)
-                  {
-                     reset();
-                     throw ParserError(lineno, coloff+p0, "Parent value must be either an object or an array");
-                  }
+                  cb->arrayEnd();
                }
-               else
+               
+               state = stack.back().state;
+               readSep = true;
+               
+               if (state != ReadObject && state != ReadArray)
                {
-                  curValue = valueStack.back();
-                  valueStack.pop_back();
-                  
-                  if (curValue->type() == ObjectType)
-                  {
-                     state = ReadObject;
-                     readSep = true;
-                  }
-                  else if (curValue->type() == ArrayType)
-                  {
-                     state = ReadArray;
-                     readSep = true;
-                  }
-                  else
-                  {
-                     reset();
-                     throw ParserError(lineno, coloff+p0, "Parent value must be either an object or an array");
-                  }
+                  reset();
+                  throw ParserError(lineno, coloff+p0, "Parent value must be either an object or an array");
                }
                
                remain = remain.substr(p0 + 1);
@@ -1372,11 +1321,6 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
          }
          else
          {
-            if (cb)
-            {
-               stateStack.push_back(std::pair<ParserState, size_t>(state, curSize));
-            }
-            
             state = ReadValue;
             remain = remain.substr(p0);
             coloff += p0;
@@ -1448,55 +1392,46 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
             }
             else
             {
-               size_t sz = (cb ? stateStack.size() : valueStack.size());
-               
-               if (sz == 0)
+               if (stack.size() == 0)
                {
                   reset();
                   throw ParserError(lineno, coloff, "Orphan string");
                }
                
-               if (cb)
+               ParserStackItem &psi = stack.back();
+               
+               psi.count++;
+               
+               if (cb && cb->stringScalar)
                {
-                  if (cb->stringScalar)
-                  {
-                     cb->stringScalar(str.c_str());
-                  }
-                  
-                  state = stateStack.back().first;
-                  curSize = stateStack.back().second;
-                  stateStack.pop_back();
-                  readSep = true;
-                  
-                  if (state != ReadObject && state != ReadArray)
-                  {
-                     reset();
-                     throw ParserError(lineno, coloff, "Parent value must be either an object or an array");
-                  }
+                  cb->stringScalar(str.c_str());
                }
-               else
+               
+               if (psi.value)
                {
-                  *curValue = str;
-                  
-                  curValue = valueStack.back();
-                  valueStack.pop_back();
-                  
-                  if (curValue->type() == ObjectType)
+                  if (psi.value->type() == ObjectType)
                   {
-                     state = ReadObject;
-                     readSep = true;
+                     if (key.length() == 0)
+                     {
+                        reset();
+                        throw ParserError(lineno, coloff, "Undefined or empty object member name");
+                     }
+                     (*(psi.value))[key] = str;
+                     // reset key
+                     key = "";
                   }
-                  else if (curValue->type() == ArrayType)
+                  else if (psi.value->type() == ArrayType)
                   {
-                     state = ReadArray;
-                     readSep = true;
+                     psi.value->insert(psi.value->size(), Value(str));
                   }
                   else
                   {
-                     reset();
                      throw ParserError(lineno, coloff, "Parent value must be either an object or an array");
                   }
                }
+               
+               state = psi.state;
+               readSep = true;
             }
          }
          
@@ -1515,107 +1450,30 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
          }
          else
          {
-            if (cb)
+            if (stack.size() == 0)
             {
-               // if state is ReadValue, we have necessarily one element on stateStack
-               // ReadObject -> ReadObjectKey -> ReadValue
-               // ReadArray -> ReadValue
-               std::pair<ParserState, size_t> &elem = stateStack.back();
-               
-               if (elem.first == ReadObject)
-               {
-                  if (key.length() == 0)
-                  {
-                     reset();
-                     throw ParserError(lineno, coloff+p0, "Undefined or empty object member name");
-                  }
-                  
-                  key = "";
-               }
-               else if (elem.first != ReadArray)
-               {
-                  reset();
-                  throw ParserError(lineno, coloff+p0, "Parent value must be either an object or an array");
-               }
-               
-               // increment object count
-               elem.second++;
-            }
-            else
-            {
-               valueStack.push_back(curValue);
-               
-               if (curValue->type() == ObjectType)
-               {
-                  if (key.length() == 0)
-                  {
-                     reset();
-                     throw ParserError(lineno, coloff+p0, "Undefined or empty object member name");
-                  }
-                  
-                  curValue = &((*curValue)[key]);
-                  
-                  // reset key
-                  key = "";
-               }
-               else if (curValue->type() == ArrayType)
-               {
-                  size_t idx = curValue->size();
-                  curValue->insert(idx, Value());
-                  
-                  curValue = &((*curValue)[idx]);
-               }
-               else
-               {
-                  reset();
-                  throw ParserError(lineno, coloff+p0, "Parent value must be either an object or an array");
-               }
+               reset();
+               throw ParserError(lineno, coloff+p0, "Orphan value");
             }
             
-            if (remain[p0] == '{')
+            ParserStackItem &psi = stack.back();
+            
+            if (psi.state == ReadObject)
             {
-               if (!cb)
+               if (key.length() == 0)
                {
-                  *curValue = Object();
+                  reset();
+                  throw ParserError(lineno, coloff+p0, "Undefined or empty object member name");
                }
-               else
-               {
-                  curSize = 0;
-                  if (cb->objectBegin)
-                  {
-                     cb->objectBegin();
-                  }
-               }
-               state = ReadObject;
-               readSep = true;
-               remain = remain.substr(p0 + 1);
-               coloff += p0 + 1;
             }
-            else if (remain[p0] == '[')
+            else if (psi.state != ReadArray)
             {
-               if (!cb)
-               {
-                  *curValue = Array();
-               }
-               else
-               {
-                  curSize = 0;
-                  if (cb->arrayBegin)
-                  {
-                     cb->arrayBegin();
-                  }
-               }
-               state = ReadArray;
-               readSep = true;
-               remain = remain.substr(p0 + 1);
-               coloff += p0 + 1;
+               reset();
+               throw ParserError(lineno, coloff+p0, "Parent value must be either an object or an array");
             }
-            else if (remain[p0] == '"')
+            
+            if (remain[p0] == '"')
             {
-               if (!cb)
-               {
-                  *curValue = "";
-               }
                state = ReadString;
                str = "";
                remain = remain.substr(p0 + 1);
@@ -1623,103 +1481,146 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
             }
             else
             {
-               if (!strncmp(remain.c_str(), "null", 4))
+               Value *value = 0;
+               
+               psi.count++;
+               
+               if (psi.value)
                {
-                  if (cb && cb->nullScalar)
+                  // add new object in 
+                  if (psi.state == ReadObject)
                   {
-                     cb->nullScalar();
-                  }
-                  remain = remain.substr(p0 + 4);
-                  coloff += p0 + 4;
-               }
-               else if (!strncmp(remain.c_str(), "true", 4))
-               {
-                  if (!cb)
-                  {
-                     *curValue = true;
-                  }
-                  else if (cb->booleanScalar)
-                  {
-                     cb->booleanScalar(true);
-                  }
-                  remain = remain.substr(p0 + 4);
-                  coloff += p0 + 4;
-               }
-               else if (!strncmp(remain.c_str(), "false", 5))
-               {
-                  if (!cb)
-                  {
-                     *curValue = false;
-                  }
-                  else if (cb->booleanScalar)
-                  {
-                     cb->booleanScalar(false);
-                  }
-                  remain = remain.substr(p0 + 5);
-                  coloff += p0 + 5;
-               }
-               else
-               {
-                  // must be a number
-                  gcore::String numstr;
-                  
-                  p1 = remain.find_first_of(sSpaces);
-                  
-                  if (p1 == std::string::npos)
-                  {
-                     numstr = remain.substr(p0);
-                     remain = "";
-                     coloff += p0;
+                     value = &(*(psi.value))[key];
+                     // reset key
+                     key = "";
                   }
                   else
                   {
-                     numstr = remain.substr(p0, p1 - p0);
-                     remain = remain.substr(p1);
-                     coloff += p1;
-                  }
-                  
-                  double val = 0.0;
-                  
-                  if (sscanf(numstr.c_str(), "%lf", &val) != 1)
-                  {
-                     reset();
-                     throw ParserError(lineno, coloff, "Expected number value");
-                  }
-                  
-                  if (!cb)
-                  {
-                     *curValue = val;
-                  }
-                  else if (cb->numberScalar)
-                  {
-                     cb->numberScalar(val);
+                     size_t idx = psi.value->size();
+                     psi.value->insert(idx, Value());
+                     value = &(*(psi.value))[idx];
                   }
                }
                
-               // at this point we know stack is not empty
-               // and that last element is either an object or an array
-               if (cb)
+               if (remain[p0] == '{')
                {
-                  state = stateStack.back().first;
-                  curSize = stateStack.back().second;
-                  stateStack.pop_back();
+                  if (cb && cb->objectBegin)
+                  {
+                     cb->objectBegin();
+                  }
+                  
+                  if (value)
+                  {
+                     *value = Object();
+                  }
+                  
+                  stack.push_back(ParserStackItem(ReadObject, value));
+                  
+                  state = ReadObject;
                   readSep = true;
+                  
+                  remain = remain.substr(p0 + 1);
+                  coloff += p0 + 1;
+               }
+               else if (remain[p0] == '[')
+               {
+                  if (cb && cb->arrayBegin)
+                  {
+                     cb->arrayBegin();
+                  }
+                  
+                  if (value)
+                  {
+                     *value = Array();
+                  }
+                  
+                  stack.push_back(ParserStackItem(ReadArray, value));
+                  
+                  state = ReadArray;
+                  readSep = true;
+                  
+                  remain = remain.substr(p0 + 1);
+                  coloff += p0 + 1;
                }
                else
                {
-                  curValue = valueStack.back();
-                  valueStack.pop_back();
-                  
-                  if (curValue->type() == ObjectType)
+                  if (!strncmp(remain.c_str(), "null", 4))
                   {
-                     state = ReadObject;
-                     readSep = true;
+                     if (cb && cb->nullScalar)
+                     {
+                        cb->nullScalar();
+                     }
+                     remain = remain.substr(p0 + 4);
+                     coloff += p0 + 4;
+                  }
+                  else if (!strncmp(remain.c_str(), "true", 4))
+                  {
+                     if (cb && cb->booleanScalar)
+                     {
+                        cb->booleanScalar(true);
+                     }
+                     if (value)
+                     {
+                        *value = true;
+                     }
+                     remain = remain.substr(p0 + 4);
+                     coloff += p0 + 4;
+                  }
+                  else if (!strncmp(remain.c_str(), "false", 5))
+                  {
+                     if (cb && cb->booleanScalar)
+                     {
+                        cb->booleanScalar(false);
+                     }
+                     if (value)
+                     {
+                        *value = false;
+                     }
+                     remain = remain.substr(p0 + 5);
+                     coloff += p0 + 5;
                   }
                   else
                   {
-                     state = ReadArray;
-                     readSep = true;
+                     // must be a number
+                     gcore::String numstr;
+                     
+                     p1 = remain.find_first_of(sSpaces);
+                     
+                     if (p1 == std::string::npos)
+                     {
+                        numstr = remain.substr(p0);
+                        remain = "";
+                        coloff += p0;
+                     }
+                     else
+                     {
+                        numstr = remain.substr(p0, p1 - p0);
+                        remain = remain.substr(p1);
+                        coloff += p1;
+                     }
+                     
+                     double val = 0.0;
+                     
+                     if (sscanf(numstr.c_str(), "%lf", &val) != 1)
+                     {
+                        reset();
+                        throw ParserError(lineno, coloff, "Expected number value");
+                     }
+                     
+                     if (cb && cb->numberScalar)
+                     {
+                        cb->numberScalar(val);
+                     }
+                     if (value)
+                     {
+                        *value = val;
+                     }
                   }
+                  
+                  // at this point we know stack is not empty
+                  // and that last element is either an object or an array
+                  state = psi.state;
+                  readSep = true;
                }
             }
          }

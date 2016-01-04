@@ -1128,6 +1128,12 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
          {
             if (p0 != std::string::npos)
             {
+               if (stack.size() == 0)
+               {
+                  reset();
+                  throw ParserError(lineno, coloff+p0, "Invalid parser state (read object)");
+               }
+               
                if (stack.back().count == 0)
                {
                   if (remain[p0] == ',')
@@ -1172,6 +1178,12 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
             {
                reset();
                throw ParserError(lineno, coloff+p0, "Unexpected , before }");
+            }
+            
+            if (stack.size() == 0)
+            {
+               reset();
+               throw ParserError(lineno, coloff+p0, "Un-matched }");
             }
             
             stack.pop_back();
@@ -1246,6 +1258,12 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
          {
             if (p0 != std::string::npos)
             {
+               if (stack.size() == 0)
+               {
+                  reset();
+                  throw ParserError(lineno, coloff+p0, "Invalid parser state (read array)");
+               }
+               
                if (stack.back().count == 0)
                {
                   if (remain[p0] == ',')
@@ -1290,6 +1308,12 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
             {
                reset();
                throw ParserError(lineno, coloff+p0, "Unexpected , before ]");
+            }
+            
+            if (stack.size() == 0)
+            {
+               reset();
+               throw ParserError(lineno, coloff+p0, "Un-matched ]");
             }
             
             stack.pop_back();
@@ -1584,7 +1608,7 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
                      // must be a number
                      gcore::String numstr;
                      
-                     p1 = remain.find_first_of(sSpaces);
+                     p1 = remain.find_first_of(sSpaces, p0);
                      
                      if (p1 == std::string::npos)
                      {

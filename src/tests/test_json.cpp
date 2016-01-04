@@ -185,7 +185,14 @@ int main(int argc, char **argv)
          {
             pl.write("out.xml");
          }
-         
+      }
+      catch (json::ParserError &e)
+      {
+         std::cout << "Failed: " << e.what() << std::endl;
+      }
+      
+      try
+      {
          Parser parser;
          parser.parse(path);
       }

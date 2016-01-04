@@ -1608,7 +1608,7 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
                      // must be a number
                      gcore::String numstr;
                      
-                     p1 = remain.find_first_of(sSpaces);
+                     p1 = remain.find_first_of(sSpaces, p0);
                      
                      if (p1 == std::string::npos)
                      {

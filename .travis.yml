@@ -27,4 +27,4 @@ addons:
     notification_email: gatgui@gmail.com
     build_command_prepend: "git submodule update --init --recursive"
     build_command: "scons static=0 no-cache=1 gcore"
-    branch_pattern: master
+    branch_pattern: coverity-scan

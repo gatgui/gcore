@@ -1,13 +1,22 @@
 language: cpp
-compiler:
-  - gcc
-  - clang
+
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+    - os: osx
+      osx_image: xcode7.2
+      compiler: clang
 
 git:
   submodules: false
 
 before_install:
   - git submodule update --init --recursive
+  - if [ `uname -s` = "Darwin" ]; then
+      brew update;
+      brew install scons;
+    fi
 
 script:
   - scons static=1 no-cache=1 gcore

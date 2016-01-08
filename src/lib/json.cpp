@@ -662,7 +662,7 @@ gcore::json::Value::operator const char* () const
    return mValue.str->c_str();
 }
 
-gcore::json::Value::operator const Object& () const
+gcore::json::Value::operator const gcore::json::Object& () const
 {
    if (mType != ObjectType)
    {
@@ -671,7 +671,7 @@ gcore::json::Value::operator const Object& () const
    return *(mValue.obj);
 }
 
-gcore::json::Value::operator const Array& () const
+gcore::json::Value::operator const gcore::json::Array& () const
 {
    if (mType != ArrayType)
    {
@@ -689,7 +689,7 @@ gcore::json::Value::operator gcore::String& ()
    return *(mValue.str);
 }
 
-gcore::json::Value::operator Object& ()
+gcore::json::Value::operator gcore::json::Object& ()
 {
    if (mType != ObjectType)
    {
@@ -698,7 +698,7 @@ gcore::json::Value::operator Object& ()
    return *(mValue.obj);
 }
 
-gcore::json::Value::operator Array& ()
+gcore::json::Value::operator gcore::json::Array& ()
 {
    if (mType != ArrayType)
    {
@@ -789,7 +789,7 @@ gcore::json::Value& gcore::json::Value::operator[](size_t idx)
    return mValue.arr->at(idx);
 }
 
-void gcore::json::Value::insert(size_t pos, const Value &value)
+void gcore::json::Value::insert(size_t pos, const gcore::json::Value &value)
 {
    if (mType != ArrayType)
    {
@@ -1006,7 +1006,7 @@ void gcore::json::Value::read(std::istream &in)
    read(in, false, 0);
 }
 
-void gcore::json::Value::Parse(const char *path, ParserCallbacks *callbacks)
+void gcore::json::Value::Parse(const char *path, gcore::json::Value::ParserCallbacks *callbacks)
 {
    if (!callbacks)
    {

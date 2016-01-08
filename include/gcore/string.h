@@ -50,8 +50,9 @@ namespace gcore {
       String(int i);
       String(unsigned int ui);
       String(long l);
+      String(long long ll);
       String(unsigned long ul);
-      String(size_t sz);
+      String(unsigned long long ull);
       String(float f);
       String(double d);
       String(bool b);
@@ -66,8 +67,9 @@ namespace gcore {
       String& operator=(int i);
       String& operator=(unsigned int ui);
       String& operator=(long l);
+      String& operator=(long long ll);
       String& operator=(unsigned long ul);
-      String& operator=(size_t sz);
+      String& operator=(unsigned long long ull);
       String& operator=(float f);
       String& operator=(double d);
       String& operator=(bool b);
@@ -106,8 +108,9 @@ namespace gcore {
       bool toInt(int &i) const;
       bool toUInt(unsigned int &ui) const;
       bool toLong(long &l) const;
+      bool toLongLong(long long &ll) const;
       bool toULong(unsigned long &ul) const;
-      bool toSizet(size_t &sz) const;
+      bool toULongLong(unsigned long long &ull) const;
       bool toFloat(float &f) const;
       bool toDouble(double &d) const;
       bool toBool(bool &b) const;

@@ -115,14 +115,19 @@ String::String(long l)
   operator=(l);
 }
 
+String::String(long long ll)
+  : std::string() {
+  operator=(ll);
+}
+
 String::String(unsigned long ul)
   : std::string() {
   operator=(ul);
 }
 
-String::String(size_t sz)
+String::String(unsigned long long ull)
   : std::string() {
-  operator=(sz);
+  operator=(ull);
 }
 
 String::String(float f)
@@ -218,6 +223,13 @@ String& String::operator=(long l) {
   return *this;
 }
 
+String& String::operator=(long long ll) {
+  std::ostringstream oss;
+  oss << ll;
+  assign(oss.str());
+  return *this;
+}
+
 String& String::operator=(unsigned long ul) {
   //char buffer[64];
   //sprintf(buffer, "%lu", ul);
@@ -228,9 +240,9 @@ String& String::operator=(unsigned long ul) {
   return *this;
 }
 
-String& String::operator=(size_t sz) {
+String& String::operator=(unsigned long long ull) {
   std::ostringstream oss;
-  oss << sz;
+  oss << ull;
   assign(oss.str());
   return *this;
 }
@@ -557,12 +569,16 @@ bool String::toLong(long &l) const {
   return (sscanf(c_str(), "%ld", &l) == 1);
 }
 
+bool String::toLongLong(long long &ll) const {
+  return (sscanf(c_str(), "%lld", &ll) == 1);
+}
+
 bool String::toULong(unsigned long &ul) const {
   return (sscanf(c_str(), "%lu", &ul) == 1);
 }
 
-bool String::toSizet(size_t &sz) const {
-  return (sscanf(c_str(), "%llu", &sz) == 1);
+bool String::toULongLong(unsigned long long &ull) const {
+  return (sscanf(c_str(), "%llu", &ull) == 1);
 }
 
 bool String::toFloat(float &f) const {

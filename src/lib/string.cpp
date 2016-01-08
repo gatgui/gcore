@@ -120,6 +120,11 @@ String::String(unsigned long ul)
   operator=(ul);
 }
 
+String::String(size_t sz)
+  : std::string() {
+  operator=(sz);
+}
+
 String::String(float f)
   : std::string() {
   operator=(f);
@@ -219,6 +224,13 @@ String& String::operator=(unsigned long ul) {
   //*this = buffer;
   std::ostringstream oss;
   oss << ul;
+  assign(oss.str());
+  return *this;
+}
+
+String& String::operator=(size_t sz) {
+  std::ostringstream oss;
+  oss << sz;
   assign(oss.str());
   return *this;
 }
@@ -547,6 +559,10 @@ bool String::toLong(long &l) const {
 
 bool String::toULong(unsigned long &ul) const {
   return (sscanf(c_str(), "%lu", &ul) == 1);
+}
+
+bool String::toSizet(size_t &sz) const {
+  return (sscanf(c_str(), "%llu", &sz) == 1);
 }
 
 bool String::toFloat(float &f) const {

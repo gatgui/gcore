@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2016  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -21,33 +21,22 @@ USA.
 
 */
 
-#ifndef __gcore_
-#define __gcore_
+#ifndef __gcore_tpl_h_
+#define __gcore_tpl_h_
 
-#include <gcore/pipe.h>
-#include <gcore/process.h>
-#include <gcore/threads.h>
-#include <gcore/threadpool.h>
-#include <gcore/dmodule.h>
-#include <gcore/path.h>
-#include <gcore/rex.h>
-#include <gcore/tokenizer.h>
-#include <gcore/plist.h>
-#include <gcore/md5.h>
-#include <gcore/xml.h>
-#include <gcore/string.h>
-#include <gcore/date.h>
-#include <gcore/env.h>
-#include <gcore/typetraits.h>
-#include <gcore/list.h>
-#include <gcore/argparser.h>
-#include <gcore/dirmap.h>
-#include <gcore/bcfile.h>
-#include <gcore/log.h>
-#include <gcore/base64.h>
-#include <gcore/base85.h>
-#include <gcore/json.h>
-#include <gcore/tpl.h>
+#include <gcore/config.h>
 
-#endif 
+namespace gcore {
+   
+   template <bool Cond, class TrueType, class FalseType>
+   struct TCond {
+      typedef FalseType Type;
+   };
+   
+   template <class TrueType, class FalseType>
+   struct TCond<true, TrueType, FalseType> {
+      typedef TrueType Type;
+   };
+}
 
+#endif

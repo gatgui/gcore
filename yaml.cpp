@@ -105,11 +105,17 @@ size_t ParserError::column() const
 // tag:yaml.org,2002:map (kind Collection)
 // tag:yaml.org,2002:str (kind Scalar)
 
-Node::AliasMap Node::msAliases;
-
-Node Node::AddAlias(const gcore::String &name, const Node &node)
+Document::Document()
 {
-   if (msAliases.find(name) != msAliases.end())
+}
+
+Document::~Document()
+{
+}
+
+Node Document::addAlias(const gcore::String &name, const Node &node)
+{
+   if (mAliases.find(name) != mAliases.end())
    {
       return Node();
    }
@@ -124,27 +130,39 @@ Node Node::AddAlias(const gcore::String &name, const Node &node)
       return Node();
    }
    
-   Node* &alias = msAliases[name];
+   Node* &alias = mAliases[name];
    
    // steal ownership
    alias = new Node(node);
    alias->mIsAlias = true;
    alias->mRefCount = 0;
-   
-   // Note: should replace later node with a reference
+   alias->mDoc = this;
    
    return Node(alias);
 }
 
-Node* Node::GetReference(const gcore::String &name)
+void Document::removeAlias(Node *n)
 {
-   AliasMap::iterator it = msAliases.find(name);
-   return (it != msAliases.end() ? it->second : 0);
+   // remove from alias list
+   for (AliasMap::iterator it = mAliases.begin(); it != mAliases.end(); ++it)
+   {
+      if (n == it->second)
+      {
+         mAliases.erase(it);
+         break;
+      }
+   }
 }
 
-const char* Node::GetAliasName(Node *n)
+Node* Document::getReference(const gcore::String &name) const
 {
-   for (AliasMap::iterator it = msAliases.begin(); it != msAliases.end(); ++it)
+   AliasMap::const_iterator it = mAliases.find(name);
+   return (it != mAliases.end() ? it->second : 0);
+}
+
+const char* Document::getAliasName(const Node *n) const
+{
+   for (AliasMap::const_iterator it = mAliases.begin(); it != mAliases.end(); ++it)
    {
       if (it->second == n)
       {
@@ -154,12 +172,24 @@ const char* Node::GetAliasName(Node *n)
    return 0;
 }
 
+size_t Document::getAliasNames(gcore::StringList &names) const
+{
+   names.clear();
+   for (AliasMap::const_iterator it = mAliases.begin(); it != mAliases.end(); ++it)
+   {
+      names.push(it->first);
+   }
+   return names.size();
+}
+
+// ---
 
 Node::Node()
    : mType(Node::Null)
    , mOwns(true)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    memset(&mData, 0, sizeof(Data));
 }
@@ -169,6 +199,7 @@ Node::Node(Node::Type t)
    , mOwns(true)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    memset(&mData, 0, sizeof(Data));
    operator=(t);
@@ -179,6 +210,7 @@ Node::Node(bool b)
    , mOwns(true)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    mData.BOOL = b;
 }
@@ -188,6 +220,7 @@ Node::Node(short s)
    , mOwns(true)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    mData.INT = (long)s;
 }
@@ -197,6 +230,7 @@ Node::Node(unsigned short s)
    , mOwns(true)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    mData.INT = (long)s;
 }
@@ -206,6 +240,7 @@ Node::Node(int i)
    , mOwns(true)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    mData.INT = (long)i;
 }
@@ -215,6 +250,7 @@ Node::Node(unsigned int i)
    , mOwns(true)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    mData.INT = (long)i;
 }
@@ -224,6 +260,7 @@ Node::Node(long l)
    , mOwns(true)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    mData.INT = l;
 }
@@ -233,6 +270,7 @@ Node::Node(unsigned long l)
    , mOwns(true)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    mData.INT = (long)l;
 }
@@ -242,6 +280,7 @@ Node::Node(float f)
    , mOwns(true)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    mData.FLT = (double)f;
 }
@@ -251,6 +290,7 @@ Node::Node(double d)
    , mOwns(true)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    mData.FLT = d;
 }
@@ -260,6 +300,7 @@ Node::Node(const char *s)
    , mOwns(true)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    mData.STR = (s ? new gcore::String(s) : 0);
 }
@@ -269,6 +310,7 @@ Node::Node(const std::string &s)
    , mOwns(true)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    mData.STR = new gcore::String(s);
 }
@@ -278,6 +320,7 @@ Node::Node(gcore::String *s)
    , mOwns(true)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    mData.STR = s;
 }
@@ -287,6 +330,7 @@ Node::Node(const Node::Map &m)
    , mOwns(true)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    mData.MAP = new Map(m);
 }
@@ -296,6 +340,7 @@ Node::Node(Node::Map *m)
    , mOwns(true)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    mData.MAP = m;
 }
@@ -305,6 +350,7 @@ Node::Node(const Node::Seq &s)
    , mOwns(true)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    mData.SEQ = new Seq(s);
 }
@@ -314,6 +360,7 @@ Node::Node(Node::Seq *s)
    , mOwns(true)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    mData.SEQ = s;
 }
@@ -323,6 +370,7 @@ Node::Node(Node *r)
    , mOwns(false)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    mData.REF = r;
    r->ref();
@@ -333,6 +381,7 @@ Node::Node(const Node &rhs)
    , mOwns(true)
    , mIsAlias(false)
    , mRefCount(0)
+   , mDoc(0)
 {
    operator=(rhs);
 }
@@ -1087,18 +1136,6 @@ void Node::clear()
       // unref alias
       mData.REF->unref();
    }
-   else if (mIsAlias)
-   {
-      // remove from alias list
-      for (AliasMap::iterator it = msAliases.begin(); it != msAliases.end(); ++it)
-      {
-         if (this == it->second)
-         {
-            msAliases.erase(it);
-            break;
-         }
-      }
-   }
    
    mType = Null;
    mRefCount = 0;
@@ -1240,6 +1277,27 @@ void Node::unref()
    if (mIsAlias && mRefCount > 0)
    {
       --mRefCount;
+      if (mRefCount == 0)
+      {
+         mDoc->removeAlias(this);
+         delete this;
+      }
+   }
+}
+
+const char* Node::getAliasName() const
+{
+   if (mIsAlias)
+   {
+      return mDoc->getAliasName(this);
+   }
+   else if (mType == Reference)
+   {
+      return mData.REF->getAliasName();
+   }
+   else
+   {
+      return 0;
    }
 }
 
@@ -1289,9 +1347,9 @@ void Node::toStream(std::ostream &os, const std::string &indent, bool ignoreFirs
       }
       break;
    case Reference:
-      os << (ignoreFirstIndent ? "" : indent) << "&" << GetAliasName(mData.REF) << " ";
+      os << (ignoreFirstIndent ? "" : indent) << "&" << getAliasName() << " ";
       mData.REF->toStream(os, indent, true);
-      //os << (ignoreFirstIndent ? "" : indent) << "*" << GetAliasName(mData.REF);
+      //os << (ignoreFirstIndent ? "" : indent) << "*" << getAliasName();
       break;
    }
 }

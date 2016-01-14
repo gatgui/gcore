@@ -30,7 +30,7 @@ namespace gcore
 {
    namespace yaml
    {
-      class Error : public std::exception
+      class GCORE_API Error : public std::exception
       {
       public:
          explicit Error(const gcore::String &msg);
@@ -43,7 +43,7 @@ namespace gcore
          gcore::String mMsg;
       };
       
-      class ParserError : public Error
+      class GCORE_API ParserError : public Error
       {
       public:
          explicit ParserError(size_t l, size_t c, const gcore::String &msg);
@@ -60,9 +60,13 @@ namespace gcore
       
       // ---
       
+      class Document;
+      
       class GCORE_API Node
       {
       public:
+         
+         friend class Document;
          
          struct NodeCompare
          {
@@ -86,18 +90,6 @@ namespace gcore
             Sequence,
             Reference
          };
-         
-         typedef std::map<gcore::String, Node*> AliasMap;
-      
-      public:
-         
-         // This is not enough, what if we have several documents...
-         // Each of them may have aliases with same name but different value
-         //   isn't it?
-         // => Document class?
-         static Node AddAlias(const gcore::String &name, const Node &node);
-         static Node* GetReference(const gcore::String &name);
-         static const char* GetAliasName(Node *n);
          
       public:
          
@@ -166,6 +158,8 @@ namespace gcore
          bool isCollection() const;
          bool isScalar() const;
          
+         const char* getAliasName() const;
+         
          void clear();
          const char* id() const;
          
@@ -189,8 +183,6 @@ namespace gcore
          
       private:
          
-         static AliasMap msAliases;
-         
          Type mType;
          Data mData;
          mutable gcore::String mId;
@@ -201,9 +193,32 @@ namespace gcore
          
          //gcore::String mTag;
          //Style mStyle; -> block, flow (single/double quoted)
-         //Document?
+         Document *mDoc;
       };
       
+      class GCORE_API Document
+      {
+      public:
+         
+         typedef std::map<gcore::String, Node*> AliasMap;
+      
+      public:
+         
+         Document();
+         ~Document();
+         
+         Node addAlias(const gcore::String &name, const Node &node);
+         void removeAlias(Node *n);
+         
+         Node* getReference(const gcore::String &name) const;
+         const char* getAliasName(const Node *n) const;
+         size_t getAliasNames(gcore::StringList &names) const;
+         
+      private:
+         
+         Node mTop;
+         AliasMap mAliases;
+      };
       /*
       void Parse(const char *path)
       {

@@ -78,6 +78,11 @@ prjs = [
     "srcs"    : glob.glob("src/tests/*.cpp"),
     "deps"    : ["testmodule"],
     "custom"  : [RequireGcore()],
+  },
+  { "name"    : "yaml",
+    "type"    : "program",
+    "srcs"    : ["yaml.cpp"],
+    "custom"  : [RequireGcore()],
   }
 ]
 

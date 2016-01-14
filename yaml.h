@@ -73,7 +73,7 @@ namespace gcore
          };
          
          typedef std::map<Node, Node, NodeCompare> Map;
-         typedef std::vector<Node> Seq;
+         typedef gcore::List<Node> Seq;
          
          enum Type
          {

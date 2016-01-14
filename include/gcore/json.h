@@ -95,7 +95,7 @@ namespace gcore
          };
          
          typedef std::map<gcore::String, Value> Object;
-         typedef std::deque<Value> Array;
+         typedef gcore::List<Value, false> Array;
          
          // Cannot use Object::iterator, Object::const_iterator, Array::iterator,
          //   Array::const_iterator directly in Value class methods as Value class

@@ -821,15 +821,31 @@ Node& Node::operator=(Node::Seq *v)
 
 Node& Node::operator=(Node *node)
 {
-   // reference to existing alias
-   if (!node)
+   if (!node || !node->isAlias())
    {
       clear();
       mType = Null;
    }
    else
    {
-      // TODO
+      if (mType != Reference)
+      {
+         clear();
+         
+         mType = Reference;
+         mOwns = false;
+         mIsAlias = false;
+         mRefCount = 0;
+         mDoc = 0;
+      }
+      else if (mData.REF != node)
+      {
+         // mType is a reference already, check node
+         mData.REF->unref();
+      }
+      
+      mData.REF = node;
+      mData.REF->ref();
    }
    return *this;  
 }
@@ -840,7 +856,26 @@ Node& Node::operator=(const Node &rhs)
    {
       if (mType != rhs.mType)
       {
-         clear();
+         if (mType == Reference && mData.REF == (yaml::Node*) &rhs)
+         {
+            return *this;
+         }
+         else
+         {
+            clear();
+         }
+      }
+      else if (mType == Reference)
+      {
+         // 'this' and 'rhs' are both references
+         if (mData.REF == rhs.mData.REF)
+         {
+            return *this;
+         }
+         else
+         {
+            mData.REF->unref();
+         }
       }
       else if (mIsAlias)
       {
@@ -884,12 +919,19 @@ Node& Node::operator=(const Node &rhs)
          mData.REF = (yaml::Node*) &rhs;
          mData.REF->ref();
          mOwns = false;
+         //mIsAlias = false;
+         //mRefCount = 0;
+         //mDoc = 0;
       }
       else
       {
          mType = rhs.mType;
          mData = rhs.mData;
          mOwns = rhs.mOwns;
+         //mIsAlias = false;
+         //mRefCount = rhs.mRefCount;
+         //mDoc = rhs.mDoc;
+         
          rhs.mOwns = false;
       }
    }

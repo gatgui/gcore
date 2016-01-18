@@ -111,6 +111,7 @@ Document::Document()
 
 Document::~Document()
 {
+   clear();
 }
 
 Node Document::addAlias(const gcore::String &name, const Node &node)
@@ -180,6 +181,248 @@ size_t Document::getAliasNames(gcore::StringList &names) const
       names.push(it->first);
    }
    return names.size();
+}
+
+void Document::clear()
+{
+   mTop.clear();
+   
+   // this should have removed all references to any document alias (ref-counting)
+   // at this point, mAliases should be empty
+   
+   if (mAliases.size() > 0)
+   {
+      std::cerr << "Alias(es) of the document being destroyed are referenced outside of its own scope." << std::endl;
+      std::cerr << "Any such reference is invalid and may result in un-expected program termination." << std::endl;
+      for (AliasMap::iterator it = mAliases.begin(); it != mAliases.end(); ++it)
+      {
+         delete it->second;
+      }
+      mAliases.clear();
+   }
+}
+
+Node& Document::top()
+{
+   return mTop;
+}
+
+const Node& Document::top() const
+{
+   return mTop;
+}
+
+bool Document::read(const char *path)
+{
+   std::ifstream in(path);
+   
+   if (in.is_open())
+   {
+      return read(in);
+   }
+   else
+   {
+      clear();
+      return false;
+   }
+}
+
+/*
+struct Parser
+{
+   enum State
+   {
+      ReadBegin = 0
+      ReadMappingKey,
+      ReadMappingValue,
+      ReadSequenceItem,
+      ReadLiteral
+   };
+   
+   enum Style
+   {
+      Block = 0,
+      Flow,
+      DoubleQuoted, // flow string
+      SingleQuoted  // flow string
+   };
+   
+   State state;
+   size_t indentWidth;
+   gcore::String indent;
+   Style style;
+   Node *node;
+};
+*/
+
+// returns true if document read, false otherwise (end of stream)
+// incomplete/invalid stream raise exceptions for errors
+bool Document::read(std::istream &in)
+{
+   clear();
+   
+   /*
+   static const char* sSpaces = " \t\v\f\n\r";
+   Parser parser;
+   // need a stack?
+   
+   std::string line, str;
+   size_t p0, p1;
+   size_t len, indent, lineno = 0;
+   
+   parser.state = ReadBegin;
+   //parser.node = &mTop;
+   
+   while (in.good())
+   {
+      if (line.length() == 0)
+      {
+         std::getline(line);
+         ++lineno;
+         
+         p0 = 0;
+         indent = 0;
+         len = line.length();
+         
+         while (p0 < len && line[p0] == ' ')
+         {
+            ++p0;
+         }
+         
+         indent = p0;
+      }
+      
+      if (p0 >= len)
+      {
+         // empty line
+         // if reading a scalar, add to str buffer
+         if (parser.State == ReadLiteral)
+         {
+            if (indent > parser.indentWidth)
+            {
+               if (parser.style == Parser::Block)
+               {
+                  
+               }
+               else
+               {
+                  // more indented than previous 
+               }
+            }
+         }
+      }
+      else if (line[p0] == '#')
+      {
+         // ignore line
+         line = "";
+      }
+      else if (line[p0] == '%')
+      {
+         // ignore directives
+         line = "";
+      }
+      else if (line[p0] == '-' &&
+               p0+1 < len && line[p0+1] == '-' &&
+               p0+2 < len && line[p0+2] == '-')
+      {
+         // begin of document
+         // what about the remaining of the line?
+      }
+      else if (line[p0] == '.' &&
+               p0+1 < len && line[p0+1] == '.' &&
+               p0+2 < len && line[p0+2] == '.')
+      {
+         return true;
+      }
+      else if (line[p0] == '?')
+      {
+         // mapping key
+      }
+      else if (line[p0] == ':')
+      {
+         // mapping value
+      }
+      else if (line[p0] == '-')
+      {
+         // sequence item
+      }
+      else if (line[p0] == '"' || line[p0] == '\'')
+      {
+         // single/double quoted string
+         // double quotes allow character escaping
+         
+         // has to be single line when used as a key
+      }
+      else if (line[p0] == '!')
+      {
+         // tag
+         // support: !!map, !!seq, !!str, !!bool, !!int, !!float, !!binary
+         // just keep info
+         p1 = line.find_first_of(sSpaces, p0);
+         
+         if (p1 == std::string::npos)
+         {
+            raise ParserError(lineno, p0+1, "Unfinished tag?");
+         }
+         
+         tag = line.substr(p0+1, p1-p0-1);
+         
+         line = line.substr(p1+1);
+         p0 = 0;
+      }
+      else if (line[p0] == '&')
+      {
+         // anchor
+      }
+      else if (line[p0] == '*')
+      {
+         // reference
+      }
+      else if (line[p0] == '{')
+      {
+         
+      }
+      else if (line[p0] == '}')
+      {
+         
+      }
+      else if (line[p0] == '[')
+      {
+         
+      }
+      else if (line[p0] == ']')
+      {
+         
+      }
+      else if (line[p0] == ',')
+      {
+         
+      }
+      else if (line[p0] == '@' || line[p0] == '`')
+      {
+         // reserved !
+         raise ParserError(lineno, p0+1, "Reserved marker");
+      }
+      else
+      {
+         // line folding rules
+         // -> when to preserve \n
+         // -> more indented lines
+         // -> stripping of white spaces
+         // -> etc..
+         // ignore tokens in block/flow literals
+      }
+   }
+   
+   // reached end of stream without error
+   // check current state?
+   if (parser.state != Parse::ReadMappingKey)
+   {
+      // ?
+   }
+   */
+   
+   return true;
 }
 
 // ---
@@ -366,7 +609,7 @@ Node::Node(Node::Seq *s)
 }
 
 Node::Node(Node *r)
-   : mType(r && r->isAlias() ? Node::Reference : Node::Null)
+   : mType((r && r->isAlias()) ? Node::Reference : Node::Null)
    , mOwns(false)
    , mIsAlias(false)
    , mRefCount(0)
@@ -556,6 +799,7 @@ Node& Node::operator=(unsigned long v)
       {
          clear();
          mType = Integer;
+
       }
       mData.INT = (long)v;
    }
@@ -615,7 +859,6 @@ Node& Node::operator=(const char *v)
       if (!v)
       {
          clear();
-         mType = Null;
       }
       else if (!mData.STR)
       {
@@ -674,7 +917,6 @@ Node& Node::operator=(gcore::String *v)
       if (!v)
       {
          clear();
-         mType = Null;
       }
       else if (!mData.STR)
       {
@@ -737,7 +979,6 @@ Node& Node::operator=(Node::Map *v)
       if (!v)
       {
          clear();
-         mType = Null;
       }
       else if (!mData.MAP)
       {
@@ -800,7 +1041,6 @@ Node& Node::operator=(Node::Seq *v)
       if (!v)
       {
          clear();
-         mType = Null;
       }
       else if (!mData.SEQ)
       {
@@ -824,7 +1064,6 @@ Node& Node::operator=(Node *node)
    if (!node || !node->isAlias())
    {
       clear();
-      mType = Null;
    }
    else
    {
@@ -834,9 +1073,6 @@ Node& Node::operator=(Node *node)
          
          mType = Reference;
          mOwns = false;
-         mIsAlias = false;
-         mRefCount = 0;
-         mDoc = 0;
       }
       else if (mData.REF != node)
       {
@@ -922,6 +1158,7 @@ Node& Node::operator=(const Node &rhs)
          //mIsAlias = false;
          //mRefCount = 0;
          //mDoc = 0;
+         mTag = "";
       }
       else
       {
@@ -931,6 +1168,7 @@ Node& Node::operator=(const Node &rhs)
          //mIsAlias = false;
          //mRefCount = rhs.mRefCount;
          //mDoc = rhs.mDoc;
+         mTag = rhs.mTag;
          
          rhs.mOwns = false;
       }
@@ -1183,6 +1421,9 @@ void Node::clear()
    mRefCount = 0;
    mIsAlias = false;
    mOwns = true;
+   mTag = "";
+   mDoc = 0;
+   
    memset(&mData, 0, sizeof(Data));
 }
 
@@ -1304,6 +1545,58 @@ bool Node::isCollection() const
 bool Node::isScalar() const
 {
    return (mType != Mapping && mType != Sequence && mType != Reference);
+}
+
+void Node::setTag(const char *tag)
+{
+   if (!tag)
+   {
+      return;
+   }
+   
+   if (mType == Reference)
+   {
+      mData.REF->setTag(tag);
+   }
+   else
+   {
+      mTag = tag;
+   }
+}
+
+const char* Node::tag() const
+{
+   if (mType == Reference)
+   {
+      return mData.REF->tag();
+   }
+   else
+   {
+      if (mTag.length() > 0)
+      {
+         return mTag.c_str();
+      }
+      else
+      {
+         switch (mType)
+         {
+         case Bool:
+            return "tag:yaml.org,2002:bool";
+         case Integer:
+            return "tag:yaml.org,2002:int";
+         case Float:
+            return "tag:yaml.org,2002:float";
+         case String:
+            return "tag:yaml.org,2002:str";
+         case Mapping:
+            return "tag:yaml.org,2002:map";
+         case Sequence:
+            return "tag:yaml.org,2002:seq";
+         default:
+            return "tag:yaml.org,2002:null";
+         }
+      }
+   }
 }
 
 void Node::ref()

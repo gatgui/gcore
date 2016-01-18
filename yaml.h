@@ -160,6 +160,9 @@ namespace gcore
          
          const char* getAliasName() const;
          
+         const char* tag() const;
+         void setTag(const char *tag);
+         
          void clear();
          const char* id() const;
          
@@ -191,9 +194,8 @@ namespace gcore
          bool mIsAlias;
          size_t mRefCount;
          
-         //gcore::String mTag;
-         //Style mStyle; -> block, flow (single/double quoted)
          Document *mDoc;
+         gcore::String mTag;
       };
       
       class GCORE_API Document
@@ -214,209 +216,21 @@ namespace gcore
          const char* getAliasName(const Node *n) const;
          size_t getAliasNames(gcore::StringList &names) const;
          
+         void clear();
+         
+         // returns true if a document has been read successfully
+         // both functions will only read a single document
+         bool read(const char *path);
+         bool read(std::istream &in);
+         
+         Node& top();
+         const Node& top() const;
+         
       private:
          
          Node mTop;
          AliasMap mAliases;
       };
-      /*
-      void Parse(const char *path)
-      {
-         std::ifstream in(path);
-         if (path.is_open())
-         {
-            Parse(in);
-         }
-      }
-      
-      struct Parser
-      {
-         enum State
-         {
-            DocumentBegin = 0
-            ReadMappingKey,
-            ReadMappingValue,
-            ReadSequenceItem,
-            ReadLiteral
-         };
-         
-         enum Style
-         {
-            Block = 0,
-            Flow
-         };
-         
-         State state;
-         size_t indentWidth;
-         gcore::String indent;
-         Style style;
-         gcore::String tag;
-         Node *node; // has tag and style
-      };
-      
-      // returns true if document read, false otherwise (end of stream)
-      // incomplete/invalid stream raise exceptions for errors
-      bool Parse(std::ifstream &in, Node &out)
-      {
-         static const char* sSpaces = " \t\v\f\n\r";
-         Parser parser;
-         // need a stack?
-         
-         std::string line, str;
-         size_t p0, p1;
-         size_t len, indent, lineno = 0;
-         
-         while (in.good())
-         {
-            if (line.length() == 0)
-            {
-               std::getline(line);
-               ++lineno;
-               
-               p0 = 0;
-               indent = 0;
-               len = line.length();
-               
-               while (p0 < len && line[p0] == ' ')
-               {
-                  ++p0;
-               }
-               
-               indent = p0;
-            }
-            
-            if (p0 >= len)
-            {
-               // empty line
-               // if reading a scalar, add to str buffer
-               if (parser.State == ReadLiteral)
-               {
-                  if (indent > parser.indentWidth)
-                  {
-                     if (parser.style == Parser::Block)
-                     {
-                        
-                     }
-                     else
-                     {
-                        // more indented than previous 
-                     }
-                  }
-               }
-            }
-            else if (line[p0] == '#')
-            {
-               // ignore line
-               line = "";
-            }
-            else if (line[p0] == '%')
-            {
-               // ignore directives
-               line = "";
-            }
-            else if (line[p0] == '-' &&
-                     p0+1 < len && line[p0+1] == '-' &&
-                     p0+2 < len && line[p0+2] == '-')
-            {
-               // begin of document
-               // what about the remaining of the line?
-            }
-            else if (line[p0] == '.' &&
-                     p0+1 < len && line[p0+1] == '.' &&
-                     p0+2 < len && line[p0+2] == '.')
-            {
-               return true;
-            }
-            else if (line[p0] == '?')
-            {
-               // mapping key
-            }
-            else if (line[p0] == ':')
-            {
-               // mapping value
-            }
-            else if (line[p0] == '-')
-            {
-               // sequence item
-            }
-            else if (line[p0] == '"' || line[p0] == '\'')
-            {
-               // single/double quoted string
-               // double quotes allow character escaping
-               
-               // has to be single line when used as a key
-            }
-            else if (line[p0] == '!')
-            {
-               // tag
-               // support: !!map, !!seq, !!str, !!bool, !!int, !!float, !!binary
-               // just keep info
-               p1 = line.find_first_of(sSpaces, p0);
-               
-               if (p1 == std::string::npos)
-               {
-                  raise ParserError(lineno, p0+1, "Unfinished tag?");
-               }
-               
-               tag = line.substr(p0+1, p1-p0-1);
-               
-               line = line.substr(p1+1);
-               p0 = 0;
-            }
-            else if (line[p0] == '&')
-            {
-               // anchor
-            }
-            else if (line[p0] == '*')
-            {
-               // reference
-            }
-            else if (line[p0] == '{')
-            {
-               
-            }
-            else if (line[p0] == '}')
-            {
-               
-            }
-            else if (line[p0] == '[')
-            {
-               
-            }
-            else if (line[p0] == ']')
-            {
-               
-            }
-            else if (line[p0] == ',')
-            {
-               
-            }
-            else if (line[p0] == '@' || line[p0] == '`')
-            {
-               // reserved !
-               raise ParserError(lineno, p0+1, "Reserved marker");
-            }
-            else
-            {
-               // line folding rules
-               // -> when to preserve \n
-               // -> more indented lines
-               // -> stripping of white spaces
-               // -> etc..
-               // ignore tokens in block/flow literals
-            }
-         }
-         
-         // reached end of stream without error
-         // check current state?
-         if (parser.state != Parse::ReadMappingKey)
-         {
-            // ?
-         }
-         
-         return true;
-      }
-      */
    }
 
 }

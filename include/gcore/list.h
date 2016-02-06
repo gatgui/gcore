@@ -108,6 +108,20 @@ namespace gcore {
         BaseType::pop_back();
       }
       
+      const T& operator[](long i) const {
+        if (i < 0) {
+          i = long(BaseType::size()) + i;
+        }
+        return BaseType::operator[](size_t(i));
+      }
+      
+      T& operator[](long i) {
+        if (i < 0) {
+          i = long(BaseType::size()) + i;
+        }
+        return BaseType::operator[](size_t(i));
+      }
+      
       ThisType operator()(long from=0, long to=-1) const {
         ThisType rv;
         if (from < 0) {

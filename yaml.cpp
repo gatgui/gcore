@@ -1,4 +1,5 @@
 #include "yaml.h"
+#include <gcore/rex.h>
 
 namespace gcore
 {
@@ -72,38 +73,6 @@ size_t ParserError::column() const
 }
 
 // ---
-
-// YAML Schema
-// null | Null | NULL | ~	 tag:yaml.org,2002:null
-// /* Empty */	 tag:yaml.org,2002:null
-// true | True | TRUE | false | False | FALSE	 tag:yaml.org,2002:bool
-// [-+]? [0-9]+	 tag:yaml.org,2002:int (Base 10)
-// 0o [0-7]+	 tag:yaml.org,2002:int (Base 8)
-// 0x [0-9a-fA-F]+	 tag:yaml.org,2002:int (Base 16)
-// [-+]? ( \. [0-9]+ | [0-9]+ ( \. [0-9]* )? ) ( [eE] [-+]? [0-9]+ )?	 tag:yaml.org,2002:float (Number)
-// [-+]? ( \.inf | \.Inf | \.INF )	 tag:yaml.org,2002:float (Infinity)
-// \.nan | \.NaN | \.NAN	 tag:yaml.org,2002:float (Not a number)
-// *	 tag:yaml.org,2002:str (Default)
-// anything else -> tag:yaml.org,2002:str
-
-// JSON Schema
-// null	 tag:yaml.org,2002:null
-// true | false	 tag:yaml.org,2002:bool
-// -? ( 0 | [1-9] [0-9]* )	 tag:yaml.org,2002:int
-// -? ( 0 | [1-9] [0-9]* ) ( \. [0-9]* )? ( [eE] [-+]? [0-9]+ )?	 tag:yaml.org,2002:float
-// *	 Error
-
-// Canonical form:
-// tag:yaml.org,2002:null  -> "null"
-// tag:yaml.org,2002:bool  -> "true" or "false"
-// tag:yaml.org,2002:int   -> decimal value with possibliy leading '-'
-// tag:yaml.org,2002:float -> ".inf", "-.inf", ".nan", floating point notation  "-? [1-9] ( \. [0-9]* [1-9] )? ( e [-+] [1-9] [0-9]* )?"
-// tag:yaml.org,2002:float
-
-// Other tags
-// tag:yaml.org,2002:seq (kind Collection)
-// tag:yaml.org,2002:map (kind Collection)
-// tag:yaml.org,2002:str (kind Scalar)
 
 Document::Document()
 {
@@ -227,202 +196,620 @@ bool Document::read(const char *path)
    }
 }
 
-/*
-struct Parser
+// ---
+
+// yaml schema
+static gcore::Rex gsInt10E(RAW("^[-+]?[0-9]+$"));
+static gcore::Rex gsInt8E(RAW("^0o[0-7]+$"));
+static gcore::Rex gsInt16E(RAW("0x[0-9a-fA-F]+$"));
+static gcore::Rex gsFltE(RAW("^[-+]?(\.[0-9]+|[0-9]+(\.[0-9]+)?)([eE][-+]?[0-9]+)?$"));
+
+// json schema
+static gcore::Rex gsInt10Eb(RAW("^-?(0|[1-9][0-9]*)$"));
+static gcore::Rex gsFltEb(RAW("^-?(0|[1-9][0-9]*)(\.[0-9]*)?([eE][-+]?[0-9]+)?$"));
+
+
+//static const char* gsAllIndicators = "-?:,[]{}#&*!|>'\"%@`";
+//static const char* gsFlowIndicators = ",[]{}";
+//static const char* gsReservedIndicators = "@`";
+static const char* gsWhiteSpace = " \t";
+//static const char* gsUriChars = "#;/?:@&=+$,_.!~*'()[]";
+
+
+struct ParserState
 {
-   enum State
+   typedef gcore::List<ParserState, false> Stack;
+   
+   enum Chomp
    {
-      ReadBegin = 0
-      ReadMappingKey,
-      ReadMappingValue,
-      ReadSequenceItem,
-      ReadLiteral
+      Strip = 0,
+      Clip,
+      Keep
    };
    
-   enum Style
+   ParserState()
+      : inFlowStr(false)
+      , inFlowSeq(false)
+      , inFlowMap(false)
+      , inBlock(false)
+      , indentWidth(0)
+      , indent("")
+      , chomp(Keep)
+      , fold(false)
+      , tag("")
+      , alias("")
+      , node(0)
+      , allowEscape(false)
    {
-      Block = 0,
-      Flow,
-      DoubleQuoted, // flow string
-      SingleQuoted  // flow string
-   };
+   }
    
-   State state;
+   ParserState(const ParserState &rhs)
+      : inFlowStr(rhs.inFlowStr)
+      , inFlowSeq(rhs.inFlowSeq)
+      , inFlowMap(rhs.inFlowMap)
+      , inBlock(rhs.inBlock)
+      , indentWidth(rhs.indentWidth)
+      , indent(rhs.indent)
+      , chomp(rhs.chomp)
+      , fold(rhs.fold)
+      , tag(rhs.tag)
+      , alias(rhs.alias)
+      , node(rhs.node)
+      , allowEscape(rhs.allowEscape)
+   {
+   }
+   
+   ParserState& operator=(const ParserState &rhs)
+   {
+      if (this != &rhs)
+      {
+         inFlowStr = rhs.inFlowStr;
+         inFlowSeq = rhs.inFlowSeq;
+         inFlowMap = rhs.inFlowMap;
+         inBlock = rhs.inBlock;
+         indentWidth = rhs.indentWidth;
+         indent = rhs.indent;
+         chomp = rhs.chomp;
+         fold = rhs.fold; // when inBlock is true
+         tag = rhs.tag;
+         alias = rhs.alias;
+         node = rhs.node;
+         allowEscape = rhs.allowEscape;
+      }
+      return *this;
+   }
+   
+   gcore::String contentString(const gcore::StringList &lst)
+   {
+      gcore::String rv, line;
+      size_t n = lst.size();
+      
+      for (size_t i=0; i<n; ++i)
+      {
+         line = lst[i];
+         if (inFlowStr)
+         {
+            // Note: preserves leading and trailing white spaces in flow strings
+            //       "  hello "
+            //       ' goodbye  '
+            // => only strip white spaces if the string spans multiple lines
+            if (n > 1)
+            {
+               if (i == 0) line.rstrip();
+               else if (i + 1 == n) line.lstrip();
+               else line.strip();
+            }
+            
+            if (i > 0) rv.push_back(' ');
+            rv += line;
+         }
+         else if (inBlock)
+         {
+            // remove indentation
+            // TODO
+            
+            if (fold)
+            {
+               line.rstrip();
+               if (i > 0) rv.push_back(' ');
+               rv += line;
+            }
+            else
+            {
+               line.rstrip();
+               if (i > 0) rv.push_back('\n');
+               rv += line;
+            }
+         }
+         else
+         {
+            // only use last line
+            rv = line;
+         }
+      }
+      
+      if (inBlock)
+      {
+         switch (chomp)
+         {
+         case Keep:
+            break;
+         case Strip:
+            rv.rstrip();
+            break;
+         case Clip:
+            // only keep one trailing newline (if any)
+         default:
+            break;
+         }
+      }
+      
+      return rv;
+   }
+   
+   bool inFlowStr;
+   bool inFlowSeq;
+   bool inFlowMap;
+   bool inBlock;
    size_t indentWidth;
    gcore::String indent;
-   Style style;
+   Chomp chomp;
+   bool fold;
+   gcore::String tag;
+   gcore::String alias;
    Node *node;
+   bool allowEscape;
 };
-*/
 
 // returns true if document read, false otherwise (end of stream)
-// incomplete/invalid stream raise exceptions for errors
+// incomplete/invalid stream throw exceptions for errors
 bool Document::read(std::istream &in)
 {
    clear();
    
-   /*
-   static const char* sSpaces = " \t\v\f\n\r";
-   Parser parser;
-   // need a stack?
+   ParserState::Stack stateStack;
    
-   std::string line, str;
+   ParserState initialState;
+   ParserState *state = &initialState;
+   
+   gcore::StringList content;
+   gcore::String line, str, indent;
    size_t p0, p1;
-   size_t len, indent, lineno = 0;
-   
-   parser.state = ReadBegin;
-   //parser.node = &mTop;
+   size_t len, indentWidth, colno = 1, lineno = 0;
    
    while (in.good())
    {
       if (line.length() == 0)
       {
-         std::getline(line);
-         ++lineno;
+         std::getline(in, line);
          
+         ++lineno;
+         colno = 1;
          p0 = 0;
-         indent = 0;
          len = line.length();
+         
+         // figure out indent width
+         indentWidth = 0;
+         
+         // Note: indent width may be impose in block values
+         //       => don't deal with it here
          
          while (p0 < len && line[p0] == ' ')
          {
             ++p0;
          }
          
-         indent = p0;
+         indentWidth = p0;
+         indent = indentWidth * String(" ");
+         
+         // consume any additional white spaces (should I? [see below])
+         p1 = line.find_first_not_of(gsWhiteSpace, p0);
+         p0 = (p1 != std::string::npos ? p1 : len);
+         
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] Read new line '" << line << "'" << std::endl;
+         std::cerr << "[Document::read]   Indent = '" << indent << "' [" << indentWidth << "]" << std::endl;
+         //std::cerr << "[Document::read]   Skip white spaces to " << p1 << std::endl;
+         #endif
       }
       
       if (p0 >= len)
       {
-         // empty line
-         // if reading a scalar, add to str buffer
-         if (parser.State == ReadLiteral)
-         {
-            if (indent > parser.indentWidth)
-            {
-               if (parser.style == Parser::Block)
-               {
-                  
-               }
-               else
-               {
-                  // more indented than previous 
-               }
-            }
-         }
-      }
-      else if (line[p0] == '#')
-      {
-         // ignore line
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] Reached EOL" << std::endl;
+         std::cerr << "[Document::read]   str = '" << str << "'" << std::endl;
+         #endif
+         
+         content.push(str);
+         str = "";
+         
          line = "";
       }
-      else if (line[p0] == '%')
+      else if (line[p0] == '#') // ignore inside a flow string
       {
-         // ignore directives
+         // ignore comments, unless contained in a single/double quoted string
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] Skip comment [" << lineno << ", " << (colno + p0) << "]" << std::endl;
+         #endif
+         
+         line = "";
+      }
+      else if (line[p0] == '%') // only at the start of a line
+      {
+         // ignore directives (should I validate them just in case)
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] Skip directive [" << lineno << ", " << (colno + p0) << "]" << std::endl;
+         #endif
+         
          line = "";
       }
       else if (line[p0] == '-' &&
                p0+1 < len && line[p0+1] == '-' &&
-               p0+2 < len && line[p0+2] == '-')
+               p0+2 < len && line[p0+2] == '-') // only at the start of a line
       {
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] Begin of document [" << lineno << ", " << (colno + p0) << "]" << std::endl;
+         std::cerr << "[Document::read]   str = '" << str << "'" << std::endl;
+         #endif
+         
+         str = "";
+         line = "";
+         
          // begin of document
-         // what about the remaining of the line?
+         if (stateStack.size() > 0) // rather check for state->node
+         {
+            // complete current document
+            #ifdef _DEBUG
+            std::cerr << "[Document::read]   Begin of next document" << std::endl;
+            #endif
+            break;
+         }
+         else
+         {
+            state->node = &mTop;
+         }
       }
       else if (line[p0] == '.' &&
                p0+1 < len && line[p0+1] == '.' &&
-               p0+2 < len && line[p0+2] == '.')
+               p0+2 < len && line[p0+2] == '.') // only at the start of a line
       {
-         return true;
-      }
-      else if (line[p0] == '?')
-      {
-         // mapping key
-      }
-      else if (line[p0] == ':')
-      {
-         // mapping value
-      }
-      else if (line[p0] == '-')
-      {
-         // sequence item
-      }
-      else if (line[p0] == '"' || line[p0] == '\'')
-      {
-         // single/double quoted string
-         // double quotes allow character escaping
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] End of document [" << lineno << ", " << (colno + p0) << "]" << std::endl;
+         std::cerr << "[Document::read]   str = '" << str << "'" << std::endl;
+         #endif
          
-         // has to be single line when used as a key
+         line = "";
+         str = "";
+         
+         // end of document
+         break;
       }
       else if (line[p0] == '!')
       {
          // tag
-         // support: !!map, !!seq, !!str, !!bool, !!int, !!float, !!binary
-         // just keep info
-         p1 = line.find_first_of(sSpaces, p0);
+         p1 = line.find_first_of(gsWhiteSpace, p0);
+         
+         size_t len = 0;
          
          if (p1 == std::string::npos)
          {
-            raise ParserError(lineno, p0+1, "Unfinished tag?");
+            if (p0 + 1 < line.length())
+            {
+               len = line.length() - p0 - 1;
+            }
+         }
+         else
+         {
+            if (p0 + 1 < p1)
+            {
+               len = p1 - p0 - 1;
+            }
          }
          
-         tag = line.substr(p0+1, p1-p0-1);
+         if (len == 0)
+         {
+            throw ParserError(lineno, colno + p0, "Incomplete tag");
+         }
          
-         line = line.substr(p1+1);
+         state->tag = line.substr(p0+1, len);
+         
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] Read tag '" << state->tag << "' [" << lineno << ", " << (colno + p0) << "]" << std::endl;
+         std::cerr << "[Document::read]   str = '" << str << "'" << std::endl;
+         #endif
+         
+         str = "";
+         
+         if (p1 == std::string::npos)
+         {
+            line = "";
+            colno = 1;
+         }
+         else
+         {
+            line = line.substr(p1+1);
+            colno += p1 + 1;
+         }
          p0 = 0;
       }
       else if (line[p0] == '&')
       {
-         // anchor
+         // if not reading a scalar?
+         // alias anchor
+         p1 = line.find_first_of(gsWhiteSpace, p0);
+         
+         size_t len = 0;
+         
+         if (p1 == std::string::npos)
+         {
+            if (p0 + 1 < line.length())
+            {
+               len = line.length() - p0 - 1;
+            }
+         }
+         else
+         {
+            if (p0 + 1 < p1)
+            {
+               len = p1 - p0 - 1;
+            }
+         }
+         
+         if (len == 0)
+         {
+            throw ParserError(lineno, colno + p0, "Incomplete alias");
+         }
+         
+         state->alias = line.substr(p0+1, len);
+         
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] Read alias '" << state->alias << "' [" << lineno << ", " << (colno + p0) << "]" << std::endl;
+         std::cerr << "[Document::read]   str = '" << str << "'" << std::endl;
+         #endif
+         
+         str = "";
+         
+         if (p1 == std::string::npos)
+         {
+            line = "";
+            colno = 1;
+         }
+         else
+         {
+            line = line.substr(p1+1);
+            colno += p1 + 1;
+         }
+         p0 = 0;
       }
       else if (line[p0] == '*')
       {
          // reference
-      }
-      else if (line[p0] == '{')
-      {
+         p1 = line.find_first_of(gsWhiteSpace, p0);
          
-      }
-      else if (line[p0] == '}')
-      {
+         if (p1 == std::string::npos)
+         {
+            throw ParserError(lineno, colno + p0, "Incomplete alias");
+         }
          
-      }
-      else if (line[p0] == '[')
-      {
+         std::string name = line.substr(p0+1, p1-p0-1);
          
-      }
-      else if (line[p0] == ']')
-      {
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] Read reference '" << name << "' [" << lineno << ", " << (colno + p0) << "]" << std::endl;
+         std::cerr << "[Document::read]   str = '" << str << "'" << std::endl;
+         #endif
          
-      }
-      else if (line[p0] == ',')
-      {
+         Node *node = getReference(name);
          
+         if (!node)
+         {
+            throw ParserError(lineno, colno + p0, "Undefined reference '" + name + "'");
+         }
+         
+         // if reading a key -> set key and get not
+         // if reading a sequence -> add item
+         str = "";
+         
+         line = line.substr(p1+1);
+         colno += p1 + 1;
+         p0 = 0;
+      }
+      else if (line[p0] == '?')
+      {
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] Read mapping key indicator [" << lineno << ", " << (colno + p0) << "]" << std::endl;
+         std::cerr << "[Document::read]   str = '" << str << "'" << std::endl;
+         #endif
+         
+         // mapping key
+         str = "";
+         p0++;
+      }
+      else if (line[p0] == ':')
+      {
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] Read mapping value indicator [" << lineno << ", " << (colno + p0) << "]" << std::endl;
+         std::cerr << "[Document::read]   str = '" << str << "'" << std::endl;
+         #endif
+         // mapping value
+         // use both for block and flow styles
+         str.strip();
+         if (str.length() == 0)
+         {
+            throw ParserError(lineno, colno + p0, "Empty mapping key");
+         }
+         
+         // infer type unless specially tagged
+         if (state->tag.length() == 0)
+         {
+            // see above
+            // match fixed values first
+            // true false null .nan .inf -.inf
+            // then integer (using expression)
+            // then float (using expression)
+            // -> str if all fails
+         }
+         else
+         {
+            // parse as asked
+            //   !str
+            //   !bool
+            //   !float
+            //   !int
+            //   !binary (base64 encoded binary data)
+            //   !seq
+            //   !map
+            // => default to !str if unknown? or back to inference
+         }
+         
+         str = "";
+         p0++;
+      }
+      else if (line[p0] == '-')
+      {
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] Read sequence item indicator [" << lineno << ", " << (colno + p0) << "]" << std::endl;
+         std::cerr << "[Document::read]   str = '" << str << "'" << std::endl;
+         #endif
+         // sequence item
+         
+         str = "";
+         p0++;
+      }
+      else if (line[p0] == '"' || line[p0] == '\'') // only not inside a flow string or a block value
+      {
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] Read string indicator [" << lineno << ", " << (colno + p0) << "]" << std::endl;
+         std::cerr << "[Document::read]   str = '" << str << "'" << std::endl;
+         #endif
+         // single/double quoted string
+         // double quotes allow character escaping
+         
+         str = "";
+         p0++;
+      }
+      else if (line[p0] == '{') // only if not inside a flow string or a block value
+      {
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] Start new mapping [" << lineno << ", " << (colno + p0) << "]" << std::endl;
+         std::cerr << "[Document::read]   str = '" << str << "'" << std::endl;
+         #endif
+         
+         // new dictionary
+         str = "";
+         p0++;
+      }
+      else if (line[p0] == '}') // only if inside a flow mapping
+      {
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] End mapping [" << lineno << ", " << (colno + p0) << "]" << std::endl;
+         std::cerr << "[Document::read]   str = '" << str << "'" << std::endl;
+         #endif
+         
+         str = "";
+         p0++;
+         
+         // close dict
+         ParserState newState;
+         
+         newState.node = new Node(Node::Mapping);
+         newState.node->setTag(state->tag);
+         // tag?
+         // alias?
+         // indent?
+         // chomp?
+         // fold?
+         
+         stateStack.push(newState);
+         
+         state = &(stateStack.back());
+      }
+      else if (line[p0] == '[') // only if not inside a flow string or a block value
+      {
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] Start new sequence [" << lineno << ", " << (colno + p0) << "]" << std::endl;
+         std::cerr << "[Document::read]   str = '" << str << "'" << std::endl;
+         #endif
+         
+         str = "";
+         p0++;
+         
+         // new sequence
+         ParserState newState;
+         
+         newState.node = new Node(Node::Sequence);
+         
+         stateStack.push(newState);
+         
+         state = &(stateStack.back());
+      }
+      else if (line[p0] == ']') // only if inside a flow sequence
+      {
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] End sequence [" << lineno << ", " << (colno + p0) << "]" << std::endl;
+         std::cerr << "[Document::read]   str = '" << str << "'" << std::endl;
+         #endif
+         
+         str = "";
+         p0++;
+         
+         // end of sequence... set key value?
+         // -> should not have to
+      }
+      else if (line[p0] == ',') // only if inside a flow sequence or mapping
+      {
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] Add new mapping/sequence item [" << lineno << ", " << (colno + p0) << "]" << std::endl;
+         std::cerr << "[Document::read]   str = '" << str << "'" << std::endl;
+         #endif
+         
+         
+         str = "";
+         p0++;
+      }
+      else if (line[p0] == '>')
+      {
+         // may have '+', '-', or \d+ behind
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] Begin block value (>) [" << lineno << ", " << (colno + p0) << "]" << std::endl;
+         std::cerr << "[Document::read]   str = '" << str << "'" << std::endl;
+         #endif
+         
+         str = "";
+         p0++;
+      }
+      else if (line[p0] == '|')
+      {
+         // may have '+', '-', or \d+ behind
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] Begin block value (|) [" << lineno << ", " << (colno + p0) << "]" << std::endl;
+         std::cerr << "[Document::read]   str = '" << str << "'" << std::endl;
+         #endif
+         
+         str = "";
+         p0++;
       }
       else if (line[p0] == '@' || line[p0] == '`')
       {
          // reserved !
-         raise ParserError(lineno, p0+1, "Reserved marker");
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] Reserved indicator [" << lineno << ", " << (colno + p0) << "]" << std::endl;
+         #endif
+         
+         throw ParserError(lineno, colno + p0, "Reserved marker");
       }
       else
       {
-         // line folding rules
-         // -> when to preserve \n
-         // -> more indented lines
-         // -> stripping of white spaces
-         // -> etc..
-         // ignore tokens in block/flow literals
+         #ifdef _DEBUG
+         std::cerr << "[Document::read] Appending character '" << line[p0] << "'" << std::endl;
+         #endif
+         
+         str.push_back(line[p0++]);
       }
    }
    
    // reached end of stream without error
    // check current state?
-   if (parser.state != Parse::ReadMappingKey)
-   {
-      // ?
-   }
-   */
-   
-   return true;
+   return (mTop.isValid() && mTop.type() == Node::Mapping);
 }
 
 // ---
@@ -1385,7 +1772,7 @@ Node::operator Node::Seq& ()
    return *(mData.SEQ);
 }
 
-void Node::clear()
+void Node::clearValue()
 {
    // what if I'm an alias with more reference count!
    if (mIsAlias && mRefCount > 0)
@@ -1421,10 +1808,21 @@ void Node::clear()
    mRefCount = 0;
    mIsAlias = false;
    mOwns = true;
-   mTag = "";
-   mDoc = 0;
    
    memset(&mData, 0, sizeof(Data));
+}
+
+void Node::clear()
+{
+   clearValue();
+   
+   mTag = "";
+   mDoc = 0;
+}
+
+Node::Type Node::type() const
+{
+   return mType;
 }
 
 bool Node::isValid() const
@@ -1547,6 +1945,11 @@ bool Node::isScalar() const
    return (mType != Mapping && mType != Sequence && mType != Reference);
 }
 
+void Node::setTag(const std::string &s)
+{
+   setTag(s.c_str());
+}
+
 void Node::setTag(const char *tag)
 {
    if (!tag)
@@ -1636,9 +2039,277 @@ const char* Node::getAliasName() const
    }
 }
 
+bool Node::fromString(const gcore::String &stringValue, bool noexc)
+{
+   clearValue();
+   
+   // YAML Schema
+   //   null | Null | NULL | ~	 tag:yaml.org,2002:null
+   //   /* Empty */	 tag:yaml.org,2002:null
+   //   true | True | TRUE | false | False | FALSE	 tag:yaml.org,2002:bool
+   //   [-+]? [0-9]+	 tag:yaml.org,2002:int (Base 10)
+   //   0o [0-7]+	 tag:yaml.org,2002:int (Base 8)
+   //   0x [0-9a-fA-F]+	 tag:yaml.org,2002:int (Base 16)
+   //   [-+]? ( \. [0-9]+ | [0-9]+ ( \. [0-9]* )? ) ( [eE] [-+]? [0-9]+ )?	 tag:yaml.org,2002:float (Number)
+   //   [-+]? ( \.inf | \.Inf | \.INF )	 tag:yaml.org,2002:float (Infinity)
+   //   \.nan | \.NaN | \.NAN	 tag:yaml.org,2002:float (Not a number)
+   //   *	 tag:yaml.org,2002:str (Default)
+   
+   // JSON Schema
+   //   null	 tag:yaml.org,2002:null
+   //   true | false	 tag:yaml.org,2002:bool
+   //   -? ( 0 | [1-9] [0-9]* )	 tag:yaml.org,2002:int
+   //   -? ( 0 | [1-9] [0-9]* ) ( \. [0-9]* )? ( [eE] [-+]? [0-9]+ )?	 tag:yaml.org,2002:float
+   //   *	 Error
+   
+   //bool boolValue = false;
+   long intValue = 0;
+   double floatValue = 0.0;
+   
+   if (mTag.length() == 0)
+   {
+      size_t len = stringValue.length();
+      double sign = 1;
+      
+      if (len > 0)
+      {
+         size_t ci = 0;
+         char c0 = stringValue[0];
+         char c1 = (len > 1 ? stringValue[1] : 0);
+         char c2 = (len > 2 ? stringValue[2] : 0);
+         char c3 = (len > 3 ? stringValue[3] : 0);
+         char c4 = (len > 4 ? stringValue[4] : 0);
+         
+         switch (c0)
+         {
+         case 'T':
+         case 't':
+            if (len == 4)
+            {
+               if ((c0 == 'T' && c1 == 'R' && c2 == 'U' && c3 == 'E') ||
+                                (c1 == 'r' && c2 == 'u' && c3 == 'e'))
+               {
+                  operator=(true);
+                  return true;
+               }
+            }
+            operator=(stringValue);
+            return true;
+         case 'F':
+         case 'f':
+            if (len == 5)
+            {
+               if ((c0 == 'F' && c1 == 'A' && c2 == 'L' && c3 == 'S' && c4 == 'E') ||
+                                (c1 == 'a' && c2 == 'l' && c3 == 's' && c4 == 'e'))
+               {
+                  operator=(false);
+                  return true;
+               }
+            }
+            operator=(stringValue);
+            return true;
+         case 'N':
+         case 'n':
+            if (len == 4)
+            {
+               if ((c0 == 'N' && c1 == 'U' && c2 == 'L' && c3 == 'L') ||
+                                (c1 == 'u' && c2 == 'l' && c3 == 'l'))
+               {
+                  operator=(Null);
+                  return true;
+               }
+            }
+            operator=(stringValue);
+            return true;
+         case '-':
+            sign = -1;
+         case '+':
+            if (len == 1 || stringValue[1] != '.')
+            {
+               // can still be a float/integer number
+               break;
+            }
+            // c0 = '+' / '-'
+            // c1 = '.'
+            ++ci;
+            c1 = c2;
+            c2 = c3;
+            c3 = c4;
+         case '.':
+            // check length taking sign into account
+            if (len == 4 + ci)
+            {
+               switch (c1)
+               {
+               case 'n':
+               case 'N':
+                  if ((c1 == 'N' && (c2 == 'a' || c2 == 'A') && c3 == 'N') ||
+                      (c1 == 'n' &&  c2 == 'a'               && c3 == 'n'))
+                  {
+                     operator=(std::numeric_limits<double>::signaling_NaN());
+                     return true;
+                  }
+                  break;
+               case 'i':
+               case 'I':
+                  if ((c1 == 'I' && c2 == 'N' && c3 == 'F') ||
+                                   (c2 == 'n' && c3 == 'f'))
+                  {
+                     operator=(sign * std::numeric_limits<double>::infinity());
+                     return true;
+                  }
+               default:
+                  break;
+               }
+            }
+         default:
+            break;
+         }
+         
+         if (gsInt10E.match(stringValue) || gsInt8E.match(stringValue) ||
+             gsInt16E.match(stringValue))
+         {
+            sscanf(stringValue.c_str(), "%ld", &intValue);
+            operator=(intValue);
+         }
+         else if (gsFltE.match(stringValue))
+         {
+            sscanf(stringValue.c_str(), "%lf", &floatValue);
+            operator=(floatValue);
+         }
+         else
+         {
+            operator=(stringValue);
+         }
+      }
+      else
+      {
+         operator=(Null);
+      }
+   }
+   else
+   {
+      size_t p = mTag.rfind(':');
+      gcore::String tag = (p != std::string::npos ? mTag.substr(p + 1) : mTag);
+      
+      if (tag == "float")
+      {
+         if (!stringValue.toDouble(floatValue))
+         {
+            if (noexc)
+            {
+               return false;
+            }
+            else
+            {
+               throw Error("'%s' cannot be converted to '%s'", stringValue.c_str(), mTag.c_str());
+            }
+         }
+         operator=(floatValue);
+      }
+      else if (tag == "int")
+      {
+         if (!stringValue.toLong(intValue))
+         {
+            if (noexc)
+            {
+               return false;
+            }
+            else
+            {
+               throw Error("'%s' cannot be converted to '%s'", stringValue.c_str(), mTag.c_str());
+            }
+         }
+         operator=(intValue);
+      }
+      else if (tag == "bool")
+      {
+         size_t len = stringValue.length();
+         if (len == 4 || len == 5)
+         {
+            char c0 = stringValue[0];
+            char c1 = stringValue[1];
+            char c2 = stringValue[2];
+            char c3 = stringValue[3];
+            if (len == 5)
+            {
+               char c4 = stringValue[4];
+               if (c0 == 'F')
+               {
+                  if ((c1 == 'A' && c2 == 'L' && c3 == 'S' && c4 == 'E') ||
+                      (c1 == 'a' && c2 == 'l' && c3 == 's' && c4 == 'e'))
+                  {
+                     operator=(false);
+                  }
+               }
+               else if (c0 == 'f' && c1 == 'a' && c2 == 'l' && c3 == 's' && c4 == 'e')
+               {
+                  operator=(false);
+               }
+            }
+            else
+            {
+               if (c0 == 'T')
+               {
+                  if ((c1 == 'R' && c2 == 'U' && c3 == 'E') ||
+                      (c1 == 'r' && c2 == 'u' && c3 == 'e'))
+                  {
+                     operator=(true);
+                  }
+               }
+               else if (c0 == 't' && c1 == 'r' && c2 == 'u' && c3 == 'e')
+               {
+                  operator=(true);
+               }
+            }
+         }
+         if (type() != Bool)
+         {
+            if (noexc)
+            {
+               return false;
+            }
+            else
+            {
+               throw Error("'%s' cannot be converted to '%s'", stringValue.c_str(), mTag.c_str());
+            }
+         }
+      }
+      else if (tag == "null")
+      {
+         operator=(Null);
+      }
+      else if (tag == "str")
+      {
+         operator=(stringValue);
+      }
+      else
+      {
+         if (noexc)
+         {
+            return false;
+         }
+         else
+         {
+            throw Error("Unsupported convertion for tag '%s'", mTag.c_str());
+         }
+      }
+   }
+   
+   return true;
+}
+
 void Node::toStream(std::ostream &os, const std::string &indent, bool ignoreFirstIndent) const
 {
+   // Canonical form:
+   //   tag:yaml.org,2002:null  -> "null"
+   //   tag:yaml.org,2002:bool  -> "true" or "false"
+   //   tag:yaml.org,2002:int   -> decimal value with possibliy leading '-'
+   //   tag:yaml.org,2002:float -> ".inf", "-.inf", ".nan", floating point notation  "-? [1-9] ( \. [0-9]* [1-9] )? ( e [-+] [1-9] [0-9]* )?"
+   //   tag:yaml.org,2002:float
+   
    // if reference -> first time should output everything with a preceding &
+   
    switch (mType)
    {
    case Null:
@@ -1651,6 +2322,7 @@ void Node::toStream(std::ostream &os, const std::string &indent, bool ignoreFirs
       os << (ignoreFirstIndent ? "" : indent) << mData.INT;
       break;
    case Float:
+      // properly handle +/-inf and nan?
       os << (ignoreFirstIndent ? "" : indent) << mData.FLT;
       break;
    case String:
@@ -1725,6 +2397,38 @@ int main(int argc, char **argv)
    
    yaml::Node(opts).toStream(std::cout);
    std::cout << std::endl;
+   
+   yaml::Node tmp;
+   //tmp.setTag("bool");
+   try
+   {
+      tmp.fromString("-198.876e-003");
+      std::cout << "Value parsed: "; tmp.toStream(std::cout); std::cout << std::endl;
+   }
+   catch (yaml::Error &e)
+   {
+      std::cerr << "Could not parse value: " << e.what() << std::endl;
+   }
+   
+   for (int i=1; i<argc; ++i)
+   {
+      yaml::Document doc;
+      
+      try
+      {
+         doc.read(argv[i]);
+      }
+      catch (yaml::ParserError &e)
+      {
+         std::cerr << "Failed to read YAML document '" << argv[i] << "'" << std::endl;
+         std::cerr << e.what() << std::endl;
+      }
+      catch (...)
+      {
+         std::cerr << "Failed to read YAML document '" << argv[i] << "'" << std::endl;
+         std::cerr << "  Unexpected error" << std::endl;
+      }
+   }
    
    return 0;
 }

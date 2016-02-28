@@ -158,15 +158,20 @@ namespace gcore
          bool isCollection() const;
          bool isScalar() const;
          
+         Type type() const;
+         
          const char* getAliasName() const;
          
          const char* tag() const;
          void setTag(const char *tag);
+         inline void setTag(const std::string &s);
          
          void clear();
+         void clearValue();
          const char* id() const;
          
          void toStream(std::ostream &os, const std::string &indent="", bool ignoreFirstIndent=false) const;
+         bool fromString(const gcore::String &stringValue, bool noexc=false);
          
       private:
          

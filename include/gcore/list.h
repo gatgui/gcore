@@ -132,7 +132,7 @@ namespace gcore {
         }
         if (to < 0) {
           to = long(BaseType::size()) + to;
-          if (to < from) {
+          if (to - from < 0) {
             return rv;
           }
         }

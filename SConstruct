@@ -48,35 +48,39 @@ Export("RequireGcore")
 
 
 prjs = [
-  { "name"    : "gcore",
-    "type"    : "staticlib" if static else "sharedlib",
-    "incdirs" : ["include"],
-    "srcs"    : glob.glob("src/lib/*.cpp") + glob.glob("src/lib/rex/*.cpp"),
-    "defs"    : libdefs,
-    "custom"  : libcustom,
-    "libs"    : liblibs
+  { "name"         : "gcore",
+    "type"         : "staticlib" if static else "sharedlib",
+    "version"      : "0.3.0",
+    "soname"       : "libgcore.so.0",
+    "install_name" : "libgcore.0.dylib",
+    "incdirs"      : ["include"],
+    "srcs"         : glob.glob("src/lib/*.cpp") + glob.glob("src/lib/rex/*.cpp"),
+    "defs"         : libdefs,
+    "custom"       : libcustom,
+    "libs"         : liblibs
   },
   { "name"      : "_gcore",
     "type"      : "dynamicmodule",
     "alias"     : "gcorepy",
+    "rpaths"    : ["../.."],
     "prefix"    : python.ModulePrefix() + "/" + python.Version(),
     "ext"       : python.ModuleExtension(),
     "bldprefix" : python.Version(),
     "srcs"      : ["src/py/_gcore.cpp", "src/py/log.cpp", "src/py/pathenumerator.cpp"],
+    "deps"      : ["gcore"],
     "custom"    : [RequireGcore(), python.SoftRequire],
     "install"   : {python.ModulePrefix(): ["src/py/gcore.py", "src/py/tests"]}
   },
   { "name"    : "testmodule",
     "type"    : "dynamicmodule",
     "prefix"  : "bin",
-    "rpath"   : "../lib",
     "incdirs" : ["include"],
     "srcs"    : ["src/tests/modules/module.cpp"]
   },
   { "name"    : "gcore_tests",
     "type"    : "testprograms",
     "srcs"    : glob.glob("src/tests/*.cpp"),
-    "deps"    : ["testmodule"],
+    "deps"    : ["gcore", "testmodule"],
     "custom"  : [RequireGcore()],
   }
 ]

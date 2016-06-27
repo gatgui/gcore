@@ -442,7 +442,7 @@ gcore::ProcessID gcore::Process::run() {
   Pipe errPipe;
   
   sinfo.cb = sizeof(STARTUPINFO);
-  sinfo.dwFlags = STARTF_USESTDHANDLES|STARTF_USESHOWWINDOW;
+  sinfo.dwFlags = STARTF_USESHOWWINDOW;
   
   // Child STDIN pipe [if redirect only] --> parent write to this pipe
   if (mRedirect) {
@@ -450,6 +450,7 @@ gcore::ProcessID gcore::Process::run() {
     SetHandleInformation(inPipe.writeID(), HANDLE_FLAG_INHERIT, 0);
     sinfo.hStdInput = inPipe.readID();
     mWritePipe = inPipe;
+    sinfo.dwFlags = sinfo.dwFlags | STARTF_USESTDHANDLES;
   } else {
     sinfo.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
   }
@@ -465,6 +466,7 @@ gcore::ProcessID gcore::Process::run() {
     //sinfo.hStdError = outPipe.writeID();
     //sinfo.hStdOutput = outPipe.writeID();
     mReadPipe = outPipe;
+    sinfo.dwFlags = sinfo.dwFlags | STARTF_USESTDHANDLES;
   } else {
     //sinfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
     sinfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -479,6 +481,7 @@ gcore::ProcessID gcore::Process::run() {
       sinfo.hStdError = errPipe.writeID();
       mErrorPipe = errPipe;
     }
+    sinfo.dwFlags = sinfo.dwFlags | STARTF_USESTDHANDLES;
   } else {
     sinfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
   }

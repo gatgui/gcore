@@ -91,6 +91,8 @@ namespace gcore {
       String& replace(const char *s, const char *by, int maxCount=-1);
       bool startswith(const std::string &s) const;
       bool startswith(const char *s) const;
+      bool endswith(const std::string &s) const;
+      bool endswith(const char *s) const;
       //String join(const List &l) const;
       String join(const StringList &l) const;
       size_t count(char c) const;

@@ -48,6 +48,7 @@ namespace gcore {
     public:
       
       Env();
+      Env(bool verbose);
       ~Env();
       
       void push();
@@ -63,6 +64,7 @@ namespace gcore {
     protected:
       
       List<StringDict> mEnvStack;
+      bool mVerbose;
   };
 }
 

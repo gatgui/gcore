@@ -113,7 +113,12 @@ size_t Env::ListPaths(const String &e, PathList &l) {
   return l.size();
 }
 
-Env::Env() {
+Env::Env()
+  : mVerbose(false) {
+}
+
+Env::Env(bool verbose)
+  : mVerbose(verbose) {
 }
 
 Env::~Env() {
@@ -210,7 +215,9 @@ size_t Env::asDict(StringDict &d) const {
         val.insert(0, es+1, vlen);
         d[key] = val;
       } else {
-        Log::PrintInfo("[gcore] Env::asDict: Ignore env string \"%s\"", curvar);
+        if (mVerbose) {
+          Log::PrintInfo("[gcore] Env::asDict: Ignore env string \"%s\"", curvar);
+        }
       }
     }
     ++idx;
@@ -224,7 +231,9 @@ size_t Env::asDict(StringDict &d) const {
     char *es = strchr(curvar, '=');
     if (es != 0) {
       if (es == curvar) { 
-        Log::PrintInfo("[gcore] Env::asDict: Ignore env string \"%s\"", curvar);
+        if (mVerbose) {
+          Log::PrintInfo("[gcore] Env::asDict: Ignore env string \"%s\"", curvar);
+        }
       } else {
         *es = '\0';
         if (strlen(curvar) > 0) {

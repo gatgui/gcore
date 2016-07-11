@@ -39,6 +39,95 @@ static void _process_closeHandle(HANDLE phdl) {
   }
 }
 
+struct SearchBatOrCom {
+  gcore::String name;
+  gcore::String outname;
+  bool isbat;
+
+  bool check(const gcore::Path &dir) {
+    gcore::Path path(dir);
+
+    path.push(name + ".bat");
+    if (path.isFile()) {
+      isbat = true;
+      outname = path.pop();
+      return false;
+    }
+
+    path.pop();
+    path.push(name + ".com");
+    if (path.isFile()) {
+      isbat = false;
+      outname = path.pop();
+      return false;
+    }
+
+    path.pop();
+    path.push(name + ".exe");
+    if (path.isFile()) {
+      isbat = false;
+      // keep name as it is, but stop iterating
+      outname = name;
+      return false;
+    }
+
+    return true;
+  }
+};
+
+// returns true when 's' has changed
+static bool _addBatOrCom(gcore::String &s, bool &isBat) {
+  gcore::Path path(s);
+
+  gcore::String ext = path.getExtension();
+
+  if (ext == "") {
+    gcore::String dir = path.dirname('/');
+    gcore::String name = path.basename();
+
+    // check for a .bat or .com file first (takes into account current working directory)
+    path.pop();
+    path.push(name + ".bat");
+    if (path.isFile()) {
+      s += ".bat";
+      isBat = true;
+      return true;
+    }
+
+    path.pop();
+    path.push(name + ".com");
+    if (path.isFile()) {
+      s += ".com";
+      isBat = false;
+      return true;
+    }
+
+    if (dir == "") {
+      // look in PATH
+      gcore::Env::EachInPathFunc func;
+      SearchBatOrCom search;
+
+      search.name = name;
+      search.outname = "";
+      search.isbat = false;
+
+      gcore::Bind(&search, METHOD(SearchBatOrCom, check), func);
+
+      gcore::Env::EachInPath("PATH", func);
+
+      if (search.outname.length() > 0 && search.outname != search.name) {
+        isBat = search.isbat;
+        s += (isBat ? ".bat" : ".com");
+        return true;
+      }
+    }
+  } else {
+    isBat = (ext.casecompare("bat") == 0);
+  }
+
+  return false;
+}
+
 #endif
 
 //------------------------------------------------------------------------------
@@ -216,9 +305,15 @@ gcore::ProcessID gcore::Process::run() {
   // Build command line
   size_t i = 0;
   
+#ifdef _WIN32
+  // on windows, we need to fully specify extension for non .exe files
+  bool isBat = false;
+  _addBatOrCom(mArgs[0], isBat);
+#endif
+
   mCmdLine = mArgs[i++];
 
-  while (i < mArgs.size() ) {
+  while (i < mArgs.size()) {
     mCmdLine += " " + mArgs[i++];
   }
   
@@ -347,7 +442,7 @@ gcore::ProcessID gcore::Process::run() {
   Pipe errPipe;
   
   sinfo.cb = sizeof(STARTUPINFO);
-  sinfo.dwFlags = STARTF_USESTDHANDLES|STARTF_USESHOWWINDOW;
+  sinfo.dwFlags = STARTF_USESHOWWINDOW;
   
   // Child STDIN pipe [if redirect only] --> parent write to this pipe
   if (mRedirect) {
@@ -355,6 +450,7 @@ gcore::ProcessID gcore::Process::run() {
     SetHandleInformation(inPipe.writeID(), HANDLE_FLAG_INHERIT, 0);
     sinfo.hStdInput = inPipe.readID();
     mWritePipe = inPipe;
+    sinfo.dwFlags = sinfo.dwFlags | STARTF_USESTDHANDLES;
   } else {
     sinfo.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
   }
@@ -370,6 +466,7 @@ gcore::ProcessID gcore::Process::run() {
     //sinfo.hStdError = outPipe.writeID();
     //sinfo.hStdOutput = outPipe.writeID();
     mReadPipe = outPipe;
+    sinfo.dwFlags = sinfo.dwFlags | STARTF_USESTDHANDLES;
   } else {
     //sinfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
     sinfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -384,6 +481,7 @@ gcore::ProcessID gcore::Process::run() {
       sinfo.hStdError = errPipe.writeID();
       mErrorPipe = errPipe;
     }
+    sinfo.dwFlags = sinfo.dwFlags | STARTF_USESTDHANDLES;
   } else {
     sinfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
   }
@@ -401,9 +499,15 @@ gcore::ProcessID gcore::Process::run() {
   
   // modify environment
   env.setAll(mEnv, true);
+
+  if (isBat) {
+    // for .bat files, we need to prepend cmd.exe /c
+    mCmdLine = "cmd.exe /c " + mCmdLine;
+  }
   
+  // Don't try to inheritHandles when using .bat files
   if (CreateProcess(NULL, (char*)mCmdLine.c_str(), NULL, NULL,
-                    TRUE, 0, 0, NULL, &sinfo, &pinfo)) {
+                    (isBat ? FALSE : TRUE), 0, 0, NULL, &sinfo, &pinfo)) {
     // In parent only
     
     mPID = pinfo.dwProcessId;

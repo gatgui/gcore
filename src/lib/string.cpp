@@ -450,10 +450,11 @@ String& String::replace(const char *str, const char *by, int maxCount) {
 }
 
 bool String::startswith(const std::string &st) const {
-  if (st.length() > length()) {
+  size_t stlen = st.length();
+  if (stlen > length()) {
     return false;
   }
-  return (compare(0, st.length(), st) == 0);
+  return (compare(0, stlen, st) == 0);
 }
 
 bool String::startswith(const char *st) const {
@@ -462,6 +463,24 @@ bool String::startswith(const char *st) const {
     return false;
   }
   return (compare(0, stlen, st) == 0);
+}
+
+bool String::endswith(const std::string &st) const {
+  size_t stlen = st.length();
+  size_t len = length();
+  if (stlen > len) {
+    return false;
+  }
+  return (compare(len - stlen, stlen, st) == 0);
+}
+
+bool String::endswith(const char *st) const {
+  size_t stlen = strlen(st);
+  size_t len = length();
+  if (stlen > len) {
+    return false;
+  }
+  return (compare(len - stlen, stlen, st) == 0);
 }
 
 String String::join(const StringList &lst) const {//List &lst) const {

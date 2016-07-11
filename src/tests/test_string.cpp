@@ -56,6 +56,11 @@ int main(int, char**) {
   gcore::StringList::MapFunc quote;
   gcore::Bind(QuoteString, quote);
   std::cout << splits.map(quote) << std::endl;
+
+  std::cout << "s0 = \"" << s0 << "\" starts with 'Z:' ? " << s0.startswith("Z:") << std::endl;
+  std::cout << "s0 = \"" << s0 << "\" starts with 'z:' ? " << s0.startswith("z:") << std::endl;
+  std::cout << "s0 = \"" << s0 << "\" ends with 'deploy' ? " << s0.endswith("deploy") << std::endl;
+  std::cout << "s0 = \"" << s0 << "\" ends with 'Deploy' ? " << s0.endswith("Deploy") << std::endl;
   
   return 0;
 }

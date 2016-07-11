@@ -946,12 +946,12 @@ int gcore::Thread::GetProcessorCount() {
 
 #else
 
-#ifdef __APPLE__
-# ifdef Status
-#   undef Status
-# endif
-# include <CoreServices/CoreServices.h>
-#endif
+// #ifdef __APPLE__
+// # ifdef Status
+// #   undef Status
+// # endif
+// # include <CoreServices/CoreServices.h>
+// #endif
 
 gcore::ThreadID gcore::Thread::id() const {
   return mSelf;

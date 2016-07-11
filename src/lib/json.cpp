@@ -1051,7 +1051,7 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
    
    reset();
    
-   gcore::String remain;
+   gcore::String remain, tmp;
    size_t p0, p1, lineno = 0, coloff = 0;
    
    std::vector<ParserStackItem> stack;
@@ -1389,6 +1389,57 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
          }
          else
          {
+            // Validate escape characters in str
+            
+            size_t len = str.length();
+            p0 = 0;
+            p1 = str.find('\\', p0);
+            
+            while (p1 != std::string::npos)
+            {
+               if (p1 + 1 < len)
+               {
+                  switch (str[p1 + 1])
+                  {
+                  case '"':
+                  case '\\':
+                  case '/':
+                  case 'b':
+                  case 'f':
+                  case 'n':
+                  case 'r':
+                  case 't':
+                     // good
+                     p0 = p1 + 2;
+                     break;
+                  case 'u':
+                     // + 4 digits
+                     if (p1 + 5 >= len || 
+                         (str[p1 + 2] < '0' || str[p1 + 2] > '9') || 
+                         (str[p1 + 3] < '0' || str[p1 + 3] > '9') || 
+                         (str[p1 + 4] < '0' || str[p1 + 4] > '9') || 
+                         (str[p1 + 5] < '0' || str[p1 + 5] > '9'))
+                     {
+                        reset();
+                        throw ParserError(lineno, coloff+p1, "Expected 4 digits after \\u escape character");
+                     }
+                     p0 = p1 + 6;
+                     break;
+                  default:
+                     reset();
+                     throw ParserError(lineno, coloff+p1, "Unsupported escape character: \\%c", str[p1 + 1]);
+                  }
+                  
+                  p1 = str.find('\\', p0);
+               }
+               else
+               {
+                  // trailing '\'
+                  reset();
+                  throw ParserError(lineno, coloff+p1, "Incomplete escape character");
+               }
+            }
+            
             if (state == ReadObjectKey)
             {
                #ifdef _DEBUG

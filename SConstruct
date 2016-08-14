@@ -21,6 +21,9 @@ if not static:
   if not str(Platform()) in ["win32", "darwin"]:
     liblibs = ["rt"]
 
+def SilentCythonWarnings(env):
+  if str(Platform()) == "darwin":
+    env.Append(CPPFLAGS=" -Wno-unused-function -Wno-unneeded-internal-declaration")
 
 def RequireGcore(subdir=None):
   if subdir and type(subdir) in (str, unicode):
@@ -68,7 +71,7 @@ prjs = [
     "bldprefix" : python.Version(),
     "srcs"      : ["src/py/_gcore.cpp", "src/py/log.cpp", "src/py/pathenumerator.cpp"],
     "deps"      : ["gcore"],
-    "custom"    : [RequireGcore(), python.SoftRequire],
+    "custom"    : [RequireGcore(), python.SoftRequire, SilentCythonWarnings],
     "install"   : {python.ModulePrefix(): ["src/py/gcore.py", "src/py/tests"]}
   },
   { "name"    : "testmodule",

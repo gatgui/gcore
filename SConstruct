@@ -53,7 +53,7 @@ Export("RequireGcore")
 prjs = [
   { "name"         : "gcore",
     "type"         : "staticlib" if static else "sharedlib",
-    "version"      : "0.3.0",
+    "version"      : "0.3.1",
     "soname"       : "libgcore.so.0",
     "install_name" : "libgcore.0.dylib",
     "incdirs"      : ["include"],

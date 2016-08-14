@@ -114,4 +114,4 @@ excons.DeclareTargets(env, prjs)
 cygen = env.Command(["src/py/_gcore.cpp", "src/py/_gcore.h"], "src/py/_gcore.pyx", "%s -I include --cplus --embed-positions -o $TARGET $SOURCE" % cython)
 
 
-
+Default(["gcore"])

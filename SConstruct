@@ -58,6 +58,7 @@ prjs = [
     "install_name" : "libgcore.0.dylib",
     "incdirs"      : ["include"],
     "srcs"         : glob.glob("src/lib/*.cpp") + glob.glob("src/lib/rex/*.cpp"),
+    "install"      : {"include": ["include/gcore", "include/half.h"]},
     "defs"         : libdefs,
     "custom"       : libcustom,
     "libs"         : liblibs

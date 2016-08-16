@@ -1,6 +1,5 @@
 #include "pathenumerator.h"
-#include <gcore/gcore>
-#include <gcore/perflog.h>
+#include <gcore/all.h>
 #include "log.h"
 #include "_gcore.h"
 

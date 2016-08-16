@@ -466,7 +466,25 @@ namespace gcore {
     char *cwd = (char*)malloc(cwdLen * sizeof(char));
     GetCurrentDirectory(cwdLen, cwd);
 #else
-    char *cwd = getcwd((char*)NULL, 0);
+    size_t bufLen = 1024;
+    char *buf = (char*)malloc(bufLen * sizeof(char));
+    char *cwd = getcwd(buf, bufLen);
+    while (cwd == NULL)
+    {
+      if (errno == ERANGE)
+      {
+        free(buf);
+        bufLen *= 2;
+        buf = (char*)malloc(bufLen * sizeof(char));
+        cwd = getcwd(buf, bufLen);
+      }
+      else
+      {
+        buf[0] = '\0';
+        cwd = buf;
+        break;
+      }
+    }
 #endif
     Path rv = Path(cwd);
     free(cwd);

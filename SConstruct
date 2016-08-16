@@ -25,27 +25,18 @@ def SilentCythonWarnings(env):
   if str(Platform()) == "darwin":
     env.Append(CPPFLAGS=" -Wno-unused-function -Wno-unneeded-internal-declaration")
 
-def RequireGcore(subdir=None):
-  if subdir and type(subdir) in (str, unicode):
-    if not (subdir.endswith("/") or subdir.endswith("\\")):
-      subdir += "/"
-  else:
-    subdir = ""
+def RequireGcore(env):
+  # Don't need to set CPPPATH, headers are now installed in output directory
+  # Don't need to set LIBPATH, library output directory is automatically added by excons
+  env.Append(LIBS=["gcore"])
 
-  def _Require(env):
-    env.Append(CPPPATH=[subdir+"include"])
-    # Don't need to set LIBPATH, library output directory is automatically added by excons
-    env.Append(LIBS=["gcore"])
-    
-    if static:
-      env.Append(CPPDEFINES=["GCORE_STATIC"])
-      threads.Require(env)
-      dl.Require(env)
+  if static:
+    env.Append(CPPDEFINES=["GCORE_STATIC"])
+    threads.Require(env)
+    dl.Require(env)
 
-    if not str(Platform()) in ["win32", "darwin"]:
-      env.Append(LIBS=["rt"])
-
-  return _Require
+  if not str(Platform()) in ["win32", "darwin"]:
+    env.Append(LIBS=["rt"])
 
 Export("RequireGcore")
 
@@ -53,11 +44,11 @@ Export("RequireGcore")
 prjs = [
   { "name"         : "gcore",
     "type"         : "staticlib" if static else "sharedlib",
-    "version"      : "0.3.0",
+    "version"      : "0.3.2",
     "soname"       : "libgcore.so.0",
     "install_name" : "libgcore.0.dylib",
-    "incdirs"      : ["include"],
     "srcs"         : glob.glob("src/lib/*.cpp") + glob.glob("src/lib/rex/*.cpp"),
+    "install"      : {"include": ["include/gcore", "include/half.h"]},
     "defs"         : libdefs,
     "custom"       : libcustom,
     "libs"         : liblibs
@@ -71,25 +62,24 @@ prjs = [
     "bldprefix" : python.Version(),
     "srcs"      : ["src/py/_gcore.cpp", "src/py/log.cpp", "src/py/pathenumerator.cpp"],
     "deps"      : ["gcore"],
-    "custom"    : [RequireGcore(), python.SoftRequire, SilentCythonWarnings],
+    "custom"    : [RequireGcore, python.SoftRequire, SilentCythonWarnings],
     "install"   : {python.ModulePrefix(): ["src/py/gcore.py", "src/py/tests"]}
   },
   { "name"    : "testmodule",
     "type"    : "dynamicmodule",
     "prefix"  : "bin",
-    "incdirs" : ["include"],
     "srcs"    : ["src/tests/modules/module.cpp"]
   },
   { "name"    : "gcore_tests",
     "type"    : "testprograms",
     "srcs"    : glob.glob("src/tests/*.cpp"),
     "deps"    : ["gcore", "testmodule"],
-    "custom"  : [RequireGcore()],
+    "custom"  : [RequireGcore]
   },
   { "name"    : "yaml",
     "type"    : "program",
     "srcs"    : ["yaml.cpp"],
-    "custom"  : [RequireGcore()],
+    "custom"  : [RequireGcore]
   }
 ]
 
@@ -119,4 +109,4 @@ excons.DeclareTargets(env, prjs)
 cygen = env.Command(["src/py/_gcore.cpp", "src/py/_gcore.h"], "src/py/_gcore.pyx", "%s -I include --cplus --embed-positions -o $TARGET $SOURCE" % cython)
 
 
-
+Default(["gcore"])

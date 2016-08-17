@@ -52,6 +52,7 @@ USA.
 #include <gcore/eventqueue.h>
 #include <gcore/perflog.h>
 #include <gcore/functor.h>
+#include <gcore/time.h>
 
 #endif 
 

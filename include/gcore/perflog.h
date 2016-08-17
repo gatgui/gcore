@@ -1,8 +1,31 @@
+/*
+
+Copyright (C) 2009, 2010  Gaetan Guidet
+
+This file is part of gcore.
+
+gcore is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation; either version 2.1 of the License, or (at
+your option) any later version.
+
+gcore is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+USA.
+
+*/
 #ifndef __gcore_perfLog_h__
 #define __gcore_perfLog_h__
 
 #include <gcore/config.h>
 #include <gcore/platform.h>
+#include <gcore/time.h>
 
 namespace gcore
 {
@@ -13,16 +36,6 @@ namespace gcore
    public:
       
       friend class ScopedPerfLog;
-      
-      enum Units
-      {
-         CurrentUnits = -1,
-         NanoSeconds,
-         MilliSeconds,
-         Seconds,
-         Minutes,
-         Hours
-      };
       
       enum ShowFlags
       {
@@ -59,18 +72,14 @@ namespace gcore
       static PerfLog& SharedInstance();
       static void Begin(const std::string &id);
       static void End();
-      static void Print(Output output=ConsoleOutput, int flags=ShowDefaults, int sortBy=SortFuncTime, Units units=CurrentUnits);
-      static void Print(std::ostream &os, int flags=ShowDefaults, int sortBy=SortFuncTime, Units units=CurrentUnits);
-      static void Print(Log &log, int flags=ShowDefaults, int sortBy=SortFuncTime, Units units=CurrentUnits);
+      static void Print(Output output=ConsoleOutput, int flags=ShowDefaults, int sortBy=SortFuncTime, TimeCounter::Units units=TimeCounter::CurrentUnits);
+      static void Print(std::ostream &os, int flags=ShowDefaults, int sortBy=SortFuncTime, TimeCounter::Units units=TimeCounter::CurrentUnits);
+      static void Print(Log &log, int flags=ShowDefaults, int sortBy=SortFuncTime, TimeCounter::Units units=TimeCounter::CurrentUnits);
       static void Clear();
-      
-      static const char* UnitsString(Units units);
-      static double ConvertUnits(double val, Units srcUnits, Units dstUnits);
-      
       
    public:
       
-      PerfLog(Units units=Seconds);
+      PerfLog(TimeCounter::Units units=TimeCounter::Seconds);
       PerfLog(const PerfLog &rhs);
       ~PerfLog();
       
@@ -78,9 +87,9 @@ namespace gcore
       
       void begin(const std::string &id);
       void end();
-      void print(Output output=ConsoleOutput, int flags=ShowDefaults, int sortBy=SortFuncTime, Units units=CurrentUnits);
-      void print(std::ostream &os, int flags=ShowDefaults, int sortBy=SortFuncTime, Units units=CurrentUnits);
-      void print(Log &log, int flags=ShowDefaults, int sortBy=SortFuncTime, Units units=CurrentUnits);
+      void print(Output output=ConsoleOutput, int flags=ShowDefaults, int sortBy=SortFuncTime, TimeCounter::Units units=TimeCounter::CurrentUnits);
+      void print(std::ostream &os, int flags=ShowDefaults, int sortBy=SortFuncTime, TimeCounter::Units units=TimeCounter::CurrentUnits);
+      void print(Log &log, int flags=ShowDefaults, int sortBy=SortFuncTime, TimeCounter::Units units=TimeCounter::CurrentUnits);
       void clear();
       bool empty() const;
       void merge(const PerfLog &rhs);
@@ -118,12 +127,6 @@ namespace gcore
       class GCORE_API StackItem
       {
       public:
-         #ifdef _WIN32
-         typedef LARGE_INTEGER TimeCounter;
-         #else
-         typedef struct timespec TimeCounter;
-         #endif
-      
          Entry *entry;
          std::string id;
          int recursionCount;
@@ -135,14 +138,14 @@ namespace gcore
          StackItem(const StackItem &);
          StackItem& operator=(const StackItem &);
       
-         void stopAll(double &total, double &self, Units units);
-         double stopSelf(Units units);
+         void stopAll(double &total, double &self, TimeCounter::Units units);
+         double stopSelf(TimeCounter::Units units);
          void startSelf();
-         double duration(Units units) const;
+         double duration(TimeCounter::Units units) const;
       
       private:
       
-         double duration(const TimeCounter &from, Units units) const;
+         double duration(const TimeCounter &from, TimeCounter::Units units) const;
       
          bool selfStopped;
       };
@@ -153,8 +156,8 @@ namespace gcore
       
    private:
       
-      const char* unitsString(Units units) const;
-      double convertUnits(double val, Units srcUnits, Units dstUnits) const;
+      const char* unitsString(TimeCounter::Units units) const;
+      double convertUnits(double val, TimeCounter::Units srcUnits, TimeCounter::Units dstUnits) const;
       
       
    private:
@@ -162,7 +165,7 @@ namespace gcore
       BaseEntryMap mEntries;
       EntryMap mRootEntries;
       std::deque<StackItem> mEntryStack;
-      Units mUnits;
+      TimeCounter::Units mUnits;
    };
 
    class GCORE_API ScopedPerfLog

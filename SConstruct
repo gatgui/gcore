@@ -44,9 +44,9 @@ Export("RequireGcore")
 prjs = [
   { "name"         : "gcore",
     "type"         : "staticlib" if static else "sharedlib",
-    "version"      : "0.3.2",
-    "soname"       : "libgcore.so.0",
-    "install_name" : "libgcore.0.dylib",
+    "version"      : "1.0.0",
+    "soname"       : "libgcore.so.1",
+    "install_name" : "libgcore.1.dylib",
     "srcs"         : glob.glob("src/lib/*.cpp") + glob.glob("src/lib/rex/*.cpp"),
     "install"      : {"include": ["include/gcore", "include/half.h"]},
     "defs"         : libdefs,

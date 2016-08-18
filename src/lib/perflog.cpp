@@ -1,50 +1,30 @@
+/*
+
+Copyright (C) 2009, 2010  Gaetan Guidet
+
+This file is part of gcore.
+
+gcore is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation; either version 2.1 of the License, or (at
+your option) any later version.
+
+gcore is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+USA.
+
+*/
 #include <gcore/perflog.h>
 #include <gcore/log.h>
-#ifdef __APPLE__
-#  include <mach/clock.h>
-#  include <mach/mach.h>
-#endif
 
 namespace gcore
 {
-
-#ifndef _WIN32
-#ifdef __APPLE__
-
-clock_serv_t gClockServ;
-
-class ClockServiceInitializer
-{
-public:
-   ClockServiceInitializer()
-   {
-      host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &gClockServ);
-   }
-   ~ClockServiceInitializer()
-   {
-      mach_port_deallocate(mach_task_self(), gClockServ);
-   }
-};
-
-ClockServiceInitializer _initializeClockService;
-
-static inline void clock_gettime(struct timespec *ts)
-{
-   mach_timespec_t mts;
-   clock_get_time(gClockServ, &mts);
-   ts->tv_sec = mts.tv_sec;
-   ts->tv_nsec = mts.tv_nsec;
-}
-
-#else
-
-static inline void clock_gettime(struct timespec *ts)
-{
-   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, ts);
-}
-
-#endif
-#endif
 
 PerfLog::StackItem::StackItem()
    : entry(0)
@@ -52,11 +32,6 @@ PerfLog::StackItem::StackItem()
    , recursionCount(0)
    , selfStopped(false)
 {
-#ifdef _WIN32
-   QueryPerformanceCounter(&start);
-#else
-   clock_gettime(&start);
-#endif
    selfStart = start;
 }
 
@@ -66,11 +41,6 @@ PerfLog::StackItem::StackItem(const std::string &_id, Entry *_entry)
    , recursionCount(0)
    , selfStopped(false)
 {
-#ifdef _WIN32
-   QueryPerformanceCounter(&start);
-#else
-   clock_gettime(&start);
-#endif
    selfStart = start;
 }
 
@@ -98,60 +68,23 @@ PerfLog::StackItem& PerfLog::StackItem::operator=(const PerfLog::StackItem &rhs)
    return *this;
 }
 
-void PerfLog::StackItem::stopAll(double &total, double &self, PerfLog::Units units)
+void PerfLog::StackItem::stopAll(double &total, double &self, TimeCounter::Units units)
 {
-#ifdef _WIN32
-   LARGE_INTEGER end, freq;
+   TimeCounter end(units);
    
-   QueryPerformanceFrequency(&freq);
-   
-   if (freq.QuadPart == 0)
-   {
-      total = 0;
-      self = 0;
-      return;
-   }
-   
-   QueryPerformanceCounter(&end);
-   
-   total = double(end.QuadPart - start.QuadPart) / double(freq.QuadPart);
-   total = PerfLog::ConvertUnits(total, Seconds, units);
-   
+   total = (end - start).value();
    if (selfStopped)
    {
       self = 0;
    }
    else
    {
-      self = double(end.QuadPart - selfStart.QuadPart) / double(freq.QuadPart);
-      self = PerfLog::ConvertUnits(self, Seconds, units);
+      self = (end - selfStart).value();
       selfStopped = true;
    }
-#else
-   struct timespec to;
-   
-   clock_gettime(&to);
-   
-   double dsec  = double(to.tv_sec - start.tv_sec);
-   double dnsec = double(to.tv_nsec - start.tv_nsec);
-   
-   total = (PerfLog::ConvertUnits(dsec, Seconds, units) + PerfLog::ConvertUnits(dnsec, NanoSeconds, units));
-   
-   if (selfStopped)
-   {
-      self = 0;
-   }
-   else
-   {
-      dsec  = double(to.tv_sec - selfStart.tv_sec);
-      dnsec = double(to.tv_nsec - selfStart.tv_nsec);
-      self = (PerfLog::ConvertUnits(dsec, Seconds, units) + PerfLog::ConvertUnits(dnsec, NanoSeconds, units));
-      selfStopped = true;
-   }
-#endif
 }
 
-double PerfLog::StackItem::stopSelf(PerfLog::Units units)
+double PerfLog::StackItem::stopSelf(TimeCounter::Units units)
 {
    if (!selfStopped)
    {
@@ -168,47 +101,19 @@ void PerfLog::StackItem::startSelf()
 {
    if (selfStopped)
    {
-#ifdef _WIN32
-      QueryPerformanceCounter(&selfStart);
-#else
-      clock_gettime(&selfStart);
-#endif
+      selfStart.restart();
       selfStopped = false;
    }
 }
 
-double PerfLog::StackItem::duration(const TimeCounter &from, PerfLog::Units units) const
+double PerfLog::StackItem::duration(const TimeCounter &from, TimeCounter::Units units) const
 {
-#ifdef _WIN32
-   LARGE_INTEGER to, freq;
-   
-   QueryPerformanceFrequency(&freq);
-   
-   if (freq.QuadPart == 0)
-   {
-      return 0.0;
-   }
-   
-   QueryPerformanceCounter(&to);
-   
-   double dsec = double(to.QuadPart - from.QuadPart) / double(freq.QuadPart);
-   
-   return PerfLog::ConvertUnits(dsec, Seconds, units);
-#else
-   struct timespec to;
-   
-   clock_gettime(&to);
-   
-   double dsec  = double(to.tv_sec - from.tv_sec);
-   double dnsec = double(to.tv_nsec - from.tv_nsec);
-   
-   return (PerfLog::ConvertUnits(dsec, Seconds, units) + PerfLog::ConvertUnits(dnsec, NanoSeconds, units));
-#endif
+   return from.elapsed().value(units);
 }
 
-double PerfLog::StackItem::duration(PerfLog::Units units) const
+double PerfLog::StackItem::duration(TimeCounter::Units units) const
 {
-   return duration(start, units);
+   return start.elapsed().value(units);
 }
 
 // ---
@@ -296,45 +201,6 @@ void PerfLog::Entry::merge(const Entry &rhs)
 
 // ---
 
-const char* PerfLog::UnitsString(PerfLog::Units units)
-{
-   static const char* sStrs[] = {"nanosecond(s)", "millisecond(s)", "second(s)", "minute(s)", "hour(s)"};
-   
-   int idx = int(units);
-   
-   if (idx < 0 || idx > Hours)
-   {
-      return "(unknown units)";
-   }
-   else
-   {
-      return sStrs[idx];
-   }
-}
-
-double PerfLog::ConvertUnits(double val, PerfLog::Units srcUnits, PerfLog::Units dstUnits)
-{
-   static const double sConvertUnits[][Hours+1] = {
-      {            1.0, 1.0/1000000.0, 1.0/1000000000.0, 1.0/60000000000.0, 1.0/3600000000000.0},
-      {      1000000.0,           1.0,       1.0/1000.0,       1.0/60000.0,       1.0/3600000.0},
-      {   1000000000.0,        1000.0,              1.0,          1.0/60.0,          1.0/3600.0},
-      {  60000000000.0,       60000.0,             60.0,               1.0,            1.0/60.0},
-      {3600000000000.0,     3600000.0,           3600.0,              60.0,                 1.0}
-   };
-   
-   int src = int(srcUnits);
-   int dst = int(dstUnits);
-   
-   if (src < 0 || dst < 0 || src > Hours || dst > Hours)
-   {
-      return val;
-   }
-   
-   double rv = val * sConvertUnits[int(srcUnits)][int(dstUnits)];
-   
-   return rv;
-}
-   
 PerfLog& PerfLog::SharedInstance()
 {
    static PerfLog sShared;
@@ -351,17 +217,17 @@ void PerfLog::End()
    SharedInstance().end();
 }
 
-void PerfLog::Print(PerfLog::Output output, int flags, int sortBy, PerfLog::Units units)
+void PerfLog::Print(PerfLog::Output output, int flags, int sortBy, TimeCounter::Units units)
 {
    SharedInstance().print(output, flags, sortBy, units);
 }
 
-void PerfLog::Print(std::ostream &os, int flags, int sortBy, PerfLog::Units units)
+void PerfLog::Print(std::ostream &os, int flags, int sortBy, TimeCounter::Units units)
 {
    SharedInstance().print(os, flags, sortBy, units);
 }
 
-void PerfLog::Print(Log &log, int flags, int sortBy, PerfLog::Units units)
+void PerfLog::Print(Log &log, int flags, int sortBy, TimeCounter::Units units)
 {
    SharedInstance().print(log, flags, sortBy, units);
 }
@@ -373,7 +239,7 @@ void PerfLog::Clear()
 
 // ---
 
-PerfLog::PerfLog(PerfLog::Units units)
+PerfLog::PerfLog(TimeCounter::Units units)
    : mUnits(units)
 {
 }
@@ -384,9 +250,9 @@ PerfLog::PerfLog(const PerfLog &rhs)
    , mEntryStack(rhs.mEntryStack)
    , mUnits(rhs.mUnits)
 {
-   if (mUnits == CurrentUnits)
+   if (mUnits == TimeCounter::CurrentUnits)
    {
-      mUnits = Seconds;
+      mUnits = TimeCounter::Seconds;
    }
 }
 
@@ -474,8 +340,6 @@ void PerfLog::end()
       
       if (--(item.recursionCount) < 0)
       {
-         //double duration = item.duration(mUnits);
-         //double sduration = item.stopSelf(mUnits);
          double duration, sduration;
          
          item.stopAll(duration, sduration, mUnits);
@@ -555,32 +419,32 @@ void PerfLog::merge(const PerfLog &rhs)
    }
 }
 
-const char* PerfLog::unitsString(PerfLog::Units units) const
+const char* PerfLog::unitsString(TimeCounter::Units units) const
 {
-   if (units == CurrentUnits)
+   if (units == TimeCounter::CurrentUnits)
    {
       units = mUnits;
    }
    
-   return UnitsString(units);
+   return TimeCounter::UnitsString(units);
 }
 
-double PerfLog::convertUnits(double val, PerfLog::Units srcUnits, PerfLog::Units dstUnits) const
+double PerfLog::convertUnits(double val, TimeCounter::Units srcUnits, TimeCounter::Units dstUnits) const
 {
-   if (srcUnits == CurrentUnits)
+   if (srcUnits == TimeCounter::CurrentUnits)
    {
       srcUnits = mUnits;
    }
    
-   if (dstUnits == CurrentUnits)
+   if (dstUnits == TimeCounter::CurrentUnits)
    {
       dstUnits = mUnits;
    }
    
-   return ConvertUnits(val, srcUnits, dstUnits);
+   return TimeCounter::ConvertUnits(val, srcUnits, dstUnits);
 }
 
-void PerfLog::print(PerfLog::Output output, int flags, int sortBy, PerfLog::Units units)
+void PerfLog::print(PerfLog::Output output, int flags, int sortBy, TimeCounter::Units units)
 {
    if (output == ConsoleOutput)
    {
@@ -600,7 +464,7 @@ public:
    
    typedef std::vector<std::string> Line;
    
-   Logger(int showFlags, int sortFlags, PerfLog::Units srcUnits, PerfLog::Units dstUnits)
+   Logger(int showFlags, int sortFlags, TimeCounter::Units srcUnits, TimeCounter::Units dstUnits)
       : mShowFlags(showFlags)
       , mSortFlags(sortFlags)
       , mSortReverse(false)
@@ -686,7 +550,7 @@ public:
       if (mShowFlags & PerfLog::ShowTotalTime)
       {
          std::ostringstream oss;
-         oss << PerfLog::ConvertUnits(entry.totalTime, mSrcUnits, mDstUnits);
+         oss << TimeCounter::ConvertUnits(entry.totalTime, mSrcUnits, mDstUnits);
          lline[field] = oss.str();
          len = lline[field].length();
          if (len > mFieldLengths[field])
@@ -699,7 +563,7 @@ public:
       if (mShowFlags & PerfLog::ShowFuncTime)
       {
          std::ostringstream oss;
-         oss << PerfLog::ConvertUnits(entry.selfTime, mSrcUnits, mDstUnits);
+         oss << TimeCounter::ConvertUnits(entry.selfTime, mSrcUnits, mDstUnits);
          lline[field] = oss.str();
          len = lline[field].length();
          if (len > mFieldLengths[field])
@@ -725,7 +589,7 @@ public:
       if (mShowFlags & PerfLog::ShowAvgTotalTime)
       {
          std::ostringstream oss;
-         oss << PerfLog::ConvertUnits(entry.totalTime / entry.callCount, mSrcUnits, mDstUnits);
+         oss << TimeCounter::ConvertUnits(entry.totalTime / entry.callCount, mSrcUnits, mDstUnits);
          lline[field] = oss.str();
          len = lline[field].length();
          if (len > mFieldLengths[field])
@@ -738,7 +602,7 @@ public:
       if (mShowFlags & PerfLog::ShowAvgFuncTime)
       {
          std::ostringstream oss;
-         oss << PerfLog::ConvertUnits(entry.selfTime / entry.callCount, mSrcUnits, mDstUnits);
+         oss << TimeCounter::ConvertUnits(entry.selfTime / entry.callCount, mSrcUnits, mDstUnits);
          lline[field] = oss.str();
          len = lline[field].length();
          if (len > mFieldLengths[field])
@@ -1104,8 +968,8 @@ private:
    int mShowFlags;
    int mSortFlags;
    bool mSortReverse;
-   PerfLog::Units mSrcUnits;
-   PerfLog::Units mDstUnits;
+   TimeCounter::Units mSrcUnits;
+   TimeCounter::Units mDstUnits;
    std::vector<size_t> mFieldLengths;
    Line mHeader;
    std::vector<Line> mLines;
@@ -1113,11 +977,11 @@ private:
 
 // ---
 
-void PerfLog::print(std::ostream &os, int flags, int sortBy, PerfLog::Units units)
+void PerfLog::print(std::ostream &os, int flags, int sortBy, TimeCounter::Units units)
 {
    os << "Performances (in " << unitsString(units) << "):" << std::endl;
    
-   Logger log(flags, sortBy, mUnits, (units == CurrentUnits ? mUnits : units));
+   Logger log(flags, sortBy, mUnits, (units == TimeCounter::CurrentUnits ? mUnits : units));
    
    if (flags & ShowFlat)
    {
@@ -1154,12 +1018,12 @@ void PerfLog::print(std::ostream &os, int flags, int sortBy, PerfLog::Units unit
    }
 }
 
-void PerfLog::print(Log &log, int flags, int sortBy, PerfLog::Units units)
+void PerfLog::print(Log &log, int flags, int sortBy, TimeCounter::Units units)
 {
    log.printInfo("Performances (in %s)", unitsString(units));
    log.indent();
    
-   Logger logger(flags, sortBy, mUnits, (units == CurrentUnits ? mUnits : units));
+   Logger logger(flags, sortBy, mUnits, (units == TimeCounter::CurrentUnits ? mUnits : units));
    
    if (flags & ShowFlat)
    {

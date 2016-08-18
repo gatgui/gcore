@@ -56,7 +56,6 @@ int main(int argc, char **argv)
 {
    unsigned long loop = 10;
    unsigned long n = 1000;
-   bool flat = false;
   
    if (argc >= 2)
    {
@@ -73,11 +72,6 @@ int main(int argc, char **argv)
          {
             n = val;
          }
-      }
-      
-      if (argc >= 4)
-      {
-         flat = !strcmp(argv[3], "flat");
       }
    }
    

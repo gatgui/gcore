@@ -21,7 +21,7 @@ USA.
 
 */
 
-#include <gcore/gcore>
+#include <gcore/all.h>
 #include <iostream>
 
 float add_float(float a, float b) {

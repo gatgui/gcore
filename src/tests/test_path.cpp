@@ -21,11 +21,11 @@ USA.
 
 */
 
-#include <gcore/gcore.h>
+#include <gcore/all.h>
 
 class AClass {
   public:
-    bool FileFound(const Path &path) {
+    bool FileFound(const gcore::Path &path) {
       if (path.isDir()) {
         fprintf(stderr, "Found Directory: %s\n", path.fullname().c_str());
       } else if (path.isFile()) {
@@ -154,7 +154,7 @@ int main(int, char **) {
   } else {
     fprintf(stdout, "Succeeded: getExtension: \"%s\"\n", noExtRelFile.fullname().c_str());
   }
-  String ext = extRelFile.getExtension();
+  gcore::String ext = extRelFile.getExtension();
   if (ext.length() == 0) {
     fprintf(stderr, "Failed: getExtension: \"%s\"\n", extRelFile.fullname().c_str());
   } else {
@@ -189,20 +189,20 @@ int main(int, char **) {
   
   fprintf(stdout, "Basename \"%s\": \"%s\"\n", path0.fullname().c_str(), path0.basename().c_str());
   
-  String dir0 = gcore::Path(path0.basename()).dirname();
+  gcore::String dir0 = gcore::Path(path0.basename()).dirname();
   if (dir0.length() > 0) {
     fprintf(stderr, "Failed: dirname: \"%s\"\n", path0.basename().c_str());
   } else {
     fprintf(stdout, "Succeeded: dirname: \"%s\"\n", path0.basename().c_str());
   }
   
-  String tmp = absDir0.basename();
+  gcore::String tmp = absDir0.basename();
   fprintf(stdout, "Basename \"%s\": \"%s\"\n", absDir0.fullname().c_str(), tmp.c_str());
   
   tmp = absDir1.basename();
   fprintf(stdout, "Basename \"%s\": \"%s\"\n", absDir1.fullname().c_str(), tmp.c_str());
   
-  String dir1 = path0.dirname();
+  gcore::String dir1 = path0.dirname();
   if (dir1.length() == 0) {
     fprintf(stderr, "Failed: dirname: \"%s\"\n", path0.fullname().c_str());
   } else {

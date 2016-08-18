@@ -48,6 +48,11 @@ USA.
 #include <gcore/base85.h>
 #include <gcore/json.h>
 #include <gcore/tpl.h>
+#include <gcore/hashmap.h>
+#include <gcore/eventqueue.h>
+#include <gcore/perflog.h>
+#include <gcore/functor.h>
+#include <gcore/time.h>
 
 #endif 
 

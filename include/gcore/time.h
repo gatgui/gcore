@@ -99,7 +99,7 @@ namespace gcore
    };
 }
 
-std::ostream& operator<<(std::ostream &os, const gcore::TimeCounter &tc)
+inline std::ostream& operator<<(std::ostream &os, const gcore::TimeCounter &tc)
 {
    os << tc.value() << gcore::TimeCounter::UnitsString(tc.units(), true);
    return os;

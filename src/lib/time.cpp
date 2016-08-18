@@ -97,19 +97,20 @@ FrequencyInitializer _frequencyInitializer;
 
 // ---
 
-const char* TimeCounter::UnitsString(TimeCounter::Units units)
+const char* TimeCounter::UnitsString(TimeCounter::Units units, bool compact)
 {
    static const char* sStrs[] = {"nanosecond(s)", "microsecond(s)", "millisecond(s)", "second(s)", "minute(s)", "hour(s)"};
+   static const char* sShortStrs[] = {"ns", "us", "ms", "s", "m", "h"};
    
    int idx = int(units);
    
    if (idx < 0 || idx > Hours)
    {
-      return "(unknown units)";
+      return (compact ? "" : "(unknown units)");
    }
    else
    {
-      return sStrs[idx];
+      return (compact ? sShortStrs[idx] : sStrs[idx]);
    }
 }
 

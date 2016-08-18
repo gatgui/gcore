@@ -41,7 +41,7 @@ namespace gcore
          Hours
       };
       
-      static const char* UnitsString(Units units);
+      static const char* UnitsString(Units units, bool compact=false);
       static double ConvertUnits(double val, Units srcUnits, Units dstUnits);
    
    public:
@@ -97,6 +97,12 @@ namespace gcore
       struct timespec mCounter;
 #endif
    };
+}
+
+std::ostream& operator<<(std::ostream &os, const gcore::TimeCounter &tc)
+{
+   os << tc.value() << gcore::TimeCounter::UnitsString(tc.units(), true);
+   return os;
 }
 
 inline gcore::TimeCounter operator+(const gcore::TimeCounter &tc0, const gcore::TimeCounter &tc1)

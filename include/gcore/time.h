@@ -24,6 +24,7 @@ USA.
 #define __gcore_time_h__
 
 #include <gcore/config.h>
+#include <gcore/platform.h>
 
 namespace gcore
 {

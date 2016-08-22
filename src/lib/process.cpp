@@ -705,14 +705,6 @@ int gcore::Process::wait(bool blocking) {
   if (mVerbose) {
     sprintf(mess,"Wait(%ld): Error\n", (long)mPID);
     (*mOutFunc)(mess);
-    /*
-    DWORD err = GetLastError();
-    FormatMessage(
-      FORMAT_MESSAGE_FROM_SYSTEM,
-      &err, 0, 0,
-      mess, 64, 0);
-    (*m_outFunc)(mess);
-    */
   }
   return -1;
   

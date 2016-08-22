@@ -100,7 +100,7 @@ gcore::String gcore::DynamicModule::_getError() const {
   char buffer[512];
   FormatMessage(
     FORMAT_MESSAGE_FROM_SYSTEM,
-    NULL, dw, MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT),
+    NULL, dw, MAKELANGID(LANG_ENGLISH,SUBLANG_DEFAULT),
     (LPTSTR)&buffer, sizeof(buffer), NULL);
   return buffer;
 #endif  //_WIN32

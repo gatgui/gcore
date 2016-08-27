@@ -71,13 +71,6 @@ namespace gcore
   {
   public:
     
-    class KeyError : public std::runtime_error
-    {
-    public:
-      explicit KeyError(const std::string &s) throw();
-      virtual ~KeyError() throw();
-    };
-
     struct Entry
     {
       KeyType key;
@@ -182,8 +175,9 @@ namespace gcore
     virtual ~HashMap();
     
     HashMap<KeyType, ValueType, H>& operator=(const HashMap<KeyType, ValueType, H> &rhs);
-    // May throw KeyError exception
+    // Throws std::out_of_range exception when key not present
     const ValueType& operator[](const KeyType &k) const;
+    // If key not yet present it will be added. Use 'at' to avoid this behaviour
     ValueType& operator[](const KeyType &k);
     
     double loadFactor() const;
@@ -204,6 +198,9 @@ namespace gcore
     void erase(iterator it);
     size_t keys(KeyVector &kl) const;
     size_t values(ValueVector &vl) const;
+    // 'at' method will throw std::out_of_range exception if key doesn't exist
+    const ValueType& at(const KeyType &k) const;
+    ValueType& at(const KeyType &k);
     
   protected:
     
@@ -224,19 +221,6 @@ template <typename KeyType, typename ValueType, gcore::HashFunc H>
 inline bool gcore::HashMap<KeyType, ValueType, H>::Entry::operator==(const Entry &rhs) const
 {
   return (h == rhs.h && key == rhs.key);
-}
-
-// ---
-
-template <typename KeyType, typename ValueType, gcore::HashFunc H>
-gcore::HashMap<KeyType, ValueType, H>::KeyError::KeyError(const std::string &s) throw()
-  : std::runtime_error(std::string("KeyError: ")+s)
-{
-}
-
-template <typename KeyType, typename ValueType, gcore::HashFunc H>
-gcore::HashMap<KeyType, ValueType, H>::KeyError::~KeyError() throw()
-{
 }
 
 // ---
@@ -786,7 +770,7 @@ void gcore::HashMap<KeyType, ValueType, H>::erase(typename gcore::HashMap<KeyTyp
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
-const ValueType& gcore::HashMap<KeyType, ValueType, H>::operator[](const KeyType &k) const
+const ValueType& gcore::HashMap<KeyType, ValueType, H>::at(const KeyType &k) const
 {
   Entry e;
   e.h = HashValue<KeyType, H>::Compute(k);
@@ -796,9 +780,31 @@ const ValueType& gcore::HashMap<KeyType, ValueType, H>::operator[](const KeyType
   typename EntryList::const_iterator it = std::find(el.begin(), el.end(), e);
   if (it == el.end())
   {
-    throw KeyError("");
+    throw std::out_of_range("Invalid key.");
   }
   return it->value;
+}
+
+template <typename KeyType, typename ValueType, gcore::HashFunc H>
+ValueType& gcore::HashMap<KeyType, ValueType, H>::at(const KeyType &k)
+{
+  Entry e;
+  e.h = HashValue<KeyType, H>::Compute(k);
+  e.key = k;
+  unsigned int idx = (e.h % mNumBuckets);
+  const EntryList &el = mBuckets[idx];
+  typename EntryList::iterator it = std::find(el.begin(), el.end(), e);
+  if (it == el.end())
+  {
+    throw std::out_of_range("Invalid key.");
+  }
+  return it->value;
+}
+
+template <typename KeyType, typename ValueType, gcore::HashFunc H>
+const ValueType& gcore::HashMap<KeyType, ValueType, H>::operator[](const KeyType &k) const
+{
+  return at(k);
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>

@@ -516,7 +516,7 @@ Date& Date::operator+=(const Date &rhs) {
     if (rhs.isDiff()) {
       set(get() + rhs.get(), false);
     } else {
-      set(get() + tmp.get(true), false);
+      set(get() + rhs.get(true), false);
     }
   }
   return *this;

@@ -25,19 +25,6 @@ USA.
 
 namespace gcore {
 
-
-ArgParserError::ArgParserError(const String &message)
-  : mMessage(message) {
-}
-
-ArgParserError::~ArgParserError() throw() {
-}
-
-const char* ArgParserError::what() const throw() {
-  return mMessage.c_str();
-}
-
-
 ArgParser::ArgParser(const FlagDesc *flags, int n)
   : mNoFlagOn(false)
   , mNoFlagCount(0) {
@@ -229,12 +216,12 @@ bool ArgParser::isFlagSet(const String &name) const {
   return (mFlagsMap.find(name) != mFlagsMap.end());
 }
 
-void ArgParser::parse(int argc, char **argv) throw (ArgParserError) {
+Status ArgParser::parse(int argc, char **argv) {
 
   reset();
 
   if (argc < 0 || !argv) {
-    throw ArgParserError("Invalid arguments");
+    return Status(false, "Invalid arguments.");
   }
 
   int carg = 0;
@@ -262,18 +249,19 @@ void ArgParser::parse(int argc, char **argv) throw (ArgParserError) {
       if (!nflag) {
         std::ostringstream oss;
         oss << "Unknown flag: \"" << flag << "\"";
-        throw ArgParserError(oss.str());
+        return Status(false, oss.str().c_str());
       }
 
       if (cflag) {
         if (cflag->arity>0 && valcount!=cflag->arity) {
           std::ostringstream oss;
           oss << "\"" << cflag->longname << "\" flag requires " << cflag->arity << " value(s)";
-          throw ArgParserError(oss.str());
+          return Status(false, oss.str().c_str());
+        
         } else if (cflag->arity==0 && valcount>0) {
           std::ostringstream oss;
           oss << "\"" << cflag->longname << "\" flag does not accept any value";
-          throw ArgParserError(oss.str());
+          return Status(false, oss.str().c_str());
         }
       }
       
@@ -284,66 +272,76 @@ void ArgParser::parse(int argc, char **argv) throw (ArgParserError) {
       if (it == mFlagsMap.end()) {
         it = mFlagsMap.find(cflag->shortname);
       }
+      
       if (it == mFlagsMap.end()) {
         cdata = (int)mDatas.size();
         mFlagsMap[cflag->shortname] = cdata;
         mFlagsMap[cflag->longname] = cdata;
         mDatas.push(FlagOccurencesValues());
+      
       } else {
         if (!(cflag->opts & FlagDesc::FT_MULTI)) {
           std::ostringstream oss;
           oss << "\"" << cflag->longname << "\" flag is single usage";
-          throw ArgParserError(oss.str());
+          return Status(false, oss.str().c_str());
         }
         cdata = it->second;
       }
+      
       if (cflag->arity != 0) {
         cvalues = (int)mDatas[cdata].size();
         mDatas[cdata].push(FlagValues());
+      
       } else {
         cvalues = -1;
       }
+    
     } else {
       if (cvalues != -1 && valcount != cflag->arity) {
         valcount++;
         mDatas[cdata][cvalues].push(String(argv[carg]));
+      
       } else {
         cflag = 0;
         cdata = -1;
         cvalues = -1;
         valcount = 0;
         if (mNoFlagOn) {
-          if (mNoFlagCount == -1 ||
-              (int)(mArgs.size()) < mNoFlagCount) {
+          if (mNoFlagCount == -1 || (int)(mArgs.size()) < mNoFlagCount) {
             mArgs.push(String(argv[carg]));
+          
           } else {
             std::ostringstream oss;
             oss << "Only " << mNoFlagCount << " non-flag value(s) accepted";
-            throw ArgParserError(oss.str());
+            return Status(false, oss.str().c_str());
           }
+        
         } else {
           std::ostringstream oss;
           oss << "Only flags arguments are accepted (Arg " << carg << ": " << argv[carg] << ")";
-          throw ArgParserError(oss.str());
+          return Status(false, oss.str().c_str());
         }
       }
     }
     ++carg;
   }
+  
   if (cflag) {
     if (cflag->arity>0 && cflag->arity!=valcount) {
       std::ostringstream oss;
       oss << "\"" << cflag->longname << "\" flag requires " << cflag->arity << " value(s)";
-      throw ArgParserError(oss.str());
+      return Status(false, oss.str().c_str());
     }
   }
+  
   if (mNoFlagOn && mNoFlagCount>0) {
     if ((int)mArgs.size() != mNoFlagCount) {
       std::ostringstream oss;
       oss << mNoFlagCount << " non-flag value(s) required";
-      throw ArgParserError(oss.str());
+      return Status(false, oss.str().c_str());
     }
   }
+  
   if (carg == argc) {
     // check if all required flags are set !
     for (size_t i=0; i<mFlags.size(); ++i) {
@@ -351,11 +349,13 @@ void ArgParser::parse(int argc, char **argv) throw (ArgParserError) {
         if (mFlagsMap.find(mFlags[i].longname) == mFlagsMap.end()) {
           std::ostringstream oss;
           oss << "\"" << mFlags[i].longname << "\" flag is required";
-          throw ArgParserError(oss.str());
+          return Status(false, oss.str().c_str());
         }
       }
     }
   }
+  
+  return Status(true);
 }
 
 FlagDesc* ArgParser::findLongFlag(const String &name) {

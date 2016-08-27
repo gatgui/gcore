@@ -26,6 +26,7 @@ USA.
 
 #include <gcore/string.h>
 #include <gcore/list.h>
+#include <gcore/status.h>
 
 #define ACCEPTS_NOFLAG_ARGUMENTS(arity) {(gcore::FlagDesc::Option)0, "", "", arity}
 
@@ -43,15 +44,6 @@ namespace gcore {
     int arity;             // <0: any
   };
   
-  class GCORE_API ArgParserError : public std::exception {
-    public:
-      ArgParserError(const String &message);
-      virtual ~ArgParserError() throw();
-      virtual const char* what() const throw();
-    protected:
-      String mMessage;
-  };
-
   class GCORE_API ArgParser {
     public:
 
@@ -82,7 +74,7 @@ namespace gcore {
       bool getMultiFlagArgument(const String &name, size_t occurence,  size_t idx, unsigned int &out) const;
       bool getMultiFlagArgument(const String &name, size_t occurence,  size_t idx, bool &out) const;
 
-      void parse(int argc, char **argv) throw (ArgParserError);
+      Status parse(int argc, char **argv);
 
     protected:
 

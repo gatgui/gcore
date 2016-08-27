@@ -91,11 +91,9 @@ int main(int argc, char **argv) {
   
   gcore::ArgParser args(args_desc, sizeof(args_desc)/sizeof(gcore::FlagDesc));
   
-  try {
-    args.parse(argc-1, argv+1);
-    
-  } catch (gcore::ArgParserError &e) {
-    std::cerr << "Error while parsing arguments: " << e.what() << std::endl; 
+  gcore::Status stat = args.parse(argc-1, argv+1);
+  if (!stat) {
+    std::cerr << "Error while parsing arguments: " << stat << std::endl; 
     std::cout << "Usage: test_pipe (--captureOut/-co)? (--captureErr/-ce)? (--errToOut/-eo)? (--redirectIn/-ri)? (--verbose/-v)? <program>" << std::endl;
     return -1;
   }

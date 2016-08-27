@@ -142,7 +142,7 @@ namespace gcore {
       void setSecond(int s);
       
       void set(Int64 t, bool asDiff=false);
-      Int64 get() const;
+      Int64 get(bool forceDiff=false) const;
       
       static Date Days(int n);
       static Date Weeks(int n);

@@ -188,9 +188,9 @@ void Date::set(Int64 t, bool asDiff) {
   }
 }
 
-Int64 Date::get() const {
+Int64 Date::get(bool forceDiff) const {
   Int64 r;
-  if (mIsDiff) {
+  if (mIsDiff || forceDiff) {
     r = mDateTime.tm_sec;
     r += gsSecsPerMinute * mDateTime.tm_min;
     r += gsSecsPerHour * mDateTime.tm_hour;
@@ -199,6 +199,7 @@ Int64 Date::get() const {
     return r;
     
   } else {
+    // seconds sinc epoch
     struct tm tmp = mDateTime;
     r = mktime(&tmp);
   }
@@ -515,8 +516,7 @@ Date& Date::operator+=(const Date &rhs) {
     if (rhs.isDiff()) {
       set(get() + rhs.get(), false);
     } else {
-      // INVALID OPERATION
-      throw std::runtime_error("Cannot add 2 absolute dates");
+      set(get() + tmp.get(true), false);
     }
   }
   return *this;
@@ -527,8 +527,7 @@ Date& Date::operator-=(const Date &rhs) {
     if (rhs.isDiff()) {
       set(get() - rhs.get(), true);
     } else {
-      // INVALID OPERATION
-      throw std::runtime_error("Cannot subtract an absolute date from a diff date");
+      set(get() - rhs.get(true), true);
     }
   } else {
     if (rhs.isDiff()) {

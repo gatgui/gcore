@@ -2,18 +2,30 @@
 
 namespace gcore {
 
-Status::Status()
-  : mSuccess(true)
-  , mErrCode(-1)
-  , mMsg("") {
+Status::Status() {
+  set(true);
 }
 
-Status::Status(bool success, const char *msg) {
-  set(success, msg);
+Status::Status(bool success) {
+  set(success);
 }
 
-Status::Status(bool success, int errcode, const char *msg) {
-  set(success, errcode, msg);
+Status::Status(bool success, int errcode) {
+  set(success, errcode);
+}
+
+Status::Status(bool success, const char *msg, ...) {
+  va_list args;
+  va_start(args, msg);
+  set(success, msg, args);
+  va_end(args);
+}
+
+Status::Status(bool success, int errcode, const char *msg, ...) {
+  va_list args;
+  va_start(args, msg);
+  set(success, errcode, msg, args);
+  va_end(args);
 }
 
 Status::~Status() {
@@ -27,24 +39,20 @@ Status& Status::operator=(const Status &rhs) {
 }
 
 void Status::clear() {
-  mSuccess = true;
+  set(true);
+}
+
+void Status::set(bool success) {
+  mSuccess = success;
   mErrCode = -1;
   mMsg = "";
 }
 
-void Status::set(bool success, const char *msg) {
-  mSuccess = success;
-  mErrCode = -1;
-  mMsg = (msg != NULL ? msg : "");
-}
-
-void Status::set(bool success, int errcode, const char *msg) {
-  mSuccess = success;
-  mErrCode = -1;
-  mMsg = (msg != NULL ? msg : "");
+void Status::set(bool success, int errcode) {
+  set(success);
+  mErrCode = errcode;
   if (!mSuccess) {
     mMsg += " (";
-    mErrCode = errcode;
 #ifdef _WIN32
     LPTSTR buffer = NULL; 
     FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,
@@ -58,6 +66,38 @@ void Status::set(bool success, int errcode, const char *msg) {
     mMsg += strerror(mErrCode);
 #endif
     mMsg += ")";
+  }
+}
+
+void Status::set(bool success, const char *msg, ...) {
+  va_list args;
+  va_start(args, msg);
+  set(success, msg, args);
+  va_end(args);
+}
+
+void Status::set(bool success, int errcode, const char *msg, ...) {
+  va_list args;
+  va_start(args, msg);
+  set(success, errcode, msg, args);
+  va_end(args);
+}
+
+void Status::set(bool success, const char *msg, va_list args) {
+  set(success);
+  if (msg) {
+    char buffer[4096];
+    vsnprintf(buffer, 4095, msg, args);
+    mMsg = buffer;
+  }
+}
+
+void Status::set(bool success, int errcode, const char *msg, va_list args) {
+  set(success, errcode);
+  if (msg) {
+    char buffer[4096];
+    vsnprintf(buffer, 4095, msg, args);
+    mMsg.insert(0, buffer);
   }
 }
 

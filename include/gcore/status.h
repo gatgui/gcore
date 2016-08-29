@@ -31,8 +31,10 @@ namespace gcore {
 class GCORE_API Status {
   public:
     Status();
-    Status(bool success, const char *msg=0);
-    Status(bool success, int errcode, const char *msg=0);
+    Status(bool success);
+    Status(bool success, int errcode);
+    Status(bool success, const char *msg, ...);
+    Status(bool success, int errcode, const char *msg, ...);
     ~Status();
     
     Status& operator=(const Status &rhs);
@@ -40,8 +42,10 @@ class GCORE_API Status {
     inline bool operator ! () const { return !mSuccess; }
     
     void clear();
-    void set(bool success, const char *msg=0);
-    void set(bool success, int errcode, const char *msg=0);
+    void set(bool success);
+    void set(bool success, int errcode);
+    void set(bool success, const char *msg, ...);
+    void set(bool success, int errcode, const char *msg, ...);
     
     inline bool succeeded() const { return mSuccess; }
     inline bool failed() const { return !mSuccess; }
@@ -49,6 +53,10 @@ class GCORE_API Status {
     inline const char* message() const { return mMsg.c_str(); }
     
   private:
+    
+    void set(bool success, const char *msg, va_list args);
+    void set(bool success, int errcode, const char *msg, va_list args);
+    
     bool mSuccess;
     int mErrCode;
     std::string mMsg;

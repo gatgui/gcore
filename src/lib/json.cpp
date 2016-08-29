@@ -252,64 +252,72 @@ bool gcore::json::Value::toPropertyList(gcore::PropertyList &pl) const
 
 bool gcore::json::Value::toPropertyList(gcore::PropertyList &pl, const gcore::String &cprop) const
 {
-   try
+   switch (mType)
    {
-      switch (mType)
+   case ObjectType:
       {
-      case ObjectType:
+         gcore::String prop, bprop = cprop;
+         
+         if (cprop.length() > 0)
          {
-            gcore::String prop, bprop = cprop;
-            
-            if (cprop.length() > 0)
+            bprop += ".";
+         }
+         
+         for (Object::const_iterator it=obegin(); it!=oend(); ++it)
+         {
+            prop = bprop + it->first;
+            if (!it->second.toPropertyList(pl, prop))
             {
-               bprop += ".";
-            }
-            
-            for (Object::const_iterator it=obegin(); it!=oend(); ++it)
-            {
-               prop = bprop + it->first;
-               it->second.toPropertyList(pl, prop);
+               return false;
             }
          }
-         break;
-      
-      case ArrayType:
-         {
-            gcore::String prop, bprop = cprop + "[";
-            size_t i = 0;
-            
-            for (Array::const_iterator it=abegin(); it!=aend(); ++it, ++i)
-            {
-               prop = bprop + gcore::String(i) + "]";
-               it->toPropertyList(pl, prop);
-            }
-         }
-         break;
-      
-      case BooleanType:
-         pl.setBoolean(cprop, mValue.boo);
-         break;
-      
-      case NumberType:
-         pl.setReal(cprop, mValue.num);
-         break;
-      
-      case StringType:
-         pl.setString(cprop, *(mValue.str));
-         break;
-      
-      case NullType:
-         // Ignore key
-      default:
-         break;
       }
-      
-      return true;
+      break;
+   
+   case ArrayType:
+      {
+         gcore::String prop, bprop = cprop + "[";
+         size_t i = 0;
+         
+         for (Array::const_iterator it=abegin(); it!=aend(); ++it, ++i)
+         {
+            prop = bprop + gcore::String(i) + "]";
+            if (!it->toPropertyList(pl, prop))
+            {
+               return false;
+            }
+         }
+      }
+      break;
+   
+   case BooleanType:
+      if (!pl.setBoolean(cprop, mValue.boo))
+      {
+         return false;
+      }
+      break;
+   
+   case NumberType:
+      if (!pl.setReal(cprop, mValue.num))
+      {
+         return false;
+      }
+      break;
+   
+   case StringType:
+      if (!pl.setString(cprop, *(mValue.str)))
+      {
+         return false;
+      }
+      break;
+   
+   case NullType:
+      // Ignore key
+   default:
+      break;
    }
-   catch (gcore::plist::Exception &)
-   {
-      return false;
-   }
+   
+   return true;
 }
 
 void gcore::json::Value::reset()

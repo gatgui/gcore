@@ -28,6 +28,7 @@ USA.
 #include <gcore/list.h>
 #include <gcore/xml.h>
 #include <gcore/log.h>
+#include <gcore/status.h>
 
 namespace gcore {
   
@@ -38,24 +39,6 @@ namespace gcore {
   namespace plist {
     class Value;
     class Dictionary;
-    
-    class GCORE_API Exception : public std::exception {
-      public:
-        explicit Exception(const gcore::String &prop);
-        explicit Exception(const gcore::String &prop, const gcore::String &str);
-        explicit Exception(const gcore::String &prop, const char *fmt, ...);
-        virtual ~Exception() throw();
-        
-        virtual const char* what() const throw();
-        
-        inline const char* property() const {
-          return mProp.c_str();
-        }
-        
-      protected:
-        gcore::String mStr;
-        gcore::String mProp;
-    };
   }
   
   class GCORE_API PropertyList {
@@ -121,26 +104,28 @@ namespace gcore {
       
       bool toJSON(json::Value &v) const;
       
-      // The following 7 methods may throw plist::Exception
-      const String& getString(const String &prop) const;
-      long getInteger(const String &prop) const;
-      double getReal(const String &prop) const;
-      bool getBoolean(const String &prop) const;
+      const String& getString(const String &prop, Status *status=NULL) const;
+      long getInteger(const String &prop, Status *status=NULL) const;
+      double getReal(const String &prop, Status *status=NULL) const;
+      bool getBoolean(const String &prop, Status *status=NULL) const;
+      const String& getString(const String &prop, const String &defaultValue) const;
+      long getInteger(const String &prop, long defaultValue) const;
+      double getReal(const String &prop, double defaultValue) const;
+      bool getBoolean(const String &prop, bool defaultValue) const;
       // For arrays and dictionaries
-      size_t getSize(const String &prop) const;
+      size_t getSize(const String &prop, Status *status=NULL) const;
       // For dictionaries
-      size_t getKeys(const String &prop, StringList &keys) const;
+      size_t getKeys(const String &prop, StringList &keys, Status *status=NULL) const;
       // For arrays and dictionaries
-      void clear(const String &prop);
+      Status clear(const String &prop);
       
       bool remove(const String &prop);
       bool has(const String &prop) const;
       
-      // The following 4 methods may throw plist::Exception
-      void setString(const String &prop, const String &str);
-      void setReal(const String &prop, double val);
-      void setInteger(const String &prop, long val);
-      void setBoolean(const String &prop, bool val);
+      Status setString(const String &prop, const String &str);
+      Status setReal(const String &prop, double val);
+      Status setInteger(const String &prop, long val);
+      Status setBoolean(const String &prop, bool val);
       
       inline class plist::Dictionary* top() {
         return mTop;
@@ -222,6 +207,8 @@ namespace gcore {
         typedef const gcore::String& ReturnType;
         typedef const gcore::String& InputType;
         typedef gcore::String& OutputType;
+        
+        static const gcore::String DefaultValue;
     
         String();
         String(const gcore::String &v);
@@ -255,6 +242,8 @@ namespace gcore {
         typedef double ReturnType;
         typedef double InputType;
         typedef double& OutputType;
+        
+        static const double DefaultValue;
     
         Real();
         Real(double v);
@@ -288,6 +277,8 @@ namespace gcore {
         typedef long ReturnType;
         typedef long InputType;
         typedef long& OutputType;
+        
+        static const long DefaultValue;
     
         Integer();
         Integer(long v);
@@ -322,6 +313,8 @@ namespace gcore {
         typedef bool InputType;
         typedef bool& OutputType;
     
+        static const bool DefaultValue;
+    
         Boolean();
         Boolean(bool v);
         virtual ~Boolean();
@@ -354,6 +347,8 @@ namespace gcore {
         typedef const List<Value*>& ReturnType;
         typedef const List<Value*>& InputType;
         typedef List<Value*>& OutputType;
+        
+        static const List<Value*> DefaultValue;
     
         Array();
         Array(InputType val);
@@ -397,6 +392,8 @@ namespace gcore {
         typedef const std::map<gcore::String, Value*>& ReturnType;
         typedef const std::map<gcore::String, Value*>& InputType;
         typedef std::map<gcore::String, Value*>& OutputType;
+    
+        static const std::map<gcore::String, Value*> DefaultValue;
     
         Dictionary();
         Dictionary(InputType val);

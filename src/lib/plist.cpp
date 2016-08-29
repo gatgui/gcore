@@ -24,35 +24,10 @@ USA.
 #include <gcore/plist.h>
 #include <gcore/rex.h>
 #include <gcore/json.h>
+#include <gcore/typetraits.h>
 #include <cstdarg>
 
 namespace gcore {
-
-plist::Exception::Exception(const gcore::String &prop)
-  : std::exception(), mStr("*** PropertyList Error: [" + prop + "] Unknown") {
-}
-
-plist::Exception::Exception(const gcore::String &prop, const gcore::String &str)
-  : std::exception(), mStr("*** PropertyList Error: [" + prop + "]" + str) {
-}
-
-plist::Exception::Exception(const gcore::String &prop, const char *fmt, ...) {
-  char buffer[1024];
-  va_list vl;
-  va_start(vl, fmt);  
-  vsprintf(buffer, fmt, vl);
-  va_end(vl);
-  mStr = gcore::String("*** PropertyList Error: [") + prop + "] " + buffer;
-}
-
-plist::Exception::~Exception() throw() {
-}
-
-const char* plist::Exception::what() const throw() {
-  return mStr.c_str();
-}
-
-// ---
 
 plist::Value::Value()
   : mType(-2), mNull(true) {
@@ -83,6 +58,7 @@ plist::Value* plist::InvalidValue::clone() const {
 
 // ---
 
+const gcore::String plist::String::DefaultValue("");
 
 plist::String::String()
   : mValue("") {
@@ -129,6 +105,8 @@ const char* plist::String::TypeName() {
 } 
 
 // ---
+
+const long plist::Integer::DefaultValue = 0;
 
 plist::Integer::Integer()
   : mValue(0) {
@@ -177,6 +155,8 @@ const char* plist::Integer::TypeName() {
 
 // ---
 
+const double plist::Real::DefaultValue = 0.0;
+
 plist::Real::Real()
   : mValue(0.0) {
   mNull = false;
@@ -221,6 +201,8 @@ const char* plist::Real::TypeName() {
 } 
 
 // ---
+
+const bool plist::Boolean::DefaultValue = false;
 
 plist::Boolean::Boolean()
   : mValue(false) {
@@ -280,6 +262,8 @@ const char* plist::Boolean::TypeName() {
 } 
 
 // ---
+
+const List<plist::Value*> plist::Array::DefaultValue;
 
 plist::Array::Array() {
   mNull = false;
@@ -425,6 +409,8 @@ const char* plist::Array::TypeName() {
 }
 
 // ---
+
+const std::map<gcore::String, plist::Value*> plist::Dictionary::DefaultValue;
 
 plist::Dictionary::Dictionary() {
   mNull = false;
@@ -728,7 +714,8 @@ bool PropertyList::read(const String &filename) {
 static plist::Value* GetPropertyMember(plist::Dictionary* &cdict,
                                        const String &pre,
                                        const String &current,
-                                       bool final=false)
+                                       bool final,
+                                       Status *status=NULL)
 {
   String cprop = pre;
 
@@ -762,23 +749,43 @@ static plist::Value* GetPropertyMember(plist::Dictionary* &cdict,
         String number = current.substr(from, to-from);
         
         if (number.find_first_not_of("0123456789") != String::npos) {
-          throw plist::Exception(cprop, "Invalid subscript (%s)", number.c_str());
+          if (status) {
+            std::ostringstream oss;
+            oss << "Property '" << cprop << "': Invalid index (" << number << ")";
+            status->set(false, oss.str().c_str());
+          }
+          return NULL;
         }
         
         if (sscanf(number.c_str(), "%ld", &idx) != 1) {
-          throw plist::Exception(cprop, "Invalid subscript (%s)", number.c_str());
+          if (status) {
+            std::ostringstream oss;
+            oss << "Property '" << cprop << "': Invalid index (" << number << ")";
+            status->set(false, oss.str().c_str());
+          }
+          return NULL;
         }
         
         cprop += "[" + number + "]";
                 
         if (!ary) {
           if (member.length() == 0) {
-            throw plist::Exception(cprop, "Missing member name");
+            if (status) {
+              std::ostringstream oss;
+              oss << "Property '" << cprop << "': Missing member name";
+              status->set(false, oss.str().c_str());
+            }
+            return NULL;
           }
           
           if (!cdict->value(member)->checkType(ary)) {
-            throw plist::Exception(cprop, "Incompatible types (expected \"array\", got \"%s\")",
-                                   PropertyList::ValueTypeName(cdict->value(member)->getType()).c_str());
+            if (status) {
+              std::ostringstream oss;
+              oss << "Property '" << cprop << "': Incompatible types (expected \"array\" got \"";
+              oss << PropertyList::ValueTypeName(cdict->value(member)->getType()) << "\")";
+              status->set(false, oss.str().c_str());
+            }
+            return NULL;
           }
         }
         
@@ -786,26 +793,44 @@ static plist::Value* GetPropertyMember(plist::Dictionary* &cdict,
         b = strchr(c, '[');
         
         if (idx >= long(ary->size())) {
-          throw plist::Exception(cprop, "Invalid index %ld (array size is %lu)", idx, ary->size());
+          if (status) {
+            std::ostringstream oss;
+            oss << "Property '" << cprop << "': Index out of range";
+            oss << " (" << idx << " for an array of size " << ary->size() << ")";
+            status->set(false, oss.str().c_str());
+          }
+          return NULL;
         }
         
         if (!b) {
           
           if (to+1 != current.length()) {
-            throw plist::Exception(cprop, "Characters after subscript");
+            if (status) {
+              std::ostringstream oss;
+              oss << "Property '" << cprop << "': Unexpected characters after index";
+              status->set(false, oss.str().c_str());
+            }
+            return NULL;
           }
           
           if (final) {
             
+            if (status) {
+              status->set(true);
+            }
             return ary->at(idx);
             
           } else {
             plist::Dictionary *subDict = 0;
             
             if (!ary->at(idx)->checkType(subDict)) {
-              throw plist::Exception(cprop, "Incompatible types (expected \"dict\", got \"%s\")",
-                                     PropertyList::ValueTypeName(ary->at(idx)->getType()).c_str());
-              
+              if (status) {
+                std::ostringstream oss;
+                oss << "Property '" << cprop << "': Incompatible types (expected \"dict\" got \"";
+                oss << PropertyList::ValueTypeName(ary->at(idx)->getType()) << "\")";
+                status->set(false, oss.str().c_str());
+              }
+              return NULL;
             }
           
             cdict = subDict;
@@ -813,12 +838,17 @@ static plist::Value* GetPropertyMember(plist::Dictionary* &cdict,
           
         } else {
           
-          // it necessarily an array, as we have more subscripts
+          // it necessarily is an array, as we have more subscripts
           plist::Array *subAry = 0;
           
           if (!ary->at(idx)->checkType(subAry)) {
-            throw plist::Exception(cprop, "Incompatible types (expected \"dict\", got \"%s\")",
-                                   PropertyList::ValueTypeName(ary->at(idx)->getType()).c_str());
+            if (status) {
+              std::ostringstream oss;
+              oss << "Property '" << cprop << "': Incompatible types (expected \"array\" got \"";
+              oss << PropertyList::ValueTypeName(ary->at(idx)->getType()) << "\")";
+              status->set(false, oss.str().c_str());
+            }
+            return NULL;
           }
           
           ary = subAry;
@@ -826,7 +856,12 @@ static plist::Value* GetPropertyMember(plist::Dictionary* &cdict,
         }
         
       } else {
-        throw plist::Exception(cprop, "Missing close bracket");
+        if (status) {
+          std::ostringstream oss;
+          oss << "Property '" << cprop << "': Unclosed bracket.";
+          status->set(false, oss.str().c_str());
+        }
+        return NULL;
       }
     }
     
@@ -836,6 +871,9 @@ static plist::Value* GetPropertyMember(plist::Dictionary* &cdict,
   
     if (final) {
       
+      if (status) {
+        status->set(true);
+      }
       return cdict->value(current);
       
     } else {
@@ -843,21 +881,29 @@ static plist::Value* GetPropertyMember(plist::Dictionary* &cdict,
       plist::Dictionary *d = 0;
     
       if (!cdict->value(current)->checkType(d)) {
-        throw plist::Exception(cprop, "Incompatible types (expected \"dict\", got \"%s\")",
-                               PropertyList::ValueTypeName(cdict->value(current)->getType()).c_str());
+        if (status) {
+          std::ostringstream oss;
+          oss << "Property '" << cprop << "': Incompatible types (expected \"dict\" got \"";
+          oss << PropertyList::ValueTypeName(cdict->value(current)->getType()) << "\")";
+          status->set(false, oss.str().c_str());
+        }
+        return NULL;
       }
       
       cdict = d;
     }
   }
   
-  return 0;
+  if (status) {
+    status->set(true);
+  }
+  return NULL;
 }
 
-static void SetPropertyMember(plist::Dictionary* &cdict,
-                              const String &pre,
-                              const String &current,
-                              plist::Value *value=0)
+static Status SetPropertyMember(plist::Dictionary* &cdict,
+                                const String &pre,
+                                const String &current,
+                                plist::Value *value=0)
 {
   String cprop = pre;
 
@@ -891,11 +937,15 @@ static void SetPropertyMember(plist::Dictionary* &cdict,
         String number = current.substr(from, to-from);
         
         if (number.find_first_not_of("0123456789") != String::npos) {
-          throw plist::Exception(cprop, "Invalid subscript (%s)", number.c_str());
+          std::ostringstream oss;
+          oss << "Property '" << cprop << "': Invalid index (" << number << ")";
+          return Status(false, oss.str().c_str());
         }
         
         if (sscanf(number.c_str(), "%ld", &idx) != 1) {
-          throw plist::Exception(cprop, "Invalid subscript (%s)", number.c_str());
+          std::ostringstream oss;
+          oss << "Property '" << cprop << "': Invalid index (" << number << ")";
+          return Status(false, oss.str().c_str());
         }
         
         cprop += "[" + number + "]";
@@ -903,7 +953,9 @@ static void SetPropertyMember(plist::Dictionary* &cdict,
         // Get or create array
         if (!ary) {
           if (member.length() == 0) {
-            throw plist::Exception(cprop, "Missing member name");
+            std::ostringstream oss;
+            oss << "Property '" << cprop << "': Missing member name";
+            return Status(false, oss.str().c_str());
           }
           
           if (cdict->value(member)->isNull()) {
@@ -911,9 +963,10 @@ static void SetPropertyMember(plist::Dictionary* &cdict,
             cdict->set(member, ary);
             
           } else if (!cdict->value(member)->checkType(ary)) {
-            throw plist::Exception(cprop, "Incompatible types (expected \"array\", got \"%s\")",
-                                   PropertyList::ValueTypeName(cdict->value(member)->getType()).c_str());
-          
+            std::ostringstream oss;
+            oss << "Property '" << cprop << "': Incompatible types (expected \"array\" got \"";
+            oss << PropertyList::ValueTypeName(cdict->value(member)->getType()) << "\")";
+            return Status(false, oss.str().c_str());
           }
         }
         
@@ -927,7 +980,9 @@ static void SetPropertyMember(plist::Dictionary* &cdict,
         if (!b) {
           
           if (to+1 != current.length()) {
-            throw plist::Exception(cprop, "Characters after subscript");
+            std::ostringstream oss;
+            oss << "Property '" << cprop << "': Unexpected characters after index";
+            return Status(false, oss.str().c_str());
           }
           
           if (value) {
@@ -942,9 +997,10 @@ static void SetPropertyMember(plist::Dictionary* &cdict,
               ary->set(idx, subDict);
               
             } else if (!ary->at(idx)->checkType(subDict)) {
-              throw plist::Exception(cprop, "Incompatible types (expected \"dict\", got \"%s\")",
-                                     PropertyList::ValueTypeName(ary->at(idx)->getType()).c_str());
-              
+              std::ostringstream oss;
+              oss << "Property '" << cprop << "': Incompatible types (expected \"dict\" got \"";
+              oss << PropertyList::ValueTypeName(ary->at(idx)->getType()) << "\")";
+              return Status(false, oss.str().c_str());
             }
           
             cdict = subDict;
@@ -960,9 +1016,10 @@ static void SetPropertyMember(plist::Dictionary* &cdict,
             ary->set(idx, subAry);
           
           } else if (!ary->at(idx)->checkType(subAry)) {
-            throw plist::Exception(cprop, "Incompatible types (expected \"dict\", got \"%s\")",
-                                   PropertyList::ValueTypeName(ary->at(idx)->getType()).c_str());
-          
+            std::ostringstream oss;
+            oss << "Property '" << cprop << "': Incompatible types (expected \"array\" got \"";
+            oss << PropertyList::ValueTypeName(ary->at(idx)->getType()) << "\")";
+            return Status(false, oss.str().c_str());
           }
           
           ary = subAry;
@@ -970,7 +1027,9 @@ static void SetPropertyMember(plist::Dictionary* &cdict,
         }
         
       } else {
-        throw plist::Exception(cprop, "Missing close bracket");
+        std::ostringstream oss;
+        oss << "Property '" << cprop << "': Unclosed bracket";
+        return Status(false, oss.str().c_str());
       }
     }
     
@@ -992,13 +1051,17 @@ static void SetPropertyMember(plist::Dictionary* &cdict,
       }
       
       if (!cdict->value(current)->checkType(d)) {
-        throw plist::Exception(cprop, "Incompatible types (expected \"dict\", got \"%s\")",
-                               PropertyList::ValueTypeName(cdict->value(current)->getType()).c_str());
+        std::ostringstream oss;
+        oss << "Property '" << cprop << "': Incompatible types (expected \"dict\" got \"";
+        oss << PropertyList::ValueTypeName(cdict->value(current)->getType()) << "\")";
+        return Status(false, oss.str().c_str());
       }
       
       cdict = d;
     }
   }
+  
+  return Status(true);
 }
 
 static bool IsValidPropertyName(const String &s)
@@ -1059,30 +1122,45 @@ static bool GetPropertyNameParts(const String &prop, StringList &parts)
 }
 
 static plist::Value* GetProperty(plist::Dictionary *dict,
-                                 const String &prop)
+                                 const String &prop,
+                                 Status *status=NULL)
 {
   if (!dict) {
-    throw plist::Exception("", "Passed null dictionary pointer");
+    if (status) {
+      status->set(false, "Invalid dictionnary");
+    }
+    return NULL;
   }
   
   StringList parts;
 
   if (!GetPropertyNameParts(prop, parts)) {
-    throw plist::Exception("", "Invalid property \"%s\"", prop.c_str());
+    if (status) {
+      std::string msg = "Invalid property \"" + prop + "\"";
+      status->set(false, msg.c_str());
+    }
+    return NULL;
   }
 
+  Status stat;
   String pre = "";
   plist::Dictionary *cdict = dict;
 
   for (size_t i=0; i+1<parts.size(); ++i) {
-    GetPropertyMember(cdict, pre, parts[i]);
+    GetPropertyMember(cdict, pre, parts[i], false, &stat);
+    if (!stat) {
+      if (status) {
+        *status = stat;
+      }
+      return NULL;
+    }
     if (pre.length() > 0) {
       pre += ".";
     }
     pre += parts[i];
   }
 
-  return GetPropertyMember(cdict, pre, parts.back(), true);
+  return GetPropertyMember(cdict, pre, parts.back(), true, status);
 }
 
 static bool RemoveProperty(plist::Dictionary *dict, const String &prop)
@@ -1097,20 +1175,19 @@ static bool RemoveProperty(plist::Dictionary *dict, const String &prop)
     return false;
   }
 
+  Status stat;
   String pre = "";
   plist::Dictionary *cdict = dict;
 
-  try {
-    for (size_t i=0; i+1<parts.size(); ++i) {
-      GetPropertyMember(cdict, pre, parts[i]);
-      if (pre.length() > 0) {
-        pre += ".";
-      }
-      pre += parts[i];
+  for (size_t i=0; i+1<parts.size(); ++i) {
+    GetPropertyMember(cdict, pre, parts[i], false, &stat);
+    if (!stat) {
+      return false;
     }
-  } catch (std::exception &) {
-    // invalid property
-    return false;
+    if (pre.length() > 0) {
+      pre += ".";
+    }
+    pre += parts[i];
   }
 
   String &leaf = parts.back();
@@ -1154,103 +1231,150 @@ static bool RemoveProperty(plist::Dictionary *dict, const String &prop)
   }
 }
 
-static void SetProperty(plist::Dictionary *dict,
-                        const String &prop,
-                        plist::Value *value)
+static Status SetProperty(plist::Dictionary *dict,
+                          const String &prop,
+                          plist::Value *value)
 {
   if (!dict) {
-    throw plist::Exception("", "Passed null dictionary pointer");
+    return Status(false, "Invalid dictionary");
   }
   
   StringList parts;
 
   if (!GetPropertyNameParts(prop, parts)) {
-    throw plist::Exception("", "Invalid property name \"%s\"", prop.c_str());
+    std::string msg = "Invalid property name \"" + prop + "\"";
+    return Status(false, msg.c_str());
   }
 
+  Status stat;
   String pre = "";
   plist::Dictionary *cdict = dict;
 
   for (size_t i=0; i+1<parts.size(); ++i) {
-    SetPropertyMember(cdict, pre, parts[i]);
+    stat = SetPropertyMember(cdict, pre, parts[i]);
+    if (!stat) {
+      return stat;
+    }
     if (pre.length() > 0) {
       pre += ".";
     }
     pre += parts[i];
   }
 
-  SetPropertyMember(cdict, pre, parts.back(), value);
+  return SetPropertyMember(cdict, pre, parts.back(), value);
 }
 
 template <typename T>
 static typename T::ReturnType GetTypedProperty(plist::Dictionary *dict,
-                                               const String &prop)
+                                               const String &prop,
+                                               typename NoRef<typename T::ReturnType>::Type *failValue=NULL,
+                                               Status *status=NULL)
 {
-  const plist::Value *val = GetProperty(dict, prop);
+  Status stat;
+  const plist::Value *val = GetProperty(dict, prop, &stat);
+  if (!stat) {
+    if (status) {
+      *status = stat;
+    }
+    return (failValue ? *failValue : T::DefaultValue);
+  }
   const T *rv=0;
   if (!val->checkType(rv)) {
-    throw plist::Exception(prop, "Invalid type (expected \"%s\", got \"%s\")",
-                            T::TypeName(),
-                            PropertyList::ValueTypeName(val->getType()).c_str());
+    if (status) {
+      std::ostringstream oss;
+      oss << "Property '" << prop << "': Invalid type (expected \"";
+      oss << T::TypeName() << "\", got \"" << PropertyList::ValueTypeName(val->getType()) << "\")";
+      status->set(false, oss.str().c_str());
+    }
+    return (failValue ? *failValue : T::DefaultValue);
   }
   return rv->get();
 }
 
 template <typename T>
-static void SetTypedProperty(plist::Dictionary *dict,
-                             const String &prop,
-                             typename T::InputType value)
+static Status SetTypedProperty(plist::Dictionary *dict,
+                               const String &prop,
+                               typename T::InputType value)
 {
   T *v = new T(value);
-  try {
-    SetProperty(dict, prop, v);
-  } catch (plist::Exception &e) {
+  Status stat = SetProperty(dict, prop, v);
+  if (!stat) {
     delete v;
-    throw e;
   }
+  return stat;
 }
 
-size_t PropertyList::getSize(const String &p) const {
+size_t PropertyList::getSize(const String &p, Status *status) const {
   const plist::Value *val = GetProperty(mTop, p);
   const plist::Dictionary *dict = 0;
   const plist::Array *array = 0;
+  
   if (val->checkType(dict)) {
+    if (status) {
+      status->set(true);
+    }
     return dict->size();
+  
   } else if (val->checkType(array)) {
+    if (status) {
+      status->set(true);
+    }
     return array->size();
+  
   } else {
-    throw plist::Exception(p, "Invalid type (expected \"%s\" or \"%s\", got \"%s\")",
-                           plist::Array::TypeName(),
-                           plist::Dictionary::TypeName(),
-                           PropertyList::ValueTypeName(val->getType()).c_str());
+    if (status) {
+      std::ostringstream oss;
+      oss << "Property '" << p << ": Invalid type (expected \"";
+      oss << plist::Array::TypeName() << "\" or \"" << plist::Dictionary::TypeName() << "\", got \"";
+      oss << PropertyList::ValueTypeName(val->getType()) << "\")";
+      status->set(false);
+    }
     return 0;
   }
 }
 
-size_t PropertyList::getKeys(const String &p, StringList &kl) const {
+size_t PropertyList::getKeys(const String &p, StringList &kl, Status *status) const {
   const plist::Value *val = GetProperty(mTop, p);
   const plist::Dictionary *dict=0;
+  
   if (!val->checkType(dict)) {
-    throw plist::Exception(p, "Invalid type (expected \"%s\", got \"%s\")",
-                           plist::Dictionary::TypeName(),
-                           PropertyList::ValueTypeName(val->getType()).c_str());
+    if (status) {
+      std::ostringstream oss;
+      oss << "Property '" << p << ": Invalid type (expected \"";
+      oss << plist::Dictionary::TypeName() << "\", got \"";
+      oss << PropertyList::ValueTypeName(val->getType()) << "\")";
+      status->set(false);
+    }
+    kl.clear();
+    return 0;
+    
+  } else {
+    if (status) {
+      status->set(true);
+    }
+    return dict->keys(kl);
   }
-  return dict->keys(kl);
 }
 
-void PropertyList::clear(const String &p) {
+Status PropertyList::clear(const String &p) {
   plist::Value *val = GetProperty(mTop, p);
   plist::Dictionary *dict = 0;
   plist::Array *array = 0;
+  
   if (val->checkType(dict)) {
     dict->clear();
+    return Status(true);
+  
   } else if (val->checkType(array)) {
     array->clear();
+    return Status(true);
+  
   } else {
-    throw plist::Exception(p, "Invalid type (expected \"%s\" or \"%s\", got \"%s\")",
-                           plist::Array::TypeName(),
-                           plist::Dictionary::TypeName(),
-                           PropertyList::ValueTypeName(val->getType()).c_str());
+    std::ostringstream oss;
+    oss << "Property '" << p << ": Invalid type (expected \"";
+    oss << plist::Array::TypeName() << "\" or \"" << plist::Dictionary::TypeName() << "\", got \"";
+    oss << PropertyList::ValueTypeName(val->getType()) << "\")";
+    return Status(false, oss.str().c_str());
   }
 }
 
@@ -1272,36 +1396,52 @@ bool PropertyList::has(const String &prop) const {
   }
 }
 
-const String& PropertyList::getString(const String &p) const {
-  return GetTypedProperty<plist::String>(mTop, p);
+const String& PropertyList::getString(const String &p, Status *status) const {
+  return GetTypedProperty<plist::String>(mTop, p, NULL, status);
 }
 
-long PropertyList::getInteger(const String &p) const {
-  return GetTypedProperty<plist::Integer>(mTop, p);
+long PropertyList::getInteger(const String &p, Status *status) const {
+  return GetTypedProperty<plist::Integer>(mTop, p, NULL, status);
 }
 
-double PropertyList::getReal(const String &p) const {
-  return GetTypedProperty<plist::Real>(mTop, p);
+double PropertyList::getReal(const String &p, Status *status) const {
+  return GetTypedProperty<plist::Real>(mTop, p, NULL, status);
 }
 
-bool PropertyList::getBoolean(const String &p) const {
-  return GetTypedProperty<plist::Boolean>(mTop, p);
+bool PropertyList::getBoolean(const String &p, Status *status) const {
+  return GetTypedProperty<plist::Boolean>(mTop, p, NULL, status);
 }
 
-void PropertyList::setString(const String &prop, const String &str) {
-  SetTypedProperty<plist::String>(mTop, prop, str);
+const String& PropertyList::getString(const String &p, const String &defaultValue) const {
+  return GetTypedProperty<plist::String>(mTop, p, &defaultValue);
 }
 
-void PropertyList::setReal(const String &prop, double val) {
-  SetTypedProperty<plist::Real>(mTop, prop, val);
+long PropertyList::getInteger(const String &p, long defaultValue) const {
+  return GetTypedProperty<plist::Integer>(mTop, p, &defaultValue);
 }
 
-void PropertyList::setInteger(const String &prop, long val) {
-  SetTypedProperty<plist::Integer>(mTop, prop, val);
+double PropertyList::getReal(const String &p, double defaultValue) const {
+  return GetTypedProperty<plist::Real>(mTop, p, &defaultValue);
 }
 
-void PropertyList::setBoolean(const String &prop, bool val) {
-  SetTypedProperty<plist::Boolean>(mTop, prop, val);
+bool PropertyList::getBoolean(const String &p, bool defaultValue) const {
+  return GetTypedProperty<plist::Boolean>(mTop, p, &defaultValue);
+}
+
+Status PropertyList::setString(const String &prop, const String &str) {
+  return SetTypedProperty<plist::String>(mTop, prop, str);
+}
+
+Status PropertyList::setReal(const String &prop, double val) {
+  return SetTypedProperty<plist::Real>(mTop, prop, val);
+}
+
+Status PropertyList::setInteger(const String &prop, long val) {
+  return SetTypedProperty<plist::Integer>(mTop, prop, val);
+}
+
+Status PropertyList::setBoolean(const String &prop, bool val) {
+  return SetTypedProperty<plist::Boolean>(mTop, prop, val);
 }
 
 bool PropertyList::toJSON(json::Value &v) const {

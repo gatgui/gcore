@@ -1,4 +1,5 @@
 #include <gcore/status.h>
+#include <gcore/platform.h>
 
 namespace gcore {
 

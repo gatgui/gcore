@@ -96,10 +96,10 @@ public:
       std::cout << (mIndent * mDepth) << "Null scalar" << std::endl;
    }
    
-   void parse(const char *path)
+   Status parse(const char *path)
    {
       mDepth = 0;
-      json::Value::Parse(path, &mCallbacks);
+      return json::Value::Parse(path, mCallbacks);
    }
 
 private:
@@ -172,9 +172,11 @@ int main(int argc, char **argv)
       
       json::Value top;
       
-      try
+      Status stat;
+      
+      stat = top.read(path);
+      if (stat)
       {
-         top.read(path);
          std::cout << "Succeeded" << std::endl;
          
          top.write(std::cout);
@@ -186,19 +188,17 @@ int main(int argc, char **argv)
             pl.write("out.xml");
          }
       }
-      catch (json::ParserError &e)
+      else
       {
-         std::cout << "Failed: " << e.what() << std::endl;
+         std::cout << "Failed: " << stat << std::endl;
       }
       
-      try
+      Parser parser;
+      
+      stat = parser.parse(path);
+      if (!stat)
       {
-         Parser parser;
-         parser.parse(path);
-      }
-      catch (json::ParserError &e)
-      {
-         std::cout << "Failed: " << e.what() << std::endl;
+         std::cout << "Failed: " << stat << std::endl;
       }
    }
    

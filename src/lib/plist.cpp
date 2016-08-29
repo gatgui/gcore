@@ -44,8 +44,8 @@ plist::InvalidValue::InvalidValue() {
 plist::InvalidValue::~InvalidValue() {
 }
 
-bool plist::InvalidValue::fromXML(const gcore::XMLElement *)  {
-  return false;
+Status plist::InvalidValue::fromXML(const gcore::XMLElement *)  {
+  return Status(false, "Invalid value.");
 }
 
 gcore::XMLElement* plist::InvalidValue::toXML(gcore::XMLElement *) const {
@@ -75,13 +75,13 @@ plist::String::String(const gcore::String &str)
 plist::String::~String() {
 }
 
-bool plist::String::fromXML(const gcore::XMLElement *elt)  {
+Status plist::String::fromXML(const gcore::XMLElement *elt)  {
   if (!elt) {
-    return false;
+    return Status(false, "NULL element.");
   }
   mValue = elt->getText();
   mValue.strip();
-  return true;
+  return Status(true);
 }
 
 gcore::XMLElement* plist::String::toXML(gcore::XMLElement *elt) const {
@@ -123,14 +123,18 @@ plist::Integer::Integer(long value)
 plist::Integer::~Integer() {
 }
 
-bool plist::Integer::fromXML(const gcore::XMLElement *elt)  {
-  if (!elt) return false;
-  if (elt->getTag() != "integer") {
-    return false;
-  } else {
-    gcore::String txt = elt->getText();
-    return txt.strip().toLong(mValue);
+Status plist::Integer::fromXML(const gcore::XMLElement *elt)  {
+  if (!elt) {
+    return Status(false, "NULL element.");
   }
+  if (elt->getTag() != "integer") {
+    return Status(false, "Invalid tag for integer (%s)", elt->getTag().c_str());
+  }
+  gcore::String txt = elt->getText();
+  if (!txt.strip().toLong(mValue)) {
+    return Status(false, "Not a valid integer value (%s)", txt.c_str());
+  }
+  return Status(true);
 }
 
 gcore::XMLElement* plist::Integer::toXML(gcore::XMLElement *elt) const {
@@ -172,12 +176,15 @@ plist::Real::Real(double value)
 plist::Real::~Real() {
 }
 
-bool plist::Real::fromXML(const gcore::XMLElement *elt)  {
+Status plist::Real::fromXML(const gcore::XMLElement *elt)  {
   if (!elt) {
-    return false;
+    return Status(false, "NULL element.");
   }
   gcore::String txt = elt->getText();
-  return txt.strip().toDouble(mValue);
+  if (!txt.strip().toDouble(mValue)) {
+    return Status(false, "Invalid real value (%s)", txt.c_str());
+  }
+  return Status(true);
 }
 
 plist::Value* plist::Real::clone() const {
@@ -219,19 +226,22 @@ plist::Boolean::Boolean(bool value)
 plist::Boolean::~Boolean() {
 }
 
-bool plist::Boolean::fromXML(const gcore::XMLElement *elt)  {
+Status plist::Boolean::fromXML(const gcore::XMLElement *elt)  {
   if (!elt) {
-    return false;
+    return Status(false, "NULL element.");
   }
   if (elt->getTag() == "false") {
     mValue = false;
-    return true;
+    return Status(true);
   } else if (elt->getTag() == "true") {
     mValue = true;
-    return true;
+    return Status(true);
   } else {
     gcore::String txt = elt->getText();
-    return txt.strip().toBool(mValue);
+    if (!txt.strip().toBool(mValue)) {
+      return Status(false, "Invalid boolean value (%s)", txt.c_str());
+    }
+    return Status(true);
   }
 }
 
@@ -364,10 +374,10 @@ plist::Value* plist::Array::clone() const {
   return a;
 }
 
-bool plist::Array::fromXML(const gcore::XMLElement *elt)  {
+Status plist::Array::fromXML(const gcore::XMLElement *elt)  {
   clear();
   if (!elt) {
-    return false;
+    return Status(false, "NULL element.");
   }
   for (size_t i=0; i<elt->numChildren(); ++i) {
     const gcore::XMLElement *c = elt->getChild(i);
@@ -376,16 +386,17 @@ bool plist::Array::fromXML(const gcore::XMLElement *elt)  {
       if (c->getTag() == "true" || c->getTag() == "false") {
         v = new plist::Boolean();
       } else {
-        return false;
+        return Status(false, "Empty value for tag '%s'", c->getTag().c_str());
       }
     }
-    if (!v->fromXML(c)) {
+    Status stat = v->fromXML(c);
+    if (!stat) {
       delete v;
-      return false;
+      return stat;
     }
     mValues.push(v);
   }
-  return true;
+  return Status(true);
 }
 
 gcore::XMLElement* plist::Array::toXML(gcore::XMLElement *elt) const {
@@ -514,21 +525,21 @@ plist::Value* plist::Dictionary::clone() const {
   return d;
 }
 
-bool plist::Dictionary::fromXML(const gcore::XMLElement *elt)  {
+Status plist::Dictionary::fromXML(const gcore::XMLElement *elt)  {
   clear();
   if (!elt) {
-    return false;
+    return Status(false, "NULL element.");
   }
   size_t i = 0;
   while (i < elt->numChildren()) {
     const gcore::XMLElement *k = elt->getChild(i);
     if (k->getTag() != "key") {
-      return false;
+      return Status(false, "Missing <key> child tag");
     }
     gcore::String key = k->getText();
     key.strip();
     if (mPairs.find(key) != mPairs.end()) {
-      return false;
+      return Status(false, "Duplicate key '%s'", key.c_str());
     }
     const gcore::XMLElement *v = elt->getChild(i+1);
     Value *val = PropertyList::NewValue(v->getTag());
@@ -536,17 +547,18 @@ bool plist::Dictionary::fromXML(const gcore::XMLElement *elt)  {
       if (v->getTag() == "true" || v->getTag() == "false") {
         val = new plist::Boolean();
       } else {
-        return false;
+        return Status(false, "Empty value for tag '%s'", v->getTag().c_str());
       }
     }
-    if (!val->fromXML(v)) {
+    Status stat = val->fromXML(v);
+    if (!stat) {
       delete val;
-      return false;
+      return stat;
     }
     mPairs[key] = val;
     i += 2;
   }
-  return true;
+  return Status(true);
 }
 
 gcore::XMLElement* plist::Dictionary::toXML(gcore::XMLElement *elt) const {
@@ -672,7 +684,7 @@ XMLElement* PropertyList::write(XMLElement *elt) const {
   }
 }
 
-bool PropertyList::read(const XMLElement *elt) {
+Status PropertyList::read(const XMLElement *elt) {
   bool newed = true;
   if (!mTop) {
     mTop = new plist::Dictionary();
@@ -680,7 +692,7 @@ bool PropertyList::read(const XMLElement *elt) {
     mTop->clear();
     newed = false;
   }
-  bool rv = mTop->fromXML(elt);
+  Status rv = mTop->fromXML(elt);
   if (!rv && newed) {
     delete mTop;
     mTop = 0;
@@ -698,11 +710,13 @@ void PropertyList::write(const String &filename) const {
   delete doc;
 }
 
-bool PropertyList::read(const String &filename) {
-  bool rv = false;
+Status PropertyList::read(const String &filename) {
+  Status rv;
   XMLDoc *doc = new XMLDoc();
   if (doc->read(filename)) {
     rv = read(doc->getRoot());
+  } else {
+    rv = Status(false, "Invalid XML file '%s'", filename.c_str());
   }
   delete doc;
   return rv;

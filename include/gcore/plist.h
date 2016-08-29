@@ -96,18 +96,25 @@ namespace gcore {
       
       void create();
       
-      bool read(const String &filename);
+      Status read(const String &filename);
       void write(const String &filename) const;
       
-      bool read(const XMLElement *elt);
+      Status read(const XMLElement *elt);
       XMLElement* write(XMLElement *elt=NULL) const;
       
       bool toJSON(json::Value &v) const;
       
+      // When any of the following 4 method call refer to an un-existing property,
+      // the type DefaultValue is returned and status set
+      //    boolean: false
+      //    integer: 0
+      //    real: 0.0
+      //    string: ''
       const String& getString(const String &prop, Status *status=NULL) const;
       long getInteger(const String &prop, Status *status=NULL) const;
       double getReal(const String &prop, Status *status=NULL) const;
       bool getBoolean(const String &prop, Status *status=NULL) const;
+      // When any of the following 4 method call refer to an un-existing property, the provided default will be used
       const String& getString(const String &prop, const String &defaultValue) const;
       long getInteger(const String &prop, long defaultValue) const;
       double getReal(const String &prop, double defaultValue) const;
@@ -151,7 +158,7 @@ namespace gcore {
         virtual ~Value();
 
         virtual Value* clone() const = 0;
-        virtual bool fromXML(const gcore::XMLElement *elt) = 0;
+        virtual Status fromXML(const gcore::XMLElement *elt) = 0;
         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const = 0;
 
         inline long getType() const {
@@ -197,7 +204,7 @@ namespace gcore {
         virtual ~InvalidValue();
         
         virtual Value* clone() const;
-        virtual bool fromXML(const gcore::XMLElement *elt);
+        virtual Status fromXML(const gcore::XMLElement *elt);
         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
     };
     
@@ -215,7 +222,7 @@ namespace gcore {
         virtual ~String();
         
         virtual Value* clone() const;
-        virtual bool fromXML(const gcore::XMLElement *elt);
+        virtual Status fromXML(const gcore::XMLElement *elt);
         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
         
         inline const gcore::String& get() const {
@@ -250,7 +257,7 @@ namespace gcore {
         virtual ~Real();
         
         virtual Value* clone() const;
-        virtual bool fromXML(const gcore::XMLElement *elt);
+        virtual Status fromXML(const gcore::XMLElement *elt);
         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
         
         inline double get() const {
@@ -285,7 +292,7 @@ namespace gcore {
         virtual ~Integer();
         
         virtual Value* clone() const;
-        virtual bool fromXML(const gcore::XMLElement *elt);
+        virtual Status fromXML(const gcore::XMLElement *elt);
         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
         
         inline long get() const {
@@ -320,7 +327,7 @@ namespace gcore {
         virtual ~Boolean();
         
         virtual Value* clone() const;
-        virtual bool fromXML(const gcore::XMLElement *elt);
+        virtual Status fromXML(const gcore::XMLElement *elt);
         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
         
         inline bool get() const {
@@ -355,7 +362,7 @@ namespace gcore {
         virtual ~Array();
         
         virtual Value* clone() const;
-        virtual bool fromXML(const gcore::XMLElement *elt);
+        virtual Status fromXML(const gcore::XMLElement *elt);
         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
         
         inline size_t size() const {
@@ -400,7 +407,7 @@ namespace gcore {
         virtual ~Dictionary();
         
         virtual Value* clone() const;
-        virtual bool fromXML(const gcore::XMLElement *elt);
+        virtual Status fromXML(const gcore::XMLElement *elt);
         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
         
         inline ReturnType get() const {

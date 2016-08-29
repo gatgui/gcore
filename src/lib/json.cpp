@@ -528,56 +528,100 @@ gcore::json::Value::Type gcore::json::Value::type() const
 
 gcore::json::Value::operator bool () const
 {
+   if (mType != BooleanType)
+   {
+      throw std::runtime_error("json::Value is not a boolean.");
+   }
    return mValue.boo;
 }
 
 gcore::json::Value::operator int () const
 {
+   if (mType != NumberType)
+   {
+      throw std::runtime_error("json::Value is not a number.");
+   }
    return int(mValue.num);
 }
 
 gcore::json::Value::operator float () const
 {
+   if (mType != NumberType)
+   {
+      throw std::runtime_error("json::Value is not a number.");
+   }
    return float(mValue.num);
 }
 
 gcore::json::Value::operator double () const
 {
+   if (mType != NumberType)
+   {
+      throw std::runtime_error("json::Value is not a number.");
+   }
    return mValue.num;
 }
 
 gcore::json::Value::operator const gcore::String& () const
 {
+   if (mType != StringType)
+   {
+      throw std::runtime_error("json::Value is not a string.");
+   }
    return *(mValue.str);
 }
 
 gcore::json::Value::operator const char* () const
 {
+   if (mType != StringType)
+   {
+      throw std::runtime_error("json::Value is not a string.");
+   }
    return mValue.str->c_str();
 }
 
 gcore::json::Value::operator const gcore::json::Object& () const
 {
+   if (mType != ObjectType)
+   {
+      throw std::runtime_error("json::Value is not an object.");
+   }
    return *(mValue.obj);
 }
 
 gcore::json::Value::operator const gcore::json::Array& () const
 {
+   if (mType != ArrayType)
+   {
+      throw std::runtime_error("json::Value is not an array.");
+   }
    return *(mValue.arr);
 }
 
 gcore::json::Value::operator gcore::String& ()
 {
+   if (mType != StringType)
+   {
+      throw std::runtime_error("json::Value is not a string.");
+   }
    return *(mValue.str);
 }
 
 gcore::json::Value::operator gcore::json::Object& ()
 {
+   if (mType != ObjectType)
+   {
+      throw std::runtime_error("json::Value is not an object.");
+   }
    return *(mValue.obj);
 }
 
 gcore::json::Value::operator gcore::json::Array& ()
 {
+   if (mType != ArrayType)
+   {
+      throw std::runtime_error("json::Value is not an array.");
+   }
    return *(mValue.arr);
 }
 
@@ -668,80 +712,103 @@ bool gcore::json::Value::erase(const gcore::String &key)
    }
 }
 
+static gcore::json::Array gsEmptyArray;
+static gcore::json::Object gsEmptyObject;
+
 gcore::json::ArrayConstIterator gcore::json::Value::abegin() const
 {
-   return mValue.arr->begin();
+   return (mType == ArrayType ? mValue.arr->begin() : gsEmptyArray.begin());
 }
 
 gcore::json::ArrayConstIterator gcore::json::Value::aend() const
 {
-   return mValue.arr->end();
+   return (mType == ArrayType ? mValue.arr->end() : gsEmptyArray.end());
 }
 
 gcore::json::ArrayIterator gcore::json::Value::abegin()
 {
-   return mValue.arr->begin();
+   return (mType == ArrayType ? mValue.arr->begin() : gsEmptyArray.begin());
 }
 
 gcore::json::ArrayIterator gcore::json::Value::aend()
 {
-   return mValue.arr->end();
+   return (mType == ArrayType ? mValue.arr->end() : gsEmptyArray.end());
 }
 
 const gcore::json::Value& gcore::json::Value::operator[](size_t idx) const
 {
+   if (mType != ArrayType)
+   {
+      throw std::runtime_error("json::Value is not an array.");
+   }
    return mValue.arr->at(idx);
 }
 
 gcore::json::Value& gcore::json::Value::operator[](size_t idx)
 {
+   if (mType != ArrayType)
+   {
+      throw std::runtime_error("json::Value is not an array.");
+   }
    return mValue.arr->at(idx);
 }
 
 gcore::json::ObjectConstIterator gcore::json::Value::obegin() const
 {
-   return mValue.obj->begin();
+   return (mType == ObjectType ? mValue.obj->begin() : gsEmptyObject.begin());
 }
 
 gcore::json::ObjectConstIterator gcore::json::Value::oend() const
 {
-   return mValue.obj->end();
+   return (mType == ObjectType ? mValue.obj->end() : gsEmptyObject.end());
 }
 
 gcore::json::ObjectConstIterator gcore::json::Value::find(const gcore::String &name) const
 {
-   return mValue.obj->find(name);
+   return (mType == ObjectType ? mValue.obj->find(name) : gsEmptyObject.end());
 }
 
 gcore::json::ObjectConstIterator gcore::json::Value::find(const char *name) const
 {
+   if (mType != ObjectType)
+   {
+      return gsEmptyObject.end();
+   }
    gcore::String _name(name);
    return this->find(_name);
 }
 
 gcore::json::ObjectIterator gcore::json::Value::obegin()
 {
-   return mValue.obj->begin();
+   return (mType == ObjectType ? mValue.obj->begin() : gsEmptyObject.begin());
 }
 
 gcore::json::ObjectIterator gcore::json::Value::oend()
 {
-   return mValue.obj->end();
+   return (mType == ObjectType ? mValue.obj->end() : gsEmptyObject.end());
 }
 
 gcore::json::ObjectIterator gcore::json::Value::find(const gcore::String &name)
 {
-   return mValue.obj->find(name);
+   return (mType == ObjectType ? mValue.obj->find(name) : gsEmptyObject.end());
 }
 
 gcore::json::ObjectIterator gcore::json::Value::find(const char *name)
 {
+   if (mType != ObjectType)
+   {
+      return gsEmptyObject.end();
+   }
    gcore::String _name(name);
    return this->find(_name);
 }
 
 const gcore::json::Value& gcore::json::Value::operator[](const gcore::String &name) const
 {
+   if (mType != ObjectType)
+   {
+      throw std::runtime_error("json::Value is not an object.");
+   }
    Object::const_iterator it = mValue.obj->find(name);
    if (it == mValue.obj->end())
    {
@@ -752,6 +819,10 @@ const gcore::json::Value& gcore::json::Value::operator[](const gcore::String &na
 
 gcore::json::Value& gcore::json::Value::operator[](const gcore::String &name)
 {
+   if (mType != ObjectType)
+   {
+      throw std::runtime_error("json::Value is not an object.");
+   }
    return (*mValue.obj)[name];
 }
 

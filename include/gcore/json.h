@@ -132,8 +132,6 @@ namespace gcore
          Value& operator=(Array *arr);  // steals ownership
          Value& operator=(const Array &arr);
          
-         // Note: of all the following methods, only size, clear, insert and erase do some type checks
-         
          operator bool () const;
          operator int () const;
          operator float () const;
@@ -151,16 +149,16 @@ namespace gcore
          // - clear does nothing for ant other type
          size_t size() const;
          void clear();
-         bool insert(size_t pos, const Value &value);
-         bool erase(size_t pos, size_t cnt=1);
-         bool insert(const gcore::String &key, const Value &value);
-         bool erase(const gcore::String &key);
          
          // ArrayType only
          iterator<Array> abegin();
          const_iterator<Array> abegin() const;
          iterator<Array> aend();
          const_iterator<Array> aend() const;
+         
+         bool insert(size_t pos, const Value &value);
+         bool erase(size_t pos, size_t cnt=1);
+         
          const Value& operator[](size_t idx) const;
          Value& operator[](size_t idx);
          
@@ -173,6 +171,10 @@ namespace gcore
          const_iterator<Object> find(const gcore::String &name) const;
          iterator<Object> find(const char *name);
          const_iterator<Object> find(const char *name) const;
+         
+         bool insert(const gcore::String &key, const Value &value);
+         bool erase(const gcore::String &key);
+         
          const Value& operator[](const gcore::String &name) const;
          Value& operator[](const gcore::String &name);
          const Value& operator[](const char *name) const;

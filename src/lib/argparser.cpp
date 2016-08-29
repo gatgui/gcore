@@ -247,21 +247,15 @@ Status ArgParser::parse(int argc, char **argv) {
     if (isFlag) {
       
       if (!nflag) {
-        std::ostringstream oss;
-        oss << "Unknown flag: \"" << flag << "\"";
-        return Status(false, oss.str().c_str());
+        return Status(false, "Unknown flag: \"%s\"", flag);
       }
 
       if (cflag) {
         if (cflag->arity>0 && valcount!=cflag->arity) {
-          std::ostringstream oss;
-          oss << "\"" << cflag->longname << "\" flag requires " << cflag->arity << " value(s)";
-          return Status(false, oss.str().c_str());
+          return Status(false, "\"%s\" flag requires %d value(s)", cflag->longname.c_str(), cflag->arity);
         
         } else if (cflag->arity==0 && valcount>0) {
-          std::ostringstream oss;
-          oss << "\"" << cflag->longname << "\" flag does not accept any value";
-          return Status(false, oss.str().c_str());
+          return Status(false, "\"%s\" flag does not accept any value", cflag->longname.c_str());
         }
       }
       
@@ -281,9 +275,7 @@ Status ArgParser::parse(int argc, char **argv) {
       
       } else {
         if (!(cflag->opts & FlagDesc::FT_MULTI)) {
-          std::ostringstream oss;
-          oss << "\"" << cflag->longname << "\" flag is single usage";
-          return Status(false, oss.str().c_str());
+          return Status(false, "\"%s\" flag is single usage", cflag->longname.c_str());
         }
         cdata = it->second;
       }
@@ -311,15 +303,11 @@ Status ArgParser::parse(int argc, char **argv) {
             mArgs.push(String(argv[carg]));
           
           } else {
-            std::ostringstream oss;
-            oss << "Only " << mNoFlagCount << " non-flag value(s) accepted";
-            return Status(false, oss.str().c_str());
+            return Status(false, "Only %d non-flag value(s) accepted", mNoFlagCount);
           }
         
         } else {
-          std::ostringstream oss;
-          oss << "Only flags arguments are accepted (Arg " << carg << ": " << argv[carg] << ")";
-          return Status(false, oss.str().c_str());
+          return Status(false, "Only flags arguments are accepted (Arg %d: %s)", carg, argv[carg]);
         }
       }
     }
@@ -328,17 +316,13 @@ Status ArgParser::parse(int argc, char **argv) {
   
   if (cflag) {
     if (cflag->arity>0 && cflag->arity!=valcount) {
-      std::ostringstream oss;
-      oss << "\"" << cflag->longname << "\" flag requires " << cflag->arity << " value(s)";
-      return Status(false, oss.str().c_str());
+      return Status(false, "\"%s\" flag requires %d value(s)", cflag->longname.c_str(), cflag->arity);
     }
   }
   
   if (mNoFlagOn && mNoFlagCount>0) {
     if ((int)mArgs.size() != mNoFlagCount) {
-      std::ostringstream oss;
-      oss << mNoFlagCount << " non-flag value(s) required";
-      return Status(false, oss.str().c_str());
+      return Status(false, "%d non-flag value(s) required", mNoFlagCount);
     }
   }
   
@@ -347,9 +331,7 @@ Status ArgParser::parse(int argc, char **argv) {
     for (size_t i=0; i<mFlags.size(); ++i) {
       if (mFlags[i].opts & FlagDesc::FT_NEEDED) {
         if (mFlagsMap.find(mFlags[i].longname) == mFlagsMap.end()) {
-          std::ostringstream oss;
-          oss << "\"" << mFlags[i].longname << "\" flag is required";
-          return Status(false, oss.str().c_str());
+          return Status(false, "\"%s\" flag is required", mFlags[i].longname.c_str());
         }
       }
     }

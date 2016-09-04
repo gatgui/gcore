@@ -21,16 +21,37 @@ USA.
 
 */
 
+#include <string>
+#include <iostream>
+
 #ifdef WIN32
 #  define DLLAPI extern "C" __declspec(dllexport)
 #  define WIN32_LEAN_AND_MEAN
 #  include <windows.h>
-DLLAPI BOOL __stdcall DllMain(HINSTANCE /*hInst*/, DWORD dwReason, LPVOID /*pvReseved*/)
+DLLAPI BOOL __stdcall DllMain(HINSTANCE hInst, DWORD dwReason, LPVOID /*pvReseved*/)
 {
   switch(dwReason)
   {
     //called by the process at load time or LoadLibrary [pvReserved NULL when LoadLibrary]
     case DLL_PROCESS_ATTACH:
+      {
+        static buffer[1024]; // 1k should be enough no?
+        DWORD len = GetModuleFileName(hInst, buffer, 1024);
+        // returned length doesn't include trailing '\0'
+        if (len > 0 && len < 1024)
+        {
+          std::cerr << "Module path: " << buffer << std::endl;
+        }
+        else if (len == 1024 && GetLastError() == ERROR_INSUFFICIENT_BUFFER)
+        {
+          std::cerr << "Module path is longer that 1023 characters" << std::endl;
+          // either failed or buffer too small
+        }
+        else
+        {
+          std::cerr << "Failed to retrieve module path" << std::endl;
+        }
+      }
     //called by the process when finished / FreeLibrary / load failed [pvReserved NULL when FreeLibrary]
     case DLL_PROCESS_DETACH:
     //called by new thread launched by the process
@@ -43,11 +64,26 @@ DLLAPI BOOL __stdcall DllMain(HINSTANCE /*hInst*/, DWORD dwReason, LPVOID /*pvRe
   return TRUE;
 }
 #else  //WIN32
+#  include <dlfcn.h>
+#  include <cstdlib>
 #  define DLLAPI extern "C" __attribute__ ((visibility ("default")))
+__attribute__((constructor))
+void moduleinit()
+{
+  Dl_info dli;
+
+  memset(&dli, 0, sizeof(Dl_info));
+  if (dladdr((const void*)moduleinit, &dli) != 0)
+  {
+    std::cerr << "Module path: " << dli.dli_fname << std::endl;
+  }
+  else
+  {
+    std::cerr << "Failed to retrieve module path" << std::endl;
+  }
+}
 #endif //WIN32
 
-#include <string>
-#include <iostream>
 using namespace std;
 
 DLLAPI void initialize()

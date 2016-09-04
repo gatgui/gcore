@@ -50,6 +50,15 @@ USA.
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cmath>
+#include <cassert>
+#include <cstring>
+#include <cstdarg>
+#include <cerrno>
+#include <ctime>
 #include <map>
 #include <vector>
 #include <deque>
@@ -60,12 +69,6 @@ USA.
 #include <iostream>
 #include <sstream>
 #include <fstream>
-#include <cstdlib>
-#include <cstdio>
-#include <cassert>
-#include <cstring>
-#include <cstdarg>
-#include <ctime>
 #include <exception>
 #include <stdexcept>
 

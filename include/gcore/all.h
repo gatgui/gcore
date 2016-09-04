@@ -54,6 +54,7 @@ USA.
 #include <gcore/functor.h>
 #include <gcore/time.h>
 #include <gcore/status.h>
+#include <gcore/net.h>
 
 #endif 
 

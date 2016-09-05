@@ -1,6 +1,7 @@
 import excons
 import os
 import re
+import sys
 import glob
 import excons.tools
 from excons.tools import threads
@@ -10,21 +11,22 @@ from excons.tools import python
 cython = excons.GetArgument("with-cython", "cython")
 static = excons.GetArgument("static", 0, int)
 debugrex = excons.GetArgument("debug-rex", 0, int)
+plat = str(Platform())
 
 libdefs = ["GCORE_STATIC"] if static else ["GCORE_EXPORTS"]
 if debugrex:
   libdefs.append("_DEBUG_REX")
-if str(Platform()) == "win32":
+if plat == "win32":
   libdefs.append("_CRT_SECURE_NO_WARNINGS")
 liblibs = []
 libcustom = []
 if not static:
   libcustom = [threads.Require, dl.Require]
-  if not str(Platform()) in ["win32", "darwin"]:
+  if not plat in ["win32", "darwin"]:
     liblibs = ["rt"]
 
 def SilentCythonWarnings(env):
-  if str(Platform()) == "darwin":
+  if plat == "darwin":
     env.Append(CPPFLAGS=" -Wno-unused-function -Wno-unneeded-internal-declaration")
 
 def RequireGcore(env):
@@ -37,12 +39,12 @@ def RequireGcore(env):
     threads.Require(env)
     dl.Require(env)
 
-  plat = str(Platform())
+  p = str(Platform())
 
-  if not plat in ["win32", "darwin"]:
+  if not p in ["win32", "darwin"]:
     env.Append(LIBS=["rt"])
   
-  if plat == "win32":
+  if p == "win32":
     env.Append(CPPDEFINES=["_CRT_SECURE_NO_WARNINGS"])
 
 Export("RequireGcore")
@@ -107,8 +109,14 @@ env.Append(SCANNERS=cython_scanner)
 # Declare targets
 excons.DeclareTargets(env, prjs)
 
-# Generate cpp files from cythin
-cygen = env.Command(["src/py/_gcore.cpp", "src/py/_gcore.h"], "src/py/_gcore.pyx", "%s -I include --cplus --embed-positions -o $TARGET $SOURCE" % cython)
-
+# Generate cpp files from cython
+cython_gen = (excons.GetArgument("cython-gen", 1, int) != 0)
+if cython_gen:
+   cygen = env.Command(["src/py/_gcore.cpp", "src/py/_gcore.h"], "src/py/_gcore.pyx", "%s -I include --cplus --embed-positions -o $TARGET $SOURCE" % cython)
+elif not os.path.isfile("src/py/_gcore.cpp") or not os.path.isfile("src/py/_gcore.h"):
+   if "gcorepy" in COMMAND_LINE_TARGETS:
+      print("Cannot build gcore python module: cython sources not generated")
+      sys.exit(1)
 
 Default(["gcore"])
+

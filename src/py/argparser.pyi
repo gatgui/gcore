@@ -252,6 +252,7 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
       cdef char **argv = <char**> malloc((argc + 1) * sizeof(char*))
       cdef int i = 0
       cdef char *arg = NULL
+      cdef gcore.Status stat
       
       if not argv:
          raise MemoryError()
@@ -261,7 +262,11 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
          i += 1
       argv[argc] = NULL
 
-      self._cobj.parse(argc, &argv[0])
+      stat = self._cobj.parse(argc, &argv[0])
 
       free(argv)
+      
+      if not stat.succeeded():
+         raise Exception(stat.message())
+   
 

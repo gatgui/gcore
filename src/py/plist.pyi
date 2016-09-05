@@ -27,10 +27,12 @@ ctypedef public class PropertyList [object PyPropertyList, type PyPropertyListTy
       self._cobj.create()
 
    def read(self, arg):
+      cdef gcore.Status stat
       if isinstance(arg, XMLElement):
-         return self._cobj.read((<XMLElement>arg)._cobj)
+         stat = self._cobj.read((<XMLElement>arg)._cobj)
       else:
-         return self._cobj.read(gcore.String(<char*?>arg))
+         stat = self._cobj.read(gcore.String(<char*?>arg))
+      return stat.succeeded()
 
    def write(self, arg):
       cdef gcore.XMLElement *rv = NULL
@@ -56,15 +58,25 @@ ctypedef public class PropertyList [object PyPropertyList, type PyPropertyListTy
       return self._cobj.remove(gcore.String(<char*?>name))
 
    def clear(self, name):
-      self._cobj.clear(gcore.String(<char*?>name))
+      cdef gcore.Status stat
+      stat = self._cobj.clear(gcore.String(<char*?>name))
+      if not stat.succeeded():
+         raise Exception(stat.message())
 
    def getSize(self, name):
-      return self._cobj.getSize(gcore.String(<char*?>name))
+      cdef gcore.Status stat
+      rv = self._cobj.getSize(gcore.String(<char*?>name), &stat)
+      if not stat.succeeded():
+         raise Exception(stat.message())
+      return rv
 
    def getKeys(self, name):
+      cdef gcore.Status stat
       cdef gcore.StringList l
-      cdef size_t n = self._cobj.getKeys(gcore.String(<char*?>name), l)
+      cdef size_t n = self._cobj.getKeys(gcore.String(<char*?>name), l, &stat)
       cdef size_t i = 0
+      if not stat.succeeded():
+         raise Exception(stat.message())
       rv = []
       while i < n:
          rv.append(l[i].c_str())
@@ -72,27 +84,55 @@ ctypedef public class PropertyList [object PyPropertyList, type PyPropertyListTy
       return rv
 
    def getString(self, name):
-      return self._cobj.getString(gcore.String(<char*?>name)).c_str()
+      cdef gcore.Status stat
+      rv = self._cobj.getString(gcore.String(<char*?>name), &stat)
+      if not stat.succeeded():
+         raise Exception(stat.message())
+      return rv.c_str()
 
    def getInteger(self, name):
-      return self._cobj.getInteger(gcore.String(<char*?>name))
+      cdef gcore.Status stat
+      rv = self._cobj.getInteger(gcore.String(<char*?>name), &stat)
+      if not stat.succeeded():
+         raise Exception(stat.message())
+      return rv
 
    def getReal(self, name):
-      return self._cobj.getReal(gcore.String(<char*?>name))
+      cdef gcore.Status stat
+      rv = self._cobj.getReal(gcore.String(<char*?>name), &stat)
+      if not stat.succeeded():
+         raise Exception(stat.message())
+      return rv
 
    def getBoolean(self, name):
-      return self._cobj.getBoolean(gcore.String(<char*?>name))
+      cdef gcore.Status stat
+      rv = self._cobj.getBoolean(gcore.String(<char*?>name), &stat)
+      if not stat.succeeded():
+         raise Exception(stat.message())
+      return rv
 
    def setString(self, name, v):
-      self._cobj.setString(gcore.String(<char*?>name), gcore.String(<char*?>v))
+      cdef gcore.Status stat
+      stat = self._cobj.setString(gcore.String(<char*?>name), gcore.String(<char*?>v))
+      if not stat.succeeded():
+         raise Exception(stat.message())
 
    def setInteger(self, name, v):
-      self._cobj.setInteger(gcore.String(<char*?>name), <int>v)
+      cdef gcore.Status stat
+      stat = self._cobj.setInteger(gcore.String(<char*?>name), <int>v)
+      if not stat.succeeded():
+         raise Exception(stat.message())
 
    def setReal(self, name, v):
-      self._cobj.setReal(gcore.String(<char*?>name), <double>v)
+      cdef gcore.Status stat
+      stat = self._cobj.setReal(gcore.String(<char*?>name), <double>v)
+      if not stat.succeeded():
+         raise Exception(stat.message())
 
    def setBoolean(self, name, v):
-      self._cobj.setBoolean(gcore.String(<char*?>name), <bint>v)
+      cdef gcore.Status stat
+      stat = self._cobj.setBoolean(gcore.String(<char*?>name), <bint>v)
+      if not stat.succeeded():
+         raise Exception(stat.message())
 
 

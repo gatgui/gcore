@@ -14,7 +14,28 @@ cdef extern from "<string>" namespace "std":
       string(string &)
       string(char*)
       char* c_str()
-     
+   
+
+cdef extern from "<gcore/status.h>" namespace "gcore":
+   
+   cdef cppclass Status:
+      Status()
+      Status(bint)
+      Status(bint, char*)
+      Status(bint, int)
+      Status(bint, int, char*)
+      
+      void clear()
+      void set(bint success)
+      void set(bint success, int errcode)
+      void set(bint success, char *msg)
+      void set(bint success, int errcode, char *msg)
+      
+      bint succeeded()
+      bint failed()
+      int errcode()
+      char* message()
+   
 
 cdef extern from "<gcore/list.h>" namespace "gcore":
    
@@ -164,28 +185,27 @@ cdef extern from "<gcore/plist.h>" namespace "gcore":
       
       void create()
       
-      bint read(String&)
-      bint read(XMLElement*)
+      Status read(String&)
+      Status read(XMLElement*)
       void write(String&)
       XMLElement* write(XMLElement*)
       
       bint has(String&)
       
-      #String& getString(String&) except +
-      String getString(String&) except +
-      long getInteger(String&) except +
-      double getReal(String&) except +
-      bint getBoolean(String&) except +
+      String getString(String&, Status*)
+      long getInteger(String&, Status*)
+      double getReal(String&, Status*)
+      bint getBoolean(String&, Status*)
       
-      size_t getSize(String&) except +
-      size_t getKeys(String&, StringList&) except +
-      void clear(String&) except +
+      size_t getSize(String&, Status*)
+      size_t getKeys(String&, StringList&, Status*)
+      Status clear(String&)
       bint remove(String&)
       
-      void setString(String&, String&) except +
-      void setInteger(String&, long) except +
-      void setReal(String&, double) except +
-      void setBoolean(String&, bint) except +
+      Status setString(String&, String&)
+      Status setInteger(String&, long)
+      Status setReal(String&, double)
+      Status setBoolean(String&, bint)
    
 
 cdef extern from "<gcore/dirmap.h>" namespace "gcore::Dirmap":
@@ -264,8 +284,8 @@ cdef extern from "<gcore/argparser.h>" namespace "gcore":
       bint getMultiFlagArgument(String&, size_t, size_t, unsigned int&)
       bint getMultiFlagArgument(String&, size_t, size_t, bint&)
 
-      void parse(int, char **) except +
-
+      Status parse(int, char **)
+   
 
 cdef extern from "<gcore/log.h>" namespace "gcore":
    
@@ -353,12 +373,54 @@ cdef extern from "<gcore/md5.h>" namespace "gcore":
       void clear()
       
       String asString()
-      
+   
 
-cdef extern from "<gcore/perflog.h>" namespace "gcore::PerfLog":
+cdef extern from "<gcore/time.h>" namespace "gcore::TimeCounter":
    
    cdef enum Units:
-      CurrentUnits, NanoSeconds, MilliSeconds, Seconds, Minutes, Hours
+      CurrentUnits, NanoSeconds, MicroSeconds, MilliSeconds, Seconds, Minutes, Hours
+   
+   char* UnitsString(Units)
+   double ConvertUnits(double, Units, Units)
+   
+
+cdef extern from "<gcore/time.h>" namespace "gcore":
+   
+   cdef cppclass TimeCounter:
+      TimeCounter()
+      TimeCounter(Units)
+      TimeCounter(double)
+      TimeCounter(double, Units)
+      TimeCounter(TimeCounter&)
+      
+      TimeCounter& assign "operator=" (TimeCounter&)
+      TimeCounter& plus_eq "operator+=" (TimeCounter&)
+      TimeCounter& plus_eq "operator+=" (double)
+      TimeCounter& sub_eq "operator-=" (TimeCounter&)
+      TimeCounter& sub_eq "operator-=" (double)
+      # Compare operator? <= < == != > >=
+      
+      void restart()
+      
+      bint setUnits(Units)
+      Units units()
+      
+      bint setValue(double)
+      bint setValue(double, Units)
+      double value()
+      double value(Units)
+      
+      double nanoseconds()
+      double microseconds()
+      double milliseconds()
+      double seconds()
+      double minutes()
+      double hours()
+      
+      TimeCounter elapsed()
+   
+
+cdef extern from "<gcore/perflog.h>" namespace "gcore::PerfLog":
    
    cdef enum ShowFlags:
       ShowTotalTime, ShowFuncTime, ShowAvgTotalTime, ShowAvgFuncTime, ShowNumCalls, ShowDetailed, ShowFlag, ShowDefaults, ShowAll
@@ -368,33 +430,30 @@ cdef extern from "<gcore/perflog.h>" namespace "gcore::PerfLog":
    
    cdef enum Output:
       ConsoleOutput, LogOutput
-
+   
 
 cdef extern from "<gcore/perflog.h>" namespace "gcore":
    
    cdef cppclass PerfLog:
       PerfLog()
-      PerfLog(Units)
+      PerfLog(TimeCounter.Units)
       PerfLog(PerfLog&)
       
       PerfLog& assign "operator=" (PerfLog&)
       
       void begin(string&)
       void end()
-      void _print "print" (Output, int, int, Units)
-      void _print "print" (Log&, int, int, Units)
+      void _print "print" (Output, int, int, TimeCounter.Units)
+      void _print "print" (Log&, int, int, TimeCounter.Units)
       void clear()
    
-
 
 cdef extern from "<gcore/perflog.h>" namespace "gcore::PerfLog":
    
    PerfLog& SharedInstance()
    void Begin(string&)
    void End()
-   void Print(Output, int, int, Units)
-   void Print(Log&, int, int, Units)
+   void Print(Output, int, int, TimeCounter.Units)
+   void Print(Log&, int, int, TimeCounter.Units)
    void Clear()
-   char* UnitsString(Units)
-   double ConvertUnits(double, Units, Units)
 

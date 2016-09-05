@@ -1,6 +1,10 @@
 #include "pathenumerator.h"
 #include <gcore/all.h>
 #include "log.h"
+#ifdef DL_IMPORT
+#  undef DL_IMPORT
+#  define DL_IMPORT DL_EXPORT
+#endif
 #include "_gcore.h"
 
 

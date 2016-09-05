@@ -21,6 +21,7 @@ USA.
 
 */
 
+#include <cstring>
 #include <string>
 #include <iostream>
 
@@ -35,7 +36,7 @@ DLLAPI BOOL __stdcall DllMain(HINSTANCE hInst, DWORD dwReason, LPVOID /*pvReseve
     //called by the process at load time or LoadLibrary [pvReserved NULL when LoadLibrary]
     case DLL_PROCESS_ATTACH:
       {
-        static buffer[1024]; // 1k should be enough no?
+        static char buffer[1024]; // 1k should be enough no?
         DWORD len = GetModuleFileName(hInst, buffer, 1024);
         // returned length doesn't include trailing '\0'
         if (len > 0 && len < 1024)

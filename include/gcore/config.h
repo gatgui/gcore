@@ -45,7 +45,8 @@ USA.
 #ifdef _MSC_VER
 // always disable
 // 4251: warning on template class not having a dll-interface
-# pragma warning(disable: 4251 4702)
+// 4275: non-dll interface class used as base for dll-interface class
+# pragma warning(disable: 4251 4275 4702)
 #endif
 
 #include <sys/types.h>

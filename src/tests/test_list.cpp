@@ -97,10 +97,10 @@ int main(int, char**) {
   
   std::cout << "Negative indices..." << std::endl;
   size_t idx = points.size() - 1;
-  std::cout << "[-1] = " << points[-1] << std::endl;
+  std::cout << "[-1] = " << points(-1) << std::endl;
   std::cout << "[" << idx << "] = " << points[idx] << std::endl;
   idx = points.size() - 3;
-  std::cout << "[-3] = " << points[-3] << std::endl;
+  std::cout << "[-3] = " << points(-3) << std::endl;
   std::cout << "[" << idx << "] = " << points[idx] << std::endl;
   
   return 0;

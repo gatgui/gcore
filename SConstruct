@@ -14,6 +14,8 @@ debugrex = excons.GetArgument("debug-rex", 0, int)
 libdefs = ["GCORE_STATIC"] if static else ["GCORE_EXPORTS"]
 if debugrex:
   libdefs.append("_DEBUG_REX")
+if str(Platform()) == "win32":
+  libdefs.append("_CRT_SECURE_NO_WARNINGS")
 liblibs = []
 libcustom = []
 if not static:
@@ -35,8 +37,13 @@ def RequireGcore(env):
     threads.Require(env)
     dl.Require(env)
 
-  if not str(Platform()) in ["win32", "darwin"]:
+  plat = str(Platform())
+
+  if not plat in ["win32", "darwin"]:
     env.Append(LIBS=["rt"])
+  
+  if plat == "win32":
+    env.Append(CPPDEFINES=["_CRT_SECURE_NO_WARNINGS"])
 
 Export("RequireGcore")
 

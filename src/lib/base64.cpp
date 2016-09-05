@@ -224,16 +224,16 @@ static bool _Decode(const char *in, size_t len, void* &out, size_t &outlen) {
     }
     
     if (npad == 0) {
-      bytes[outp++] = (tmp & 0x00FF0000) >> 16;
-      bytes[outp++] = (tmp & 0x0000FF00) >> 8;
-      bytes[outp++] = (tmp & 0x000000FF);
+      bytes[outp++] = (unsigned char) ((tmp & 0x00FF0000) >> 16);
+      bytes[outp++] = (unsigned char) ((tmp & 0x0000FF00) >> 8);
+      bytes[outp++] = (unsigned char) (tmp & 0x000000FF);
       
     } else if (npad == 1) {
-      bytes[outp++] = (tmp & 0x00FF0000) >> 16;
-      bytes[outp++] = (tmp & 0x0000FF00) >> 8;
+      bytes[outp++] = (unsigned char) ((tmp & 0x00FF0000) >> 16);
+      bytes[outp++] = (unsigned char) ((tmp & 0x0000FF00) >> 8);
       
     } else if (npad == 2) {
-      bytes[outp++] = (tmp & 0x00FF0000) >> 16;
+      bytes[outp++] = (unsigned char) ((tmp & 0x00FF0000) >> 16);
       
     } else {
       if (allocated) {

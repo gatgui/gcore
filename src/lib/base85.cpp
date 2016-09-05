@@ -335,7 +335,7 @@ static bool _BytesToValue(Base85::Encoder *e, unsigned int &outval, unsigned int
   
   for (; p<e->encoding->pack; ++p) {
     
-    nbytes = std::min<unsigned int>(4, e->inend - e->in);
+    nbytes = std::min<unsigned int>(4, (unsigned int)(e->inend - e->in));
     
     val = 0;
     
@@ -633,7 +633,7 @@ static bool _ValueToBytes(Base85::Decoder *d, unsigned int pack, unsigned int va
     return true;
   
   } else if (pack == 3) {
-    unsigned int nbits = nbytes * 8;
+    size_t nbits = nbytes * 8;
     
     if (nbits >= 30) {
       if (!_ValueToBytes(d, 1, (val & 0x000003FF), 4)) {

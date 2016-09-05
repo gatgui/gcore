@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
   decstr = "!%<_l4$$$$d";
   if (gcore::Base85::Decode(dec, decstr, outdata, outlen)) {
      unsigned int *vals = (unsigned int*)outdata;
-     unsigned int count = outlen / 4;
+     size_t count = outlen / 4;
      std::cout << "Decoded " << count << " values" << std::endl;
      std::cout << "  [0] " << vals[0] << std::endl;
      std::cout << "  [1] " << vals[1] << std::endl;
@@ -207,9 +207,9 @@ int main(int argc, char **argv) {
   decstr = "!%<_l4$$$$'$vDc3$v;Z0$v;Z0$u";
   if (gcore::Base85::Decode(dec, decstr, outdata, outlen)) {
     unsigned int *vals = (unsigned int*)outdata;
-    unsigned int count = outlen / 4;
+    size_t count = outlen / 4;
     std::cout << "Decoded " << count << " values" << std::endl;
-    for (unsigned int i=0; i<count; ++i) {
+    for (size_t i=0; i<count; ++i) {
       std::cout << "  [" << i << "] " << vals[i] << std::endl;
     }
     
@@ -229,7 +229,7 @@ int main(int argc, char **argv) {
   decstr = "!%<_l4$$&<:%<";
   if (gcore::Base85::Decode(dec, decstr, outdata, outlen)) {
     unsigned int *vals = (unsigned int*)outdata;
-    unsigned int count = outlen / 4;
+    size_t count = outlen / 4;
     std::cout << "Decoded " << count << " values" << std::endl;
     std::cout << "  [0] " << vals[0] << std::endl;
     std::cout << "  [1] " << vals[1] << std::endl;
@@ -290,7 +290,7 @@ int main(int argc, char **argv) {
   // => Count is not correct (1026 instead of expected 1024, values are correct)
   if (gcore::Base85::Decode(dec, decstr, outdata, outlen)) {
     unsigned int *vals = (unsigned int*)outdata;
-    unsigned int count = outlen / 4;
+    size_t count = outlen / 4;
     std::cout << "Decoded " << count << " indices" << std::endl;
     std::cout << "  [0] " << vals[0] << std::endl;
     std::cout << "  [1] " << vals[1] << std::endl;
@@ -704,7 +704,7 @@ int main(int argc, char **argv) {
   // Should start with: 0, 1, 52, 51, 1, 2, 53, 52, 2, 3, 54, ...
   if (gcore::Base85::Decode(dec, decstr, outdata, outlen)) {
     unsigned int *vals = (unsigned int*)outdata;
-    unsigned int count = outlen / 4;
+    size_t count = outlen / 4;
     std::cout << "Decoded " << count << " indices" << std::endl;
     std::cout << "  [0] " << vals[0] << std::endl;
     std::cout << "  [1] " << vals[1] << std::endl;
@@ -815,8 +815,8 @@ int main(int argc, char **argv) {
            ":0x/ogrIaDq9985]GC/ogrIaDq9989+]c/ogrIaDq99";
   if (gcore::Base85::Decode(dec, decstr, outdata, outlen)) {
     float *vals = (float*) outdata;
-    unsigned int count = (outlen / 4) / 3;
-    unsigned int idx = 0;
+    size_t count = (outlen / 4) / 3;
+    size_t idx = 0;
     std::cout << "Decoded " << count << " points" << std::endl;
     std::cout << "  [0] " << vals[0] << ", " << vals[1] << ", " << vals[2] << std::endl;
     std::cout << "  [1] " << vals[3] << ", " << vals[4] << ", " << vals[5] << std::endl;
@@ -851,7 +851,7 @@ int main(int argc, char **argv) {
       
       if (gcore::Base85::Decode(dec, es, outdata, outlen)) {
         float *vals = (float*) outdata;
-        unsigned int count = (outlen / 4) / 3;
+        size_t count = (outlen / 4) / 3;
         std::cout << "Decoded " << count << " points" << std::endl;
         std::cout << "  [0] " << vals[0] << ", " << vals[1] << ", " << vals[2] << std::endl;
         std::cout << "  [1] " << vals[3] << ", " << vals[4] << ", " << vals[5] << std::endl;

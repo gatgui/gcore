@@ -26,6 +26,10 @@ USA.
 #include <gcore/threads.h>
 #include <gcore/time.h>
 
+#ifdef _MSC_VER
+// 4127: conditional expression is constant (in FD_SET macro)
+# pragma warning(disable: 4127)
+#endif
 
 #ifndef _WIN32
 # include <signal.h>

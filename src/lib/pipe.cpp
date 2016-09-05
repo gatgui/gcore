@@ -262,15 +262,20 @@ void gcore::Pipe::closeWrite() {
   }
 }
 
+#ifndef _WIN32
 int gcore::Pipe::read(char *buffer, int size, bool retryOnInterrupt) const {
   if (canRead()) {
-#ifndef _WIN32
     int bytesRead = ::read(mDesc[0], buffer, size);
     while (bytesRead == -1 && (errno == EAGAIN || (errno == EINTR && retryOnInterrupt))) {
       bytesRead = ::read(mDesc[0], buffer, size);
     }
     return bytesRead;
+  }
+  return -1;
+}
 #else
+int gcore::Pipe::read(char *buffer, int size, bool) const {
+  if (canRead()) {
     bool namedPipeServer = (isNamed() && isOwned());
     if (namedPipeServer && !mConnected) {
       if (ConnectNamedPipe(mDesc[0], NULL)) {
@@ -285,6 +290,9 @@ int gcore::Pipe::read(char *buffer, int size, bool retryOnInterrupt) const {
       DWORD lastErr = GetLastError();
       if (lastErr == ERROR_IO_PENDING) {
         rv = ReadFile(mDesc[0], buffer, size, &bytesRead, NULL);
+      } else if (lastErr == ERROR_MORE_DATA) {
+        bytesRead = size;
+        rv = TRUE;
       } else {
         if (namedPipeServer) {
           DisconnectNamedPipe(mDesc[0]);
@@ -300,16 +308,16 @@ int gcore::Pipe::read(char *buffer, int size, bool retryOnInterrupt) const {
     if (rv) {
       return bytesRead;
     }
-#endif
   }
   return -1;
 }
+#endif
 
+#ifndef _WIN32
 int gcore::Pipe::read(String &str, bool retryOnInterrupt) const {
   char rdbuf[256];
 
   if (canRead()) {
-#ifndef _WIN32
     int bytesRead = ::read(mDesc[0], rdbuf, 255);
     while (bytesRead == -1 && (errno == EAGAIN || (errno == EINTR && retryOnInterrupt))) {
       bytesRead = ::read(mDesc[0], rdbuf, 255);
@@ -319,7 +327,16 @@ int gcore::Pipe::read(String &str, bool retryOnInterrupt) const {
       str = rdbuf;
     }
     return bytesRead;
+  }
+
+  str = "";
+  return -1;
+}
 #else
+int gcore::Pipe::read(String &str, bool) const {
+  char rdbuf[256];
+
+  if (canRead()) {
     bool namedPipeServer = (isNamed() && isOwned());
     if (namedPipeServer && !mConnected) {
       if (ConnectNamedPipe(mDesc[0], NULL)) {
@@ -334,6 +351,9 @@ int gcore::Pipe::read(String &str, bool retryOnInterrupt) const {
       DWORD lastErr = GetLastError();
       if (lastErr == ERROR_IO_PENDING) {
         rv = ReadFile(mDesc[0], rdbuf, 255, &bytesRead, NULL);
+      } else if (lastErr == ERROR_MORE_DATA) {
+        bytesRead = 255;
+        rv = TRUE;
       } else {
         if (namedPipeServer) {
           DisconnectNamedPipe(mDesc[0]);
@@ -351,12 +371,12 @@ int gcore::Pipe::read(String &str, bool retryOnInterrupt) const {
       str = rdbuf;
       return bytesRead;
     }
-#endif
   }
 
   str = "";
   return -1;
 }
+#endif
 
 int gcore::Pipe::write(const char *buffer, int size) const {
   if (canWrite()) {

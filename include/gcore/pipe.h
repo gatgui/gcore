@@ -73,6 +73,7 @@ namespace gcore {
       bool create(const String &name);
       void closeRead();
       void closeWrite();
+      // Note: retryOnInterrupt non implemented on windows
       int read(char *buffer, int size, bool retryOnInterrupt=false) const;
       int read(String &str, bool retryOnInterrupt=false) const;
       int write(const char *buffer, int size) const;

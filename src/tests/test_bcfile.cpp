@@ -57,7 +57,7 @@ public:
 
    virtual void write(std::ostream &ofile) const
    {
-      WriteUint32(ofile, mData.size());
+      WriteUint32(ofile, (unsigned long)mData.size());
       for (size_t i=0; i<mData.size(); ++i)
       {
          WriteFloat(ofile, mData[i].x);
@@ -171,14 +171,14 @@ public:
 
    virtual void write(std::ostream &ofile) const
    {
-      WriteUint32(ofile, mData.size());
+      WriteUint32(ofile, (unsigned long)mData.size());
       for (size_t i=0; i<mData.size(); ++i)
       {
          const Polygon &p = mData[i];
-         WriteUint32(ofile, p.size());
+         WriteUint32(ofile, (unsigned long)p.size());
          for (size_t j=0; j<p.size(); ++j)
          {
-            WriteUint32(ofile, p[j]);
+            WriteUint32(ofile, (unsigned long)p[j]);
          }
       }
    }

@@ -139,15 +139,18 @@ void gcore::Process::std_output(const char *str) {
 gcore::Process::Process()
   : mPID(INVALID_PID), mCapture(false), mRedirect(false),
     mVerbose(false), mShowConsole(true), mStdArgs(0), mCmdLine(""),
-    mCaptureErr(false), mErrToOut(false), mKeepAlive(false) {
+    mCaptureErr(false), mErrToOut(false), mKeepAlive(false),
+    mReturnCode(-1) {
   mOutFunc = &std_output;
 }
 
 gcore::Process::~Process() {
   closePipes();
+  
   if (!mKeepAlive && running()) {
     kill();
   }
+  
   mArgs.clear();
   if (mStdArgs) {
     delete[] mStdArgs;
@@ -235,7 +238,7 @@ void gcore::Process::setEnv(const String &key, const String &value) {
 
 bool gcore::Process::running() {
   if (IsValidProcessID(mPID)) {
-    return (wait(false) == 0);
+    return (_wait(false) == 0);
   } else {
     return false;
   }
@@ -300,6 +303,7 @@ gcore::ProcessID gcore::Process::run() {
     return INVALID_PID;
   }
 
+  mReturnCode = -1;
   // m_args[0] must contain program path
 
   // Build command line
@@ -615,13 +619,22 @@ gcore::ProcessID gcore::Process::run(const String &progPath, int argc, ...) {
 }
 
 int gcore::Process::wait(bool blocking) {
+  int rv = _wait(blocking);
+  if (rv != 0) {
+    closePipes();
+    mPID = INVALID_PID;
+  }
+  return rv;
+}
+
+int gcore::Process::_wait(bool blocking) {
   static char mess[64] = {0};
 
   if (! IsValidProcessID(mPID)) {
     return -1;
   }
 
-#ifndef _WIN32  
+#ifndef _WIN32
 
   int status;
   
@@ -634,26 +647,33 @@ int gcore::Process::wait(bool blocking) {
     }
     return 0;
   }
+  
   if (rpid == mPID) {
+    if (WIFEXITED(status)) {
+      mReturnCode = WEXITSTATUS(status);
+    }
+    
     if (mVerbose) {
       if (WIFEXITED(status)) {
-        int ecode = WEXITSTATUS(status);
-        sprintf(mess,"Wait(%d): Process exited with status %d\n", mPID, ecode);
+        sprintf(mess,"Wait(%d): Process exited with status %d\n", mPID, mReturnCode);
+      
       } else if (WIFSIGNALED(status)) {
         int scode = WTERMSIG(status);
-        sprintf(mess,"Wait(%d): Process exited on signal %d\n", mPID, scode);
+        sprintf(mess,"Wait(%d): Process exited on signal %d%s\n", mPID, scode, (WCOREDUMP(status) ? " (core dump)" : ""));
+      
       } else if (WIFSTOPPED(status)) {
         int scode = WSTOPSIG(status);
         sprintf(mess,"Wait(%d): Process stopped on signal %d\n", mPID, scode);
+      
       } else {
         sprintf(mess,"Wait(%d): Process terminated\n", mPID);
       }
+      
       (*mOutFunc)(mess);
     }
-    closePipes();
-    mPID = INVALID_PID;
     return 1;
-  } else {
+  
+  } else { // must be -1: error
     if (mVerbose) {
       switch(errno) {
         case ECHILD:
@@ -669,8 +689,6 @@ int gcore::Process::wait(bool blocking) {
       }
       (*mOutFunc)(mess);
     }
-    closePipes();
-    mPID = INVALID_PID;
     return -1;
   }
   
@@ -680,6 +698,7 @@ int gcore::Process::wait(bool blocking) {
 
   if (phdl) {
     DWORD ret = WaitForSingleObject(phdl, (blocking ? INFINITE : 5));
+    
     if (ret == WAIT_TIMEOUT) {
       if (mVerbose) {
         sprintf(mess,"Wait(%ld): Process still running\n", (long)mPID);
@@ -687,25 +706,29 @@ int gcore::Process::wait(bool blocking) {
       }
       _process_closeHandle(phdl);
       return 0;
+    
     } else if (ret == WAIT_OBJECT_0) {
       if (mVerbose) {
         sprintf(mess,"Wait(%ld): Process terminated\n", (long)mPID);
         (*mOutFunc)(mess);
       }
+      DWORD rv;
+      if (GetExitCodeProcess(phdl, &rv)) {
+        mReturnCode = (int) rv;
+      }
       _process_closeHandle(phdl);
-      closePipes();
-      mPID = INVALID_PID;
       return 1;
+    
     } else {
       _process_closeHandle(phdl);
-      closePipes();
-      mPID = INVALID_PID;
     }
   }
+  
   if (mVerbose) {
     sprintf(mess,"Wait(%ld): Error\n", (long)mPID);
     (*mOutFunc)(mess);
   }
+  
   return -1;
   
 #endif
@@ -717,13 +740,16 @@ int gcore::Process::kill() {
   }
 #ifndef _WIN32
   int r = ::kill(mPID,SIGQUIT);
+  
   if (0 == r) {
     if (mVerbose) {
       (*mOutFunc)("Kill success\n");
     }
+    
     closePipes();
     mPID = INVALID_PID;
     return 0;
+  
   } else {
     if (mVerbose) {
       switch(errno) {
@@ -737,6 +763,7 @@ int gcore::Process::kill() {
           (*mOutFunc)("Kill failed: Unknown reason\n");
       };
     }
+    
     closePipes();
     mPID = INVALID_PID;
     return -1;

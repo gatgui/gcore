@@ -58,30 +58,11 @@ namespace gcore
       Process();
       ~Process();
 
+      // Process setup
+      
       void setOutputFunc(OutputFunc of);
       void setEnv(const String &key, const String &value);
-
-      ProcessID run(const String &cmdline);
-      ProcessID run(const String &progPath, char **argv);
-      ProcessID run(const String &progPath, int argc, ...);
       
-      ProcessID getId() const;
-
-      int read(char *buffer, int size) const;
-      int read(String &str) const;
-      int write(const char *buffer, int size) const;
-      int write(const String &str) const;
-      int readErr(String &str) const;
-      int writeErr(const String &str) const;
-      
-      PipeID readID() const;
-      PipeID writeID() const;
-      
-      inline const String& getCmdLine() const {
-        return mCmdLine;
-      } 
-
-      //what about err?
       void captureOut(bool co);
       bool captureOut() const;
 
@@ -92,13 +73,6 @@ namespace gcore
       void redirectIn(bool ri);
       bool redirectIn() const;
 
-      void verbose(bool v);
-      bool verbose() const;
-
-      bool running();
-      int wait(bool blocking);
-      int kill();
-
       // for windows
       void showConsole(bool sc);
       bool showConsole() const;
@@ -106,10 +80,48 @@ namespace gcore
       void keepAlive(bool ka);
       bool keepAlive() const;
 
+      void verbose(bool v);
+      bool verbose() const;
+
+      // Running process 
+      
+      // Returns INVALID_PID on failure
+      ProcessID run(const String &cmdline);
+      ProcessID run(const String &progPath, char **argv);
+      ProcessID run(const String &progPath, int argc, ...);
+
+      ProcessID getId() const;
+
+      bool running();
+      // Returns -1 on failure, 0 if process is still running (non-blocking mode) or 1 if process completed
+      // In blocking mode, will wait for process completion
+      int wait(bool blocking);
+      // Returns -1 on failure
+      int kill();
+
+      inline const String& getCmdLine() const { return mCmdLine; }
+      // return code is initialized to -1
+      inline int returnCode() const { return mReturnCode; }
+
+      // Interacting with running process
+
+      // Returns -1 on error, read/written bytes otherwise
+      int read(char *buffer, int size) const;
+      int read(String &str) const;
+      int write(const char *buffer, int size) const;
+      int write(const String &str) const;
+      int readErr(String &str) const;
+      int writeErr(const String &str) const;
+
+      PipeID readID() const;
+      PipeID writeID() const;
+
+
     private:
 
       static void std_output(const char*);
 
+      int _wait(bool blocking);
       ProcessID run();
       void closePipes();
 
@@ -131,6 +143,7 @@ namespace gcore
       bool        mErrToOut;
       bool        mKeepAlive;
       StringDict  mEnv;
+      int         mReturnCode;
   };
 }
 

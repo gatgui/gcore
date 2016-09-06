@@ -8,4 +8,5 @@ include "path.pyi"
 include "perflog.pyi"
 include "plist.pyi"
 include "xml.pyi"
-
+include "pipe.pyi"
+include "process.pyi"

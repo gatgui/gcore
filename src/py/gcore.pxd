@@ -1,5 +1,7 @@
 from libcpp.map cimport map
 from cpython cimport PyObject
+import sys
+
 
 cdef extern from "<gcore/platform.h>":
    
@@ -457,3 +459,70 @@ cdef extern from "<gcore/perflog.h>" namespace "gcore::PerfLog":
    void Print(Log&, int, int, TimeCounter.Units)
    void Clear()
 
+
+cdef extern from "<gcore/pipe.h>" namespace "gcore":
+   
+   cdef cppclass Pipe:
+      Pipe()
+      Pipe(Pipe&)
+      
+      Pipe& assign "operator=" (Pipe&)
+      
+      bint isNamed()
+      String& getName()
+      
+      bint isOwned()
+      bint canRead()
+      bint canWrite()
+      
+      bint create()
+      bint open(String&)
+      
+      void close()
+      void closeRead()
+      void closeWrite()
+      
+      int read(String&, bint) # bool retryOnInterrupt=false
+      int write(String&)
+   
+
+cdef extern from "<gcore/process.h>" namespace "gcore":
+   
+   cdef cppclass Process:
+      Process()
+      
+      void setEnv(String&, String&)
+      
+      void captureOut(bint)
+      bint captureOut()
+      
+      void captureErr(bint, bint) # bool errToOut=False
+      bint captureErr()
+      bint redirectErrToOut()
+      
+      void redirectIn(bint)
+      bint redirectIn()
+      
+      void showConsole(bint)
+      bint showConsole()
+      
+      void keepAlive(bint)
+      bint keepAlive()
+      
+      void verbose(bint)
+      bint verbose()
+      
+      int run(String&)
+      bint running()
+      int wait(bint)
+      int kill()
+      int returnCode()
+      String& getCmdLine()
+      
+      int read(String&)
+      int readErr(String&)
+      int write(String&)
+      int writeErr(String&)
+      
+      
+   

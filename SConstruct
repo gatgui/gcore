@@ -9,6 +9,7 @@ from excons.tools import dl
 from excons.tools import python
 
 cython = excons.GetArgument("with-cython", "cython")
+cython_gen = excons.GetArgument("cython-gen", 1, int)
 static = excons.GetArgument("static", 0, int)
 debugrex = excons.GetArgument("debug-rex", 0, int)
 plat = str(Platform())
@@ -110,7 +111,6 @@ env.Append(SCANNERS=cython_scanner)
 excons.DeclareTargets(env, prjs)
 
 # Generate cpp files from cython
-cython_gen = (excons.GetArgument("cython-gen", 1, int) != 0)
 if cython_gen:
    cygen = env.Command(["src/py/_gcore.cpp", "src/py/_gcore.h"], "src/py/_gcore.pyx", "%s -I include --cplus --embed-positions -o $TARGET $SOURCE" % cython)
 elif not os.path.isfile("src/py/_gcore.cpp") or not os.path.isfile("src/py/_gcore.h"):

@@ -262,7 +262,7 @@ cdef extern from "<gcore/argparser.h>" namespace "gcore":
    cdef cppclass ArgParser:
       ArgParser(FlagDesc*, int)
 
-      size_t getArgumentCount()
+      size_t argumentCount()
       bint getArgument(size_t, String&)
       bint getArgument(size_t, float&)
       bint getArgument(size_t, double&)
@@ -271,8 +271,8 @@ cdef extern from "<gcore/argparser.h>" namespace "gcore":
       bint getArgument(size_t, bint&)
 
       bint isFlagSet(String&)
-      size_t getFlagOccurenceCount(String&)
-      size_t getFlagArgumentCount(String&, size_t)
+      size_t flagOccurenceCount(String&)
+      size_t flagArgumentCount(String&, size_t)
       bint getFlagArgument(String&, size_t, String&)
       bint getFlagArgument(String&, size_t, float&)
       bint getFlagArgument(String&, size_t, double&)

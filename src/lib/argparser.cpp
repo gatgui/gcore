@@ -58,7 +58,7 @@ ArgParser::ArgParser(const FlagDesc *flags, int n)
 ArgParser::~ArgParser() {
 }
 
-size_t ArgParser::getArgumentCount() const {
+size_t ArgParser::argumentCount() const {
   return mArgs.size();
 }
 
@@ -90,7 +90,7 @@ bool ArgParser::getArgument(size_t idx, bool &out) const {
   return mArgs[idx].toBool(out);
 }
 
-size_t ArgParser::getFlagOccurenceCount(const String &name) const {
+size_t ArgParser::flagOccurenceCount(const String &name) const {
   FlagsMap::const_iterator it = mFlagsMap.find(name);
   if (it != mFlagsMap.end()) {
     return (mDatas[it->second].size());
@@ -98,7 +98,7 @@ size_t ArgParser::getFlagOccurenceCount(const String &name) const {
   return 0;
 }
 
-size_t ArgParser::getFlagArgumentCount(const String &name, size_t occurence) const {
+size_t ArgParser::flagArgumentCount(const String &name, size_t occurence) const {
   FlagsMap::const_iterator it = mFlagsMap.find(name);
   if (it != mFlagsMap.end()) {
     const FlagOccurencesValues &data = mDatas[it->second];

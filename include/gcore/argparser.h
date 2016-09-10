@@ -50,7 +50,7 @@ namespace gcore {
       ArgParser(const FlagDesc *flags, int n);
       ~ArgParser();
 
-      size_t getArgumentCount() const;
+      size_t argumentCount() const;
       bool getArgument(size_t idx, String &out) const;
       bool getArgument(size_t idx, float &out) const;
       bool getArgument(size_t idx, double &out) const;
@@ -59,8 +59,8 @@ namespace gcore {
       bool getArgument(size_t idx, bool &out) const;
 
       bool isFlagSet(const String &name) const;
-      size_t getFlagOccurenceCount(const String &name) const;// if flag is multi
-      size_t getFlagArgumentCount(const String &name, size_t occurence=0) const;
+      size_t flagOccurenceCount(const String &name) const;
+      size_t flagArgumentCount(const String &name, size_t occurence=0) const;
       bool getFlagArgument(const String &name, size_t idx, String &out) const;
       bool getFlagArgument(const String &name, size_t idx, float &out) const;
       bool getFlagArgument(const String &name, size_t idx, double &out) const;

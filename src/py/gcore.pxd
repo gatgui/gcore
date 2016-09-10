@@ -453,7 +453,7 @@ cdef extern from "<gcore/perflog.h>" namespace "gcore":
 
 cdef extern from "<gcore/perflog.h>" namespace "gcore::PerfLog":
    
-   PerfLog& SharedInstance()
+   PerfLog& Get()
    void Begin(string&)
    void End()
    void Print(Output, int, int, TimeCounter.Units)

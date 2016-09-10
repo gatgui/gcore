@@ -69,7 +69,7 @@ namespace gcore
       
    public:
       
-      static PerfLog& SharedInstance();
+      static PerfLog& Get();
       static void Begin(const std::string &id);
       static void End();
       static void Print(Output output=ConsoleOutput, int flags=ShowDefaults, int sortBy=SortFuncTime, TimeCounter::Units units=TimeCounter::CurrentUnits);

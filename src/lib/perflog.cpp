@@ -201,7 +201,7 @@ void PerfLog::Entry::merge(const Entry &rhs)
 
 // ---
 
-PerfLog& PerfLog::SharedInstance()
+PerfLog& PerfLog::Get()
 {
    static PerfLog sShared;
    return sShared;
@@ -209,32 +209,32 @@ PerfLog& PerfLog::SharedInstance()
 
 void PerfLog::Begin(const std::string &msg)
 {
-   SharedInstance().begin(msg);
+   Get().begin(msg);
 }
 
 void PerfLog::End()
 {
-   SharedInstance().end();
+   Get().end();
 }
 
 void PerfLog::Print(PerfLog::Output output, int flags, int sortBy, TimeCounter::Units units)
 {
-   SharedInstance().print(output, flags, sortBy, units);
+   Get().print(output, flags, sortBy, units);
 }
 
 void PerfLog::Print(std::ostream &os, int flags, int sortBy, TimeCounter::Units units)
 {
-   SharedInstance().print(os, flags, sortBy, units);
+   Get().print(os, flags, sortBy, units);
 }
 
 void PerfLog::Print(Log &log, int flags, int sortBy, TimeCounter::Units units)
 {
-   SharedInstance().print(log, flags, sortBy, units);
+   Get().print(log, flags, sortBy, units);
 }
 
 void PerfLog::Clear()
 {
-   SharedInstance().clear();
+   Get().clear();
 }
 
 // ---
@@ -1066,7 +1066,7 @@ void PerfLog::print(Log &log, int flags, int sortBy, TimeCounter::Units units)
 // ----
 
 ScopedPerfLog::ScopedPerfLog(const std::string &key)
-   : mPerfLog(PerfLog::SharedInstance())
+   : mPerfLog(PerfLog::Get())
 {
    mPerfLog.begin(key);
 }

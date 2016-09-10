@@ -7,9 +7,9 @@ ctypedef public class PerfLog [object PyPerfLog, type PyPerfLogType]:
    cdef bint _own
    
    @classmethod
-   def SharedInstance(klass):
+   def Get(klass):
       rv = PerfLog(noalloc=True)
-      SetPerfLogPtr(rv, &(gcore.SharedInstance()), False)
+      SetPerfLogPtr(rv, &(gcore.Get()), False)
       return rv
    
    @classmethod

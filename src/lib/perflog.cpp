@@ -452,7 +452,7 @@ void PerfLog::print(PerfLog::Output output, int flags, int sortBy, TimeCounter::
    }
    else
    {
-      print(Log::Shared(), flags, sortBy, units);
+      print(Log::Get(), flags, sortBy, units);
    }
 }
 

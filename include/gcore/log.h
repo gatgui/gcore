@@ -25,10 +25,11 @@ namespace gcore
       
    public:
       
-      static Log& Shared();
+      static Log& Get();
       
-      static void SelectOutputs(unsigned int flags);
-      static unsigned int SelectedOutputs();
+      // a bit wise combination of LOG_* constants from LogLevel enum
+      static void SetLevelMask(unsigned int mask);
+      static unsigned int LevelMask();
       
       static void SetOutputFunc(OutputFunc func);
       
@@ -38,18 +39,18 @@ namespace gcore
       static void PrintInfo(const char *fmt, ...);
       
       static void SetIndentLevel(unsigned int n);
-      static unsigned int GetIndentLevel();
+      static unsigned int IndentLevel();
       static void Indent();
       static void UnIndent();
       
       static void SetIndentWidth(unsigned int w);
-      static unsigned int GetIndentWidth();
+      static unsigned int IndentWidth();
       
-      static void EnableColors(bool onoff);
-      static bool ColorsEnabled();
+      static void SetColorOutput(bool onoff);
+      static bool ColorOutput();
       
-      static void ShowTimeStamps(bool onoff);
-      static bool TimeStampsShown();
+      static void SetShowTimeStamps(bool onoff);
+      static bool ShowTimeStamps();
       
    public:
       
@@ -62,8 +63,8 @@ namespace gcore
       
       void setOutputFunc(OutputFunc func);
       
-      void selectOutputs(unsigned int flags);
-      unsigned int selectedOutputs() const;
+      void setLevelMask(unsigned int mask);
+      unsigned int levelMask() const;
       
       void printError(const char *fmt, ...) const;
       void printWarning(const char *fmt, ...) const;
@@ -71,18 +72,18 @@ namespace gcore
       void printInfo(const char *fmt, ...) const;
       
       void setIndentLevel(unsigned int l);
-      unsigned int getIndentLevel() const;
+      unsigned int indentLevel() const;
       void indent();
       void unIndent();
       
       void setIndentWidth(unsigned int w);
-      unsigned int getIndentWidth() const;
+      unsigned int indentWidth() const;
       
-      void enableColors(bool onoff);
-      bool colorsEnabled() const;
+      void setColorOutput(bool onoff);
+      bool colorOutput() const;
       
-      void showTimeStamps(bool onoff);
-      bool timeStampsShown() const;
+      void setShowTimeStamps(bool onoff);
+      bool showTimeStamps() const;
       
    private:
       
@@ -91,9 +92,9 @@ namespace gcore
    private:
       
       mutable OutputFunc mOutFunc;
-      unsigned int mOutputs;
-      bool mColors;
-      bool mTimeStamps;
+      unsigned int mLevelMask;
+      bool mColorOutput;
+      bool mShowTimeStamps;
       unsigned int mIndentLevel;
       unsigned int mIndentWidth;
       bool mToFile;

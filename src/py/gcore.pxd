@@ -301,8 +301,8 @@ cdef extern from "<gcore/log.h>" namespace "gcore":
       
       Log& assign "operator=" (Log&)
       
-      void selectOutputs(unsigned int)
-      unsigned int selectedOutputs()
+      void setLevelMask(unsigned int)
+      unsigned int levelMask()
       
       void printError(char*)
       void printWarning(char*)
@@ -310,24 +310,24 @@ cdef extern from "<gcore/log.h>" namespace "gcore":
       void printInfo(char*)
       
       void setIndentLevel(unsigned int)
-      unsigned int getIndentLevel()
+      unsigned int indentLevel()
       void indent()
       void unIndent()
       
       void setIndentWidth(unsigned int)
-      unsigned int getIndentWidth()
+      unsigned int indentWidth()
       
-      void enableColors(bint)
-      bint colorsEnabled()
+      void setColorOutput(bint)
+      bint colorOutput()
       
-      void showTimeStamps(bint)
-      bint timeStampsShown()
+      void setShowTimeStamps(bint)
+      bint showTimeStamps()
 
 
 cdef extern from "<gcore/log.h>" namespace "gcore::Log":
    
-   void SelectOutputs(unsigned int flags)
-   unsigned int SelectedOutputs()
+   void SetLevelMask(unsigned int mask)
+   unsigned int LevelMask()
    
    void PrintError(char *fmt)
    void PrintWarning(char *fmt)
@@ -335,18 +335,18 @@ cdef extern from "<gcore/log.h>" namespace "gcore::Log":
    void PrintInfo(char *fmt)
    
    void SetIndentLevel(unsigned int n)
-   unsigned int GetIndentLevel()
+   unsigned int IndentLevel()
    void Indent()
    void UnIndent()
    
    void SetIndentWidth(unsigned int w)
-   unsigned int GetIndentWidth()
+   unsigned int IndentWidth()
    
-   void EnableColors(bint onoff)
-   bint ColorsEnabled()
+   void SetColorOutput(bint onoff)
+   bint ColorOutput()
    
-   void ShowTimeStamps(bint onoff)
-   bint TimeStampsShown()
+   void SetShowTimeStamps(bint onoff)
+   bint ShowTimeStamps()
    
 
 cdef extern from "log.h":

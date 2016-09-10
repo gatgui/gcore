@@ -77,14 +77,14 @@ namespace gcore {
         ++i;
       }
     }
-    mFullName = fullname(DIR_SEP);
+    mFullName = fullname('/');
     return *this;
   }
   
   Path& Path::operator+=(const Path &rhs) {
     if (isDir() && !rhs.isAbsolute()) {
       mPaths.insert(mPaths.end(), rhs.mPaths.begin(), rhs.mPaths.end());
-      mFullName = fullname(DIR_SEP);
+      mFullName = fullname('/');
     }
     return *this;
   }
@@ -145,14 +145,14 @@ namespace gcore {
     if (mPaths.size() > 0) {
       rv = mPaths.back();
       mPaths.pop_back();
-      mFullName = fullname(DIR_SEP);
+      mFullName = fullname('/');
     }
     return rv;
   }
   
   Path& Path::push(const String &s) {
     mPaths.push_back(s);
-    mFullName = fullname(DIR_SEP);
+    mFullName = fullname('/');
     return *this;
   }
   
@@ -170,9 +170,9 @@ namespace gcore {
   // if path is relative, prepend current directory
   Path& Path::makeAbsolute() {
     if (!isAbsolute()) {
-      Path cwd = GetCurrentDir();
+      Path cwd = CurrentDir();
       mPaths.insert(mPaths.begin(), cwd.mPaths.begin(), cwd.mPaths.end());
-      mFullName = fullname(DIR_SEP);
+      mFullName = fullname('/');
     }
     return *this;
   }
@@ -191,7 +191,7 @@ namespace gcore {
             mPaths.clear();
             break;
           }
-          Path cwd = GetCurrentDir();
+          Path cwd = CurrentDir();
           cwd.pop();
           size_t sz = cwd.mPaths.size();
           mPaths.erase(mPaths.begin()+i);
@@ -207,7 +207,7 @@ namespace gcore {
         ++i;
       }
     }
-    mFullName = fullname(DIR_SEP);
+    mFullName = fullname('/');
     return *this;
   }
   
@@ -290,7 +290,7 @@ namespace gcore {
   }
   
   // file extension without .
-  String Path::getExtension() const {
+  String Path::extension() const {
     if (mPaths.size() == 0) {
       return "";
     }
@@ -303,7 +303,7 @@ namespace gcore {
   }
   
   bool Path::checkExtension(const String &ext) const {
-    String pext = getExtension();
+    String pext = extension();
     return (pext.casecompare(ext) == 0);
   }
   
@@ -345,7 +345,7 @@ namespace gcore {
     return false;
   }
   
-  void Path::each(EachFunc callback, bool recurse, unsigned short flags) const {
+  void Path::forEach(ForEachFunc callback, bool recurse, unsigned short flags) const {
     if (!isDir() || callback == 0) {
       return;
     }
@@ -355,14 +355,14 @@ namespace gcore {
     HANDLE hFile;
     String fffs; // find first file string 
     if (mFullName.length() == 0) {
-      fffs = ".\\*.*";
+      fffs = "./*.*";
     } else {
       size_t p = mFullName.find("*.*");
       if (p == std::string::npos) {
-        if (mFullName[mFullName.length()-1] == '\\' || mFullName[mFullName.length()-1] == '/') {
+        if (mFullName[mFullName.length()-1] == '/') {
           fffs = mFullName + "*.*";
         } else {
-          fffs = mFullName + "\\*.*";
+          fffs = mFullName + "/*.*";
         }
       } else {
         fffs = mFullName;
@@ -375,19 +375,19 @@ namespace gcore {
         if (fname == "." ||  fname == "..") {
           continue;
         }
-        if ((flags & ET_HIDDEN) == 0 && fname.startswith(".")) {
+        if ((flags & FE_HIDDEN) == 0 && fname.startswith(".")) {
           continue;
         }
         path.push(fname);
         if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
-          if ((flags & ET_DIRECTORY) != 0 && !callback(path)) {
+          if ((flags & FE_DIRECTORY) != 0 && !callback(path)) {
             break;
           }
           if (recurse) {
-            path.each(callback, true, flags);
+            path.forEach(callback, true, flags);
           }
         } else {
-          if ((flags & ET_FILE) != 0 && !callback(path)) {
+          if ((flags & FE_FILE) != 0 && !callback(path)) {
             break;
           }
         }
@@ -398,8 +398,8 @@ namespace gcore {
 #else
     DIR *d;
     if (mFullName.length() == 0) {
-      Path cwd = GetCurrentDir();
-      d = opendir(cwd.fullname(DIR_SEP).c_str());
+      Path cwd = CurrentDir();
+      d = opendir(cwd.fullname('/').c_str());
     } else {
       d = opendir(mFullName.c_str());
     }
@@ -410,19 +410,19 @@ namespace gcore {
         if (fname == "." || fname == "..") {
           continue;
         }
-        if ((flags & ET_HIDDEN) == 0 && fname.startswith(".")) {
+        if ((flags & FE_HIDDEN) == 0 && fname.startswith(".")) {
           continue;
         }
         path.push(fname);
         if (path.isDir()) {
-          if ((flags & ET_DIRECTORY) != 0 && !callback(path)) {
+          if ((flags & FE_DIRECTORY) != 0 && !callback(path)) {
             break;
           }
           if (recurse) {
-            path.each(callback, true, flags);
+            path.forEach(callback, true, flags);
           }
         } else {
-          if ((flags & ET_FILE) != 0 && !callback(path)) {
+          if ((flags & FE_FILE) != 0 && !callback(path)) {
             break;
           }
         }
@@ -452,15 +452,15 @@ namespace gcore {
   }
   
   size_t Path::listDir(PathList &l, bool recurse, unsigned short flags) const {
-    EachFunc func;
+    ForEachFunc func;
     details::DirLister dl(l);
     Bind(&dl, &details::DirLister::dirItem, func);
     l.clear();
-    each(func, recurse, flags);
+    forEach(func, recurse, flags);
     return l.size();
   }
   
-  Path Path::GetCurrentDir() {
+  Path Path::CurrentDir() {
 #ifdef _WIN32
     DWORD cwdLen = GetCurrentDirectory(0, NULL);
     char *cwd = (char*)malloc(cwdLen * sizeof(char));

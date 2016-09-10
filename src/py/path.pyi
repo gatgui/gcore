@@ -8,15 +8,15 @@ ctypedef public class Path [object PyPath, type PyPathType]:
    cdef gcore.Path *_cobj
    cdef bint _own
    
-   ET_FILE = gcore.ET_FILE
-   ET_DIRECTORY = gcore.ET_DIRECTORY
-   ET_HIDDEN = gcore.ET_HIDDEN
-   ET_ALL = gcore.ET_ALL
+   FE_FILE = gcore.FE_FILE
+   FE_DIRECTORY = gcore.FE_DIRECTORY
+   FE_HIDDEN = gcore.FE_HIDDEN
+   FE_ALL = gcore.FE_ALL
    
    @classmethod
-   def GetCurrentDir(klass):
+   def CurrentDir(klass):
       p = Path()
-      p._cobj.assign(gcore.GetCurrentDir())
+      p._cobj.assign(gcore.CurrentDir())
       return p
    
    def __cinit__(self, *args, **kwargs):
@@ -53,6 +53,10 @@ ctypedef public class Path [object PyPath, type PyPathType]:
    def pop(self):
       return self._cobj.pop().c_str()
    
+   property depth:
+      def __get__(self): return self._cobj.depth()
+      def __set__(self, v): raise Exception("_gcore.Path.depth is not settable")
+   
    def removeFile(self):
       return self._cobj.removeFile()
    
@@ -82,12 +86,12 @@ ctypedef public class Path [object PyPath, type PyPathType]:
       self._cobj.normalize()
       return self
    
-   def each(self, func, recursive=False, flags=Path.ET_ALL):
+   def forEach(self, func, recursive=False, flags=Path.FE_ALL):
       cdef gcore.PathEnumerator enumerator
       enumerator.setPyFunc(<gcore.PyObject*>func)
       enumerator.apply(deref(self._cobj), <bint?>recursive, <int>flags)
    
-   def listDir(self, recursive=False, flags=Path.ET_ALL):
+   def listDir(self, recursive=False, flags=Path.FE_ALL):
       cdef gcore.List[gcore.Path] paths
       cdef size_t i = 0
       cdef size_t n = self._cobj.listDir(paths, <bint?>recursive, <int?>flags)
@@ -125,25 +129,35 @@ ctypedef public class Path [object PyPath, type PyPathType]:
       rv += rhs
       return rv
    
-   def basename(self):
-      return self._cobj.basename().c_str()
+   property basename:
+      def __get__(self): return self._cobj.basename().c_str()
+      def __set__(self, v): raise Exception("_gcore.Path.basename is not settable")
    
-   def dirname(self, sep=DIR_SEP):
+   property dirname:
+      def __get__(self): return self._cobj.dirname('/').c_str()
+      def __set__(self, v): raise Exception("_gcore.Path.dirname is not settable")
+   
+   property fullname:
+      def __get__(self): return self._cobj.fullname('/').c_str()
+      def __set__(self, v): raise Exception("_gcore.Path.fullname is not settable")
+   
+   def dirname(self, sep):
       if sep is None:
-         return self._cobj.dirname(gcore.DIR_SEP).c_str()
+         return self._cobj.dirname('/').c_str()
       elif not type(sep) in [str, unicode] or len(sep) != 1:
          raise Exception("_gcore.Path.dirname expects a string argument of length 1")
       return self._cobj.dirname((<char*?>sep)[0]).c_str()
    
-   def fullname(self, sep=DIR_SEP):
+   def fullname(self, sep):
       if sep is None:
-         return self._cobj.fullname(gcore.DIR_SEP).c_str()
+         return self._cobj.fullname('/').c_str()
       elif not type(sep) in [str, unicode] or len(sep) != 1:
          raise Exception("_gcore.Path.fullname expects a string argument of length 1")
       return self._cobj.fullname((<char*?>sep)[0]).c_str()
    
-   def getExtension(self):
-      return self._cobj.getExtension().c_str()
+   property extension:
+      def __get__(self): return self._cobj.extension().c_str()
+      def __set__(self, v): raise Exception("_gcore.Path.extension is not settable")
    
    def checkExtension(self, e):
       return self._cobj.checkExtension(gcore.String(<char*?>e))

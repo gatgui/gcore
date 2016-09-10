@@ -116,7 +116,7 @@ bool PathEnumerator::visit(const gcore::Path &path)
 
 void PathEnumerator::apply(const gcore::Path &path, bool recurse, unsigned short flags)
 {
-   path.each(mFunctor, recurse, flags);
+   path.forEach(mFunctor, recurse, flags);
 }
 
 

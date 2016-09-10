@@ -39,7 +39,7 @@ class AClass {
 
 int main(int, char **) {
   
-  gcore::Path absDir0 = gcore::Path::GetCurrentDir();
+  gcore::Path absDir0 = gcore::Path::CurrentDir();
   gcore::Path absDir1 = absDir0 + "src/..";
   gcore::Path relDir0 = gcore::Path("./include/../src/../././src/tests");
   gcore::Path relDir1 = gcore::Path("src/../include/.");
@@ -149,19 +149,19 @@ int main(int, char **) {
     fprintf(stdout, "Succeeded: not isDir: \"%s\"\n", unexisting.fullname().c_str());
   }
   
-  if (noExtRelFile.getExtension().length() != 0) {
-    fprintf(stderr, "Failed: getExtension: \"%s\"\n", noExtRelFile.fullname().c_str());
+  if (noExtRelFile.extension().length() != 0) {
+    fprintf(stderr, "Failed: extension: \"%s\"\n", noExtRelFile.fullname().c_str());
   } else {
-    fprintf(stdout, "Succeeded: getExtension: \"%s\"\n", noExtRelFile.fullname().c_str());
+    fprintf(stdout, "Succeeded: extension: \"%s\"\n", noExtRelFile.fullname().c_str());
   }
-  gcore::String ext = extRelFile.getExtension();
+  gcore::String ext = extRelFile.extension();
   if (ext.length() == 0) {
-    fprintf(stderr, "Failed: getExtension: \"%s\"\n", extRelFile.fullname().c_str());
+    fprintf(stderr, "Failed: extension: \"%s\"\n", extRelFile.fullname().c_str());
   } else {
-    fprintf(stdout, "Succeeded: getExtension: \"%s\" = \"%s\"\n", extRelFile.fullname().c_str(), ext.c_str());
+    fprintf(stdout, "Succeeded: extension: \"%s\" = \"%s\"\n", extRelFile.fullname().c_str(), ext.c_str());
   }
   
-  gcore::Path cwd = gcore::Path::GetCurrentDir(); 
+  gcore::Path cwd = gcore::Path::CurrentDir(); 
   fprintf(stdout, "CWD = \"%s\"\n", cwd.fullname().c_str());
   
   gcore::Path path0 = cwd + "SConstruct";
@@ -232,9 +232,9 @@ int main(int, char **) {
   
   
   AClass a;
-  gcore::Path::EachFunc c1;
+  gcore::Path::ForEachFunc c1;
   gcore::Bind(&a, METHOD(AClass, FileFound), c1);
-  relDir1.each(c1, true);
+  relDir1.forEach(c1, true);
   
   return 0;
 }

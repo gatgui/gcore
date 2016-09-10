@@ -87,6 +87,7 @@ cdef extern from "<gcore/path.h>" namespace "gcore":
       
       String& to_string "operator gcore::String&" ()
       
+      int depth()
       String& operator[](int)
       
       bint isAbsolute()
@@ -96,7 +97,7 @@ cdef extern from "<gcore/path.h>" namespace "gcore":
       String basename()
       String dirname(char) # char sep=DIR_SEP
       String fullname(char) # char sep=DIR_SEP
-      String getExtension()
+      String extension()
       bint checkExtension(String&)
       size_t fileSize()
       
@@ -116,10 +117,10 @@ cdef extern from "<gcore/path.h>" namespace "gcore":
 
 cdef extern from "<gcore/path.h>" namespace "gcore::Path":
    
-   cdef Path GetCurrentDir()
+   cdef Path CurrentDir()
    
-   cdef enum EachTarget:
-      ET_FILE, ET_DIRECTORY, ET_HIDDEN, ET_ALL
+   cdef enum ForEachTarget:
+      FE_FILE, FE_DIRECTORY, FE_HIDDEN, FE_ALL
 
 
 cdef extern from "pathenumerator.h":

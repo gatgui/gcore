@@ -132,7 +132,7 @@ namespace gcore {
       void free(char *&bytes);
       
       void setBufferSize(unsigned long n);
-      inline unsigned long getBufferSize() const { return mBufferSize; }
+      inline unsigned long bufferSize() const { return mBufferSize; }
       inline bool hasPendingData() const { return (mBufferOffset > 0); }
       
     private:

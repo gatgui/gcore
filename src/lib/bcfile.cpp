@@ -177,7 +177,7 @@ BCFile::ElementPlaceHolder::~ElementPlaceHolder()
    }
 }
 
-size_t BCFile::ElementPlaceHolder::getByteSize() const
+size_t BCFile::ElementPlaceHolder::size() const
 {
    return mSize;
 }
@@ -512,7 +512,7 @@ void BCFile::write_0_1(std::ofstream &ofile, size_t baseOff) const
    {
       WriteString(ofile, elt->first);
       WriteUint32(ofile, (unsigned long)baseOff);
-      baseOff += elt->second->getByteSize();
+      baseOff += elt->second->size();
       ++elt;
    }
    
@@ -549,7 +549,7 @@ void BCFile::write_0_2(std::ofstream &ofile, size_t baseOff) const
    elt = mElements.begin();
    while (elt != mElements.end())
    {
-      sz = elt->second->getByteSize();
+      sz = elt->second->size();
       WriteString(ofile, elt->first);
       WriteUint32(ofile, (unsigned long)baseOff);
       WriteUint32(ofile, (unsigned long)sz);

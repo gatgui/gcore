@@ -39,12 +39,12 @@ public:
       z = mData[idx].z;
    }
 
-   size_t size() const
+   size_t count() const
    {
       return mData.size();
    }
 
-   virtual size_t getByteSize() const
+   virtual size_t size() const
    {
       size_t sz = (4 + mData.size() * 3 * sizeof(float));
       return sz;
@@ -129,7 +129,7 @@ public:
       mData.clear();
    }
 
-   size_t size() const
+   size_t count() const
    {
       return mData.size();
    }
@@ -153,7 +153,7 @@ public:
       mData.back()[3] = v3;
    }
 
-   virtual size_t getByteSize() const
+   virtual size_t size() const
    {
       size_t sz = 4; // pcount
       for (size_t i=0; i<mData.size(); ++i)

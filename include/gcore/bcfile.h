@@ -52,7 +52,8 @@ namespace gcore
       
       virtual ~BCFileElement() {}
       
-      virtual size_t getByteSize() const = 0;
+      // return size in bytes
+      virtual size_t size() const = 0;
       
       virtual void writeHeader(std::ostream &os) const = 0;
       virtual void write(std::ostream &os) const = 0;
@@ -73,7 +74,7 @@ namespace gcore
          ElementPlaceHolder(unsigned long off, size_t sz=0);
          virtual ~ElementPlaceHolder();
 
-         virtual size_t getByteSize() const;
+         virtual size_t size() const;
          virtual void writeHeader(std::ostream &os) const;
          virtual void write(std::ostream &os) const;
          virtual bool readHeader(std::istream &is);

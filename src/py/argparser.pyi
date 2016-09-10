@@ -87,13 +87,14 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
          del(self._cobj)
          self._cobj = NULL
    
-   def argumentCount(self):
-      return (self._cobj.argumentCount() if self._cobj != NULL else 0)
+   property argumentCount:
+      def __get__(self): return (self._cobj.argumentCount() if self._cobj != NULL else 0)
+      def __set__(self, v): raise Exception("_gcore.ArgParser.argumentCount is not settable")
    
    def getStringArgument(self, idx):
       cdef gcore.String rv
       if not self._cobj.getArgument(<size_t?>idx, rv):
-         if idx < 0 or idx >= self.argumentCount():
+         if idx < 0 or idx >= self.argumentCount:
             raise Exception("_gcore.ArgParser.getStringArgument: Invalid argument index %d" % idx)
          else:
             raise Exception("_gcore.ArgParser.getStringArgument: Argument %d cannot be converted to string" % idx)
@@ -102,7 +103,7 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
    def getFloatArgument(self, idx):
       cdef float rv = 0
       if not self._cobj.getArgument(<size_t?>idx, rv):
-         if idx < 0 or idx >= self.argumentCount():
+         if idx < 0 or idx >= self.argumentCount:
             raise Exception("_gcore.ArgParser.getFloatArgument: Invalid argument index %d" % idx)
          else:
             raise Exception("_gcore.ArgParser.getFloatArgument: Argument %d cannot be converted to float" % idx)
@@ -111,7 +112,7 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
    def getDoubleArgument(self, idx):
       cdef double rv = 0
       if not self._cobj.getArgument(<size_t?>idx, rv):
-         if idx < 0 or idx >= self.argumentCount():
+         if idx < 0 or idx >= self.argumentCount:
             raise Exception("_gcore.ArgParser.getDoubleArgument: Invalid argument index %d" % idx)
          else:
             raise Exception("_gcore.ArgParser.getDoubleArgument: Argument %d cannot be converted to double" % idx)
@@ -120,7 +121,7 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
    def getIntArgument(self, idx):
       cdef int rv = 0
       if not self._cobj.getArgument(<size_t?>idx, rv):
-         if idx < 0 or idx >= self.argumentCount():
+         if idx < 0 or idx >= self.argumentCount:
             raise Exception("_gcore.ArgParser.getIntArgument: Invalid argument index %d" % idx)
          else:
             raise Exception("_gcore.ArgParser.getIntArgument: Argument %d cannot be converted to int" % idx)
@@ -129,7 +130,7 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
    def getUIntArgument(self, idx):
       cdef unsigned int rv = 0
       if not self._cobj.getArgument(<size_t?>idx, rv):
-         if idx < 0 or idx >= self.argumentCount():
+         if idx < 0 or idx >= self.argumentCount:
             raise Exception("_gcore.ArgParser.getUIntArgument: Invalid argument index %d" % idx)
          else:
             raise Exception("_gcore.ArgParser.getUIntArgument: Argument %d cannot be converted to unsigned int" % idx)
@@ -138,7 +139,7 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
    def getBoolArgument(self, idx):
       cdef bint rv = False
       if not self._cobj.getArgument(<size_t?>idx, rv):
-         if idx < 0 or idx >= self.argumentCount():
+         if idx < 0 or idx >= self.argumentCount:
             raise Exception("_gcore.ArgParser.getBoolArgument: Invalid argument index %d" % idx)
          else:
             raise Exception("_gcore.ArgParser.getBoolArgument: Argument %d cannot be converted to bool" % idx)

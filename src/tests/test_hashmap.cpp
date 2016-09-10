@@ -22,13 +22,6 @@ USA.
 */
 
 #include <gcore/hashmap.h>
-#include <iostream>
-#include <algorithm>
-#include <set>
-#include <map>
-#include <cmath>
-#include <cassert>
-#include <ctime>
 
 #define MAX_STRING_LENGTH 512
 

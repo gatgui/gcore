@@ -23,8 +23,6 @@ USA.
 
 #include <gcore/perflog.h>
 #include <gcore/log.h>
-#include <cstdio>
-#include <cstring>
 
 using namespace gcore;
 

@@ -21,7 +21,7 @@ USA.
 
 */
 
-#include <gcore/all.h>
+#include <gcore/base85.h>
 
 int main(int argc, char **argv) {
   

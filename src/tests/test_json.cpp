@@ -21,7 +21,8 @@ USA.
 
 */
 
-#include <gcore/all.h>
+#include <gcore/json.h>
+#include <gcore/plist.h>
 
 using namespace gcore;
 

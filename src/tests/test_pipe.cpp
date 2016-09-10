@@ -24,8 +24,6 @@ USA.
 #include <gcore/process.h>
 #include <gcore/threads.h>
 #include <gcore/argparser.h>
-#include <string>
-#include <iostream>
 
 class PipeReader {
   public:

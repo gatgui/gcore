@@ -25,10 +25,6 @@ USA.
 #include <gcore/functor.h>
 #include <gcore/threadpool.h>
 #include <gcore/eventqueue.h>
-#include <deque>
-#include <string>
-#include <iostream>
-#include <cstdarg>
 
 using namespace gcore;
 

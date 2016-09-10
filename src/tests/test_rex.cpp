@@ -22,10 +22,6 @@ USA.
 */
 
 #include <gcore/rex.h>
-#include <iostream>
-#include <string>
-#include <vector>
-#include <set>
 
 using namespace gcore;
 

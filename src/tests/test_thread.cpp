@@ -21,8 +21,6 @@ USA.
 
 */
 
-#include <stdio.h>
-#include <stdarg.h>
 #include <gcore/threads.h>
 
 class State

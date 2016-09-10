@@ -21,7 +21,7 @@ USA.
 
 */
 
-#include <gcore/all.h>
+#include <gcore/rex.h>
 
 
 int main(int, char**) {

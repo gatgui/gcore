@@ -21,9 +21,7 @@ USA.
 
 */
 
-#include <gcore/all.h>
-#include <cmath>
-#include <cstdarg>
+#include <gcore/threadpool.h>
 
 
 // this make a 2 param method/function call into a no param function/method call

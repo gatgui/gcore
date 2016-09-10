@@ -22,7 +22,6 @@ USA.
 */
 
 #include <gcore/list.h>
-#include <cmath>
 
 struct Point {
   float x, y, z;

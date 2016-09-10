@@ -21,7 +21,7 @@ USA.
 
 */
 
-#include <gcore/all.h>
+#include <gcore/path.h>
 
 class AClass {
   public:

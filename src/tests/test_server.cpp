@@ -21,7 +21,8 @@ USA.
 
 */
 
-#include <gcore/all.h>
+#include <gcore/net.h>
+#include <gcore/threads.h>
 
 class ReadStdin {
 public:

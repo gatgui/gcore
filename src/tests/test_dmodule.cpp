@@ -21,7 +21,7 @@ USA.
 
 */
 
-#include <gcore/all.h>
+#include <gcore/dmodule.h>
 #include <iostream>
 
 // This describe a dll interface in an object so that calling method

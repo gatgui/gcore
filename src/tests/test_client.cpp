@@ -21,7 +21,7 @@ USA.
 
 */
 
-#include <gcore/all.h>
+#include <gcore/net.h>
 
 int main(int argc, char **argv) {
   

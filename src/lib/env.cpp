@@ -27,7 +27,7 @@ USA.
 
 namespace gcore {
 
-String Env::GetUser() {
+String Env::Username() {
 #ifdef _WIN32
   // other ?
   return Get("USERNAME");
@@ -36,7 +36,7 @@ String Env::GetUser() {
 #endif
 }
 
-String Env::GetHost() {
+String Env::Hostname() {
   char buffer[1024];
 #ifdef _WIN32
   DWORD sz = 1024;
@@ -58,15 +58,15 @@ void Env::Set(const String &k, const String &v, bool ow) {
   Env().set(k, v, ow);
 }
 
-void Env::SetAll(const StringDict &d, bool ow) {
-  Env().setAll(d, ow);
+void Env::Set(const StringDict &d, bool ow) {
+  Env().set(d, ow);
 }
 
 bool Env::IsSet(const String &k) {
   return Env().isSet(k);
 }
 
-void Env::EachInPath(const String &e, Env::EachInPathFunc callback) {
+void Env::ForEachInPath(const String &e, Env::ForEachInPathFunc callback) {
   if (e.length() == 0 || callback == 0) {
     return;
   }
@@ -105,11 +105,11 @@ namespace details {
 };
 
 size_t Env::ListPaths(const String &e, PathList &l) {
-  EachInPathFunc func;
+  ForEachInPathFunc func;
   details::PathLister pl(l);
   Bind(&pl, &details::PathLister::pathItem, func);
   l.clear();
-  EachInPath(e, func);
+  ForEachInPath(e, func);
   return l.size();
 }
 
@@ -139,7 +139,7 @@ void Env::pop() {
     
     // get last pushed environment and restore it
     StringDict &last = mEnvStack.back();
-    setAll(last, true);
+    set(last, true);
     
     // reset any keys that where not in pushed environment
     StringDict::iterator it = cur.begin();
@@ -154,7 +154,7 @@ void Env::pop() {
   }
 }
 
-void Env::setAll(const StringDict &d, bool overwrite) {
+void Env::set(const StringDict &d, bool overwrite) {
   StringDict::const_iterator it = d.begin();
   while (it != d.end()) {
     set(it->first, it->second, overwrite);
@@ -163,11 +163,6 @@ void Env::setAll(const StringDict &d, bool overwrite) {
 }
 
 bool Env::isSet(const String &k) const {
-//#ifndef _WIN32
-//  return (getenv(k.c_str()) != 0);
-//#else
-//  return (GetEnvironmentVariableA(k.c_str(), NULL, 0) > 0);
-//#endif
   return (get(k) != "");
 }
 

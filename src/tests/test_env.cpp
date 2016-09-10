@@ -55,9 +55,9 @@ int main(int, char**) {
   std::cout << "BSROOT = \"" << env.get("BSROOT") << "\"" << std::endl;
   
   std::cout << "PATH content..." << std::endl;
-  gcore::Env::EachInPathFunc cb;
+  gcore::Env::ForEachInPathFunc cb;
   gcore::Bind(PathCallback, cb);
-  gcore::Env::EachInPath("PATH", cb);
+  gcore::Env::ForEachInPath("PATH", cb);
   
   std::cout << "PATH content... (using PathList)" << std::endl;
   gcore::PathList pl;

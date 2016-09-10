@@ -229,18 +229,18 @@ cdef extern from "<gcore/env.h>" namespace "gcore":
       bint isSet(String&)
       String get(String&)
       void set(String&, String&, bint)
-      void setAll(map[String,String]&, bint)
+      void set(map[String,String]&, bint)
       
       size_t asDict(map[String,String]&)
    
 
 cdef extern from "<gcore/env.h>" namespace "gcore::Env":
    
-   String GetUser()
-   String GetHost()
+   String Username()
+   String Hostname()
    String Get(String&)
    void Set(String&, String&, bint)
-   void SetAll(map[String,String]&, bint)
+   void Set(map[String,String]&, bint)
    bint IsSet(String&)
    size_t ListPaths(String&, List[Path]&)
    

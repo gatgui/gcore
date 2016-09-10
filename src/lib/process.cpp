@@ -387,7 +387,7 @@ gcore::ProcessID gcore::Process::run() {
       iPipe.close();
     }
     
-    Env::SetAll(mEnv, true);
+    Env::Set(mEnv, true);
     
     int failed = execvp(mArgs[0].c_str(), mStdArgs);
     

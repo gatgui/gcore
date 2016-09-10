@@ -106,8 +106,8 @@ int main(int argc, char **argv)
   HashMap<std::string, std::string>::KeyVector keys;
   HashMap<std::string, std::string>::ValueVector vals;
   
-  hmap.keys(keys);
-  hmap.values(vals);
+  hmap.getKeys(keys);
+  hmap.getValues(vals);
   
   assert(hmap.size() == keys.size());
   assert(hmap.size() == vals.size());

@@ -110,7 +110,7 @@ namespace gcore
       
       const ValueType& value() const;
       const KeyType& key() const;
-      void value(const ValueType &val);
+      void setValue(const ValueType &val);
       
       Type* hash() const;
       long bucket() const;
@@ -196,8 +196,8 @@ namespace gcore
     bool insert(const KeyType &key, const ValueType &val, bool overwrite=false);
     void erase(const KeyType &k);
     void erase(iterator it);
-    size_t keys(KeyVector &kl) const;
-    size_t values(ValueVector &vl) const;
+    size_t getKeys(KeyVector &kl) const;
+    size_t getValues(ValueVector &vl) const;
     // 'at' method will throw std::out_of_range exception if key doesn't exist
     const ValueType& at(const KeyType &k) const;
     ValueType& at(const KeyType &k);
@@ -313,7 +313,7 @@ inline const KeyType& gcore::HashMap<KeyType, ValueType, H>::iterator::key() con
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
-inline void gcore::HashMap<KeyType, ValueType, H>::iterator::value(const ValueType &val)
+inline void gcore::HashMap<KeyType, ValueType, H>::iterator::setValue(const ValueType &val)
 {
   mEntry->value = val;
 }
@@ -839,7 +839,7 @@ ValueType& gcore::HashMap<KeyType, ValueType, H>::operator[](const KeyType &k)
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
-size_t gcore::HashMap<KeyType, ValueType, H>::keys(typename gcore::HashMap<KeyType, ValueType, H>::KeyVector &kl) const
+size_t gcore::HashMap<KeyType, ValueType, H>::getKeys(typename gcore::HashMap<KeyType, ValueType, H>::KeyVector &kl) const
 {
   kl.resize(mNumEntries);
   for (size_t i=0, j=0; i<mNumBuckets; ++i)
@@ -857,7 +857,7 @@ size_t gcore::HashMap<KeyType, ValueType, H>::keys(typename gcore::HashMap<KeyTy
 }
 
 template <typename KeyType, typename ValueType, gcore::HashFunc H>
-size_t gcore::HashMap<KeyType, ValueType, H>::values(typename gcore::HashMap<KeyType, ValueType, H>::ValueVector &vl) const
+size_t gcore::HashMap<KeyType, ValueType, H>::getValues(typename gcore::HashMap<KeyType, ValueType, H>::ValueVector &vl) const
 {
   vl.resize(mNumEntries);
   for (size_t i=0, j=0; i<mNumBuckets; ++i)

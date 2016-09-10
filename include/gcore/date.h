@@ -152,9 +152,9 @@ namespace gcore {
       static Date Minutes(int n);
       static Date Seconds(int n);
       
-      bool IsLeapYear(int year);
-      int DaysInYear(int year);
-      int DaysInMonth(int month, bool leapYear=false);
+      static bool IsLeapYear(int year);
+      static int DaysInYear(int year);
+      static int DaysInMonth(int month, bool leapYear=false);
       
     protected:
       

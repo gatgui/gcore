@@ -24,17 +24,21 @@ USA.
 #include <gcore/dirmap.h>
 #include <gcore/rex.h>
 
+namespace gcore {
+
+namespace dirmap {
+
+static StringDict gsNix2Win;
+static StringDict gsWin2Nix;
+
 static bool IsWindowsPath(const std::string &p) {
-  static gcore::Rex wpe(RAW("^[A-Za-z]:[/\\]"));
+  static Rex wpe(RAW("^[A-Za-z]:[/\\]"));
   return wpe.match(p);
 }
 
-namespace gcore {
+// ---
 
-StringDict Dirmap::msNix2Win;
-StringDict Dirmap::msWin2Nix;
-
-void Dirmap::AddMapping(const String &wpath, const String &npath) {
+void AddMapping(const String &wpath, const String &npath) {
   if (wpath.length() == 0 && npath.length() == 0) {
     return;
   }
@@ -43,28 +47,28 @@ void Dirmap::AddMapping(const String &wpath, const String &npath) {
   
   wpath2.tolower().replace('\\', '/');
   
-  msNix2Win[npath] = wpath2;
-  msWin2Nix[wpath2] = npath;
+  gsNix2Win[npath] = wpath2;
+  gsWin2Nix[wpath2] = npath;
 }
 
-void Dirmap::RemoveMapping(const String &wpath, const String &npath) {
+void RemoveMapping(const String &wpath, const String &npath) {
   StringDict::iterator it;
   
   String wpath2(wpath);
   wpath2.tolower().replace('\\', '/');
   
-  it = msWin2Nix.find(wpath2);
-  if (it != msWin2Nix.end()) {
-    msWin2Nix.erase(it);
+  it = gsWin2Nix.find(wpath2);
+  if (it != gsWin2Nix.end()) {
+    gsWin2Nix.erase(it);
   }
   
-  it = msNix2Win.find(npath);
-  if (it != msNix2Win.end()) {
-    msNix2Win.erase(it);
+  it = gsNix2Win.find(npath);
+  if (it != gsNix2Win.end()) {
+    gsNix2Win.erase(it);
   }
 }
 
-String Dirmap::Map(const String &path) {
+String Map(const String &path) {
   
   String lookuppath(path);
   StringDict *lookupmap;
@@ -74,7 +78,7 @@ String Dirmap::Map(const String &path) {
 #ifdef _WIN32
   
   if (!IsWindowsPath(path)) {
-    lookupmap = &msNix2Win;
+    lookupmap = &gsNix2Win;
   } else {
     return path;
   }
@@ -83,7 +87,7 @@ String Dirmap::Map(const String &path) {
 
   if (IsWindowsPath(path)) {
     lookuppath.tolower();
-    lookupmap = &msWin2Nix;
+    lookupmap = &gsWin2Nix;
   } else {
     return path;
   }
@@ -111,7 +115,7 @@ String Dirmap::Map(const String &path) {
   }
 }
 
-void Dirmap::ReadMappingsFromFile(const Path &mapfile) {
+void ReadMappingsFromFile(const Path &mapfile) {
   
   if (mapfile.isFile()) {
     std::ifstream is(mapfile.fullname().c_str());
@@ -148,5 +152,7 @@ void Dirmap::ReadMappingsFromFile(const Path &mapfile) {
   }
 }
 
-}
+} // dirmap
+
+} // gcore
 

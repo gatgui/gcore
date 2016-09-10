@@ -29,20 +29,14 @@ USA.
 
 namespace gcore {
    
-  class GCORE_API Dirmap
-  {
-    private:
-      
-      static StringDict msWin2Nix;
-      static StringDict msNix2Win;
-      
-    public:
-      
-      static void AddMapping(const String &wpath, const String &npath);
-      static void RemoveMapping(const String &wpath, const String &npath);
-      static void ReadMappingsFromFile(const Path &mapfile);
-      static String Map(const String &path);
-  };
+  namespace dirmap {
+    
+    GCORE_API void AddMapping(const String &wpath, const String &npath);
+    GCORE_API void RemoveMapping(const String &wpath, const String &npath);
+    GCORE_API void ReadMappingsFromFile(const Path &mapfile);
+    GCORE_API String Map(const String &path);
+  
+  }
   
 }
 

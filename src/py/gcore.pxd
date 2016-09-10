@@ -210,7 +210,7 @@ cdef extern from "<gcore/plist.h>" namespace "gcore":
       Status setBoolean(String&, bint)
    
 
-cdef extern from "<gcore/dirmap.h>" namespace "gcore::Dirmap":
+cdef extern from "<gcore/dirmap.h>" namespace "gcore::dirmap":
    
    void AddMapping(String&, String&)
    void RemoveMapping(String&, String&)

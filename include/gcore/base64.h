@@ -29,33 +29,32 @@ USA.
 
 namespace gcore {
   
-  class GCORE_API Base64 {
-    public:
+  namespace base64 {
     
-      static size_t EncodeLength(size_t inlen);
-      
-      static bool Encode(const void *in, size_t inlen, char *out, size_t outlen);
-      static char* Encode(const void *in, size_t inlen, size_t &outlen);
-      static bool Encode(const void *in, size_t inlen, std::string &out);
-      static bool Encode(const std::string &in, char *out, size_t outlen);
-      static char* Encode(const std::string &in, size_t &outlen);
-      static bool Encode(const std::string &in, std::string &out);
-      static std::string Encode(const void *data, size_t len);
-      static std::string Encode(const std::string &in);
-      
-      // ---
+    GCORE_API size_t EncodeLength(size_t inlen);
+    
+    GCORE_API bool Encode(const void *in, size_t inlen, char *out, size_t outlen);
+    GCORE_API char* Encode(const void *in, size_t inlen, size_t &outlen);
+    GCORE_API bool Encode(const void *in, size_t inlen, std::string &out);
+    GCORE_API bool Encode(const std::string &in, char *out, size_t outlen);
+    GCORE_API char* Encode(const std::string &in, size_t &outlen);
+    GCORE_API bool Encode(const std::string &in, std::string &out);
+    GCORE_API std::string Encode(const void *data, size_t len);
+    GCORE_API std::string Encode(const std::string &in);
+    
+    // ---
 
-      static size_t DecodeLength(const char *in, size_t len);
+    GCORE_API size_t DecodeLength(const char *in, size_t len);
 
-      static bool Decode(const char *in, size_t len, void *out, size_t outlen);
-      static void* Decode(const char *in, size_t len, size_t &outlen);
-      static bool Decode(const char *in, size_t len, std::string &out);
-      static bool Decode(const std::string &in, void *out, size_t outlen);
-      static void* Decode(const std::string &in, size_t &outlen);
-      static bool Decode(const std::string &in, std::string &out);
-      static std::string Decode(const char *in, size_t len);
-      static std::string Decode(const std::string &in);
-  };
+    GCORE_API bool Decode(const char *in, size_t len, void *out, size_t outlen);
+    GCORE_API void* Decode(const char *in, size_t len, size_t &outlen);
+    GCORE_API bool Decode(const char *in, size_t len, std::string &out);
+    GCORE_API bool Decode(const std::string &in, void *out, size_t outlen);
+    GCORE_API void* Decode(const std::string &in, size_t &outlen);
+    GCORE_API bool Decode(const std::string &in, std::string &out);
+    GCORE_API std::string Decode(const char *in, size_t len);
+    GCORE_API std::string Decode(const std::string &in);
+  }
 }
 
 #endif

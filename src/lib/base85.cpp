@@ -26,19 +26,19 @@ USA.
 
 namespace gcore {
 
-// ---
+namespace base85 {
 
-static Base85::Encoding Ascii85Encoding;
-static Base85::Encoding Z85Encoding;
-static Base85::Encoding IPV6Encoding;
+static Encoding Ascii85Encoding;
+static Encoding Z85Encoding;
+static Encoding IPV6Encoding;
 
 static const char* GetBuiltinEncodingName(int builtinEncoding) {
   switch (builtinEncoding) {
-  case Base85::Ascii85:
+  case Ascii85:
     return "__ascii85__";
-  case Base85::Z85:
+  case Z85:
     return "__z85__";
-  case Base85::IPV6:
+  case IPV6:
     return "__ipv6__";
   default:
     return 0;
@@ -65,7 +65,7 @@ struct InternalEncoding {
     memset(dec, 0, 256);
   }
   
-  bool init(const Base85::Encoding *encoding) {
+  bool init(const Encoding *encoding) {
     if (!encoding) {
       return false;
     }
@@ -101,7 +101,7 @@ struct InternalEncoding {
 class EncodingRegistry {
   private:
     
-    typedef std::pair<const Base85::Encoding*, InternalEncoding> EncodingEntry;
+    typedef std::pair<const Encoding*, InternalEncoding> EncodingEntry;
     typedef std::map<std::string, EncodingEntry> EncodingMap;
   
   public:
@@ -125,15 +125,15 @@ class EncodingRegistry {
       IPV6Encoding.rlemarker = 0;
       IPV6Encoding.pack = 1;
       
-      addEncoding(GetBuiltinEncodingName(Base85::Ascii85), &Ascii85Encoding);
-      addEncoding(GetBuiltinEncodingName(Base85::Z85), &Z85Encoding);
-      addEncoding(GetBuiltinEncodingName(Base85::IPV6), &IPV6Encoding);
+      addEncoding(GetBuiltinEncodingName(Ascii85), &Ascii85Encoding);
+      addEncoding(GetBuiltinEncodingName(Z85), &Z85Encoding);
+      addEncoding(GetBuiltinEncodingName(IPV6), &IPV6Encoding);
     }
     
     ~EncodingRegistry() {
     }
     
-    bool addEncoding(const char *name, const Base85::Encoding *enc) {
+    bool addEncoding(const char *name, const Encoding *enc) {
       EncodingMap::iterator it = mEncodings.find(name);
       
       if (it != mEncodings.end()) {
@@ -169,7 +169,7 @@ class EncodingRegistry {
       return true;
     }
     
-    const Base85::Encoding* getEncoding(const char *name) const {
+    const Encoding* getEncoding(const char *name) const {
       if (!name) {
         return 0;
       }
@@ -194,7 +194,7 @@ static EncodingRegistry gRegistry;
 
 // ---
 
-struct Base85::Encoder {
+struct Encoder {
   const InternalEncoding *encoding;
   
   const unsigned char *inbeg;
@@ -211,7 +211,7 @@ struct Base85::Encoder {
   size_t allocated_size;
 };
 
-struct Base85::Decoder {
+struct Decoder {
   const InternalEncoding *encoding;
   
   const char *inbeg;
@@ -227,61 +227,61 @@ struct Base85::Decoder {
 
 // ---
 
-const Base85::Encoding* Base85::GetEncoding(int builtinEncoding) {
+const Encoding* GetEncoding(int builtinEncoding) {
   return gRegistry.getEncoding(GetBuiltinEncodingName(builtinEncoding));
 }
 
-const Base85::Encoding* Base85::GetEncoding(const char *name){
+const Encoding* GetEncoding(const char *name){
   return gRegistry.getEncoding(name);
 }
 
-bool Base85::AddEncoding(const char *name, const Base85::Encoding *encoding) {
+bool AddEncoding(const char *name, const Encoding *encoding) {
   return gRegistry.addEncoding(name, encoding);
 }
 
-Base85::Encoder* Base85::CreateEncoder(int builtinEncoding) {
+Encoder* CreateEncoder(int builtinEncoding) {
   return CreateEncoder(GetBuiltinEncodingName(builtinEncoding));
 }
 
-Base85::Encoder* Base85::CreateEncoder(const char *encodingName) {
+Encoder* CreateEncoder(const char *encodingName) {
   const InternalEncoding *encoding = gRegistry.getInternalEncoding(encodingName);
   
   if (!encoding) {
     return 0;
   }
   
-  Base85::Encoder *encoder = (Base85::Encoder*) malloc(sizeof(Base85::Encoder));
+  Encoder *encoder = (Encoder*) malloc(sizeof(Encoder));
   
   encoder->encoding = encoding;
   
   return encoder;
 }
 
-void Base85::DestroyEncoder(Base85::Encoder *encoder) {
+void DestroyEncoder(Encoder *encoder) {
   if (encoder) {
     free(encoder);
   }
 }
 
-Base85::Decoder* Base85::CreateDecoder(int builtinEncoding) {
+Decoder* CreateDecoder(int builtinEncoding) {
   return CreateDecoder(GetBuiltinEncodingName(builtinEncoding));
 }
 
-Base85::Decoder* Base85::CreateDecoder(const char *encodingName) {
+Decoder* CreateDecoder(const char *encodingName) {
   const InternalEncoding *encoding = gRegistry.getInternalEncoding(encodingName);
   
   if (!encoding) {
     return 0;
   }
   
-  Base85::Decoder *decoder = (Base85::Decoder*) malloc(sizeof(Base85::Decoder));
+  Decoder *decoder = (Decoder*) malloc(sizeof(Decoder));
   
   decoder->encoding = encoding;
   
   return decoder;
 }
 
-void Base85::DestroyDecoder(Base85::Decoder *decoder) {
+void DestroyDecoder(Decoder *decoder) {
   if (decoder) {
     free(decoder);
   }
@@ -289,7 +289,7 @@ void Base85::DestroyDecoder(Base85::Decoder *decoder) {
 
 // ---
 
-static bool _EncodeValue(Base85::Encoder *e, unsigned int val, unsigned int nchars) {
+static bool _EncodeValue(Encoder *e, unsigned int val, unsigned int nchars) {
   
   std::map<unsigned int, char>::const_iterator it = e->encoding->schars.find(val);
   unsigned int divisor = 85 * 85 * 85 * 85;
@@ -317,7 +317,7 @@ static bool _EncodeValue(Base85::Encoder *e, unsigned int val, unsigned int ncha
   return true;
 }
 
-static bool _BytesToValue(Base85::Encoder *e, unsigned int &outval, unsigned int &nchars) {
+static bool _BytesToValue(Encoder *e, unsigned int &outval, unsigned int &nchars) {
   static unsigned int sPackMask[4] = {0xFFFFFFFF, 0x0000FFFF, 0x000003FF, 0x000000FF};
   static unsigned int sPackBits[4] = {32, 16, 10, 8};
   
@@ -386,7 +386,7 @@ static bool _BytesToValue(Base85::Encoder *e, unsigned int &outval, unsigned int
   return true;
 }
 
-static bool _EncodeRepeat(Base85::Encoder *e, unsigned int val, unsigned int count) {
+static bool _EncodeRepeat(Encoder *e, unsigned int val, unsigned int count) {
   
   // Because of the addition of the rlemarker, count must be at least 3 for standard values
   // For special values, count should be at least 8
@@ -424,7 +424,7 @@ static bool _EncodeRepeat(Base85::Encoder *e, unsigned int val, unsigned int cou
   }
 }
 
-static bool _EncodeChunk(Base85::Encoder *e) {
+static bool _EncodeChunk(Encoder *e) {
   
   unsigned int nchars = 0;
   unsigned int val = 0;
@@ -462,7 +462,7 @@ static bool _EncodeChunk(Base85::Encoder *e) {
 }
 
 // If out is provided, its size should be outlen+1 (+1 for the final '\0')
-static bool _Encode(Base85::Encoder *e, const void *data, size_t len, char *&out, size_t &outlen) {
+static bool _Encode(Encoder *e, const void *data, size_t len, char *&out, size_t &outlen) {
   
   if (!data) {
     if (!out) {
@@ -543,7 +543,7 @@ static bool _Encode(Base85::Encoder *e, const void *data, size_t len, char *&out
 
 // ---
 
-static bool _DecodeValue(Base85::Decoder *d, unsigned int &val, size_t &nbytes) {
+static bool _DecodeValue(Decoder *d, unsigned int &val, size_t &nbytes) {
   
   std::map<char, unsigned int>::const_iterator it = d->encoding->svals.find(*(d->in));
     
@@ -601,7 +601,7 @@ static bool _DecodeValue(Base85::Decoder *d, unsigned int &val, size_t &nbytes) 
   return true;
 }
 
-static bool _ValueToBytes(Base85::Decoder *d, unsigned int pack, unsigned int val, size_t nbytes) {
+static bool _ValueToBytes(Decoder *d, unsigned int pack, unsigned int val, size_t nbytes) {
   
   // Reminder: When input chunk is not a full 5 char sequence (last chunk),
   //   decoded value is right padded with zeros
@@ -708,7 +708,7 @@ static bool _ValueToBytes(Base85::Decoder *d, unsigned int pack, unsigned int va
   }
 }
 
-static bool _DecodeRepeat(Base85::Decoder *d) {
+static bool _DecodeRepeat(Decoder *d) {
   
   unsigned int value = 0;
   unsigned int count = 0;
@@ -733,7 +733,7 @@ static bool _DecodeRepeat(Base85::Decoder *d) {
   return true;
 }
 
-static bool _DecodeChunk(Base85::Decoder *d) {
+static bool _DecodeChunk(Decoder *d) {
   
   if (d->out >= d->outend) {
     return false;
@@ -771,7 +771,7 @@ static bool _DecodeChunk(Base85::Decoder *d) {
   }
 }
 
-static bool _Decode(Base85::Decoder *d, const char *in, size_t len, void *&data, size_t &outlen) {
+static bool _Decode(Decoder *d, const char *in, size_t len, void *&data, size_t &outlen) {
   // Input pointers
   d->inbeg = in;
   d->inend = in + len;
@@ -901,11 +901,11 @@ static bool _Decode(Base85::Decoder *d, const char *in, size_t len, void *&data,
 
 // EncodeLength?
 
-bool Base85::Encode(Base85::Encoder *e, const void *in, size_t inlen, char *out, size_t outlen) {
+bool Encode(Encoder *e, const void *in, size_t inlen, char *out, size_t outlen) {
   return _Encode(e, in, inlen, out, outlen);
 }
 
-char* Base85::Encode(Base85::Encoder *e, const void *in, size_t inlen, size_t &outlen) {
+char* Encode(Encoder *e, const void *in, size_t inlen, size_t &outlen) {
   char *out = 0;
   outlen = 0;
   
@@ -916,7 +916,7 @@ char* Base85::Encode(Base85::Encoder *e, const void *in, size_t inlen, size_t &o
   }
 }
 
-bool Base85::Encode(Base85::Encoder *e, const void *in, size_t inlen, std::string &out) {
+bool Encode(Encoder *e, const void *in, size_t inlen, std::string &out) {
   size_t outlen = 0;
   char *outbytes = 0;
   
@@ -932,19 +932,19 @@ bool Base85::Encode(Base85::Encoder *e, const void *in, size_t inlen, std::strin
   }
 }
 
-bool Base85::Encode(Base85::Encoder *e, const std::string &in, char *out, size_t outlen) {
+bool Encode(Encoder *e, const std::string &in, char *out, size_t outlen) {
   return Encode(e, in.c_str(), in.length(), out, outlen);
 }
 
-char* Base85::Encode(Base85::Encoder *e, const std::string &in, size_t &outlen) {
+char* Encode(Encoder *e, const std::string &in, size_t &outlen) {
   return Encode(e, in.c_str(), in.length(), outlen);
 }
 
-bool Base85::Encode(Base85::Encoder *e, const std::string &in, std::string &out) {
+bool Encode(Encoder *e, const std::string &in, std::string &out) {
   return Encode(e, in.c_str(), in.length(), out);
 }
 
-std::string Base85::Encode(Base85::Encoder *e, const void *data, size_t len) {
+std::string Encode(Encoder *e, const void *data, size_t len) {
   std::string rv;
   if (Encode(e, data, len, rv)) {
     return rv;
@@ -953,7 +953,7 @@ std::string Base85::Encode(Base85::Encoder *e, const void *data, size_t len) {
   }
 }
 
-std::string Base85::Encode(Base85::Encoder *e, const std::string &in) {
+std::string Encode(Encoder *e, const std::string &in) {
   return Encode(e, in.c_str(), in.length());
 }
 
@@ -961,11 +961,11 @@ std::string Base85::Encode(Base85::Encoder *e, const std::string &in) {
 
 // DecodeLength?
 
-bool Base85::Decode(Base85::Decoder *d, const char *in, size_t len, void *&out, size_t &outlen) {
+bool Decode(Decoder *d, const char *in, size_t len, void *&out, size_t &outlen) {
   return _Decode(d, in, len, out, outlen);
 }
 
-void* Base85::Decode(Base85::Decoder *d, const char *in, size_t len, size_t &outlen) {
+void* Decode(Decoder *d, const char *in, size_t len, size_t &outlen) {
   void *out = 0;
   outlen = 0;
   
@@ -976,7 +976,7 @@ void* Base85::Decode(Base85::Decoder *d, const char *in, size_t len, size_t &out
   }
 }
 
-bool Base85::Decode(Base85::Decoder *d, const char *in, size_t len, std::string &out) {
+bool Decode(Decoder *d, const char *in, size_t len, std::string &out) {
   void *outbytes = 0;
   size_t outlen = 0;
   
@@ -991,19 +991,19 @@ bool Base85::Decode(Base85::Decoder *d, const char *in, size_t len, std::string 
   }
 }
 
-bool Base85::Decode(Base85::Decoder *d, const std::string &in, void *&out, size_t &outlen) {
+bool Decode(Decoder *d, const std::string &in, void *&out, size_t &outlen) {
   return _Decode(d, in.c_str(), in.length(), out, outlen);
 }
 
-void* Base85::Decode(Base85::Decoder *d, const std::string &in, size_t &outlen) {
+void* Decode(Decoder *d, const std::string &in, size_t &outlen) {
   return Decode(d, in.c_str(), in.length(), outlen);
 }
 
-bool Base85::Decode(Base85::Decoder *d, const std::string &in, std::string &out) {
+bool Decode(Decoder *d, const std::string &in, std::string &out) {
   return Decode(d, in.c_str(), in.length(), out);
 }
 
-std::string Base85::Decode(Base85::Decoder *d, const char *in, size_t len) {
+std::string Decode(Decoder *d, const char *in, size_t len) {
   std::string rv;
   if (Decode(d, in, len, rv)) {
     return rv;
@@ -1012,10 +1012,11 @@ std::string Base85::Decode(Base85::Decoder *d, const char *in, size_t len) {
   }
 }
 
-std::string Base85::Decode(Base85::Decoder *d, const std::string &in) {
+std::string Decode(Decoder *d, const std::string &in) {
   return Decode(d, in.c_str(), in.length());
 }
 
 
-}
+} // base85
 
+} // gcore

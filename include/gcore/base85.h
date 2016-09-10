@@ -29,59 +29,57 @@ USA.
 
 namespace gcore {
   
-  class GCORE_API Base85 {
-    public:
-      
-      enum BuiltinEncoding {
-        Ascii85 = 0,
-        Z85,
-        IPV6
-      };
-      
-      struct Encoding {
-        const char *charset;
-        bool revbytes;
-        char rlemarker; // 0 -> not supported
-        unsigned int pack; // 1, 2 or 4
-        std::map<char, unsigned int> specials; // values must take revbytes into account
-      };
-      
-      struct Encoder;
-      struct Decoder;
-      
-      static const Encoding* GetEncoding(int builtin);
-      static const Encoding* GetEncoding(const char *name);
-      static bool AddEncoding(const char *name, const Encoding *encoding);
-      
-      static Encoder* CreateEncoder(int builtinEncoding);
-      static Encoder* CreateEncoder(const char *encodingName);
-      static void DestroyEncoder(Encoder *encoder);
-      
-      static Decoder* CreateDecoder(int builtinEncoding);
-      static Decoder* CreateDecoder(const char *encodingName);
-      static void DestroyDecoder(Decoder *decodec);
-      
-      // ---
-      
-      static bool Encode(Encoder *e, const void *in, size_t inlen, char *out, size_t outlen);
-      static char* Encode(Encoder *e, const void *in, size_t inlen, size_t &outlen);
-      static bool Encode(Encoder *e, const void *in, size_t inlen, std::string &out);
-      static bool Encode(Encoder *e, const std::string &in, char *out, size_t outlen);
-      static char* Encode(Encoder *e, const std::string &in, size_t &outlen);
-      static bool Encode(Encoder *e, const std::string &in, std::string &out);
-      static std::string Encode(Encoder *e, const void *data, size_t len);
-      static std::string Encode(Encoder *e, const std::string &in);
-      
-      // ---
-      
-      static bool Decode(Decoder *d, const char *in, size_t len, void *&out, size_t &outlen);
-      static void* Decode(Decoder *d, const char *in, size_t len, size_t &outlen);
-      static bool Decode(Decoder *d, const char *in, size_t len, std::string &out);
-      static bool Decode(Decoder *d, const std::string &in, void *&out, size_t &outlen);
-      static void* Decode(Decoder *d, const std::string &in, size_t &outlen);
-      static bool Decode(Decoder *d, const std::string &in, std::string &out);
-      static std::string Decode(Decoder *d, const char *in, size_t len);
-      static std::string Decode(Decoder *d, const std::string &in);
+  namespace base85 {
+    enum BuiltinEncoding {
+      Ascii85 = 0,
+      Z85,
+      IPV6
+    };
+    
+    struct GCORE_API Encoding {
+      const char *charset;
+      bool revbytes;
+      char rlemarker; // 0 -> not supported
+      unsigned int pack; // 1, 2 or 4
+      std::map<char, unsigned int> specials; // values must take revbytes into account
+    };
+    
+    struct GCORE_API Encoder;
+    struct GCORE_API Decoder;
+    
+    GCORE_API const Encoding* GetEncoding(int builtin);
+    GCORE_API const Encoding* GetEncoding(const char *name);
+    GCORE_API bool AddEncoding(const char *name, const Encoding *encoding);
+    
+    GCORE_API Encoder* CreateEncoder(int builtinEncoding);
+    GCORE_API Encoder* CreateEncoder(const char *encodingName);
+    GCORE_API void DestroyEncoder(Encoder *encoder);
+    
+    GCORE_API Decoder* CreateDecoder(int builtinEncoding);
+    GCORE_API Decoder* CreateDecoder(const char *encodingName);
+    GCORE_API void DestroyDecoder(Decoder *decodec);
+    
+    // ---
+    
+    GCORE_API bool Encode(Encoder *e, const void *in, size_t inlen, char *out, size_t outlen);
+    GCORE_API char* Encode(Encoder *e, const void *in, size_t inlen, size_t &outlen);
+    GCORE_API bool Encode(Encoder *e, const void *in, size_t inlen, std::string &out);
+    GCORE_API bool Encode(Encoder *e, const std::string &in, char *out, size_t outlen);
+    GCORE_API char* Encode(Encoder *e, const std::string &in, size_t &outlen);
+    GCORE_API bool Encode(Encoder *e, const std::string &in, std::string &out);
+    GCORE_API std::string Encode(Encoder *e, const void *data, size_t len);
+    GCORE_API std::string Encode(Encoder *e, const std::string &in);
+    
+    // ---
+    
+    GCORE_API bool Decode(Decoder *d, const char *in, size_t len, void *&out, size_t &outlen);
+    GCORE_API void* Decode(Decoder *d, const char *in, size_t len, size_t &outlen);
+    GCORE_API bool Decode(Decoder *d, const char *in, size_t len, std::string &out);
+    GCORE_API bool Decode(Decoder *d, const std::string &in, void *&out, size_t &outlen);
+    GCORE_API void* Decode(Decoder *d, const std::string &in, size_t &outlen);
+    GCORE_API bool Decode(Decoder *d, const std::string &in, std::string &out);
+    GCORE_API std::string Decode(Decoder *d, const char *in, size_t len);
+    GCORE_API std::string Decode(Decoder *d, const std::string &in);
   };
 }
 

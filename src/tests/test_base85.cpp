@@ -37,11 +37,11 @@ int main(int argc, char **argv) {
   void  *outdata    = 0;
   size_t outlen     = 0;
   
-  csid["ascii85"] = gcore::Base85::Ascii85;
-  csid["z85"] = gcore::Base85::Z85;
-  csid["ipv6"] = gcore::Base85::IPV6;
+  csid["ascii85"] = gcore::base85::Ascii85;
+  csid["z85"] = gcore::base85::Z85;
+  csid["ipv6"] = gcore::base85::IPV6;
   
-  int cs = gcore::Base85::Ascii85;
+  int cs = gcore::base85::Ascii85;
   std::string encstr = "";
   std::string decstr = "";
   
@@ -81,18 +81,18 @@ int main(int argc, char **argv) {
     
   }
   
-  gcore::Base85::Encoder *enc = gcore::Base85::CreateEncoder(cs);
-  gcore::Base85::Decoder *dec = gcore::Base85::CreateDecoder(cs);
+  gcore::base85::Encoder *enc = gcore::base85::CreateEncoder(cs);
+  gcore::base85::Decoder *dec = gcore::base85::CreateDecoder(cs);
   
   // test 1
   std::string es, ds;
   
-  es = gcore::Base85::Encode(enc, &indata[0], inlen);
+  es = gcore::base85::Encode(enc, &indata[0], inlen);
   
   std::cout << "Encoded floats: \"" << es << "\"" << std::endl;
   
   std::cout << es << std::endl;
-  if (gcore::Base85::Decode(dec, es, outdata, outlen)) {
+  if (gcore::base85::Decode(dec, es, outdata, outlen)) {
     float *f = (float*)outdata;
     size_t n = outlen / 4;
     std::cout << "-> [" << outlen << " bytes(s)] ";;
@@ -110,11 +110,11 @@ int main(int argc, char **argv) {
   if (encstr.length() > 0) {
     std::cout << "=== Encode \"" << encstr << "\"..." << std::endl;
     
-    //es = gcore::Base85::Encode(encstr, cs);
-    es = gcore::Base85::Encode(enc, encstr);
+    //es = gcore::base85::Encode(encstr, cs);
+    es = gcore::base85::Encode(enc, encstr);
     std::cout << "\"" << encstr << "\" => \"" << es << "\" (" << es.length() << ")" << std::endl;
      
-    if (gcore::Base85::Decode(dec, es, ds)) {
+    if (gcore::base85::Decode(dec, es, ds)) {
       std::cout << "\"" << es << "\" => \"" << ds << "\" (" << ds.length() << ")" << std::endl;
     }
   }
@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
   if (decstr.length() > 0) {
     std::cout << "=== Decode \"" << decstr << "\"..." << std::endl;
     
-    if (!gcore::Base85::Decode(dec, decstr, ds)) {
+    if (!gcore::base85::Decode(dec, decstr, ds)) {
       std::cout << "Failed" << std::endl;
     
     } else {
@@ -132,52 +132,52 @@ int main(int argc, char **argv) {
       }
       std::cout << ")" << std::endl;
       
-      es = gcore::Base85::Encode(enc, ds);
+      es = gcore::base85::Encode(enc, ds);
       if (es != decstr) {
         std::cerr << "Decode -> Encode -> Decode failed" << std::endl;
       }
     }
   }
   
-  gcore::Base85::DestroyEncoder(enc);
-  gcore::Base85::DestroyDecoder(dec);
+  gcore::base85::DestroyEncoder(enc);
+  gcore::base85::DestroyDecoder(dec);
   
   // Custom encoding test
-  const gcore::Base85::Encoding *ascii85 = gcore::Base85::GetEncoding(gcore::Base85::Ascii85);
+  const gcore::base85::Encoding *ascii85 = gcore::base85::GetEncoding(gcore::base85::Ascii85);
   
   std::string charset = ascii85->charset + 3;
   charset += "vwx";
   
-  gcore::Base85::Encoding e_pack4;
+  gcore::base85::Encoding e_pack4;
   e_pack4.charset = charset.c_str();
   e_pack4.rlemarker = '!';
   e_pack4.revbytes = true;
   e_pack4.pack = 4;
   e_pack4.specials['z'] = 0x00000000;
   e_pack4.specials['y'] = 0x3F800000;
-  gcore::Base85::AddEncoding("pack4", &e_pack4);
+  gcore::base85::AddEncoding("pack4", &e_pack4);
   
-  gcore::Base85::Encoding e_pack3 = e_pack4;
+  gcore::base85::Encoding e_pack3 = e_pack4;
   e_pack3.pack = 3;
-  gcore::Base85::AddEncoding("pack3", &e_pack3);
+  gcore::base85::AddEncoding("pack3", &e_pack3);
   
-  gcore::Base85::Encoding e_pack2 = e_pack4;
+  gcore::base85::Encoding e_pack2 = e_pack4;
   e_pack2.pack = 2;
-  gcore::Base85::AddEncoding("pack2", &e_pack2);
+  gcore::base85::AddEncoding("pack2", &e_pack2);
   
-  gcore::Base85::Encoding e_pack1 = e_pack2;
+  gcore::base85::Encoding e_pack1 = e_pack2;
   e_pack1.pack = 1;
-  gcore::Base85::AddEncoding("pack1", &e_pack1);
+  gcore::base85::AddEncoding("pack1", &e_pack1);
   
-  enc = gcore::Base85::CreateEncoder("pack4");
-  dec = gcore::Base85::CreateDecoder("pack4");
+  enc = gcore::base85::CreateEncoder("pack4");
+  dec = gcore::base85::CreateDecoder("pack4");
   
   std::cout << "=== UINT arrays test 1/4" << std::endl;
   outdata = 0;
   outlen = 0;
   // 256 uints, values in [0-255] range
   decstr = "!%<_l4$$$$d";
-  if (gcore::Base85::Decode(dec, decstr, outdata, outlen)) {
+  if (gcore::base85::Decode(dec, decstr, outdata, outlen)) {
      unsigned int *vals = (unsigned int*)outdata;
      size_t count = outlen / 4;
      std::cout << "Decoded " << count << " values" << std::endl;
@@ -191,7 +191,7 @@ int main(int argc, char **argv) {
      std::cout << "  [" << (count - 2) << "] " << vals[count-2] << std::endl;
      std::cout << "  [" << (count - 1) << "] " << vals[count-1] << std::endl;
      
-     es = gcore::Base85::Encode(enc, outdata, outlen);
+     es = gcore::base85::Encode(enc, outdata, outlen);
      std::cout << "=> Re-encoded to: " << es << std::endl;
      if (es != decstr) {
        std::cout << "!!! DIFFERS FROM ORIGINAL !!!" << std::endl;
@@ -205,7 +205,7 @@ int main(int argc, char **argv) {
   outlen = 0;
   // 25 uints, values in [0-255] range
   decstr = "!%<_l4$$$$'$vDc3$v;Z0$v;Z0$u";
-  if (gcore::Base85::Decode(dec, decstr, outdata, outlen)) {
+  if (gcore::base85::Decode(dec, decstr, outdata, outlen)) {
     unsigned int *vals = (unsigned int*)outdata;
     size_t count = outlen / 4;
     std::cout << "Decoded " << count << " values" << std::endl;
@@ -213,7 +213,7 @@ int main(int argc, char **argv) {
       std::cout << "  [" << i << "] " << vals[i] << std::endl;
     }
     
-    es = gcore::Base85::Encode(enc, outdata, outlen);
+    es = gcore::base85::Encode(enc, outdata, outlen);
     std::cout << "=> Re-encoded to: " << es << std::endl;
     if (es != decstr) {
       std::cout << "!!! DIFFERS FROM ORIGINAL !!!" << std::endl;
@@ -227,7 +227,7 @@ int main(int argc, char **argv) {
   outlen = 0;
   // 66049 uints, values in [0-255] range
   decstr = "!%<_l4$$&<:%<";
-  if (gcore::Base85::Decode(dec, decstr, outdata, outlen)) {
+  if (gcore::base85::Decode(dec, decstr, outdata, outlen)) {
     unsigned int *vals = (unsigned int*)outdata;
     size_t count = outlen / 4;
     std::cout << "Decoded " << count << " values" << std::endl;
@@ -241,7 +241,7 @@ int main(int argc, char **argv) {
     std::cout << "  [" << (count - 2) << "] " << vals[count-2] << std::endl;
     std::cout << "  [" << (count - 1) << "] " << vals[count-1] << std::endl;
     
-    es = gcore::Base85::Encode(enc, outdata, outlen);
+    es = gcore::base85::Encode(enc, outdata, outlen);
     std::cout << "=> Re-encoded to: " << es << std::endl;
     if (es != decstr) {
       std::cout << "!!! DIFFERS FROM ORIGINAL !!!" << std::endl;
@@ -250,11 +250,11 @@ int main(int argc, char **argv) {
     free(outdata);
   }
   
-  gcore::Base85::DestroyEncoder(enc);
-  gcore::Base85::DestroyDecoder(dec);
+  gcore::base85::DestroyEncoder(enc);
+  gcore::base85::DestroyDecoder(dec);
   
-  dec = gcore::Base85::CreateDecoder("pack3");
-  enc = gcore::Base85::CreateEncoder("pack3");
+  dec = gcore::base85::CreateDecoder("pack3");
+  enc = gcore::base85::CreateEncoder("pack3");
   
   std::cout << "=== UINT arrays test 4/4" << std::endl;
   outdata = 0;
@@ -288,7 +288,7 @@ int main(int argc, char **argv) {
            "\\s`\\)AXWl)A[%])^]Qf)b)QF)FcHV)FekG)chBP)g4B0$$$'D";
   // Should start with: 0, 1, 18, 17, 1, 2, 19, 18, 2, 3, 20, 19, ...
   // => Count is not correct (1026 instead of expected 1024, values are correct)
-  if (gcore::Base85::Decode(dec, decstr, outdata, outlen)) {
+  if (gcore::base85::Decode(dec, decstr, outdata, outlen)) {
     unsigned int *vals = (unsigned int*)outdata;
     size_t count = outlen / 4;
     std::cout << "Decoded " << count << " indices" << std::endl;
@@ -306,7 +306,7 @@ int main(int argc, char **argv) {
     std::cout << "  [" << (count - 2) << "] " << vals[count-2] << std::endl;
     std::cout << "  [" << (count - 1) << "] " << vals[count-1] << std::endl;
     
-    es = gcore::Base85::Encode(enc, outdata, outlen);
+    es = gcore::base85::Encode(enc, outdata, outlen);
     std::cout << "=> Re-encoded to: " << es << std::endl;
     if (es != decstr) {
       // Expected: The difference is in the higher 2 bits of each 4 bytes chunk
@@ -318,11 +318,11 @@ int main(int argc, char **argv) {
     free(outdata);
   }
   
-  gcore::Base85::DestroyDecoder(dec);
-  gcore::Base85::DestroyEncoder(enc);
+  gcore::base85::DestroyDecoder(dec);
+  gcore::base85::DestroyEncoder(enc);
   
-  dec = gcore::Base85::CreateDecoder("pack2");
-  enc = gcore::Base85::CreateEncoder("pack2");
+  dec = gcore::base85::CreateDecoder("pack2");
+  enc = gcore::base85::CreateEncoder("pack2");
   
   outdata = 0;
   outlen = 0;
@@ -702,7 +702,7 @@ int main(int argc, char **argv) {
            "3bf^'9*?o'3kl`'93Eq'3trb'9<Ks'4(xd'9EQu'42)f'9NWw'4;/h'9W^$'4D5j'9`d"
            "&'4M;l'9ij('4VAn'9rp*'4_Gp':&v,'4hMr':0'.'4qSt':9-0'5%Yv':B32";
   // Should start with: 0, 1, 52, 51, 1, 2, 53, 52, 2, 3, 54, ...
-  if (gcore::Base85::Decode(dec, decstr, outdata, outlen)) {
+  if (gcore::base85::Decode(dec, decstr, outdata, outlen)) {
     unsigned int *vals = (unsigned int*)outdata;
     size_t count = outlen / 4;
     std::cout << "Decoded " << count << " indices" << std::endl;
@@ -720,7 +720,7 @@ int main(int argc, char **argv) {
     std::cout << "  [" << (count - 2) << "] " << vals[count-2] << std::endl;
     std::cout << "  [" << (count - 1) << "] " << vals[count-1] << std::endl;
     
-    es = gcore::Base85::Encode(enc, outdata, outlen);
+    es = gcore::base85::Encode(enc, outdata, outlen);
     std::cout << "=> Re-encoded to: " << es << std::endl;
     if (es != decstr) {
       std::cout << "!!! DIFFERS FROM ORIGINAL !!!" << std::endl;
@@ -729,11 +729,11 @@ int main(int argc, char **argv) {
     free(outdata);
   }
   
-  gcore::Base85::DestroyDecoder(dec);
-  gcore::Base85::DestroyEncoder(enc);
+  gcore::base85::DestroyDecoder(dec);
+  gcore::base85::DestroyEncoder(enc);
   
-  enc = gcore::Base85::CreateEncoder("pack1");
-  dec = gcore::Base85::CreateDecoder("pack1");
+  enc = gcore::base85::CreateEncoder("pack1");
+  dec = gcore::base85::CreateDecoder("pack1");
   outdata = 0;
   outlen = 0;
   decstr = "aDq99Y&XMt89+]caAMwnY&XMt89+]ca>*aNY&XMt89+]ca:\\K.Y&XM"
@@ -813,7 +813,7 @@ int main(int argc, char **argv) {
            "rIaDq99`ps+b/ogrIaDq99z/ogrIaDq997e-P7/ogrIaDq997reTb/o"
            "grIaDq998$W,M/ogrIaDq998+HY8/ogrIaDq998.koX/ogrIaDq9982"
            ":0x/ogrIaDq9985]GC/ogrIaDq9989+]c/ogrIaDq99";
-  if (gcore::Base85::Decode(dec, decstr, outdata, outlen)) {
+  if (gcore::base85::Decode(dec, decstr, outdata, outlen)) {
     float *vals = (float*) outdata;
     size_t count = (outlen / 4) / 3;
     size_t idx = 0;
@@ -834,7 +834,7 @@ int main(int argc, char **argv) {
     std::cout << "  [" << (count - 2) << "] " << vals[3*(count-2)] << ", " << vals[1+3*(count-2)] << ", " << vals[2+3*(count-2)] << std::endl;
     std::cout << "  [" << (count - 1) << "] " << vals[3*(count-1)] << ", " << vals[1+3*(count-1)] << ", " << vals[2+3*(count-1)] << std::endl;
     
-    es = gcore::Base85::Encode(enc, outdata, outlen);
+    es = gcore::base85::Encode(enc, outdata, outlen);
     std::cout << "=> Re-encoded to: " << es << std::endl;
     if (es != decstr) {
       // it is actually true, but the data match
@@ -849,7 +849,7 @@ int main(int argc, char **argv) {
       outdata = 0;
       outlen = 0;
       
-      if (gcore::Base85::Decode(dec, es, outdata, outlen)) {
+      if (gcore::base85::Decode(dec, es, outdata, outlen)) {
         float *vals = (float*) outdata;
         size_t count = (outlen / 4) / 3;
         std::cout << "Decoded " << count << " points" << std::endl;
@@ -876,8 +876,8 @@ int main(int argc, char **argv) {
     }
   }
   
-  gcore::Base85::DestroyEncoder(enc);
-  gcore::Base85::DestroyDecoder(dec);
+  gcore::base85::DestroyEncoder(enc);
+  gcore::base85::DestroyDecoder(dec);
   
   return 0;
 }

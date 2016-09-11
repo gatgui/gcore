@@ -165,8 +165,8 @@ namespace gcore {
       
       
       inline const Host& host() const { return mHost; }
-      bool readShutdown();
-      bool writeShutdown();
+      bool shutdownRead();
+      bool shutdownWrite();
       bool shutdown();
       
       

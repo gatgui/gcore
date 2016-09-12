@@ -33,281 +33,353 @@ USA.
 #define SHIFT2 6
 #define SHIFT3 0
 
-namespace gcore {
+namespace gcore
+{
 
-namespace base64 {
+namespace base64
+{
 
 static const char* gsEncTable = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 static char* gsDecTable = NULL;
 
-class _Base64Init {
-  public:
-    _Base64Init() {
+class _Base64Init
+{
+public:
+   _Base64Init()
+   {
       gsDecTable = new char[256];
-      for (int i=0; i<64; ++i) {
-        gsDecTable[int(gsEncTable[i])] = char(i);
+      for (int i=0; i<64; ++i)
+      {
+         gsDecTable[int(gsEncTable[i])] = char(i);
       }
-    }
-    ~_Base64Init() {
+   }
+   ~_Base64Init()
+   {
       delete[] gsDecTable;
-    }
+   }
 };
 
 static _Base64Init _b64init;
 
 // ---
 
-size_t EncodeLength(size_t inlen) {
-  return (4 * ((inlen / 3) + (inlen % 3 ? 1 : 0)));
+size_t EncodeLength(size_t inlen)
+{
+   return (4 * ((inlen / 3) + (inlen % 3 ? 1 : 0)));
 }
 
-static bool _Encode(const void *data, size_t len, char *&out, size_t &outlen) {
-  if (!data) {
-    if (!out) {
-      outlen = 0;
-    }
-    return false;
-  }
-  
-  size_t enclen = EncodeLength(len);
-  if (enclen == 0) {
-    if (!out) {
-      outlen = 0;
-    }
-    return false;
-  }
-
-  if (!out) {
-    outlen = enclen;
-    out = (char*) malloc(outlen+1);
-    out[outlen] = '\0';
-    
-  } else if (outlen < enclen) {
-    return false;
-
-  }
-
-  const unsigned char *bytes = (const unsigned char*) data;
-  unsigned long tmp;
-  size_t outp = 0;
-  size_t p = 0;
-  
-  while ((len - p) >= 3) {
-    tmp = (bytes[p] << 16) | (bytes[p+1] << 8) | bytes[p+2];
-    out[outp++] = gsEncTable[(tmp & MASK0) >> SHIFT0];
-    out[outp++] = gsEncTable[(tmp & MASK1) >> SHIFT1];
-    out[outp++] = gsEncTable[(tmp & MASK2) >> SHIFT2];
-    out[outp++] = gsEncTable[(tmp & MASK3) >> SHIFT3];
-    p += 3;
-  }
-  
-  if ((len - p) == 2) {
-    tmp = (bytes[p] << 16) | (bytes[p+1] << 8);
-    out[outp++] = gsEncTable[(tmp & MASK0) >> SHIFT0];
-    out[outp++] = gsEncTable[(tmp & MASK1) >> SHIFT1];
-    out[outp++] = gsEncTable[(tmp & MASK2) >> SHIFT2];
-    out[outp++] = '=';
-    
-  } else if ((len - p) == 1) {
-    tmp = (bytes[p] << 16);
-    out[outp++] = gsEncTable[(tmp & MASK0) >> SHIFT0];
-    out[outp++] = gsEncTable[(tmp & MASK1) >> SHIFT1];
-    out[outp++] = '=';
-    out[outp++] = '=';
-  }
-
-  return true;
-}
-
-bool Encode(const void *data, size_t len, char *out, size_t outlen) {
-  return (out ? _Encode(data, len, out, outlen) : false);
-}
-
-char* Encode(const void *data, size_t len, size_t &outlen) {
-  char *out = 0;
-  outlen = 0;
-  if (!_Encode(data, len, out, outlen)) {
-    return 0;
-  } else {
-    return out;
-  }
-}
-
-bool Encode(const void *data, size_t len, String &out) {
-  size_t outlen = EncodeLength(len);
-  if (outlen == 0) {
-    out = "";
-    return true;
-  } else {
-    out.resize(outlen);
-    char *outbytes = (char*) out.data();
-    if (!outbytes) {
-      out = "";
+static bool _Encode(const void *data, size_t len, char *&out, size_t &outlen)
+{
+   if (!data)
+   {
+      if (!out)
+      {
+         outlen = 0;
+      }
       return false;
-    }
-    if (!_Encode(data, len, outbytes, outlen)) {
-      out = "";
+   }
+   
+   size_t enclen = EncodeLength(len);
+   if (enclen == 0)
+   {
+      if (!out)
+      {
+         outlen = 0;
+      }
       return false;
-    } else {
+   }
+
+   if (!out)
+   {
+      outlen = enclen;
+      out = (char*) malloc(outlen+1);
+      out[outlen] = '\0';
+   }
+   else if (outlen < enclen)
+   {
+      return false;
+
+   }
+
+   const unsigned char *bytes = (const unsigned char*) data;
+   unsigned long tmp;
+   size_t outp = 0;
+   size_t p = 0;
+   
+   while ((len - p) >= 3)
+   {
+      tmp = (bytes[p] << 16) | (bytes[p+1] << 8) | bytes[p+2];
+      out[outp++] = gsEncTable[(tmp & MASK0) >> SHIFT0];
+      out[outp++] = gsEncTable[(tmp & MASK1) >> SHIFT1];
+      out[outp++] = gsEncTable[(tmp & MASK2) >> SHIFT2];
+      out[outp++] = gsEncTable[(tmp & MASK3) >> SHIFT3];
+      p += 3;
+   }
+   
+   if ((len - p) == 2)
+   {
+      tmp = (bytes[p] << 16) | (bytes[p+1] << 8);
+      out[outp++] = gsEncTable[(tmp & MASK0) >> SHIFT0];
+      out[outp++] = gsEncTable[(tmp & MASK1) >> SHIFT1];
+      out[outp++] = gsEncTable[(tmp & MASK2) >> SHIFT2];
+      out[outp++] = '=';
+   }
+   else if ((len - p) == 1)
+   {
+      tmp = (bytes[p] << 16);
+      out[outp++] = gsEncTable[(tmp & MASK0) >> SHIFT0];
+      out[outp++] = gsEncTable[(tmp & MASK1) >> SHIFT1];
+      out[outp++] = '=';
+      out[outp++] = '=';
+   }
+
+   return true;
+}
+
+bool Encode(const void *data, size_t len, char *out, size_t outlen)
+{
+   return (out ? _Encode(data, len, out, outlen) : false);
+}
+
+char* Encode(const void *data, size_t len, size_t &outlen)
+{
+   char *out = 0;
+   outlen = 0;
+   if (!_Encode(data, len, out, outlen))
+   {
+      return 0;
+   }
+   else
+   {
+      return out;
+   }
+}
+
+bool Encode(const void *data, size_t len, String &out)
+{
+   size_t outlen = EncodeLength(len);
+   if (outlen == 0)
+   {
+      out = "";
       return true;
-    }
-  }
+   }
+   else
+   {
+      out.resize(outlen);
+      char *outbytes = (char*) out.data();
+      if (!outbytes)
+      {
+         out = "";
+         return false;
+      }
+      if (!_Encode(data, len, outbytes, outlen))
+      {
+         out = "";
+         return false;
+      }
+      else
+      {
+         return true;
+      }
+   }
 }
 
-bool Encode(const String &in, char *out, size_t outlen) {
-  return (out ? _Encode(in.c_str(), in.length(), out, outlen) : false);
+bool Encode(const String &in, char *out, size_t outlen)
+{
+   return (out ? _Encode(in.c_str(), in.length(), out, outlen) : false);
 }
 
-char* Encode(const String &in, size_t &outlen) {
-  return Encode(in.c_str(), in.length(), outlen);
+char* Encode(const String &in, size_t &outlen)
+{
+   return Encode(in.c_str(), in.length(), outlen);
 }
 
-bool Encode(const String &in, String &out) {
-  return Encode(in.c_str(), in.length(), out);
+bool Encode(const String &in, String &out)
+{
+   return Encode(in.c_str(), in.length(), out);
 }
 
-String Encode(const void *data, size_t len) {
-  String rv;
-  Encode(data, len, rv);
-  return rv;
+String Encode(const void *data, size_t len)
+{
+   String rv;
+   Encode(data, len, rv);
+   return rv;
 }
 
-String Encode(const String &in) {
-  return Encode(in.c_str(), in.length());
+String Encode(const String &in)
+{
+   return Encode(in.c_str(), in.length());
 }
 
 // ---
 
-size_t DecodeLength(const char *in, size_t len) {
-  if (!in || len == 0 || (len % 4) != 0) {
-    return 0;
-  } else {
-    return (3 * (len / 4) - (in[len-1] == '=' ? (in[len-2] == '=' ? 2 : 1) : 0));
-  }
+size_t DecodeLength(const char *in, size_t len)
+{
+   if (!in || len == 0 || (len % 4) != 0)
+   {
+      return 0;
+   }
+   else
+   {
+      return (3 * (len / 4) - (in[len-1] == '=' ? (in[len-2] == '=' ? 2 : 1) : 0));
+   }
 }
 
-static bool _Decode(const char *in, size_t len, void* &out, size_t &outlen) {
-  size_t declen = DecodeLength(in, len);
-  if (declen == 0) {
-    if (!out) {
-      outlen = 0;
-    }
-    return false;
-  }
-
-  bool allocated = false;
-
-  if (!out) {
-    outlen = declen;
-    out = malloc(outlen);
-    allocated = true;
-
-  } else if (outlen < declen) {
-    return false;
-  }
-  
-  unsigned long tmp;
-  int npad;
-  size_t p = 0;
-  size_t outp = 0;
-  unsigned char *bytes = (unsigned char*) out;
-  
-  while ((len - p) > 0) {
-    tmp = 0;
-    npad = 0;
-    
-    for (int i=0, o=18; i<4; ++i, o-=6) {
-      char c = in[p+i];
-      if (c != '=') {
-        tmp |= (gsDecTable[int(c)] << o);
-      } else {
-        ++npad;
-      }
-    }
-    
-    if (npad == 0) {
-      bytes[outp++] = (unsigned char) ((tmp & 0x00FF0000) >> 16);
-      bytes[outp++] = (unsigned char) ((tmp & 0x0000FF00) >> 8);
-      bytes[outp++] = (unsigned char) (tmp & 0x000000FF);
-      
-    } else if (npad == 1) {
-      bytes[outp++] = (unsigned char) ((tmp & 0x00FF0000) >> 16);
-      bytes[outp++] = (unsigned char) ((tmp & 0x0000FF00) >> 8);
-      
-    } else if (npad == 2) {
-      bytes[outp++] = (unsigned char) ((tmp & 0x00FF0000) >> 16);
-      
-    } else {
-      if (allocated) {
-        free(out);
-        out = 0;
-        outlen = 0;
+static bool _Decode(const char *in, size_t len, void* &out, size_t &outlen)
+{
+   size_t declen = DecodeLength(in, len);
+   if (declen == 0)
+   {
+      if (!out)
+      {
+         outlen = 0;
       }
       return false;
-    }
-    
-    p += 4;
-  }
-  
-  return true;
-}
+   }
 
-bool Decode(const char *in, size_t len, void *out, size_t outlen) {
-  return (out ? _Decode(in, len, out, outlen) : false);
-}
+   bool allocated = false;
 
-void* Decode(const char *in, size_t len, size_t &outlen) {
-  void *out = 0;
-  outlen = 0;
-  if (!_Decode(in, len, out, outlen)) {
-    return 0;
-  } else {
-    return out;
-  }
-}
-
-bool Decode(const char *in, size_t len, String &out) {
-  size_t outlen = DecodeLength(in, len);
-  if (outlen == 0) {
-    out = "";
-    return true;
-  } else {
-    out.resize(outlen);
-    void *outbytes = (void*) out.data();
-    if (!outbytes) {
-      out = "";
+   if (!out)
+   {
+      outlen = declen;
+      out = malloc(outlen);
+      allocated = true;
+   }
+   else if (outlen < declen)
+   {
       return false;
-    }
-    // Note: _Decode won't allocate as outbytes is a not null
-    if (!_Decode(in, len, outbytes, outlen)) {
+   }
+   
+   unsigned long tmp;
+   int npad;
+   size_t p = 0;
+   size_t outp = 0;
+   unsigned char *bytes = (unsigned char*) out;
+   
+   while ((len - p) > 0)
+   {
+      tmp = 0;
+      npad = 0;
+      
+      for (int i=0, o=18; i<4; ++i, o-=6)
+      {
+         char c = in[p+i];
+         if (c != '=')
+         {
+            tmp |= (gsDecTable[int(c)] << o);
+         }
+         else
+         {
+            ++npad;
+         }
+      }
+      
+      if (npad == 0)
+      {
+         bytes[outp++] = (unsigned char) ((tmp & 0x00FF0000) >> 16);
+         bytes[outp++] = (unsigned char) ((tmp & 0x0000FF00) >> 8);
+         bytes[outp++] = (unsigned char) (tmp & 0x000000FF);
+      }
+      else if (npad == 1)
+      {
+         bytes[outp++] = (unsigned char) ((tmp & 0x00FF0000) >> 16);
+         bytes[outp++] = (unsigned char) ((tmp & 0x0000FF00) >> 8);
+      }
+      else if (npad == 2)
+      {
+         bytes[outp++] = (unsigned char) ((tmp & 0x00FF0000) >> 16);
+      }
+      else
+      {
+         if (allocated)
+         {
+            free(out);
+            out = 0;
+            outlen = 0;
+         }
+         return false;
+      }
+      
+      p += 4;
+   }
+   
+   return true;
+}
+
+bool Decode(const char *in, size_t len, void *out, size_t outlen)
+{
+   return (out ? _Decode(in, len, out, outlen) : false);
+}
+
+void* Decode(const char *in, size_t len, size_t &outlen)
+{
+   void *out = 0;
+   outlen = 0;
+   if (!_Decode(in, len, out, outlen))
+   {
+      return 0;
+   }
+   else
+   {
+      return out;
+   }
+}
+
+bool Decode(const char *in, size_t len, String &out)
+{
+   size_t outlen = DecodeLength(in, len);
+   if (outlen == 0)
+   {
       out = "";
-      return false;
-    } else {
       return true;
-    }
-  }
+   }
+   else
+   {
+      out.resize(outlen);
+      void *outbytes = (void*) out.data();
+      if (!outbytes)
+      {
+         out = "";
+         return false;
+      }
+      // Note: _Decode won't allocate as outbytes is a not null
+      if (!_Decode(in, len, outbytes, outlen))
+      {
+         out = "";
+         return false;
+      }
+      else
+      {
+         return true;
+      }
+   }
 }
 
-bool Decode(const String &in, void *out, size_t outlen) {
-  return (out ? _Decode(in.c_str(), in.length(), out, outlen) : false);
+bool Decode(const String &in, void *out, size_t outlen)
+{
+   return (out ? _Decode(in.c_str(), in.length(), out, outlen) : false);
 }
 
-void* Decode(const String &in, size_t &outlen) {
-  return Decode(in.c_str(), in.length(), outlen);
+void* Decode(const String &in, size_t &outlen)
+{
+   return Decode(in.c_str(), in.length(), outlen);
 }
 
-bool Decode(const String &in, String &out) {
-  return Decode(in.c_str(), in.length(), out);
+bool Decode(const String &in, String &out)
+{
+   return Decode(in.c_str(), in.length(), out);
 }
 
-String Decode(const char *in, size_t len) {
-  String rv;
-  Decode(in, len, rv);
-  return rv;
+String Decode(const char *in, size_t len)
+{
+   String rv;
+   Decode(in, len, rv);
+   return rv;
 }
 
-String Decode(const String &in) {
-  return Decode(in.c_str(), in.length());
+String Decode(const String &in)
+{
+   return Decode(in.c_str(), in.length());
 }
 
 } // base64

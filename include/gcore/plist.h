@@ -169,8 +169,8 @@ namespace gcore
          virtual ~Value();
 
          virtual Value* clone() const = 0;
-         virtual Status fromXML(const gcore::XMLElement *elt) = 0;
-         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const = 0;
+         virtual Status fromXML(const XMLElement *elt) = 0;
+         virtual XMLElement* toXML(XMLElement *elt=NULL) const = 0;
 
          inline long getType() const
          {
@@ -226,8 +226,8 @@ namespace gcore
          virtual ~InvalidValue();
          
          virtual Value* clone() const;
-         virtual Status fromXML(const gcore::XMLElement *elt);
-         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
+         virtual Status fromXML(const XMLElement *elt);
+         virtual XMLElement* toXML(XMLElement *elt=NULL) const;
       };
       
       class GCORE_API String : public Value
@@ -245,8 +245,8 @@ namespace gcore
          virtual ~String();
          
          virtual Value* clone() const;
-         virtual Status fromXML(const gcore::XMLElement *elt);
-         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
+         virtual Status fromXML(const XMLElement *elt);
+         virtual XMLElement* toXML(XMLElement *elt=NULL) const;
          
          inline const gcore::String& get() const
          {
@@ -283,8 +283,8 @@ namespace gcore
          virtual ~Real();
          
          virtual Value* clone() const;
-         virtual Status fromXML(const gcore::XMLElement *elt);
-         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
+         virtual Status fromXML(const XMLElement *elt);
+         virtual XMLElement* toXML(XMLElement *elt=NULL) const;
          
          inline double get() const
          {
@@ -321,8 +321,8 @@ namespace gcore
          virtual ~Integer();
          
          virtual Value* clone() const;
-         virtual Status fromXML(const gcore::XMLElement *elt);
-         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
+         virtual Status fromXML(const XMLElement *elt);
+         virtual XMLElement* toXML(XMLElement *elt=NULL) const;
          
          inline long get() const
          {
@@ -359,8 +359,8 @@ namespace gcore
          virtual ~Boolean();
          
          virtual Value* clone() const;
-         virtual Status fromXML(const gcore::XMLElement *elt);
-         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
+         virtual Status fromXML(const XMLElement *elt);
+         virtual XMLElement* toXML(XMLElement *elt=NULL) const;
          
          inline bool get() const
          {
@@ -397,8 +397,8 @@ namespace gcore
          virtual ~Array();
          
          virtual Value* clone() const;
-         virtual Status fromXML(const gcore::XMLElement *elt);
-         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
+         virtual Status fromXML(const XMLElement *elt);
+         virtual XMLElement* toXML(XMLElement *elt=NULL) const;
          
          inline size_t size() const
          {
@@ -446,8 +446,8 @@ namespace gcore
          virtual ~Dictionary();
          
          virtual Value* clone() const;
-         virtual Status fromXML(const gcore::XMLElement *elt);
-         virtual gcore::XMLElement* toXML(gcore::XMLElement *elt=NULL) const;
+         virtual Status fromXML(const XMLElement *elt);
+         virtual XMLElement* toXML(XMLElement *elt=NULL) const;
          
          inline ReturnType get() const
          {

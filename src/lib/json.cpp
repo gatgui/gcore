@@ -24,12 +24,18 @@ USA.
 #include <gcore/json.h>
 #include <gcore/plist.h>
 
-gcore::json::Value::Value()
+namespace gcore
+{
+
+namespace json
+{
+
+Value::Value()
    : mType(NullType)
 {
 }
 
-gcore::json::Value::Value(Type t)
+Value::Value(Type t)
    : mType(t)
 {
    switch (mType)
@@ -41,85 +47,85 @@ gcore::json::Value::Value(Type t)
       mValue.num = 0.0;
       break;
    case StringType:
-      mValue.str = new gcore::String();
+      mValue.str = new String();
       break;
    case ObjectType:
-      mValue.obj = new gcore::json::Object();
+      mValue.obj = new Object();
       break;
    case ArrayType:
-      mValue.arr = new gcore::json::Array();
+      mValue.arr = new Array();
    default:
       break;
    }
 }
 
-gcore::json::Value::Value(bool b)
+Value::Value(bool b)
    : mType(BooleanType)
 {
    mValue.boo = b;
 }
 
-gcore::json::Value::Value(int num)
+Value::Value(int num)
    : mType(NumberType)
 {
    mValue.num = double(num);
 }
 
-gcore::json::Value::Value(float num)
+Value::Value(float num)
    : mType(NumberType)
 {
    mValue.num = double(num);
 }
 
-gcore::json::Value::Value(double num)
+Value::Value(double num)
    : mType(NumberType)
 {
    mValue.num = num;
 }
 
-gcore::json::Value::Value(gcore::String *str)
+Value::Value(String *str)
    : mType(str ? StringType : NullType)
 {
    mValue.str = str;
 }
 
-gcore::json::Value::Value(const char *str)
+Value::Value(const char *str)
    : mType(str ? StringType : NullType)
 {
-   mValue.str = (str ? new gcore::String(str) : 0);
+   mValue.str = (str ? new String(str) : 0);
 }
 
-gcore::json::Value::Value(const gcore::String &str)
+Value::Value(const String &str)
    : mType(StringType)
 {
-   mValue.str = new gcore::String(str);
+   mValue.str = new String(str);
 }
 
-gcore::json::Value::Value(Object *obj)
+Value::Value(Object *obj)
    : mType(obj ? ObjectType : NullType)
 {
    mValue.obj = obj;
 }
 
-gcore::json::Value::Value(const Object &obj)
+Value::Value(const Object &obj)
    : mType(ObjectType)
 {
-   mValue.obj = new gcore::json::Object(obj);
+   mValue.obj = new Object(obj);
 }
 
-gcore::json::Value::Value(Array *arr)
+Value::Value(Array *arr)
    : mType(arr ? ArrayType : NullType)
 {
    mValue.arr = arr;
 }
 
-gcore::json::Value::Value(const Array &arr)
+Value::Value(const Array &arr)
    : mType(ArrayType)
 {
-   mValue.arr = new gcore::json::Array(arr);
+   mValue.arr = new Array(arr);
 }
 
-gcore::json::Value::Value(const gcore::json::Value &rhs)
+Value::Value(const Value &rhs)
    : mType(rhs.mType)
 {
    switch (mType)
@@ -131,24 +137,24 @@ gcore::json::Value::Value(const gcore::json::Value &rhs)
       mValue.num = rhs.mValue.num;
       break;
    case StringType:
-      mValue.str = new gcore::String(*(rhs.mValue.str));
+      mValue.str = new String(*(rhs.mValue.str));
       break;
    case ObjectType:
-      mValue.obj = new gcore::json::Object(*(rhs.mValue.obj));
+      mValue.obj = new Object(*(rhs.mValue.obj));
       break;
    case ArrayType:
-      mValue.arr = new gcore::json::Array(*(rhs.mValue.arr));
+      mValue.arr = new Array(*(rhs.mValue.arr));
    default:
       break;
    }
 }
 
-gcore::json::Value::~Value()
+Value::~Value()
 {
    reset();
 }
 
-bool gcore::json::Value::toPropertyList(gcore::PropertyList &pl) const
+bool Value::toPropertyList(PropertyList &pl) const
 {
    if (mType != ObjectType)
    {
@@ -160,13 +166,13 @@ bool gcore::json::Value::toPropertyList(gcore::PropertyList &pl) const
    return toPropertyList(pl, "");
 }
 
-bool gcore::json::Value::toPropertyList(gcore::PropertyList &pl, const gcore::String &cprop) const
+bool Value::toPropertyList(PropertyList &pl, const String &cprop) const
 {
    switch (mType)
    {
    case ObjectType:
       {
-         gcore::String prop, bprop = cprop;
+         String prop, bprop = cprop;
          
          if (cprop.length() > 0)
          {
@@ -186,12 +192,12 @@ bool gcore::json::Value::toPropertyList(gcore::PropertyList &pl, const gcore::St
    
    case ArrayType:
       {
-         gcore::String prop, bprop = cprop + "[";
+         String prop, bprop = cprop + "[";
          size_t i = 0;
          
          for (Array::const_iterator it=abegin(); it!=aend(); ++it, ++i)
          {
-            prop = bprop + gcore::String(i) + "]";
+            prop = bprop + String(i) + "]";
             if (!it->toPropertyList(pl, prop))
             {
                return false;
@@ -230,7 +236,7 @@ bool gcore::json::Value::toPropertyList(gcore::PropertyList &pl, const gcore::St
    return true;
 }
 
-void gcore::json::Value::reset()
+void Value::reset()
 {
    switch (mType)
    {
@@ -252,7 +258,7 @@ void gcore::json::Value::reset()
    mType = NullType;
 }
 
-gcore::json::Value& gcore::json::Value::operator=(bool b)
+Value& Value::operator=(bool b)
 {
    if (mType != BooleanType)
    {
@@ -265,7 +271,7 @@ gcore::json::Value& gcore::json::Value::operator=(bool b)
    return *this;
 }
 
-gcore::json::Value& gcore::json::Value::operator=(int num)
+Value& Value::operator=(int num)
 {
    if (mType != NumberType)
    {
@@ -278,7 +284,7 @@ gcore::json::Value& gcore::json::Value::operator=(int num)
    return *this;
 }
 
-gcore::json::Value& gcore::json::Value::operator=(float num)
+Value& Value::operator=(float num)
 {
    if (mType != NumberType)
    {
@@ -291,7 +297,7 @@ gcore::json::Value& gcore::json::Value::operator=(float num)
    return *this;
 }
 
-gcore::json::Value& gcore::json::Value::operator=(double num)
+Value& Value::operator=(double num)
 {
    if (mType != NumberType)
    {
@@ -304,7 +310,7 @@ gcore::json::Value& gcore::json::Value::operator=(double num)
    return *this;
 }
 
-gcore::json::Value& gcore::json::Value::operator=(gcore::String *str)
+Value& Value::operator=(String *str)
 {
    if (mType != StringType)
    {
@@ -334,7 +340,7 @@ gcore::json::Value& gcore::json::Value::operator=(gcore::String *str)
    return *this;
 }
 
-gcore::json::Value& gcore::json::Value::operator=(const char *str)
+Value& Value::operator=(const char *str)
 {
    if (mType != StringType)
    {
@@ -351,7 +357,7 @@ gcore::json::Value& gcore::json::Value::operator=(const char *str)
       }
       else
       {
-         mValue.str = new gcore::String(str);
+         mValue.str = new String(str);
       }
    }
    else
@@ -367,7 +373,7 @@ gcore::json::Value& gcore::json::Value::operator=(const char *str)
    return *this;
 }
 
-gcore::json::Value& gcore::json::Value::operator=(const gcore::String &str)
+Value& Value::operator=(const String &str)
 {
    if (mType != StringType)
    {
@@ -382,13 +388,13 @@ gcore::json::Value& gcore::json::Value::operator=(const gcore::String &str)
    }
    else
    {
-      mValue.str = new gcore::String(str);
+      mValue.str = new String(str);
    }
    
    return *this;
 }
 
-gcore::json::Value& gcore::json::Value::operator=(Object *obj)
+Value& Value::operator=(Object *obj)
 {
    if (mType != ObjectType)
    {
@@ -418,7 +424,7 @@ gcore::json::Value& gcore::json::Value::operator=(Object *obj)
    return *this;
 }
 
-gcore::json::Value& gcore::json::Value::operator=(const Object &obj)
+Value& Value::operator=(const Object &obj)
 {
    if (mType != ObjectType)
    {
@@ -433,13 +439,13 @@ gcore::json::Value& gcore::json::Value::operator=(const Object &obj)
    }
    else
    {
-      mValue.obj = new gcore::json::Object(obj);
+      mValue.obj = new Object(obj);
    }
    
    return *this;
 }
 
-gcore::json::Value& gcore::json::Value::operator=(Array *arr)
+Value& Value::operator=(Array *arr)
 {
    if (mType != ArrayType)
    {
@@ -469,7 +475,7 @@ gcore::json::Value& gcore::json::Value::operator=(Array *arr)
    return *this;
 }
 
-gcore::json::Value& gcore::json::Value::operator=(const Array &arr)
+Value& Value::operator=(const Array &arr)
 {
    if (mType != ArrayType)
    {
@@ -484,13 +490,13 @@ gcore::json::Value& gcore::json::Value::operator=(const Array &arr)
    }
    else
    {
-      mValue.arr = new gcore::json::Array(arr);
+      mValue.arr = new Array(arr);
    }
    
    return *this;
 }
 
-gcore::json::Value& gcore::json::Value::operator=(const gcore::json::Value &rhs)
+Value& Value::operator=(const Value &rhs)
 {
    if (this != &rhs)
    {
@@ -521,111 +527,111 @@ gcore::json::Value& gcore::json::Value::operator=(const gcore::json::Value &rhs)
    return *this;
 }
 
-gcore::json::Value::Type gcore::json::Value::type() const
+Value::Type Value::type() const
 {
    return mType;
 }
 
-gcore::json::Value::operator bool () const
+Value::operator bool () const
 {
    if (mType != BooleanType)
    {
-      throw std::runtime_error("json::Value is not a boolean.");
+      throw std::runtime_error("gcore::json::Value is not a boolean.");
    }
    return mValue.boo;
 }
 
-gcore::json::Value::operator int () const
+Value::operator int () const
 {
    if (mType != NumberType)
    {
-      throw std::runtime_error("json::Value is not a number.");
+      throw std::runtime_error("gcore::json::Value is not a number.");
    }
    return int(mValue.num);
 }
 
-gcore::json::Value::operator float () const
+Value::operator float () const
 {
    if (mType != NumberType)
    {
-      throw std::runtime_error("json::Value is not a number.");
+      throw std::runtime_error("gcore::json::Value is not a number.");
    }
    return float(mValue.num);
 }
 
-gcore::json::Value::operator double () const
+Value::operator double () const
 {
    if (mType != NumberType)
    {
-      throw std::runtime_error("json::Value is not a number.");
+      throw std::runtime_error("gcore::json::Value is not a number.");
    }
    return mValue.num;
 }
 
-gcore::json::Value::operator const gcore::String& () const
+Value::operator const String& () const
 {
    if (mType != StringType)
    {
-      throw std::runtime_error("json::Value is not a string.");
+      throw std::runtime_error("gcore::json::Value is not a string.");
    }
    return *(mValue.str);
 }
 
-gcore::json::Value::operator const char* () const
+Value::operator const char* () const
 {
    if (mType != StringType)
    {
-      throw std::runtime_error("json::Value is not a string.");
+      throw std::runtime_error("gcore::json::Value is not a string.");
    }
    return mValue.str->c_str();
 }
 
-gcore::json::Value::operator const gcore::json::Object& () const
+Value::operator const Object& () const
 {
    if (mType != ObjectType)
    {
-      throw std::runtime_error("json::Value is not an object.");
+      throw std::runtime_error("gcore::json::Value is not an object.");
    }
    return *(mValue.obj);
 }
 
-gcore::json::Value::operator const gcore::json::Array& () const
+Value::operator const Array& () const
 {
    if (mType != ArrayType)
    {
-      throw std::runtime_error("json::Value is not an array.");
+      throw std::runtime_error("gcore::json::Value is not an array.");
    }
    return *(mValue.arr);
 }
 
-gcore::json::Value::operator gcore::String& ()
+Value::operator String& ()
 {
    if (mType != StringType)
    {
-      throw std::runtime_error("json::Value is not a string.");
+      throw std::runtime_error("gcore::json::Value is not a string.");
    }
    return *(mValue.str);
 }
 
-gcore::json::Value::operator gcore::json::Object& ()
+Value::operator Object& ()
 {
    if (mType != ObjectType)
    {
-      throw std::runtime_error("json::Value is not an object.");
+      throw std::runtime_error("gcore::json::Value is not an object.");
    }
    return *(mValue.obj);
 }
 
-gcore::json::Value::operator gcore::json::Array& ()
+Value::operator Array& ()
 {
    if (mType != ArrayType)
    {
-      throw std::runtime_error("json::Value is not an array.");
+      throw std::runtime_error("gcore::json::Value is not an array.");
    }
    return *(mValue.arr);
 }
 
-size_t gcore::json::Value::size() const
+size_t Value::size() const
 {
    if (mType == ArrayType)
    {
@@ -641,7 +647,7 @@ size_t gcore::json::Value::size() const
    }
 }
 
-void gcore::json::Value::clear()
+void Value::clear()
 {
    if (mType == ArrayType)
    {
@@ -653,7 +659,7 @@ void gcore::json::Value::clear()
    }
 }
 
-bool gcore::json::Value::insert(size_t pos, const gcore::json::Value &value)
+bool Value::insert(size_t pos, const Value &value)
 {
    if (mType != ArrayType)
    {
@@ -663,7 +669,7 @@ bool gcore::json::Value::insert(size_t pos, const gcore::json::Value &value)
    return true;
 }
 
-bool gcore::json::Value::insert(const gcore::String &key, const gcore::json::Value &value)
+bool Value::insert(const String &key, const Value &value)
 {
    if (mType != ObjectType)
    {
@@ -673,7 +679,7 @@ bool gcore::json::Value::insert(const gcore::String &key, const gcore::json::Val
    return true;
 }
 
-bool gcore::json::Value::erase(size_t pos, size_t cnt)
+bool Value::erase(size_t pos, size_t cnt)
 {
    if (mType != ArrayType)
    {
@@ -694,7 +700,7 @@ bool gcore::json::Value::erase(size_t pos, size_t cnt)
    return true;
 }
 
-bool gcore::json::Value::erase(const gcore::String &key)
+bool Value::erase(const String &key)
 {
    if (mType != ObjectType)
    {
@@ -712,102 +718,102 @@ bool gcore::json::Value::erase(const gcore::String &key)
    }
 }
 
-static gcore::json::Array gsEmptyArray;
-static gcore::json::Object gsEmptyObject;
+static Array gsEmptyArray;
+static Object gsEmptyObject;
 
-gcore::json::ArrayConstIterator gcore::json::Value::abegin() const
+ArrayConstIterator Value::abegin() const
 {
    return (mType == ArrayType ? mValue.arr->begin() : gsEmptyArray.begin());
 }
 
-gcore::json::ArrayConstIterator gcore::json::Value::aend() const
+ArrayConstIterator Value::aend() const
 {
    return (mType == ArrayType ? mValue.arr->end() : gsEmptyArray.end());
 }
 
-gcore::json::ArrayIterator gcore::json::Value::abegin()
+ArrayIterator Value::abegin()
 {
    return (mType == ArrayType ? mValue.arr->begin() : gsEmptyArray.begin());
 }
 
-gcore::json::ArrayIterator gcore::json::Value::aend()
+ArrayIterator Value::aend()
 {
    return (mType == ArrayType ? mValue.arr->end() : gsEmptyArray.end());
 }
 
-const gcore::json::Value& gcore::json::Value::operator[](size_t idx) const
+const Value& Value::operator[](size_t idx) const
 {
    if (mType != ArrayType)
    {
-      throw std::runtime_error("json::Value is not an array.");
+      throw std::runtime_error("gcore::json::Value is not an array.");
    }
    return mValue.arr->at(idx);
 }
 
-gcore::json::Value& gcore::json::Value::operator[](size_t idx)
+Value& Value::operator[](size_t idx)
 {
    if (mType != ArrayType)
    {
-      throw std::runtime_error("json::Value is not an array.");
+      throw std::runtime_error("gcore::json::Value is not an array.");
    }
    return mValue.arr->at(idx);
 }
 
-gcore::json::ObjectConstIterator gcore::json::Value::obegin() const
+ObjectConstIterator Value::obegin() const
 {
    return (mType == ObjectType ? mValue.obj->begin() : gsEmptyObject.begin());
 }
 
-gcore::json::ObjectConstIterator gcore::json::Value::oend() const
+ObjectConstIterator Value::oend() const
 {
    return (mType == ObjectType ? mValue.obj->end() : gsEmptyObject.end());
 }
 
-gcore::json::ObjectConstIterator gcore::json::Value::find(const gcore::String &name) const
+ObjectConstIterator Value::find(const String &name) const
 {
    return (mType == ObjectType ? mValue.obj->find(name) : gsEmptyObject.end());
 }
 
-gcore::json::ObjectConstIterator gcore::json::Value::find(const char *name) const
+ObjectConstIterator Value::find(const char *name) const
 {
    if (mType != ObjectType)
    {
       return gsEmptyObject.end();
    }
-   gcore::String _name(name);
+   String _name(name);
    return this->find(_name);
 }
 
-gcore::json::ObjectIterator gcore::json::Value::obegin()
+ObjectIterator Value::obegin()
 {
    return (mType == ObjectType ? mValue.obj->begin() : gsEmptyObject.begin());
 }
 
-gcore::json::ObjectIterator gcore::json::Value::oend()
+ObjectIterator Value::oend()
 {
    return (mType == ObjectType ? mValue.obj->end() : gsEmptyObject.end());
 }
 
-gcore::json::ObjectIterator gcore::json::Value::find(const gcore::String &name)
+ObjectIterator Value::find(const String &name)
 {
    return (mType == ObjectType ? mValue.obj->find(name) : gsEmptyObject.end());
 }
 
-gcore::json::ObjectIterator gcore::json::Value::find(const char *name)
+ObjectIterator Value::find(const char *name)
 {
    if (mType != ObjectType)
    {
       return gsEmptyObject.end();
    }
-   gcore::String _name(name);
+   String _name(name);
    return this->find(_name);
 }
 
-const gcore::json::Value& gcore::json::Value::operator[](const gcore::String &name) const
+const Value& Value::operator[](const String &name) const
 {
    if (mType != ObjectType)
    {
-      throw std::runtime_error("json::Value is not an object.");
+      throw std::runtime_error("gcore::json::Value is not an object.");
    }
    Object::const_iterator it = mValue.obj->find(name);
    if (it == mValue.obj->end())
@@ -817,37 +823,37 @@ const gcore::json::Value& gcore::json::Value::operator[](const gcore::String &na
    return it->second;
 }
 
-gcore::json::Value& gcore::json::Value::operator[](const gcore::String &name)
+Value& Value::operator[](const String &name)
 {
    if (mType != ObjectType)
    {
-      throw std::runtime_error("json::Value is not an object.");
+      throw std::runtime_error("gcore::json::Value is not an object.");
    }
    return (*mValue.obj)[name];
 }
 
-const gcore::json::Value& gcore::json::Value::operator[](const char *name) const
+const Value& Value::operator[](const char *name) const
 {
-   gcore::String _name(name);
+   String _name(name);
    return this->operator[](_name);
 }
 
-gcore::json::Value& gcore::json::Value::operator[](const char *name)
+Value& Value::operator[](const char *name)
 {
-   gcore::String _name(name);
+   String _name(name);
    return this->operator[](_name);
 }
 
-gcore::Status gcore::json::Value::write(const char *path) const
+Status Value::write(const char *path) const
 {
    if (!path)
    {
-      return gcore::Status(false, "Invalid path.");
+      return Status(false, "Invalid path.");
    }
    
    if (mType != ObjectType)
    {
-      return gcore::Status(false, "Value is not an object.");
+      return Status(false, "Value is not an object.");
    }
    
    std::ofstream out(path);
@@ -855,15 +861,15 @@ gcore::Status gcore::json::Value::write(const char *path) const
    if (out.is_open())
    {
       write(out);
-      return gcore::Status(true);
+      return Status(true);
    }
    else
    {
-      return gcore::Status(false, "Invalid file '%s'", path);
+      return Status(false, "Invalid file '%s'", path);
    }
 }
 
-void gcore::json::Value::write(std::ostream &os, const gcore::String indent, bool skipFirstIndent) const
+void Value::write(std::ostream &os, const String indent, bool skipFirstIndent) const
 {
    switch (type())
    {
@@ -911,11 +917,11 @@ void gcore::json::Value::write(std::ostream &os, const gcore::String indent, boo
    }
 }
 
-gcore::Status gcore::json::Value::read(const char *path)
+Status Value::read(const char *path)
 {
    if (!path)
    {
-      return gcore::Status(false, "Invalid path.");
+      return Status(false, "Invalid path.");
    }
    
    std::ifstream in(path);
@@ -923,7 +929,7 @@ gcore::Status gcore::json::Value::read(const char *path)
    if (!in.is_open())
    {
       reset();
-      return gcore::Status(false, "Invalid file '%s'", path);
+      return Status(false, "Invalid file '%s'", path);
    }
    else
    {
@@ -931,12 +937,12 @@ gcore::Status gcore::json::Value::read(const char *path)
    }
 }
 
-gcore::Status gcore::json::Value::read(std::istream &in)
+Status Value::read(std::istream &in)
 {
    return read(in, false, 0);
 }
 
-gcore::Status gcore::json::Value::Parse(const char *path, gcore::json::Value::ParserCallbacks &callbacks)
+Status Value::Parse(const char *path, Value::ParserCallbacks &callbacks)
 {
    if (!path)
    {
@@ -949,30 +955,30 @@ gcore::Status gcore::json::Value::Parse(const char *path, gcore::json::Value::Pa
    
    if (in.is_open())
    {
-      gcore::Status rv = val.read(in, true, &callbacks);
+      Status rv = val.read(in, true, &callbacks);
       val.reset();
       return rv;
    }
    else
    {
-      return gcore::Status(false, "Invalid file '%s'", path);
+      return Status(false, "Invalid file '%s'", path);
    }
 }
 
 struct ParserStackItem
 {
-   gcore::json::Value::ParserState state;
-   gcore::json::Value *value;
+   Value::ParserState state;
+   Value *value;
    size_t count;
    
-   inline ParserStackItem(gcore::json::Value::ParserState s)
+   inline ParserStackItem(Value::ParserState s)
       : state(s)
       , value(0)
       , count(0)
    {
    }
    
-   inline ParserStackItem(gcore::json::Value::ParserState s, gcore::json::Value *v)
+   inline ParserStackItem(Value::ParserState s, Value *v)
       : state(s)
       , value(v)
       , count(0)
@@ -980,13 +986,13 @@ struct ParserStackItem
    }
 };
 
-static gcore::Status Failed(gcore::json::Value *value, size_t line, size_t col, const char *fmt, ...)
+static Status Failed(Value *value, size_t line, size_t col, const char *fmt, ...)
 {
    value->reset();
    
    if (!fmt)
    {
-      return gcore::Status(false, " (line %u, column %u)", line, col);
+      return Status(false, " (line %u, column %u)", line, col);
    }
    else
    {
@@ -995,23 +1001,23 @@ static gcore::Status Failed(gcore::json::Value *value, size_t line, size_t col, 
       va_start(args, fmt);
       vsnprintf(buffer, 4095, fmt, args);
       va_end(args);
-      return gcore::Status(false, "%s (line %u, column %u)", buffer, line, col);
+      return Status(false, "%s (line %u, column %u)", buffer, line, col);
    }
 }
 
-gcore::Status gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Value::ParserCallbacks *cb)
+Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb)
 {
    static const char *sSpaces = " \t\r\n";
    
    reset();
    
-   gcore::String remain, tmp;
+   String remain, tmp;
    size_t p0, p1, lineno = 0, coloff = 0;
    
    std::vector<ParserStackItem> stack;
    ParserState state = Begin;
-   gcore::String str = "";
-   gcore::String key = "";
+   String str = "";
+   String key = "";
    bool readSep = true;
    bool hasSep = false;
    
@@ -1157,7 +1163,7 @@ gcore::Status gcore::json::Value::read(std::istream &in, bool consumeAll, gcore:
                   }
                   else
                   {
-                     return gcore::Status(true);
+                     return Status(true);
                   }
                }
             }
@@ -1586,7 +1592,7 @@ gcore::Status gcore::json::Value::read(std::istream &in, bool consumeAll, gcore:
                   else
                   {
                      // must be a number
-                     gcore::String numstr;
+                     String numstr;
                      
                      p1 = remain.find_first_of(sSpaces, p0);
                      
@@ -1649,6 +1655,10 @@ gcore::Status gcore::json::Value::read(std::istream &in, bool consumeAll, gcore:
    
    return Status(true);
 }
+
+} // json
+
+} // gcore
 
 std::ostream& operator<<(std::ostream &os, const gcore::json::Value &value)
 {

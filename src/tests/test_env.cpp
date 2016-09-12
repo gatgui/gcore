@@ -24,46 +24,52 @@ USA.
 #include <gcore/env.h>
 #include <gcore/path.h>
 
-bool PathCallback(const gcore::Path &path) {
-  std::cout << "  \"" << path.fullname() << "\"" << std::endl;
-  return true;
+bool PathCallback(const gcore::Path &path)
+{
+   std::cout << "  \"" << path.fullname() << "\"" << std::endl;
+   return true;
 }
 
-int main(int, char**) {
-  gcore::StringDict all;
-  gcore::StringDict::iterator it;
-  
-  gcore::Env env;
-  
-  env.asDict(all);
-  it = all.begin();
-  while (it != all.end()) {
-    std::cout << it->first << "=" << it->second << std::endl;
-    ++it;
-  }
-  
-  std::cout << "Check env var BSROOT..." << std::endl;
-  
-  gcore::String bsroot = "Z:/ve/home/GaetanG/dev/deploy/projects";
-  
-  if (env.isSet("BSROOT")) {
-    std::cout << "BSROOT already set: \"" << env.get("BSROOT") << "\"" << std::endl;
-    env.set("BSROOT", bsroot, true);
-  } else {
-    env.set("BSROOT", bsroot, false);
-  }
-  std::cout << "BSROOT = \"" << env.get("BSROOT") << "\"" << std::endl;
-  
-  std::cout << "PATH content..." << std::endl;
-  gcore::Env::ForEachInPathFunc cb;
-  gcore::Bind(PathCallback, cb);
-  gcore::Env::ForEachInPath("PATH", cb);
-  
-  std::cout << "PATH content... (using PathList)" << std::endl;
-  gcore::PathList pl;
-  gcore::Env::ListPaths("PATH", pl);
-  std::cout << pl << std::endl;
-  
-  return 0;
+int main(int, char**)
+{
+   gcore::StringDict all;
+   gcore::StringDict::iterator it;
+   
+   gcore::Env env;
+   
+   env.asDict(all);
+   it = all.begin();
+   while (it != all.end())
+   {
+      std::cout << it->first << "=" << it->second << std::endl;
+      ++it;
+   }
+   
+   std::cout << "Check env var BSROOT..." << std::endl;
+   
+   gcore::String bsroot = "Z:/ve/home/GaetanG/dev/deploy/projects";
+   
+   if (env.isSet("BSROOT"))
+   {
+      std::cout << "BSROOT already set: \"" << env.get("BSROOT") << "\"" << std::endl;
+      env.set("BSROOT", bsroot, true);
+   }
+   else
+   {
+      env.set("BSROOT", bsroot, false);
+   }
+   std::cout << "BSROOT = \"" << env.get("BSROOT") << "\"" << std::endl;
+   
+   std::cout << "PATH content..." << std::endl;
+   gcore::Env::ForEachInPathFunc cb;
+   gcore::Bind(PathCallback, cb);
+   gcore::Env::ForEachInPath("PATH", cb);
+   
+   std::cout << "PATH content... (using PathList)" << std::endl;
+   gcore::PathList pl;
+   gcore::Env::ListPaths("PATH", pl);
+   std::cout << pl << std::endl;
+   
+   return 0;
 }
 

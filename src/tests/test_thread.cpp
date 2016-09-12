@@ -25,77 +25,77 @@ USA.
 
 class State
 {
-  public:
-    
-    State()
+public:
+   
+   State()
       :m_done1(false), m_done2(false)
-    {
-    }
-    
-    bool isT1Done() const
-    {
+   {
+   }
+   
+   bool isT1Done() const
+   {
       return m_done1;
-    }
+   }
 
-    void waitT1Done() const
-    {
+   void waitT1Done() const
+   {
       m_mtx.lock();
       while (m_done1 == false)
       {
-        m_t1done.wait(m_mtx);
+         m_t1done.wait(m_mtx);
       }
       m_mtx.unlock();
-    }
+   }
 
-    bool isT2Done() const
-    {
+   bool isT2Done() const
+   {
       return m_done2;
-    }
+   }
 
-    void waitT2Done() const
-    {
+   void waitT2Done() const
+   {
       m_mtx.lock();
       while (m_done2 == false)
       {
-        m_t2done.wait(m_mtx);
+         m_t2done.wait(m_mtx);
       }
       m_mtx.unlock();
-    }
+   }
 
-    void setT1Done(bool b, bool notify=false)
-    {
+   void setT1Done(bool b, bool notify=false)
+   {
       m_done1 = b;
       if (notify)
       {
-        m_t1done.notifyAll();
+         m_t1done.notifyAll();
       }
-    }
-    void setT2Done(bool b, bool notify=false)
-    {
+   }
+   void setT2Done(bool b, bool notify=false)
+   {
       m_done2 = b;
       if (notify)
       {
-        m_t2done.notifyAll();
+         m_t2done.notifyAll();
       }
-    }
+   }
 
-    void print(FILE *file, const char *format, ...)
-    {
+   void print(FILE *file, const char *format, ...)
+   {
       m_pmtx.lock();
       va_list al;
       va_start(al, format);
       vfprintf(file, format, al);
       va_end(al);
       m_pmtx.unlock();
-    }
+   }
 
-    int run1()
-    {
+   int run1()
+   {
       print(stderr, "\nThread1: I have to prepare things before Thread 2 comes\n");
 
       for (int i=0; i<1000; ++i)
       {
-        print(stderr, "*");
+         print(stderr, "*");
       }
       
       print(stderr, "\nThread1: Hum... let's wait for Thread2 to start\n");
@@ -105,19 +105,19 @@ class State
       print(stderr, "\nThread1: Yeah i can do my stuffs !!!\n");
 
       return 0;
-    }
-    void done1(int)
-    {
+   }
+   void done1(int)
+   {
       print(stderr, "\nThread1: I'm done !!\n");
-    }
-    
-    int run2()
-    {
+   }
+   
+   int run2()
+   {
       print(stderr, "\nThread2: I Have to hurry, Thread1 might be waiting for me\n");
 
       for (int i=0; i<10000; ++i)
       {
-        print(stderr, ".");
+         print(stderr, ".");
       }
 
       print(stderr, "\n");
@@ -125,35 +125,35 @@ class State
       setT2Done(true, true);
 
       return 0;
-    }
-    void done2(int)
-    {
+   }
+   void done2(int)
+   {
       print(stderr, "\nThread2: I'm done !!\n");
-    }
+   }
 
-  protected:
+protected:
 
-    bool  m_done1;
-    bool  m_done2;
-    mutable gcore::Mutex m_mtx;
-    mutable gcore::Mutex m_pmtx;
-    mutable gcore::Condition m_t1done;
-    mutable gcore::Condition m_t2done;
+   bool  m_done1;
+   bool  m_done2;
+   mutable gcore::Mutex m_mtx;
+   mutable gcore::Mutex m_pmtx;
+   mutable gcore::Condition m_t1done;
+   mutable gcore::Condition m_t2done;
 };
 
 int main(int, char **)
 {
-  State s;
-  
-  gcore::Thread thr1(&s, &State::run1, &State::done1);
-  gcore::Thread thr2(&s, &State::run2, &State::done2);
-  
-  thr1.join();
-  thr1.join();
-  
-  s.print(stderr, "\nThat's all folks !!\n");
+   State s;
+   
+   gcore::Thread thr1(&s, &State::run1, &State::done1);
+   gcore::Thread thr2(&s, &State::run2, &State::done2);
+   
+   thr1.join();
+   thr1.join();
+   
+   s.print(stderr, "\nThat's all folks !!\n");
 
-  return 0;
+   return 0;
 }
 
 

@@ -79,7 +79,7 @@ struct SearchBatOrCom {
 static bool _addBatOrCom(gcore::String &s, bool &isBat) {
   gcore::Path path(s);
 
-  gcore::String ext = path.getExtension();
+  gcore::String ext = path.extension();
 
   if (ext == "") {
     gcore::String dir = path.dirname('/');
@@ -104,7 +104,7 @@ static bool _addBatOrCom(gcore::String &s, bool &isBat) {
 
     if (dir == "") {
       // look in PATH
-      gcore::Env::EachInPathFunc func;
+      gcore::Env::ForEachInPathFunc func;
       SearchBatOrCom search;
 
       search.name = name;
@@ -113,7 +113,7 @@ static bool _addBatOrCom(gcore::String &s, bool &isBat) {
 
       gcore::Bind(&search, METHOD(SearchBatOrCom, check), func);
 
-      gcore::Env::EachInPath("PATH", func);
+      gcore::Env::ForEachInPath("PATH", func);
 
       if (search.outname.length() > 0 && search.outname != search.name) {
         isBat = search.isbat;

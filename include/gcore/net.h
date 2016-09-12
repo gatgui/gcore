@@ -29,32 +29,38 @@ USA.
 #include <gcore/string.h>
 #include <gcore/status.h>
 
-namespace gcore {
+namespace gcore
+{
+   GCORE_API bool NetInitialize();
+   GCORE_API void NetUninitialize();
    
-  GCORE_API bool NetInitialize();
-  GCORE_API void NetUninitialize();
-  
-  class GCORE_API NetScopeInit {
-    public:
-      inline NetScopeInit() {
-        mInitialized = NetInitialize();
+   class GCORE_API NetScopeInit
+   {
+   public:
+      inline NetScopeInit()
+      {
+         mInitialized = NetInitialize();
       }
-      inline ~NetScopeInit() {
-        if (mInitialized) {
-          NetUninitialize();
-        }
+      inline ~NetScopeInit()
+      {
+         if (mInitialized)
+         {
+            NetUninitialize();
+         }
       }
-      inline operator bool() const {
-        return mInitialized;
+      inline operator bool() const
+      {
+         return mInitialized;
       }
-    private:
+   private:
       bool mInitialized;
-  };
-  
-  // ---
-  
-  class GCORE_API Host {
-    public:
+   };
+   
+   // ---
+   
+   class GCORE_API Host
+   {
+   public:
       
       Host();
       Host(const String &addr, unsigned short port, Status *status=0);
@@ -69,14 +75,15 @@ namespace gcore {
       operator struct sockaddr* ();
       operator const struct sockaddr* () const;
 
-    protected:
+   protected:
       struct sockaddr_in mAddr;
-  };
-  
-  // ---
-  
-  class GCORE_API Connection {
-    public:
+   };
+   
+   // ---
+   
+   class GCORE_API Connection
+   {
+   public:
       
       Connection();
       virtual ~Connection();
@@ -136,12 +143,12 @@ namespace gcore {
       inline unsigned long bufferSize() const { return mBufferSize; }
       inline bool hasPendingData() const { return (mBufferOffset > 0); }
       
-    private:
+   private:
       
       Connection(const Connection&);
       Connection& operator=(const Connection &);
       
-    protected:
+   protected:
       
       Connection(sock_t fd);
       
@@ -149,18 +156,19 @@ namespace gcore {
       unsigned long mBufferSize;
       char *mBuffer;
       unsigned long mBufferOffset;
-  };
-  
-  // ---
-  
-  class GCORE_API TCPSocket;
-  
-  class GCORE_API TCPConnection : public Connection {
-    public:
+   };
+   
+   // ---
+   
+   class GCORE_API TCPSocket;
+   
+   class GCORE_API TCPConnection : public Connection
+   {
+   public:
       
       friend class TCPSocket;
       
-    public:
+   public:
       
       virtual ~TCPConnection();
       
@@ -189,7 +197,7 @@ namespace gcore {
       virtual size_t write(const char* bytes, size_t len, double timeout=-1, Status *status=0);
       
       
-    private:
+   private:
       
       TCPConnection();
       TCPConnection(const TCPConnection&);
@@ -197,24 +205,25 @@ namespace gcore {
       
       bool checkUntil(const char *until, char *in, size_t inlen, char *&out, size_t &outlen);
       
-    protected:
+   protected:
       
       TCPConnection(TCPSocket *socket, sock_t fd, const Host &host);
       
       Host mHost;
       TCPSocket *mSocket;
-  };
-  
-  // class GCORE_API UDPConnection : public Connection { ...
-  
-  // ---
-  
-  class GCORE_API Socket {
-    public:
+   };
+   
+   // class GCORE_API UDPConnection : public Connection { ...
+   
+   // ---
+   
+   class GCORE_API Socket
+   {
+   public:
       
       friend class Connection;
-    
-    public:
+   
+   public:
       
       Socket(unsigned short port, Status *status=0);
       Socket(const Host &host, Status *status=0);
@@ -224,8 +233,8 @@ namespace gcore {
       
       inline const Host& host() const { return mHost; }
       inline sock_t fd() const { return mFD; }
-  
-    protected:
+
+   protected:
       
       Socket();
       Socket(const Socket&);
@@ -233,22 +242,23 @@ namespace gcore {
       
       void invalidate();
       
-    protected:
+   protected:
       
       Socket(sock_t fd, const Host &host);
       
       sock_t mFD;
       Host mHost;
-  };
-  
-  // ---
-  
-  class GCORE_API TCPSocket : public Socket {
-    public:
+   };
+   
+   // ---
+   
+   class GCORE_API TCPSocket : public Socket
+   {
+   public:
       
       friend class TCPConnection;
-    
-    public:
+   
+   public:
       
       TCPSocket(unsigned short port, Status *status=0);
       TCPSocket(const Host &host, Status *status=0);
@@ -312,7 +322,7 @@ namespace gcore {
       void cleanup(bool flushPending=false);
       
       
-    protected:
+   protected:
       
       TCPSocket();
       TCPSocket(const TCPSocket&);
@@ -323,8 +333,8 @@ namespace gcore {
       size_t select(bool readable, bool writable, double timeout, Status *status=0);
       int peek(bool readable, bool writable, double timeout, fd_set *readfds=0, fd_set *writefds=0);
       void clearEvents();
-    
-    protected:
+   
+   protected:
       
       int mMaxConnections;
       
@@ -342,9 +352,9 @@ namespace gcore {
       std::vector<WSAEVENT> mEvents;
       std::vector<ConnectionList::const_iterator> mEventConns;
 #endif
-  };
-  
-  // class UDPSocket : public Socket { ...
+   };
+   
+   // class UDPSocket : public Socket { ...
 }
 
 #endif

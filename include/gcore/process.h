@@ -30,43 +30,46 @@ namespace gcore
 {
 
 #ifdef _WIN32
-  
-  typedef unsigned long ProcessID;
-  const ProcessID INVALID_PID = 0;
-  
-  inline bool IsValidProcessID(ProcessID pid) {
-    return (pid != 0);
-  }
-  
+   
+   typedef unsigned long ProcessID;
+   const ProcessID INVALID_PID = 0;
+   
+   inline bool IsValidProcessID(ProcessID pid)
+   {
+      return (pid != 0);
+   }
+   
 #else
-  
-  typedef int ProcessID;
-  const ProcessID INVALID_PID = -1;
-  
-  inline bool IsValidProcessID(ProcessID pid) {
-    return (pid > 0);
-  }
-  
+   
+   typedef int ProcessID;
+   const ProcessID INVALID_PID = -1;
+   
+   inline bool IsValidProcessID(ProcessID pid)
+   {
+      return (pid > 0);
+   }
+   
 #endif
 
-  class GCORE_API Process {
-    
-    public:
-      
-      struct GCORE_API Options {
-        bool redirectOut;
-        bool redirectErr;
-        bool redirectErrToOut;
-        bool redirectIn;
-        bool showConsole;
-        bool keepAlive;
-        StringDict env;
+   class GCORE_API Process
+   {
+   public:
+         
+      struct GCORE_API Options
+      {
+         bool redirectOut;
+         bool redirectErr;
+         bool redirectErrToOut;
+         bool redirectIn;
+         bool showConsole;
+         bool keepAlive;
+         StringDict env;
       };
       
       static void SetDefaultOptions(Options &opts);
       
-    public:
-    
+   public:
+   
       Process();
       Process(const char *cmdline, Options *options=0, Status *status=0);
       Process(int argc, const char **argv, Options *options=0, Status *status=0);
@@ -137,14 +140,14 @@ namespace gcore
       PipeID readErrID() const;
       PipeID writeID() const;
 
-    private:
+   private:
 
       int waitNoClose(bool blocking, Status *status=0);
       Status run(int argc, va_list va);
       Status run();
       void closePipes();
 
-    private:
+   private:
 
       StringList  mArgs;
       ProcessID   mPID;
@@ -152,17 +155,10 @@ namespace gcore
       Pipe        mReadOutPipe;
       Pipe        mReadErrPipe;
       Pipe        mWritePipe;
-      //bool        mRedirectOut;
-      //bool        mRedirectErr;
-      //bool        mErrToOut;
-      //bool        mRedirectIn;
-      //bool        mShowConsole;
-      //bool        mKeepAlive;
-      //StringDict  mEnv;
-      char**      mStdArgs; // used on nix
+      char**      mStdArgs;
       String      mCmdLine;
       int         mReturnCode;
-  };
+   };
 }
 
 #endif

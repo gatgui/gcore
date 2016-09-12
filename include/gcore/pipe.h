@@ -27,37 +27,41 @@ USA.
 #include <gcore/string.h>
 #include <gcore/status.h>
 
-namespace gcore {
+namespace gcore
+{
 
 #ifdef _WIN32
-  
-  typedef void* PipeID;
-  const PipeID INVALID_PIPE = 0;
-  
-  inline bool IsValidPipeID(PipeID pi) {
-    return (pi != 0);
-  }
-  
+   
+   typedef void* PipeID;
+   const PipeID INVALID_PIPE = 0;
+   
+   inline bool IsValidPipeID(PipeID pi)
+   {
+      return (pi != 0);
+   }
+   
 #else
-  
-  typedef int PipeID;
-  const PipeID INVALID_PIPE = -1;
-  
-  inline bool IsValidPipeID(PipeID pi) {
-    return (pi >= 0);
-  }
-  
+   
+   typedef int PipeID;
+   const PipeID INVALID_PIPE = -1;
+   
+   inline bool IsValidPipeID(PipeID pi)
+   {
+      return (pi >= 0);
+   }
+   
 #endif
-  
-  class GCORE_API Pipe {
-    public:
+   
+   class GCORE_API Pipe
+   {
+   public:
       
       static PipeID StdInID();
       static PipeID StdOutID();
       static PipeID StdErrID();
-    
-    public:
-    
+   
+   public:
+   
       Pipe();
       Pipe(PipeID readId, PipeID writeId);
       Pipe(const Pipe &rhs);
@@ -82,7 +86,7 @@ namespace gcore {
       
       Pipe& operator=(const Pipe &rhs);
       
-    private:
+   private:
 
       PipeID mDesc[2];
       mutable bool mOwn; // Ownership transferred by copy constructor and assignment
@@ -90,7 +94,7 @@ namespace gcore {
 #ifdef _WIN32
       mutable bool mConnected;
 #endif
-  };
+   };
 }
 
 #endif

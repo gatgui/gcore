@@ -26,15 +26,17 @@ USA.
 
 #include <gcore/config.h>
 
-namespace gcore {
-   
+namespace gcore
+{
    template <bool Cond, class TrueType, class FalseType>
-   struct TCond {
+   struct TCond
+   {
       typedef FalseType Type;
    };
    
    template <class TrueType, class FalseType>
-   struct TCond<true, TrueType, FalseType> {
+   struct TCond<true, TrueType, FalseType>
+   {
       typedef TrueType Type;
    };
 }

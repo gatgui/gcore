@@ -30,26 +30,27 @@ USA.
 #include <gcore/platform.h>
 #include <gcore/date.h>
 
-namespace gcore {
-  
-  class GCORE_API Path {
-    public:
+namespace gcore
+{
+   class GCORE_API Path
+   {
+   public:
       
       static Path CurrentDir();
       
-    public:
+   public:
       
       typedef Functor1wR<bool, const Path &> ForEachFunc;
       
       enum ForEachTarget
       {
-        FE_FILE      = 0x01,
-        FE_DIRECTORY = 0x02,
-        FE_HIDDEN    = 0x04, // file/dir starting with a .
-        FE_ALL       = FE_FILE|FE_DIRECTORY|FE_HIDDEN
+         FE_FILE      = 0x01,
+         FE_DIRECTORY = 0x02,
+         FE_HIDDEN    = 0x04, // file/dir starting with a .
+         FE_ALL       = FE_FILE|FE_DIRECTORY|FE_HIDDEN
       };
       
-    public:
+   public:
       
       Path();
       Path(const char *s);
@@ -64,18 +65,14 @@ namespace gcore {
       Path& operator+=(const Path &rhs);
       
       bool operator==(const Path &rhs) const;
-      inline bool operator!=(const Path &rhs) const {
-        return !operator==(rhs);
-      }
+      bool operator!=(const Path &rhs) const;
       
       // those will use '/'
       operator const String& () const;
       operator String& ();
       
       // can use negative numbers -> index from the end
-      inline int depth() const {
-        return int(mPaths.size());
-      }
+      int depth() const;
       String& operator[](int idx);
       const String& operator[](int idx) const;
       
@@ -114,25 +111,37 @@ namespace gcore {
       String pop();
       Path& push(const String &s);
       
-    protected:
+   protected:
       
       StringList mPaths;
       String mFullName;
-  };
-  
-  inline Path operator+(const Path &p0, const Path &p1) {
-    Path rv(p0);
-    rv += p1;
-    return rv;
-  }
+   };
+   
+   inline bool Path::operator!=(const Path &rhs) const
+   {
+      return !operator==(rhs);
+   }
+   
+   inline int Path::depth() const
+   {
+      return int(mPaths.size());
+   }
+   
+   inline Path operator+(const Path &p0, const Path &p1)
+   {
+      Path rv(p0);
+      rv += p1;
+      return rv;
+   }
 
-  inline std::ostream& operator<<(std::ostream &os, const Path &p) {
-    os << p.fullname();
-    return os;
-  }
-  
-  typedef List<Path> PathList;
-  
+   inline std::ostream& operator<<(std::ostream &os, const Path &p)
+   {
+      os << p.fullname();
+      return os;
+   }
+   
+   typedef List<Path> PathList;
+   
 }
 
 #endif

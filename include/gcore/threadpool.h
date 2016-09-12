@@ -27,16 +27,16 @@ USA.
 #include <gcore/threads.h>
 #include <gcore/list.h>
 
-namespace gcore {
-  
-  typedef Functor0 Task;
-  
-  const Functor0 NullTask;
-  
-  class GCORE_API ThreadPool {
-    
-    public:
-    
+namespace gcore
+{
+   typedef Functor0 Task;
+   
+   const Functor0 NullTask;
+   
+   class GCORE_API ThreadPool
+   {
+   public:
+   
       ThreadPool();
       
       ~ThreadPool();
@@ -59,39 +59,42 @@ namespace gcore {
 
       size_t numWorkers();
 
-    protected:
+   protected:
 
-      class Worker {
-        private:
-        
-          Thread *mThr;
-          ThreadPool *mPool;
-          bool mProcessing;
-        
-        public:
-          
-          friend class ThreadPool;
-        
-          Worker(ThreadPool *p);
-          ~Worker();
-          
-          inline bool processing() const {
+      class Worker
+      {
+      private:
+      
+         Thread *mThr;
+         ThreadPool *mPool;
+         bool mProcessing;
+      
+      public:
+         
+         friend class ThreadPool;
+      
+         Worker(ThreadPool *p);
+         ~Worker();
+         
+         inline bool processing() const
+         {
             return mProcessing;
-          }
-          
-          int run();
-          void done(int);
+         }
+         
+         int run();
+         void done(int);
 
-        protected:
-        
-          inline void processing(bool p) {
+      protected:
+      
+         inline void processing(bool p)
+         {
             mProcessing = p;
-          }
+         }
       };
       
       friend class Worker;
       
-    protected:
+   protected:
       
       Task getTask(Worker *wt);
 
@@ -101,12 +104,13 @@ namespace gcore {
       
       size_t _numIdleWorkers();
 
-    protected:
+   protected:
       
-      enum State {
-        TPS_STOPPED,
-        TPS_RUNNING,
-        TPS_WAITING
+      enum State
+      {
+         TPS_STOPPED,
+         TPS_RUNNING,
+         TPS_WAITING
       };
       
       State mState;
@@ -120,10 +124,7 @@ namespace gcore {
       
       Mutex mTasksAccess;
       Condition mTasksChanged;
-      
-  };
-  
-  
+   };
 }
 
 #endif

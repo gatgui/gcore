@@ -27,10 +27,11 @@ USA.
 #include <gcore/string.h>
 #include <gcore/list.h>
 
-namespace gcore {
-  
-  class GCORE_API XMLElement {
-    public:
+namespace gcore
+{
+   class GCORE_API XMLElement
+   {
+   public:
       friend class XMLDoc;
       
       static const String Empty;
@@ -69,12 +70,12 @@ namespace gcore {
       XMLElement* getChildWithTag(const String &tag, size_t n=0);
       const XMLElement* getChildWithTag(const String &tag, size_t n=0) const;
       size_t getChildrenWithTag(const String &tag, List<XMLElement*> &el) const;
-    
-    protected:
-    
+   
+   protected:
+   
       void write(std::ostream &os, const String &indent) const;
       
-    private:
+   private:
       
       String mTag;
       StringDict mAttrs;
@@ -82,10 +83,11 @@ namespace gcore {
       XMLElement *mParent;
       List<XMLElement*> mChildren;
       bool mTextIsCDATA;
-  };
-  
-  class GCORE_API XMLDoc {
-    public:
+   };
+   
+   class GCORE_API XMLDoc
+   {
+   public:
       XMLDoc();
       ~XMLDoc();
       
@@ -100,11 +102,11 @@ namespace gcore {
       void write(std::ostream &os) const;
       bool read(const String &fileName);
       bool read(std::istream &is);
-    
-    protected:
+   
+   protected:
       
       List<XMLElement*> mRoots;
-  };
+   };
 }
 
 #endif

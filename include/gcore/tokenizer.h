@@ -26,11 +26,11 @@ USA.
 
 #include <gcore/config.h>
 
-namespace gcore {
-  
-  class GCORE_API Tokenizer {
-    
-    public:
+namespace gcore
+{
+   class GCORE_API Tokenizer
+   {
+   public:
 
       Tokenizer();
       Tokenizer(const char *dlims);
@@ -46,16 +46,14 @@ namespace gcore {
 
       const char* getToken(void) const;
 
-    private:
+   private:
 
       char *mStr;
       char *mToken;
       char *mNextToken;
       char mDelims[256];
       unsigned int mNumDelim;
-  };
-  
-  
+   };
 }
 
 

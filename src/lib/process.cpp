@@ -29,7 +29,7 @@ USA.
 
 #ifdef _WIN32
 
-static HANDLE _process_getHandle(ProcessID pid)
+static HANDLE _process_getHandle(gcore::ProcessID pid)
 {
    return OpenProcess(PROCESS_ALL_ACCESS, TRUE, pid);
 }
@@ -92,8 +92,8 @@ static bool _addBatOrCom(gcore::String &s, bool &isBat)
 
    if (ext == "")
    {
-      String dir = path.dirname('/');
-      String name = path.basename();
+      gcore::String dir = path.dirname('/');
+      gcore::String name = path.basename();
 
       // check for a .bat or .com file first (takes into account current working directory)
       path.pop();

@@ -24,85 +24,106 @@ USA.
 #include <gcore/dmodule.h>
 #include <gcore/platform.h>
 
-gcore::DynamicModule::DynamicModule()
-  : _mHandle(0), _mName("") {
+namespace gcore
+{
+
+DynamicModule::DynamicModule()
+   : _mHandle(0)
+   , _mName("") 
+{
 }
 
-gcore::DynamicModule::DynamicModule(const gcore::String &name)
-  : _mHandle(0), _mName(name) {
-  _open(name);
+DynamicModule::DynamicModule(const String &name)
+   : _mHandle(0)
+   , _mName(name) 
+{
+   _open(name);
 }
 
-gcore::DynamicModule::~DynamicModule() {
-  if (_opened()) {
-    _close();
-  }
+DynamicModule::~DynamicModule()
+{
+   if (_opened())
+   {
+      _close();
+   }
 }
 
-bool gcore::DynamicModule::_opened() const {
-  return (_mHandle != 0);
+bool DynamicModule::_opened() const
+{
+   return (_mHandle != 0);
 }
 
-bool gcore::DynamicModule::_open(const gcore::String &name) {
-  if (_opened()) {
-    if (name == _mName) {
-      return true;
-    }
-    _close();
-  }
+bool DynamicModule::_open(const String &name)
+{
+   if (_opened())
+   {
+      if (name == _mName)
+      {
+         return true;
+      }
+      _close();
+   }
 #ifndef _WIN32
-  // RTLD_LAZY / RTLD_NOW (check all exported symbols at load time)
-  // RTLD_GLOBAL / RTLD_LOCAL (symbol can be access by using RTLD_DEFAULT or RTLD_NEXT handle, or only through dlopen handle)
-  _mHandle = dlopen(name.c_str(), RTLD_LAZY|RTLD_LOCAL);
+   // RTLD_LAZY / RTLD_NOW (check all exported symbols at load time)
+   // RTLD_GLOBAL / RTLD_LOCAL (symbol can be access by using RTLD_DEFAULT or RTLD_NEXT handle, or only through dlopen handle)
+   _mHandle = dlopen(name.c_str(), RTLD_LAZY|RTLD_LOCAL);
 #else   //_WIN32
-  _mHandle = LoadLibraryEx(name.c_str(), NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+   _mHandle = LoadLibraryEx(name.c_str(), NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
 #endif  //_WIN32
-  return (_mHandle != 0);
+   return (_mHandle != 0);
 }
 
-bool gcore::DynamicModule::_close() {
-  bool r;
+bool DynamicModule::_close()
+{
+   bool r;
 #ifndef _WIN32
-  r = (dlclose(_mHandle) == 0);
+   r = (dlclose(_mHandle) == 0);
 #else  //_WIN32
-  r = (FreeLibrary((HMODULE)_mHandle) == TRUE);
+   r = (FreeLibrary((HMODULE)_mHandle) == TRUE);
 #endif //_WIN32
-  _mHandle = 0;
-  _mSymbolMap.clear();
-  return r;
+   _mHandle = 0;
+   _mSymbolMap.clear();
+   return r;
 }
 
-void* gcore::DynamicModule::_getSymbol(const gcore::String &symbol) const {
-  if (_opened()) {
-    std::map<gcore::String, void*>::iterator it = _mSymbolMap.find(symbol);
-    if (it != _mSymbolMap.end()) {
-      return (*it).second;
-    }
-    void *ptr = 0;
+void* DynamicModule::_getSymbol(const String &symbol) const
+{
+   if (_opened())
+   {
+      std::map<String, void*>::iterator it = _mSymbolMap.find(symbol);
+      if (it != _mSymbolMap.end())
+      {
+         return (*it).second;
+      }
+      void *ptr = 0;
 #ifndef _WIN32
-    ptr = dlsym(_mHandle, symbol.c_str());
+      ptr = dlsym(_mHandle, symbol.c_str());
 #else   //_WIN32
-    ptr = (void*)GetProcAddress((HMODULE)_mHandle, symbol.c_str());
+      ptr = (void*)GetProcAddress((HMODULE)_mHandle, symbol.c_str());
 #endif  //_WIN32
-    if (ptr) {
-      _mSymbolMap[symbol] = ptr;
-    }
-    return ptr;
-  }
-  return 0;
+      if (ptr)
+      {
+         _mSymbolMap[symbol] = ptr;
+      }
+      return ptr;
+   }
+   return 0;
 }
 
-gcore::String gcore::DynamicModule::_getError() const {
+String DynamicModule::_getError() const
+{
 #ifndef _WIN32
-  return dlerror();
+   return dlerror();
 #else   //_WIN32
-  DWORD dw = GetLastError();
-  char buffer[512];
-  FormatMessage(
-    FORMAT_MESSAGE_FROM_SYSTEM,
-    NULL, dw, MAKELANGID(LANG_ENGLISH,SUBLANG_DEFAULT),
-    (LPTSTR)&buffer, sizeof(buffer), NULL);
-  return buffer;
+   DWORD dw = GetLastError();
+   char buffer[512];
+   FormatMessage(
+      FORMAT_MESSAGE_FROM_SYSTEM,
+      NULL, dw, MAKELANGID(LANG_ENGLISH,SUBLANG_DEFAULT),
+      (LPTSTR)&buffer, sizeof(buffer), NULL);
+   return buffer;
 #endif  //_WIN32
 }
+
+} // gcore
 

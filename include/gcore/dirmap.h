@@ -27,17 +27,15 @@ USA.
 #include <gcore/string.h>
 #include <gcore/path.h>
 
-namespace gcore {
-   
-  namespace dirmap {
-    
-    GCORE_API void AddMapping(const String &wpath, const String &npath);
-    GCORE_API void RemoveMapping(const String &wpath, const String &npath);
-    GCORE_API void ReadMappingsFromFile(const Path &mapfile);
-    GCORE_API String Map(const String &path);
-  
-  }
-  
+namespace gcore
+{
+   namespace dirmap
+   {
+      GCORE_API void AddMapping(const String &wpath, const String &npath);
+      GCORE_API void RemoveMapping(const String &wpath, const String &npath);
+      GCORE_API void ReadMappingsFromFile(const Path &mapfile);
+      GCORE_API String Map(const String &path);
+   }
 }
 
 #endif

@@ -24,132 +24,157 @@ USA.
 #include <gcore/dirmap.h>
 #include <gcore/rex.h>
 
-namespace gcore {
+namespace gcore
+{
 
-namespace dirmap {
+namespace dirmap
+{
 
 static StringDict gsNix2Win;
 static StringDict gsWin2Nix;
 
-static bool IsWindowsPath(const String &p) {
-  static Rex wpe(RAW("^[A-Za-z]:[/\\]"));
-  return wpe.match(p);
+static bool IsWindowsPath(const String &p)
+{
+   static Rex wpe(RAW("^[A-Za-z]:[/\\]"));
+   return wpe.match(p);
 }
 
 // ---
 
-void AddMapping(const String &wpath, const String &npath) {
-  if (wpath.length() == 0 && npath.length() == 0) {
-    return;
-  }
-  
-  String wpath2(wpath);
-  
-  wpath2.tolower().replace('\\', '/');
-  
-  gsNix2Win[npath] = wpath2;
-  gsWin2Nix[wpath2] = npath;
+void AddMapping(const String &wpath, const String &npath)
+{
+   if (wpath.length() == 0 && npath.length() == 0)
+   {
+      return;
+   }
+   
+   String wpath2(wpath);
+   
+   wpath2.tolower().replace('\\', '/');
+   
+   gsNix2Win[npath] = wpath2;
+   gsWin2Nix[wpath2] = npath;
 }
 
-void RemoveMapping(const String &wpath, const String &npath) {
-  StringDict::iterator it;
-  
-  String wpath2(wpath);
-  wpath2.tolower().replace('\\', '/');
-  
-  it = gsWin2Nix.find(wpath2);
-  if (it != gsWin2Nix.end()) {
-    gsWin2Nix.erase(it);
-  }
-  
-  it = gsNix2Win.find(npath);
-  if (it != gsNix2Win.end()) {
-    gsNix2Win.erase(it);
-  }
+void RemoveMapping(const String &wpath, const String &npath)
+{
+   StringDict::iterator it;
+   
+   String wpath2(wpath);
+   wpath2.tolower().replace('\\', '/');
+   
+   it = gsWin2Nix.find(wpath2);
+   if (it != gsWin2Nix.end())
+   {
+      gsWin2Nix.erase(it);
+   }
+   
+   it = gsNix2Win.find(npath);
+   if (it != gsNix2Win.end())
+   {
+      gsNix2Win.erase(it);
+   }
 }
 
-String Map(const String &path) {
-  
-  String lookuppath(path);
-  StringDict *lookupmap;
-  
-  lookuppath.replace('\\', '/');
-  
+String Map(const String &path)
+{
+   String lookuppath(path);
+   StringDict *lookupmap;
+   
+   lookuppath.replace('\\', '/');
+   
 #ifdef _WIN32
-  
-  if (!IsWindowsPath(path)) {
-    lookupmap = &gsNix2Win;
-  } else {
-    return path;
-  }
-  
+   
+   if (!IsWindowsPath(path))
+   {
+      lookupmap = &gsNix2Win;
+   }
+   else
+   {
+      return path;
+   }
+   
 #else
 
-  if (IsWindowsPath(path)) {
-    lookuppath.tolower();
-    lookupmap = &gsWin2Nix;
-  } else {
-    return path;
-  }
+   if (IsWindowsPath(path))
+   {
+      lookuppath.tolower();
+      lookupmap = &gsWin2Nix;
+   }
+   else
+   {
+      return path;
+   }
 
 #endif
-  
-  String bestpath;
-  
-  StringDict::iterator it = lookupmap->begin();
-  while (it != lookupmap->end()) {
-    if (lookuppath.startswith(it->first)) {
-      if (it->first.length() > bestpath.length()) {
-        bestpath = it->first;
+   
+   String bestpath;
+   
+   StringDict::iterator it = lookupmap->begin();
+   while (it != lookupmap->end())
+   {
+      if (lookuppath.startswith(it->first))
+      {
+         if (it->first.length() > bestpath.length())
+         {
+            bestpath = it->first;
+         }
       }
-    }
-    ++it;
-  }
-  
-  if (bestpath.length() > 0) {
-    lookuppath = (*lookupmap)[bestpath];
-    lookuppath += path.substr(bestpath.length());
-    return lookuppath;
-  } else {
-    return path;
-  }
+      ++it;
+   }
+   
+   if (bestpath.length() > 0)
+   {
+      lookuppath = (*lookupmap)[bestpath];
+      lookuppath += path.substr(bestpath.length());
+      return lookuppath;
+   }
+   else
+   {
+      return path;
+   }
 }
 
-void ReadMappingsFromFile(const Path &mapfile) {
-  
-  if (mapfile.isFile()) {
-    std::ifstream is(mapfile.fullname().c_str());
-    
-    String line;
-    StringList parts;
-    
-    std::getline(is, line);
-    
-    while (is.good()) {
+void ReadMappingsFromFile(const Path &mapfile)
+{
+   if (mapfile.isFile())
+   {
+      std::ifstream is(mapfile.fullname().c_str());
       
-      if (line.split('=', parts) == 2) {
-        
-        parts[0].strip();
-        parts[1].strip();
-        
-        bool wp0 = IsWindowsPath(parts[0]);
-        bool wp1 = IsWindowsPath(parts[1]);
-        
-        if (wp0 == wp1) {
-          continue;
-        }
-        
-        if (wp0) {
-          AddMapping(parts[0], parts[1]);
-        } else {
-          AddMapping(parts[1], parts[0]);
-        }
-        
-      }
+      String line;
+      StringList parts;
       
       std::getline(is, line);
-    }
-  }
+      
+      while (is.good())
+      {
+         if (line.split('=', parts) == 2)
+         {
+            parts[0].strip();
+            parts[1].strip();
+            
+            bool wp0 = IsWindowsPath(parts[0]);
+            bool wp1 = IsWindowsPath(parts[1]);
+            
+            if (wp0 == wp1)
+            {
+               continue;
+            }
+            
+            if (wp0)
+            {
+               AddMapping(parts[0], parts[1]);
+            }
+            else
+            {
+               AddMapping(parts[1], parts[0]);
+            }
+            
+         }
+         
+         std::getline(is, line);
+      }
+   }
 }
 
 } // dirmap

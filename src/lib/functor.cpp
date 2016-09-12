@@ -23,7 +23,12 @@ USA.
 
 #include <gcore/functor.h>
 
-void gcore::Bind(void (*f)(void), gcore::Functor0 &cb) {
-	cb = gcore::FunctionTranslator0<void (*)(void)>(f);
+namespace gcore
+{
+
+void Bind(void (*f)(void), Functor0 &cb)
+{
+   cb = FunctionTranslator0<void (*)(void)>(f);
 }
 
+} // gcore

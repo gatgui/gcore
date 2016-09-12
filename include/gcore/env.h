@@ -29,10 +29,11 @@ USA.
 #include <gcore/list.h>
 #include <gcore/path.h>
 
-namespace gcore {
-  
-  class GCORE_API Env {
-    public:
+namespace gcore
+{
+   class GCORE_API Env
+   {
+   public:
       
       typedef Functor1wR<bool, const Path&> ForEachInPathFunc;
       
@@ -45,7 +46,7 @@ namespace gcore {
       static void ForEachInPath(const String &e, ForEachInPathFunc callback);
       static size_t ListPaths(const String &e, PathList &l);
       
-    public:
+   public:
       
       Env();
       Env(bool verbose);
@@ -61,11 +62,11 @@ namespace gcore {
       
       size_t asDict(StringDict &d) const;
       
-    protected:
+   protected:
       
       List<StringDict> mEnvStack;
       bool mVerbose;
-  };
+   };
 }
 
 #endif

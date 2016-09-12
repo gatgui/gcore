@@ -26,16 +26,17 @@ USA.
 
 #include <gcore/string.h>
 
-namespace gcore {
-  
-  class GCORE_API MD5 {
-    public:
-    
+namespace gcore
+{
+   class GCORE_API MD5
+   {
+   public:
+   
       MD5();
       MD5(const MD5 &rhs);
       MD5(const String &str, bool final=true);
       ~MD5();
-  
+
       MD5& operator=(const MD5 &rhs);
 
       bool operator==(const MD5 &rhs) const;
@@ -44,29 +45,29 @@ namespace gcore {
       bool operator<=(const MD5 &rhs) const;
       bool operator>(const MD5 &rhs) const;
       bool operator>=(const MD5 &rhs) const;
-  
+
       void update(const char *buf, long len=-1);
       void update(const String &str);
       void clear();
-    
+   
       String asString();
       String asString() const;
 
       bool isFinal() const;
       void finalize();
-  
-    private:
-    
+
+   private:
+   
       void transform();
       
-    private:
-    
+   private:
+   
       unsigned long mBuf[4];
       unsigned long mBits[2];
       unsigned char mIn[64]; // temp buffer for input data
       bool mFinalized;
-  };
-  
+   };
+   
 }
 
 #endif

@@ -52,97 +52,115 @@ namespace gcore
   class GCORE_API Process {
     
     public:
+      
+      struct GCORE_API Options {
+        bool redirectOut;
+        bool redirectErr;
+        bool redirectErrToOut;
+        bool redirectIn;
+        bool showConsole;
+        bool keepAlive;
+        StringDict env;
+      };
+      
+      static void SetDefaultOptions(Options &opts);
+      
+    public:
     
-      typedef void (*OutputFunc)(const char*);
-
       Process();
+      Process(const char *cmdline, Options *options=0, Status *status=0);
+      Process(int argc, const char **argv, Options *options=0, Status *status=0);
+      Process(const String &cmdline, Options *options=0, Status *status=0);
+      Process(const StringList &args, Options *options=0, Status *status=0);
       ~Process();
 
       // Process setup
       
-      void setOutputFunc(OutputFunc of);
       void setEnv(const String &key, const String &value);
       
-      void captureOut(bool co);
-      bool captureOut() const;
+      const Options& options() const;
+      void setOptions(const Options &options);
+      
+      void setRedirectOut(bool ro);
+      bool redirectOut() const;
 
-      void captureErr(bool enable, bool errToOut=false);
-      bool captureErr() const;
+      void setRedirectErr(bool re);
+      bool redirectErr() const;
+      
+      void setRedirectErrToOut(bool e2o);
       bool redirectErrToOut() const;
 
-      void redirectIn(bool ri);
+      void setRedirectIn(bool ri);
       bool redirectIn() const;
 
-      // for windows
-      void showConsole(bool sc);
+      // windows only
+      void setShowConsole(bool sc);
       bool showConsole() const;
 
-      void keepAlive(bool ka);
+      // don't kill process in Process object destructor
+      void setKeepAlive(bool ka);
       bool keepAlive() const;
-
-      void verbose(bool v);
-      bool verbose() const;
 
       // Running process 
       
-      // Returns INVALID_PID on failure
-      ProcessID run(const String &cmdline);
-      ProcessID run(const String &progPath, char **argv);
-      ProcessID run(const String &progPath, int argc, ...);
+      Status run(const char *cmdline);
+      Status run(int argc, const char **args);
+      Status run(int argc, ...);
+      Status run(const String &cmdline);
+      Status run(const StringList &args);
 
-      ProcessID getId() const;
+      ProcessID id() const;
 
-      bool running();
+      bool isRunning();
       // Returns -1 on failure, 0 if process is still running (non-blocking mode) or 1 if process completed
       // In blocking mode, will wait for process completion
-      int wait(bool blocking);
+      int wait(bool blocking, Status *status=0);
       // Returns -1 on failure
-      int kill();
+      Status kill();
 
-      inline const String& getCmdLine() const { return mCmdLine; }
+      inline const String& cmdLine() const { return mCmdLine; }
       // return code is initialized to -1
       inline int returnCode() const { return mReturnCode; }
 
       // Interacting with running process
 
       // Returns -1 on error, read/written bytes otherwise
-      int read(char *buffer, int size) const;
-      int read(String &str) const;
-      int write(const char *buffer, int size) const;
-      int write(const String &str) const;
-      int readErr(String &str) const;
-      int writeErr(const String &str) const;
+      bool canReadOut() const;
+      int readOut(char *buffer, int size, Status *status=0) const;
+      bool canReadErr() const;
+      int readErr(char *buffer, int size, Status *status=0) const;
+      bool canWriteIn() const;
+      int write(const char *buffer, int size, Status *status=0) const;
+      int write(const String &str, Status *status=0) const;
 
-      PipeID readID() const;
+      PipeID readOutID() const;
+      PipeID readErrID() const;
       PipeID writeID() const;
-
 
     private:
 
-      static void std_output(const char*);
-
-      int _wait(bool blocking);
-      ProcessID run();
+      int waitNoClose(bool blocking, Status *status=0);
+      Status run(int argc, va_list va);
+      Status run();
       void closePipes();
 
     private:
 
       StringList  mArgs;
       ProcessID   mPID;
-      OutputFunc  mOutFunc;
-      Pipe        mReadPipe;
+      Options     mOpts;
+      Pipe        mReadOutPipe;
+      Pipe        mReadErrPipe;
       Pipe        mWritePipe;
-      Pipe        mErrorPipe;
-      bool        mCapture;
-      bool        mRedirect;
-      bool        mVerbose;
-      bool        mShowConsole;
+      //bool        mRedirectOut;
+      //bool        mRedirectErr;
+      //bool        mErrToOut;
+      //bool        mRedirectIn;
+      //bool        mShowConsole;
+      //bool        mKeepAlive;
+      //StringDict  mEnv;
       char**      mStdArgs; // used on nix
       String      mCmdLine;
-      bool        mCaptureErr;
-      bool        mErrToOut;
-      bool        mKeepAlive;
-      StringDict  mEnv;
       int         mReturnCode;
   };
 }

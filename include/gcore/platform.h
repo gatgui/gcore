@@ -50,6 +50,7 @@ USA.
 # endif
 # define DIR_SEP '\\'
 # define PATH_SEP ';'
+# define std_errno GetLastError
 typedef SOCKET sock_t;
 typedef int socklen_t;
 #else // _WIN32
@@ -76,6 +77,7 @@ typedef int socklen_t;
 # define NULL_SOCKET -1
 # define sock_close   ::close
 # define sock_errno() errno
+# define std_errno() errno
 # ifdef __APPLE__
 #  include <crt_externs.h>
 #  define environ (*_NSGetEnviron())

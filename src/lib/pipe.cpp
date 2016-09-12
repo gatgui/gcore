@@ -136,7 +136,7 @@ void gcore::Pipe::close() {
 #endif
 }
 
-bool gcore::Pipe::open(const gcore::String &name) {
+gcore::Status gcore::Pipe::open(const gcore::String &name) {
   close();
 #ifndef _WIN32
   gcore::String path = "/tmp/" + name;
@@ -145,7 +145,7 @@ bool gcore::Pipe::open(const gcore::String &name) {
     mName = name;
     mDesc[0] = fd;
     mDesc[1] = mDesc[0];
-    return true;
+    return gcore::Status(true);
   }
 #else
   gcore::String pipename = "\\\\.\\pipe\\" + name;
@@ -155,13 +155,13 @@ bool gcore::Pipe::open(const gcore::String &name) {
     mName = name;
     mDesc[0] = hdl;
     mDesc[1] = mDesc[0];
-    return true;
+    return gcore::Status(true);
   }
 #endif
-  return false;
+  return gcore::Status(false, std_errno(), "gcore::Pipe::open");
 }
 
-bool gcore::Pipe::create() {
+gcore::Status gcore::Pipe::create() {
   close();
 #ifndef _WIN32
   if (pipe(mDesc) == -1)
@@ -175,14 +175,14 @@ bool gcore::Pipe::create() {
   {
     mDesc[0] = INVALID_PIPE;
     mDesc[1] = INVALID_PIPE;
-    return false;
+    return gcore::Status(false, std_errno(), "gcore::Pipe::create");
   } else {
     mOwn = true;
-    return true;
+    return gcore::Status(true);
   }
 }
 
-bool gcore::Pipe::create(const gcore::String &name) {
+gcore::Status gcore::Pipe::create(const gcore::String &name) {
   close();
 #ifndef _WIN32
   gcore::String path = "/tmp/" + name;
@@ -193,7 +193,7 @@ bool gcore::Pipe::create(const gcore::String &name) {
       mName = name;
       mDesc[0] = fd;
       mDesc[1] = mDesc[0];
-      return true;
+      return gcore::Status(true);
     }
   }
 #else
@@ -208,17 +208,17 @@ bool gcore::Pipe::create(const gcore::String &name) {
     mConnected = false;
     mDesc[0] = hdl;
     mDesc[1] = mDesc[0];
-    return true;
+    return gcore::Status(true);
   }
 #endif
-  return false;
+  return gcore::Status(false, std_errno(), "gcore::Pipe::create");
 }
 
 bool gcore::Pipe::isNamed() const {
   return (mName.length() > 0);
 }
 
-const gcore::String& gcore::Pipe::getName() const {
+const gcore::String& gcore::Pipe::name() const {
   return mName;
 }
 
@@ -262,36 +262,72 @@ void gcore::Pipe::closeWrite() {
   }
 }
 
-#ifndef _WIN32
-int gcore::Pipe::read(char *buffer, int size, bool retryOnInterrupt) const {
-  if (canRead()) {
-    int bytesRead = ::read(mDesc[0], buffer, size);
-    while (bytesRead == -1 && (errno == EAGAIN || (errno == EINTR && retryOnInterrupt))) {
-      bytesRead = ::read(mDesc[0], buffer, size);
+int gcore::Pipe::read(char *buffer, int size, gcore::Status *status) const {
+  if (!buffer) {
+    if (status) {
+      status->set(false, "gcore::Pipe::read: Invalid buffer");
     }
-    return bytesRead;
+    return 0;
   }
-  return -1;
-}
-#else
-int gcore::Pipe::read(char *buffer, int size, bool) const {
+  else if (size <= 1) {
+    if (status) {
+      status->set(false, "gcore::Pipe::read: Insufficient buffer size");
+    }
+    if (size > 0) {
+      buffer[0] = '\0';
+    }
+    return 0;
+  }
   if (canRead()) {
+#ifndef _WIN32
+    int bytesRead = ::read(mDesc[0], buffer, size-1);
+    while (bytesRead == -1) {
+      if (errno == EAGAIN) {
+        // makes the call blocking
+        bytesRead = ::read(mDesc[0], buffer, size-1);
+      } else if (errno == EINTR) {
+        // interrupted, consider as error
+        break;
+      } else {
+        break;
+      }
+    }
+    if (bytesRead == -1) {
+      if (status) {
+        status->set(false, std_errno(), "gcore::Pipe::read");
+      }
+      buffer[0] = '\0';
+      return 0;
+    } else {
+      if (status) {
+        status->set(true);
+      }
+      buffer[bytesRead] = '\0';
+      return bytesRead;
+    }
+#else
     bool namedPipeServer = (isNamed() && isOwned());
     if (namedPipeServer && !mConnected) {
       if (ConnectNamedPipe(mDesc[0], NULL)) {
         mConnected = true;
       } else {
-        return -1;
+        if (status) {
+          status->set(false, std_errno(), "gcore::Pipe::read");
+        }
+        buffer[0] = '\0';
+        return 0;
       }
     }
     DWORD bytesRead = 0;
-    BOOL rv = ReadFile(mDesc[0], buffer, size, &bytesRead, NULL);
+    BOOL rv = ReadFile(mDesc[0], buffer, size-1, &bytesRead, NULL);
     while (rv == FALSE) {
       DWORD lastErr = GetLastError();
       if (lastErr == ERROR_IO_PENDING) {
-        rv = ReadFile(mDesc[0], buffer, size, &bytesRead, NULL);
+        // makes the call blocking
+        rv = ReadFile(mDesc[0], buffer, size-1, &bytesRead, NULL);
       } else if (lastErr == ERROR_MORE_DATA) {
-        bytesRead = size;
+        // stop here, return what we have so far
+        bytesRead = size-1;
         rv = TRUE;
       } else {
         if (namedPipeServer) {
@@ -299,6 +335,7 @@ int gcore::Pipe::read(char *buffer, int size, bool) const {
           mConnected = false;
         }
         if (lastErr == ERROR_HANDLE_EOF || lastErr == ERROR_BROKEN_PIPE) {
+          // EOF, return 0 without failure
           rv = TRUE;
           bytesRead = 0;
         }
@@ -306,79 +343,28 @@ int gcore::Pipe::read(char *buffer, int size, bool) const {
       }
     }
     if (rv) {
-      return bytesRead;
-    }
-  }
-  return -1;
-}
-#endif
-
-#ifndef _WIN32
-int gcore::Pipe::read(String &str, bool retryOnInterrupt) const {
-  char rdbuf[256];
-
-  if (canRead()) {
-    int bytesRead = ::read(mDesc[0], rdbuf, 255);
-    while (bytesRead == -1 && (errno == EAGAIN || (errno == EINTR && retryOnInterrupt))) {
-      bytesRead = ::read(mDesc[0], rdbuf, 255);
-    }
-    if (bytesRead >= 0) {
-      rdbuf[bytesRead] = '\0';
-      str = rdbuf;
-    }
-    return bytesRead;
-  }
-
-  str = "";
-  return -1;
-}
-#else
-int gcore::Pipe::read(String &str, bool) const {
-  char rdbuf[256];
-
-  if (canRead()) {
-    bool namedPipeServer = (isNamed() && isOwned());
-    if (namedPipeServer && !mConnected) {
-      if (ConnectNamedPipe(mDesc[0], NULL)) {
-        mConnected = true;
-      } else {
-        return -1;
+      if (status) {
+        status->set(true);
       }
-    }
-    DWORD bytesRead = 0;
-    BOOL rv = ReadFile(mDesc[0], rdbuf, 255, &bytesRead, NULL);
-    while (rv == FALSE) {
-      DWORD lastErr = GetLastError();
-      if (lastErr == ERROR_IO_PENDING) {
-        rv = ReadFile(mDesc[0], rdbuf, 255, &bytesRead, NULL);
-      } else if (lastErr == ERROR_MORE_DATA) {
-        bytesRead = 255;
-        rv = TRUE;
-      } else {
-        if (namedPipeServer) {
-          DisconnectNamedPipe(mDesc[0]);
-          mConnected = false;
-        }
-        if (lastErr == ERROR_HANDLE_EOF || lastErr == ERROR_BROKEN_PIPE) {
-          rv = TRUE;
-          bytesRead = 0;
-        }
-        break;
-      }
-    }
-    if (rv) {
-      rdbuf[bytesRead] = '\0';
-      str = rdbuf;
+      buffer[bytesRead] = '\0';
       return bytesRead;
+    } else {
+      if (status) {
+        status->set(false, std_errno(), "gcore::Pipe::read");
+      }
+      buffer[0] = '\0';
+      return 0;
     }
-  }
-
-  str = "";
-  return -1;
-}
 #endif
+  }
+  if (status) {
+    status->set(false, "gcore::Pipe::read: Pipe is closed for reading.");
+  }
+  buffer[0] = '\0';
+  return 0;
+}
 
-int gcore::Pipe::write(const char *buffer, int size) const {
+int gcore::Pipe::write(const char *buffer, int size, gcore::Status *status) const {
   if (canWrite()) {
 #ifndef _WIN32
     int bytesToWrite = size;
@@ -386,14 +372,27 @@ int gcore::Pipe::write(const char *buffer, int size) const {
     while (rv == -1 && errno == EAGAIN) {
       rv = ::write(mDesc[1], buffer, bytesToWrite);
     }
-    return rv;
+    if (rv == -1) {
+      if (status) {
+        status->set(false, std_errno(), "gcore::Pipe::write");
+      }
+      return 0;
+    } else {
+      if (status) {
+        status->set(true);
+      }
+      return rv;
+    }
 #else
     bool namedPipeServer = (isNamed() && isOwned());
     if (namedPipeServer && !mConnected) {
       if (ConnectNamedPipe(mDesc[1], NULL)) {
         mConnected = true;
       } else {
-        return -1;
+        if (status) {
+          status->set(false, std_errno(), "gcore::Pipe::write");
+        }
+        return 0;
       }
     }
     DWORD bytesToWrite = (DWORD)size;
@@ -411,13 +410,26 @@ int gcore::Pipe::write(const char *buffer, int size) const {
         break;
       }
     }
-    return (rv == TRUE ? bytesWritten : -1);
+    if (!rv) {
+      if (status) {
+        status->set(false, std_errno(), "gcore::Pipe::write");
+      }
+      return 0;
+    } else {
+      if (status) {
+        status->set(true);
+      }
+      return bytesWritten;
+    }
 #endif
   }
-return -1;
+  if (status) {
+    status->set(false, "gcore::Pipe::write: Pipe is closed for writing.");
+  }
+  return 0;
 }
 
-int gcore::Pipe::write(const String &str) const {
-  return write(str.c_str(), int(str.length()));
+int gcore::Pipe::write(const String &str, gcore::Status *status) const {
+  return write(str.c_str(), int(str.length()), status);
 }
 

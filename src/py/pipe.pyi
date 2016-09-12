@@ -32,8 +32,9 @@ ctypedef public class Pipe [object PyPipe, type PyPipeType]:
    def isNamed(self):
       return self._cobj.isNamed()
    
-   def getName(self):
-      return self._cobj.getName().c_str()
+   property name:
+      def __get__(self): return self._cobj.name().c_str()
+      def __set__(self, v): raise Exception("_gcore.Pipe.name is not settable")
    
    def isOwned(self):
       return self._cobj.isOwned()
@@ -45,10 +46,14 @@ ctypedef public class Pipe [object PyPipe, type PyPipeType]:
       return self._cobj.canWrite()
    
    def create(self):
-      return self._cobj.create()
+      cdef gcore.Status stat
+      stat = self._cobj.create()
+      return stat.succeeded()
    
    def open(self, path):
-      return self._cobj.open(gcore.String(<char*?>path))
+      cdef gcore.Status stat
+      stat = self._cobj.open(gcore.String(<char*?>path))
+      return stat.succeeded()
    
    def close(self):
       self._cobj.close()
@@ -59,11 +64,18 @@ ctypedef public class Pipe [object PyPipe, type PyPipeType]:
    def closeWrite(self):
       self._cobj.closeWrite()
    
-   def read(self, retryOnInterrupt=False):
-      cdef gcore.String out
-      rlen = self._cobj.read(out, retryOnInterrupt)
-      return (rlen, out.c_str())
+   def read(self):
+      cdef gcore.Status stat
+      cdef char tmp[256]
+      rlen = self._cobj.read(tmp, 256, &stat)
+      if stat.failed():
+         print("_gcore.Pipe.read: Cannot read from pipe (%s)" % stat.message())
+      return (rlen, tmp)
    
    def write(self, msg):
-      return self._cobj.write(gcore.String(<char*?>msg))
+      cdef gcore.Status stat
+      wlen = self._cobj.write(gcore.String(<char*?>msg), &stat)
+      if stat.failed():
+         print("_gcore.Pipe.write: Cannot write from pipe (%s)" % stat.message())
+      return wlen
    

@@ -18,11 +18,12 @@ ctypedef public class Process [object PyProcess, type PyProcessType]:
       
       if len(args) == 0:
          self._cobj = new gcore.Process()
-      elif len(args) == 1:
-         self._cobj = new gcore.Process()
-         self.run(args[0], **kwargs)
       else:
-         raise Exception("_gcore.Process() doesn't accept any argument")
+         self._cobj = new gcore.Process()
+         if len(args) == 1:
+            self.run(args[0], **kwargs)
+         else:
+            self.run(args[0], **kwargs)
       
       self._own = True
    
@@ -34,96 +35,138 @@ ctypedef public class Process [object PyProcess, type PyProcessType]:
    def setEnv(self, key, value):
       self._cobj.setEnv(gcore.String(<char*?>key), gcore.String(<char*?>value))
    
-   def run(self, cmd, **kwargs):
+   def run(self, cmdOrArgs, **kwargs):
+      cdef gcore.Status st
+      cdef gcore.StringList args
+      
       for k, v in kwargs.iteritems():
          if hasattr(self, k):
             setattr(self, k, v)
-      pid = self._cobj.run(gcore.String(<char*?>cmd))
-      if sys.platform == "win32":
-         if pid == 0:
-            raise Exception("[gcore.Process.run]")
+      
+      t = type(cmdOrArgs)
+      if t in (str, unicode):
+         st = self._cobj.run(gcore.String(<char*?>cmdOrArgs))
+      elif t in (tuple, list):
+         for item in cmdOrArgs:
+            args.push_back(gcore.String(<char*?>item))
+         st = self._cobj.run(args)
       else:
-         if pid == -1:
-            raise Exception("[gcore.Process.run]")
-      return pid
+         raise Exception("_gcore.Process.run: Invalid arguments (string or list expected)")
+      
+      if st.failed():
+         raise Exception(st.message())
+      
+      return self._cobj.id()
+   
+   def canReadOut(self):
+      return self._cobj.canReadOut()
+   
+   def canReadErr(self):
+      return self._cobj.canReadErr()
+   
+   def canWriteIn(self):
+      return self._cobj.canWriteIn()
    
    def read(self, block=True):
-      cdef gcore.String tmp
+      cdef char tmp[256]
+      cdef gcore.Status st
       
-      readOut = (self._cobj.captureOut() or (self._cobj.captureErr() and self._cobj.redirectErrToOut()))
-      readErr = (self._cobj.captureErr() and not self._cobj.redirectErrToOut())
+      readOut = (self._cobj.redirectOut() or (self._cobj.redirectErr() and self._cobj.redirectErrToOut()))
+      readErr = (self._cobj.redirectErr() and not self._cobj.redirectErrToOut())
       
       out = ""
       err = ""
       
       while readOut or readErr:
          if readOut:
-            readLen = self._cobj.read(tmp)
-            if readLen > 0:
-               out += tmp.c_str()
-               readOut = block
-            elif readLen == 0:
-               readOut = False
+            readLen = self._cobj.readOut(tmp, 256, &st)
+            if st.failed(): # readLen is 0
+               if not self._cobj.canReadOut():
+                  #raise Exception(st.message())
+                  print("_gcore.Process.read: Error occured while reading 'out' pipe (%s)" % st.message())
+                  readOut = False
+               else:
+                  readOut = block
             else:
-               readOut = False
-               print("[gcore.Process.read: Error occured while reading 'out' pipe")
+               if readLen > 0:
+                  out += tmp
+                  readOut = block
+               else:
+                  # EOF
+                  readOut = False
          
          if readErr:
-            readLen = self._cobj.readErr(tmp)
-            if readLen > 0:
-               err += tmp.c_str()
-               readErr = block
-            elif readLen == 0:
-               readErr = False
+            readLen = self._cobj.readErr(tmp, 256, &st)
+            if st.failed(): # readLen is 0
+               if not self._cobj.canReadErr():
+                  #raise Exception(st.message())
+                  print("_gcore.Process.read: Error occured while reading 'err' pipe (%s)" % st.message())
+                  readErr = False
+               else:
+                  readErr = block
             else:
-               readErr = False
-               print("[gcore.Process.read: Error occured while reading 'err' pipe")
+               if readLen > 0:
+                  err += tmp
+                  readErr = block
+               else:
+                  # EOF
+                  readErr = False
       
       return out, err
    
    def write(self, msg):
-      return self._cobj.write(gcore.String(<char*?>msg))
+      cdef gcore.Status st
+      rv = self._cobj.write(gcore.String(<char*?>msg), &st)
+      if st.failed():
+         #raise Exception(st.message())
+         print("_gcore.Process.write: Error occured while writing 'in' pipe (%s)" % st.message())
+      return rv
    
-   def running(self):
-      return self._cobj.running()
+   def isRunning(self):
+      return self._cobj.isRunning()
    
    def wait(self, blocking):
-      return self._cobj.wait(blocking)
+      cdef gcore.Status st
+      rv = self._cobj.wait(blocking, &st)
+      if st.failed():
+         #raise Exception(st.message())
+         print("gcore.Process.wait: %s" % st.message())
+      return rv
    
    def kill(self):
-      return self._cobj.kill()
+      cdef gcore.Status st
+      st = self._cobj.kill()
+      return st.succeeded()
    
-   def returnCode(self):
-      return self._cobj.returnCode()
+   property returnCode:
+      def __get__(self): return self._cobj.returnCode()
+      def __set__(self, v): raise Exception("_gcore.Process.returnCode is not settable")
    
-   def getCmdLine(self):
-      return self._cobj.getCmdLine().c_str()
+   property cmdLine:
+      def __get__(self): return self._cobj.cmdLine().c_str()
+      def __set__(self, v): raise Exception("_gcore.Process.cmdLine is not settable")
    
-   property captureOut:
-      def __get__(self): return self._cobj.captureOut()
-      def __set__(self, v): self._cobj.captureOut(v)
+   property redirectOut:
+      def __get__(self): return self._cobj.redirectOut()
+      def __set__(self, v): self._cobj.setRedirectOut(<bint?>v)
    
-   property captureErr:
-      def __get__(self): return self._cobj.captureErr()
-      def __set__(self, v): self._cobj.captureErr(v, self._cobj.redirectErrToOut())
+   property redirectErr:
+      def __get__(self): return self._cobj.redirectErr()
+      def __set__(self, v): self._cobj.setRedirectErr(<bint?>v)
    
    property redirectErrToOut:
       def __get__(self): return self._cobj.redirectErrToOut()
-      def __set__(self, v): self._cobj.captureErr(self._cobj.captureErr(), v)
+      def __set__(self, v): self._cobj.setRedirectErrToOut(<bint?>v)
    
    property redirectIn:
       def __get__(self): return self._cobj.redirectIn()
-      def __set__(self, v): self._cobj.redirectIn(v)
+      def __set__(self, v): self._cobj.setRedirectIn(<bint?>v)
    
    property showConsole:
       def __get__(self): return self._cobj.showConsole()
-      def __set__(self, v): self._cobj.showConsole(v)
+      def __set__(self, v): self._cobj.setShowConsole(<bint?>v)
    
    property keepAlive:
       def __get__(self): return self._cobj.keepAlive()
-      def __set__(self, v): self._cobj.keepAlive(v)
-   
-   property verbose:
-      def __get__(self): return self._cobj.verbose()
-      def __set__(self, v): self._cobj.verbose(v)
+      def __set__(self, v): self._cobj.setKeepAlive(<bint?>v)
    

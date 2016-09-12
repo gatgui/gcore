@@ -470,21 +470,21 @@ cdef extern from "<gcore/pipe.h>" namespace "gcore":
       Pipe& assign "operator=" (Pipe&)
       
       bint isNamed()
-      String& getName()
+      String& name()
       
       bint isOwned()
       bint canRead()
       bint canWrite()
       
-      bint create()
-      bint open(String&)
+      Status create()
+      Status open(String&)
       
       void close()
       void closeRead()
       void closeWrite()
       
-      int read(String&, bint) # bool retryOnInterrupt=false
-      int write(String&)
+      int read(char*, int, Status*)
+      int write(String&, Status*)
    
 
 cdef extern from "<gcore/process.h>" namespace "gcore":
@@ -494,36 +494,40 @@ cdef extern from "<gcore/process.h>" namespace "gcore":
       
       void setEnv(String&, String&)
       
-      void captureOut(bint)
-      bint captureOut()
+      void setRedirectOut(bint)
+      bint redirectOut()
       
-      void captureErr(bint, bint) # bool errToOut=False
-      bint captureErr()
+      void setRedirectErr(bint)
+      bint redirectErr()
+      
+      void setRedirectErrToOut(bint)
       bint redirectErrToOut()
       
-      void redirectIn(bint)
+      void setRedirectIn(bint)
       bint redirectIn()
       
-      void showConsole(bint)
+      void setShowConsole(bint)
       bint showConsole()
       
-      void keepAlive(bint)
+      void setKeepAlive(bint)
       bint keepAlive()
       
-      void verbose(bint)
-      bint verbose()
+      int id()
       
-      int run(String&)
-      bint running()
-      int wait(bint)
-      int kill()
+      Status run(String&)
+      Status run(StringList&)
+      bint isRunning()
+      int wait(bint, Status*)
+      Status kill()
       int returnCode()
-      String& getCmdLine()
+      String& cmdLine()
       
-      int read(String&)
-      int readErr(String&)
-      int write(String&)
-      int writeErr(String&)
+      bint canReadOut()
+      int readOut(char*, int, Status*)
+      bint canReadErr()
+      int readErr(char*, int, Status*)
+      bint canWriteIn()
+      int write(String&, Status*)
       
       
    

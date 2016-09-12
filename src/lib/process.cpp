@@ -132,22 +132,92 @@ static bool _addBatOrCom(gcore::String &s, bool &isBat) {
 
 //------------------------------------------------------------------------------
 
-void gcore::Process::std_output(const char *str) {
-  fprintf(stdout,"%s",str);
+void gcore::Process::SetDefaultOptions(gcore::Process::Options &opts) {
+  opts.redirectOut = false;
+  opts.redirectErr = false;
+  opts.redirectErrToOut = false;
+  opts.redirectIn = false;
+  opts.showConsole = true;
+  opts.keepAlive = false;
+  opts.env.clear();
 }
 
 gcore::Process::Process()
-  : mPID(INVALID_PID), mCapture(false), mRedirect(false),
-    mVerbose(false), mShowConsole(true), mStdArgs(0), mCmdLine(""),
-    mCaptureErr(false), mErrToOut(false), mKeepAlive(false),
-    mReturnCode(-1) {
-  mOutFunc = &std_output;
+  : mPID(INVALID_PID)
+  , mStdArgs(0)
+  , mCmdLine("")
+  , mReturnCode(-1) {
+  SetDefaultOptions(mOpts);
+}
+
+gcore::Process::Process(const char *cmdline, gcore::Process::Options *opts, gcore::Status *status)
+  : mPID(INVALID_PID)
+  , mStdArgs(0)
+  , mCmdLine("")
+  , mReturnCode(-1) {
+  if (opts) {
+    mOpts = *opts;
+  } else {
+    SetDefaultOptions(mOpts);
+  }
+  gcore::Status stat = run(cmdline);
+  if (status) {
+    *status = stat;
+  }
+}
+
+gcore::Process::Process(int argc, const char **argv, gcore::Process::Options *opts, gcore::Status *status)
+  : mPID(INVALID_PID)
+  , mStdArgs(0)
+  , mCmdLine("")
+  , mReturnCode(-1) {
+  if (opts) {
+    mOpts = *opts;
+  } else {
+    SetDefaultOptions(mOpts);
+  }
+  gcore::Status stat = run(argc, argv);
+  if (status) {
+    *status = stat;
+  }
+}
+
+gcore::Process::Process(const String &cmdline, gcore::Process::Options *opts, gcore::Status *status)
+  : mPID(INVALID_PID)
+  , mStdArgs(0)
+  , mCmdLine("")
+  , mReturnCode(-1) {
+  if (opts) {
+    mOpts = *opts;
+  } else {
+    SetDefaultOptions(mOpts);
+  }
+  gcore::Status stat = run(cmdline);
+  if (status) {
+    *status = stat;
+  }
+}
+
+gcore::Process::Process(const StringList &args, gcore::Process::Options *opts, gcore::Status *status)
+  : mPID(INVALID_PID)
+  , mStdArgs(0)
+  , mCmdLine("")
+  , mReturnCode(-1) {
+  if (opts) {
+    mOpts = *opts;
+  } else {
+    SetDefaultOptions(mOpts);
+  }
+  gcore::Status stat = run(args);
+  if (status) {
+    *status = stat;
+  }
 }
 
 gcore::Process::~Process() {
   closePipes();
   
-  if (!mKeepAlive && running()) {
+  if (!mOpts.keepAlive && isRunning()) {
     kill();
   }
   
@@ -158,56 +228,50 @@ gcore::Process::~Process() {
 }
 
 void gcore::Process::closePipes() {
-  mReadPipe.close();
+  mReadOutPipe.close();
+  mReadErrPipe.close();
   mWritePipe.close();
-  mErrorPipe.close();
 }
 
-int gcore::Process::read(char *buffer, int size) const {
-  if (mReadPipe.canRead()) {
-    return mReadPipe.read(buffer, size);
+bool gcore::Process::canReadOut() const {
+  return mReadOutPipe.canRead();
+}
+
+int gcore::Process::readOut(char *buffer, int size, gcore::Status *status) const {
+  return mReadOutPipe.read(buffer, size, status);
+}
+
+bool gcore::Process::canReadErr() const {
+  return mReadErrPipe.canRead();
+}
+
+int gcore::Process::readErr(char *buffer, int size, gcore::Status *status) const {
+  return mReadErrPipe.read(buffer, size, status);
+}
+
+bool gcore::Process::canWriteIn() const {
+  return mWritePipe.canWrite();
+}
+
+int gcore::Process::write(const char *buffer, int size, gcore::Status *status) const {
+  return mWritePipe.write(buffer, size, status);
+}
+
+int gcore::Process::write(const gcore::String &str, gcore::Status *status) const {
+  return mWritePipe.write(str, status);
+}
+
+gcore::PipeID gcore::Process::readOutID() const {
+  if (mReadOutPipe.canRead()) {
+    return mReadOutPipe.readID();
+  } else {
+    return gcore::INVALID_PIPE;
   }
-  return -1;
 }
 
-int gcore::Process::read(String &str) const {
-  if (mReadPipe.canRead()) {
-    return mReadPipe.read(str);
-  }
-  return -1;
-}
-
-int gcore::Process::write(const char *buffer, int size) const {
-  if (mWritePipe.canWrite()) {
-    return mWritePipe.write(buffer, size);
-  }
-  return -1;
-}
-
-int gcore::Process::write(const String &str) const {
-  if (mWritePipe.canWrite()) {
-    return mWritePipe.write(str);
-  }
-  return -1;
-}
-
-int gcore::Process::readErr(String &str) const {
-  if (mErrorPipe.canRead()) {
-    return mErrorPipe.read(str);
-  }
-  return -1;
-}
-
-int gcore::Process::writeErr(const String &str) const {
-  if (mErrorPipe.canWrite()) {
-    return mErrorPipe.write(str);
-  }
-  return -1;
-}
-
-gcore::PipeID gcore::Process::readID() const {
-  if (mReadPipe.canRead()) {
-    return mReadPipe.readID();
+gcore::PipeID gcore::Process::readErrID() const {
+  if (mReadErrPipe.canRead()) {
+    return mReadErrPipe.readID();
   } else {
     return gcore::INVALID_PIPE;
   }
@@ -221,86 +285,87 @@ gcore::PipeID gcore::Process::writeID() const {
   }
 }
 
-gcore::ProcessID gcore::Process::getId() const {
+gcore::ProcessID gcore::Process::id() const {
   return mPID;
 }
 
-void gcore::Process::setOutputFunc(gcore::Process::OutputFunc of) {
-  mOutFunc = of;
-  if (! mOutFunc) {
-    mVerbose = false;
-  }
+const gcore::Process::Options& gcore::Process::options() const {
+  return mOpts;
 }
 
-void gcore::Process::setEnv(const String &key, const String &value) {
-  mEnv[key] = value;
+void gcore::Process::setOptions(const gcore::Process::Options &options) {
+  mOpts = options;
 }
 
-bool gcore::Process::running() {
+void gcore::Process::setEnv(const gcore::String &key, const gcore::String &value) {
+  mOpts.env[key] = value;
+}
+
+bool gcore::Process::isRunning() {
   if (IsValidProcessID(mPID)) {
-    return (_wait(false) == 0);
+    return (waitNoClose(false) == 0);
   } else {
     return false;
   }
 }
 
-void gcore::Process::keepAlive(bool ka) {
-  mKeepAlive = ka;
+void gcore::Process::setKeepAlive(bool ka) {
+  mOpts.keepAlive = ka;
 }
 
 bool gcore::Process::keepAlive() const {
-  return mKeepAlive;
+  return mOpts.keepAlive;
 }
 
-void gcore::Process::captureOut(bool co) {
-  mCapture = co;
+void gcore::Process::setRedirectOut(bool ro) {
+  mOpts.redirectOut = ro;
 }
 
-bool gcore::Process::captureOut() const {
-  return mCapture;
+bool gcore::Process::redirectOut() const {
+  return mOpts.redirectOut;
 }
 
-void gcore::Process::captureErr(bool ce, bool e2o) {
-  mCaptureErr = ce;
-  mErrToOut = e2o;
+void gcore::Process::setRedirectErr(bool re) {
+  mOpts.redirectErr = re;
 }
 
-bool gcore::Process::captureErr() const {
-  return mCaptureErr;
+bool gcore::Process::redirectErr() const {
+  return mOpts.redirectErr;
+}
+
+void gcore::Process::setRedirectErrToOut(bool e2o) {
+  mOpts.redirectErrToOut = e2o;
 }
 
 bool gcore::Process::redirectErrToOut() const {
-  return mErrToOut;
+  return mOpts.redirectErrToOut;
 }
 
-void gcore::Process::redirectIn(bool ri) {
-  mRedirect = ri;
+void gcore::Process::setRedirectIn(bool ri) {
+  mOpts.redirectIn = ri;
 }
 
 bool gcore::Process::redirectIn() const {
-  return mRedirect;
+  return mOpts.redirectIn;
 }
 
-void gcore::Process::verbose(bool v) {
-  mVerbose = v;
-}
-
-bool gcore::Process::verbose() const {
-  return mVerbose;
-}
-
-void gcore::Process::showConsole(bool sc) {
-  mShowConsole = sc;
+void gcore::Process::setShowConsole(bool sc) {
+  mOpts.showConsole = sc;
 }
 
 bool gcore::Process::showConsole() const {
-  return mShowConsole;
+  return mOpts.showConsole;
 }
 
-gcore::ProcessID gcore::Process::run() {
+gcore::Status gcore::Process::run() {
   
-  if (running() || mArgs.size() < 1) {
-    return INVALID_PID;
+  if (isRunning()) {
+    return gcore::Status(false, "gcore::Process::run: Process already running.");
+  }
+  
+  if (mArgs.size() < 1) {
+    mPID = INVALID_PID;
+    return gcore::Status(false, "gcore::Process::run: Nothing to run.");
   }
 
   mReturnCode = -1;
@@ -350,10 +415,10 @@ gcore::ProcessID gcore::Process::run() {
   if (mPID == 0) {
     // Child process
     
-    if (mCapture || (mCaptureErr && mErrToOut)) {
+    if (mOpts.redirectOut || (mOpts.redirectErr && mOpts.redirectErrToOut)) {
       oPipe.closeRead();
       mWritePipe = oPipe;
-      if (mCapture) {
+      if (mOpts.redirectOut) {
         dup2(mWritePipe.writeID(), 1);
         // writing to stdout will write to mWritePipe
       }
@@ -362,32 +427,32 @@ gcore::ProcessID gcore::Process::run() {
       oPipe.close();
     }
     
-    if (mCaptureErr) {
-      if (mErrToOut) {
+    if (mOpts.redirectErr) {
+      if (mOpts.redirectErrToOut) {
         ePipe.close();
         dup2(mWritePipe.writeID(), 2);
         // writing to stderr will write to mWritePipe
       
       } else {
         ePipe.closeRead();
-        mErrorPipe = ePipe;
-        dup2(mErrorPipe.writeID(), 2);
-        // writing to stderr will write to mErrorPipe
+        mReadErrPipe = ePipe;
+        dup2(mReadErrPipe.writeID(), 2);
+        // writing to stderr will write to mReadErrPipe
       }
     } else {
       ePipe.close();
     }
     
-    if (mRedirect) {
+    if (mOpts.redirectIn) {
       iPipe.closeWrite();
-      mReadPipe = iPipe;
-      dup2(mReadPipe.readID(), 0);
+      mReadOutPipe = iPipe;
+      dup2(mReadOutPipe.readID(), 0);
       // reading from stdin will read from this pipe
     } else {
       iPipe.close();
     }
     
-    Env::Set(mEnv, true);
+    Env::Set(mOpts.env, true);
     
     int failed = execvp(mArgs[0].c_str(), mStdArgs);
     
@@ -404,23 +469,23 @@ gcore::ProcessID gcore::Process::run() {
   } else {
     // Parent process
     
-    if (mCapture || (mCaptureErr && mErrToOut)) {
+    if (mOpts.redirectOut || (mOpts.redirectErr && mOpts.redirectErrToOut)) {
       oPipe.closeWrite();
-      mReadPipe = oPipe;
+      mReadOutPipe = oPipe;
       // reading from this pipe is reading from child stdout
     } else {
       oPipe.close();
     }
 
-    if (mCaptureErr && !mErrToOut) {
+    if (mOpts.redirectErr && !mOpts.redirectErrToOut) {
       ePipe.closeWrite();
-      mErrorPipe = ePipe;
+      mReadErrPipe = ePipe;
       // reading from this pipe is reading from child stderr
     } else {
       ePipe.close();
     }
 
-    if (mRedirect) {
+    if (mOpts.redirectIn) {
       iPipe.closeRead();
       mWritePipe = iPipe;
       // riting to this pipe is writing to child stdin
@@ -429,7 +494,7 @@ gcore::ProcessID gcore::Process::run() {
     }
   }
 
-  return mPID;
+  return gcore::Status(true);
 
 #else
 
@@ -449,7 +514,7 @@ gcore::ProcessID gcore::Process::run() {
   sinfo.dwFlags = STARTF_USESHOWWINDOW;
   
   // Child STDIN pipe [if redirect only] --> parent write to this pipe
-  if (mRedirect) {
+  if (mOpts.redirectIn) {
     inPipe.create();
     SetHandleInformation(inPipe.writeID(), HANDLE_FLAG_INHERIT, 0);
     sinfo.hStdInput = inPipe.readID();
@@ -460,30 +525,30 @@ gcore::ProcessID gcore::Process::run() {
   }
   
   // Child STDOUT pipe [if capture only] --> parent read on this pipe
-  //if (mCapture) {
-  if (mCapture || (mCaptureErr && mErrToOut)) {
+  //if (mOpts.redirectOut) {
+  if (mOpts.redirectOut || (mOpts.redirectErr && mOpts.redirectErrToOut)) {
     outPipe.create();
     SetHandleInformation(outPipe.readID(), HANDLE_FLAG_INHERIT, 0);
-    if (mCapture) {
+    if (mOpts.redirectOut) {
       sinfo.hStdOutput = outPipe.writeID();
     }
     //sinfo.hStdError = outPipe.writeID();
     //sinfo.hStdOutput = outPipe.writeID();
-    mReadPipe = outPipe;
+    mReadOutPipe = outPipe;
     sinfo.dwFlags = sinfo.dwFlags | STARTF_USESTDHANDLES;
   } else {
     //sinfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
     sinfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
   }
   
-  if (mCaptureErr) {
-    if (mErrToOut) {
+  if (mOpts.redirectErr) {
+    if (mOpts.redirectErrToOut) {
       sinfo.hStdError = outPipe.writeID();
     } else {
       errPipe.create();
       SetHandleInformation(errPipe.readID(), HANDLE_FLAG_INHERIT, 0);
       sinfo.hStdError = errPipe.writeID();
-      mErrorPipe = errPipe;
+      mReadErrPipe = errPipe;
     }
     sinfo.dwFlags = sinfo.dwFlags | STARTF_USESTDHANDLES;
   } else {
@@ -491,7 +556,7 @@ gcore::ProcessID gcore::Process::run() {
   }
   
   // this is to hide console if requested
-  sinfo.wShowWindow = (mShowConsole ? SW_SHOW : SW_HIDE);
+  sinfo.wShowWindow = (mOpts.showConsole ? SW_SHOW : SW_HIDE);
   
   // on windows, CreateProcess will do the fork internally
   // need to setup the env before
@@ -502,7 +567,7 @@ gcore::ProcessID gcore::Process::run() {
   env.push();
   
   // modify environment
-  env.setAll(mEnv, true);
+  env.set(mOpts.env, true);
 
   if (isBat) {
     // for .bat files, we need to prepend cmd.exe /c
@@ -516,32 +581,38 @@ gcore::ProcessID gcore::Process::run() {
     
     mPID = pinfo.dwProcessId;
     
-    if (mCapture || (mCaptureErr && mErrToOut)) {
+    if (mOpts.redirectOut || (mOpts.redirectErr && mOpts.redirectErrToOut)) {
       outPipe.closeWrite();
     }
     
-    if (mCaptureErr && !mErrToOut) {
+    if (mOpts.redirectErr && !mOpts.redirectErrToOut) {
       errPipe.closeWrite();
     }
     
-    if (mRedirect) {
+    if (mOpts.redirectIn) {
       inPipe.closeRead();
     }
     
     // restore environment
     env.pop();
     
+    return gcore::Status(true);
+    
   } else {
     mPID = INVALID_PID;
     closePipes();
+    
+    return gcore::Status(false, std_errno(), "gcore::Process::run");
   }
-  return mPID;
 
 #endif
 
 }
 
-gcore::ProcessID gcore::Process::run(const gcore::String &cmdline) {
+gcore::Status gcore::Process::run(const char *cmdline) {
+  if (!cmdline) {
+    return gcore::Status(false, "gcore::Process::run: Invalid command.");
+  }
   gcore::String tmp = cmdline;
   bool inSingleQuote = false;
   bool inDoubleQuote = false;
@@ -593,33 +664,48 @@ gcore::ProcessID gcore::Process::run(const gcore::String &cmdline) {
   return run();
 }
 
-gcore::ProcessID gcore::Process::run(const String &progPath, char **argv) {
+gcore::Status gcore::Process::run(int argc, const char **argv) {
   mArgs.clear();
-  mArgs.push(progPath);
-  char **carg = argv;
-  while (*carg) {
-    String argi = *carg;
-    mArgs.push(argi);
-    carg++;
+  for (int i=0; i<argc; ++i) {
+    if (!argv[i]) {
+      return gcore::Status(false, "gcore::Process::run: Invalid argument at %d", i);
+    }
+    mArgs.push(argv[i]);
   }
   return run();
 }
 
-gcore::ProcessID gcore::Process::run(const String &progPath, int argc, ...) {
-  mArgs.clear();
-  mArgs.push(progPath);
+gcore::Status gcore::Process::run(int argc, ...) {
   va_list va;
   va_start(va, argc);
-  for (int i=0; i<argc; ++i) {
-    String argi = va_arg(va,char*);
-    mArgs.push(argi);
-  }
+  gcore::Status rv = run(argc, va);
   va_end(va);
+  return rv;
+}
+
+gcore::Status gcore::Process::run(int argc, va_list va) {
+  mArgs.clear();
+  for (int i=0; i<argc; ++i) {
+    const char *carg = va_arg(va, const char*);
+    if (!carg) {
+      return gcore::Status(false, "gcore::Process::run: Invalid argument at %d.", i);
+    }
+    mArgs.push(carg);
+  }
   return run();
 }
 
-int gcore::Process::wait(bool blocking) {
-  int rv = _wait(blocking);
+gcore::Status gcore::Process::run(const gcore::String &cmdline) {
+  return run(cmdline.c_str());
+}
+
+gcore::Status gcore::Process::run(const gcore::StringList &args) {
+  mArgs = args;
+  return run();
+}
+
+int gcore::Process::wait(bool blocking, gcore::Status *status) {
+  int rv = waitNoClose(blocking, status);
   if (rv != 0) {
     closePipes();
     mPID = INVALID_PID;
@@ -627,67 +713,49 @@ int gcore::Process::wait(bool blocking) {
   return rv;
 }
 
-int gcore::Process::_wait(bool blocking) {
-  static char mess[64] = {0};
-
+int gcore::Process::waitNoClose(bool blocking, gcore::Status *status) {
   if (! IsValidProcessID(mPID)) {
+    if (status) {
+      status->set(false, "gcore::Process::wait: Invalid PID.");
+    }
     return -1;
   }
 
 #ifndef _WIN32
 
-  int status;
+  int st;
   
-  ProcessID rpid = waitpid(mPID, &status, (blocking ? 0 : WNOHANG));
+  ProcessID rpid = waitpid(mPID, &st, (blocking ? 0 : WNOHANG));
   
   if (!blocking && rpid==0) {
-    if (mVerbose) {
-      sprintf(mess,"Wait(%d): Process still running\n", mPID);
-      (*mOutFunc)(mess);
+    if (status) {
+      status->set(true, "gcore::Process::wait: Process still running.");
     }
     return 0;
   }
   
   if (rpid == mPID) {
-    if (WIFEXITED(status)) {
-      mReturnCode = WEXITSTATUS(status);
+    if (WIFEXITED(st)) {
+      mReturnCode = WEXITSTATUS(st);
     }
+    // else if (WIFSIGNALED(st)) {
+    //   // Process exited on signal 
+    //   int scode = WTERMSIG(st);
+    //   if (WCOREDUMP(st)) {
+    //   }
+    // } else if (WIFSTOPPED(st)) {
+    //   // Process stopped on signal 
+    //   int scode = WSTOPSIG(st);
+    // }
     
-    if (mVerbose) {
-      if (WIFEXITED(status)) {
-        sprintf(mess,"Wait(%d): Process exited with status %d\n", mPID, mReturnCode);
-      
-      } else if (WIFSIGNALED(status)) {
-        int scode = WTERMSIG(status);
-        sprintf(mess,"Wait(%d): Process exited on signal %d%s\n", mPID, scode, (WCOREDUMP(status) ? " (core dump)" : ""));
-      
-      } else if (WIFSTOPPED(status)) {
-        int scode = WSTOPSIG(status);
-        sprintf(mess,"Wait(%d): Process stopped on signal %d\n", mPID, scode);
-      
-      } else {
-        sprintf(mess,"Wait(%d): Process terminated\n", mPID);
-      }
-      
-      (*mOutFunc)(mess);
+    if (status) {
+      status->set(true, "gcore::Process::wait: Process exited.");
     }
     return 1;
   
   } else { // must be -1: error
-    if (mVerbose) {
-      switch(errno) {
-        case ECHILD:
-          sprintf(mess,"Wait(%d): Process does not exist\n", mPID); break;
-        case EFAULT:
-          sprintf(mess,"Wait(%d): Invalid status\n", mPID); break;
-        case EINTR:
-          sprintf(mess,"Wait(%d): Process aborted\n", mPID); break;
-        case EINVAL:
-          sprintf(mess,"Wait(%d): Invalid options\n", mPID); break;
-        default:
-          sprintf(mess,"Wait(%d): Unknown error\n", mPID);
-      }
-      (*mOutFunc)(mess);
+    if (status) {
+      status->set(false, std_errno(), "gcore::Process::wait");
     }
     return -1;
   }
@@ -700,98 +768,75 @@ int gcore::Process::_wait(bool blocking) {
     DWORD ret = WaitForSingleObject(phdl, (blocking ? INFINITE : 5));
     
     if (ret == WAIT_TIMEOUT) {
-      if (mVerbose) {
-        sprintf(mess,"Wait(%ld): Process still running\n", (long)mPID);
-        (*mOutFunc)(mess);
-      }
       _process_closeHandle(phdl);
+      if (status) {
+        status->set(true, "gcore::Process::wait: Process still running.");
+      }
       return 0;
     
     } else if (ret == WAIT_OBJECT_0) {
-      if (mVerbose) {
-        sprintf(mess,"Wait(%ld): Process terminated\n", (long)mPID);
-        (*mOutFunc)(mess);
-      }
       DWORD rv;
       if (GetExitCodeProcess(phdl, &rv)) {
         mReturnCode = (int) rv;
       }
       _process_closeHandle(phdl);
+      if (status) {
+        status->set(true, "gcore::Process::wait: Process exited.");
+      }
       return 1;
     
     } else {
       _process_closeHandle(phdl);
+      if (status) {
+        status->set(false, std_errno(), "gcore::Process::wait");
+      }
+      return -1;
     }
   }
   
-  if (mVerbose) {
-    sprintf(mess,"Wait(%ld): Error\n", (long)mPID);
-    (*mOutFunc)(mess);
+  if (status) {
+    status->set(false, "gcore::Process::wait: Could not get process handle from PID.");
   }
-  
   return -1;
   
 #endif
 }
 
-int gcore::Process::kill() {
+gcore::Status gcore::Process::kill() {
   if (! IsValidProcessID(mPID)) {
-    return -1;
+    return gcore::Status(false, "gcore::Process::kill: Invalid PID.");
   }
+
 #ifndef _WIN32
+
   int r = ::kill(mPID,SIGQUIT);
   
-  if (0 == r) {
-    if (mVerbose) {
-      (*mOutFunc)("Kill success\n");
-    }
-    
-    closePipes();
-    mPID = INVALID_PID;
-    return 0;
+  closePipes();
+  mPID = INVALID_PID;
   
+  if (0 == r) {
+    return gcore::Status(true);
   } else {
-    if (mVerbose) {
-      switch(errno) {
-        case EINVAL:
-          (*mOutFunc)("Kill failed: Invalid signal\n"); break;
-        case EPERM:
-          (*mOutFunc)("Kill failed: No permission\n"); break;
-        case ESRCH:
-          (*mOutFunc)("Kill failed: Process does not exist\n"); break;
-        default:
-          (*mOutFunc)("Kill failed: Unknown reason\n");
-      };
-    }
-    
-    closePipes();
-    mPID = INVALID_PID;
-    return -1;
+    return gcore::Status(false, std_errno(), "gcore::Process::kill");
   }
 
 #else
   
   HANDLE phdl = _process_getHandle(mPID);
   if (phdl) {
-    if (TerminateProcess(phdl,0)) {
-      if (mVerbose) {
-        mPID = INVALID_PID;
-        (*mOutFunc)("Kill success\n");
-      }
+    if (TerminateProcess(phdl, 0)) {
       mWritePipe.write("exit\r\n");
       WaitForSingleObject(phdl, 10000);
       closePipes();
       mPID = INVALID_PID;
-      return 0;
+      return gcore::Status(true);
     }
     _process_closeHandle(phdl);
-  }
-  if (mVerbose) {
-    (*mOutFunc)("Kill failed\n");
+    return gcore::Status(false, std_errno(), "gcore::Process::kill");
   }
   closePipes();
   mPID = INVALID_PID;
-  return -1;
+  return gcore::Status(false, "gcore::Process::kill: Could not get process handle from PID.");
 
 #endif
 }

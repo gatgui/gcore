@@ -25,6 +25,7 @@ USA.
 #define __gcore_pipe_h_
 
 #include <gcore/string.h>
+#include <gcore/status.h>
 
 namespace gcore {
 
@@ -63,21 +64,19 @@ namespace gcore {
       virtual ~Pipe();
       
       bool isNamed() const;
-      const String& getName() const;
+      const String& name() const;
       bool isOwned() const;
       bool canRead() const;
       bool canWrite() const;
-      bool open(const String &name);
+      Status open(const String &name);
       void close();
-      bool create();
-      bool create(const String &name);
+      Status create();
+      Status create(const String &name);
       void closeRead();
       void closeWrite();
-      // Note: retryOnInterrupt non implemented on windows
-      int read(char *buffer, int size, bool retryOnInterrupt=false) const;
-      int read(String &str, bool retryOnInterrupt=false) const;
-      int write(const char *buffer, int size) const;
-      int write(const String &str) const;
+      int read(char *buffer, int size, Status *status=0) const;
+      int write(const char *buffer, int size, Status *status=0) const;
+      int write(const String &str, Status *status=0) const;
       PipeID readID() const;
       PipeID writeID() const;
       

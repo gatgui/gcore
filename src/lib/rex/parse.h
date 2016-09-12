@@ -24,31 +24,30 @@ USA.
 #ifndef __gcore_rex_parse_h_
 #define __gcore_rex_parse_h_
 
-namespace gcore {
-
-class Instruction;
-class Repeat;
-
-struct ParseInfo
+namespace gcore
 {
-  int numGroups;
-  // nothing else?
-  // if we had named group -> group name to group index mapping
-};
+   class Instruction;
+   class Repeat;
 
-extern bool ReadDecimal(const char **ppc, unsigned long &v);
-extern bool ReadHexadecimal(const char **ppc, unsigned char &v);
-extern bool ReadOctal(const char **ppc, unsigned char &v);
+   struct ParseInfo
+   {
+     int numGroups;
+     // nothing else?
+     // if we had named group -> group name to group index mapping
+   };
 
-extern Instruction* ParseExpression(const char **ppc, ParseInfo &info);
-extern Instruction* ParseBranch(const char **ppc, ParseInfo &info);
-extern Instruction* ParsePiece(const char **ppc, ParseInfo &info);
-extern Instruction* ParseAtom(const char **ppc, ParseInfo &info);
-extern Instruction* ParseCharacters(const char **ppc, ParseInfo &info);
-extern Instruction* ParseRange(const char **ppc, bool inv, ParseInfo &info);
-extern Repeat* ParseRepeat(const char **ppc, bool &err, ParseInfo &info);
-extern Instruction* ParseZerowidth(const char **ppc, ParseInfo &info);
+   extern bool ReadDecimal(const char **ppc, unsigned long &v);
+   extern bool ReadHexadecimal(const char **ppc, unsigned char &v);
+   extern bool ReadOctal(const char **ppc, unsigned char &v);
 
+   extern Instruction* ParseExpression(const char **ppc, ParseInfo &info);
+   extern Instruction* ParseBranch(const char **ppc, ParseInfo &info);
+   extern Instruction* ParsePiece(const char **ppc, ParseInfo &info);
+   extern Instruction* ParseAtom(const char **ppc, ParseInfo &info);
+   extern Instruction* ParseCharacters(const char **ppc, ParseInfo &info);
+   extern Instruction* ParseRange(const char **ppc, bool inv, ParseInfo &info);
+   extern Repeat* ParseRepeat(const char **ppc, bool &err, ParseInfo &info);
+   extern Instruction* ParseZerowidth(const char **ppc, ParseInfo &info);
 }
 
 #endif

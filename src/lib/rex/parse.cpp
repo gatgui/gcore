@@ -200,7 +200,7 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
       bool consume = true;
       bool invert = false;
       bool reverse = false;
-      std::string name = "";
+      String name = "";
       
       ++pc;
       
@@ -233,7 +233,7 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
           // conditional
           ++pc;
           
-          std::string cond;
+          String cond;
           while (*pc != ')')
           {
             if (*pc == '\0')
@@ -300,7 +300,7 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
           }
           else if (*pc == '=')
           {
-            std::string name;
+            String name;
             ++pc;
             while (*pc != ')')
             {

@@ -25,7 +25,7 @@ USA.
 #define __gcore_base85_h_
 
 #include <gcore/config.h>
-#include <string>
+#include <gcore/string.h>
 
 namespace gcore {
   
@@ -63,23 +63,23 @@ namespace gcore {
     
     GCORE_API bool Encode(Encoder *e, const void *in, size_t inlen, char *out, size_t outlen);
     GCORE_API char* Encode(Encoder *e, const void *in, size_t inlen, size_t &outlen);
-    GCORE_API bool Encode(Encoder *e, const void *in, size_t inlen, std::string &out);
-    GCORE_API bool Encode(Encoder *e, const std::string &in, char *out, size_t outlen);
-    GCORE_API char* Encode(Encoder *e, const std::string &in, size_t &outlen);
-    GCORE_API bool Encode(Encoder *e, const std::string &in, std::string &out);
-    GCORE_API std::string Encode(Encoder *e, const void *data, size_t len);
-    GCORE_API std::string Encode(Encoder *e, const std::string &in);
+    GCORE_API bool Encode(Encoder *e, const void *in, size_t inlen, String &out);
+    GCORE_API bool Encode(Encoder *e, const String &in, char *out, size_t outlen);
+    GCORE_API char* Encode(Encoder *e, const String &in, size_t &outlen);
+    GCORE_API bool Encode(Encoder *e, const String &in, String &out);
+    GCORE_API String Encode(Encoder *e, const void *data, size_t len);
+    GCORE_API String Encode(Encoder *e, const String &in);
     
     // ---
     
     GCORE_API bool Decode(Decoder *d, const char *in, size_t len, void *&out, size_t &outlen);
     GCORE_API void* Decode(Decoder *d, const char *in, size_t len, size_t &outlen);
-    GCORE_API bool Decode(Decoder *d, const char *in, size_t len, std::string &out);
-    GCORE_API bool Decode(Decoder *d, const std::string &in, void *&out, size_t &outlen);
-    GCORE_API void* Decode(Decoder *d, const std::string &in, size_t &outlen);
-    GCORE_API bool Decode(Decoder *d, const std::string &in, std::string &out);
-    GCORE_API std::string Decode(Decoder *d, const char *in, size_t len);
-    GCORE_API std::string Decode(Decoder *d, const std::string &in);
+    GCORE_API bool Decode(Decoder *d, const char *in, size_t len, String &out);
+    GCORE_API bool Decode(Decoder *d, const String &in, void *&out, size_t &outlen);
+    GCORE_API void* Decode(Decoder *d, const String &in, size_t &outlen);
+    GCORE_API bool Decode(Decoder *d, const String &in, String &out);
+    GCORE_API String Decode(Decoder *d, const char *in, size_t len);
+    GCORE_API String Decode(Decoder *d, const String &in);
   };
 }
 

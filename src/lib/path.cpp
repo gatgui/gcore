@@ -295,7 +295,7 @@ namespace gcore {
       return "";
     }
     size_t p0 = mPaths[mPaths.size()-1].rfind('.');
-    if (p0 != std::string::npos) {
+    if (p0 != String::npos) {
       return mPaths[mPaths.size()-1].substr(p0+1);
     } else {
       return "";
@@ -358,7 +358,7 @@ namespace gcore {
       fffs = "./*.*";
     } else {
       size_t p = mFullName.find("*.*");
-      if (p == std::string::npos) {
+      if (p == String::npos) {
         if (mFullName[mFullName.length()-1] == '/') {
           fffs = mFullName + "*.*";
         } else {

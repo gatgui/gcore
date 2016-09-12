@@ -112,14 +112,14 @@ static void ResetTermColors()
 #define TERM_COL_FGBASE    30
 #define TERM_COL_BGBASE    40
 
-static std::string MakeTermCode(int cmd, int fg, int bg)
+static gcore::String MakeTermCode(int cmd, int fg, int bg)
 {
    //char tmp[13];
    //sprintf(tmp, "%c[%d;%d;%dm", 0x1B, cmd, TERM_COL_FGBASE+fg, TERM_COL_BGBASE+bg);
    //return tmp;
    char tmp[16];
    
-   std::string code;
+   gcore::String code;
    bool needSep = false;
    code = "\033[";
    if (cmd >= 0)

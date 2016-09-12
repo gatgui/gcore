@@ -29,7 +29,7 @@ class UnitTest
 {
   public:
     
-    UnitTest(const std::string &name)
+    UnitTest(const String &name)
       : mName(name)
     {
     }
@@ -40,19 +40,19 @@ class UnitTest
     
     virtual bool execute(bool verbose=false) = 0;
     
-    const std::string& name() const
+    const String& name() const
     {
       return mName;
     }
     
-    void setName(const std::string &n)
+    void setName(const String &n)
     {
       mName = n;
     }
     
   protected:
     
-    std::string mName;
+    String mName;
 };
 
 class TestSuite
@@ -96,7 +96,7 @@ class TestSuite
     void execute(bool verbose=false)
     {
       size_t nsuccess = 0;
-      std::vector<std::string> failedTests;
+      std::vector<String> failedTests;
       
       for (size_t i=0; i<mTests.size(); ++i)
       {
@@ -133,9 +133,9 @@ class RexTest : public UnitTest
 {
   public:
     
-    RexTest(const std::string &name,
-            const std::string &exp,
-            const std::string &str,
+    RexTest(const String &name,
+            const String &exp,
+            const String &str,
             bool expectedResult,
             size_t ngroups=0,
             const char **expectedGroups=0,
@@ -213,7 +213,7 @@ class RexTest : public UnitTest
   protected:
     
     Rex mExp;
-    std::string mStr;
+    String mStr;
     bool mExpectedResult;
     const char ** mGroups;
     size_t mNumGroups;
@@ -224,7 +224,7 @@ class RexTest : public UnitTest
 
 // ---
 
-inline bool doTest(const std::string &n, const std::set<std::string> &list)
+inline bool doTest(const String &n, const std::set<String> &list)
 {
   return (list.size() == 0 || list.find(n) != list.end());
 }
@@ -233,7 +233,7 @@ int main(int argc, char **argv)
 {
   TestSuite suite;
   
-  std::set<std::string> tests;
+  std::set<String> tests;
   for (int i=1; i<argc; ++i)
   {
     tests.insert(argv[i]);

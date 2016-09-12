@@ -25,6 +25,7 @@ USA.
 #define __gcore_hashmap_h_
 
 #include <gcore/list.h>
+#include <gcore/string.h>
 
 namespace gcore
 {
@@ -52,6 +53,15 @@ namespace gcore
   struct HashValue<std::string, H>
   {
     static unsigned int Compute(const std::string &val)
+    {
+      return H((const unsigned char *)val.c_str(), val.length());
+    }
+  };
+  
+  template <HashFunc H>
+  struct HashValue<String, H>
+  {
+    static unsigned int Compute(const String &val)
     {
       return H((const unsigned char *)val.c_str(), val.length());
     }

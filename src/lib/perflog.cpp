@@ -35,7 +35,7 @@ PerfLog::StackItem::StackItem()
    selfStart = start;
 }
 
-PerfLog::StackItem::StackItem(const std::string &_id, Entry *_entry)
+PerfLog::StackItem::StackItem(const String &_id, Entry *_entry)
    : entry(_entry)
    , id(_id)
    , recursionCount(0)
@@ -177,8 +177,8 @@ void PerfLog::Entry::merge(const Entry &rhs)
 {
    BaseEntry::merge(rhs);
    
-   std::map<std::string, Entry>::iterator it;
-   std::map<std::string, Entry>::const_iterator rit;
+   std::map<String, Entry>::iterator it;
+   std::map<String, Entry>::const_iterator rit;
    
    for (it = subs.begin(); it != subs.end(); ++it)
    {
@@ -207,7 +207,7 @@ PerfLog& PerfLog::Get()
    return sShared;
 }
 
-void PerfLog::Begin(const std::string &msg)
+void PerfLog::Begin(const String &msg)
 {
    Get().begin(msg);
 }
@@ -279,7 +279,7 @@ void PerfLog::clear()
    mEntryStack.clear();
 }
 
-void PerfLog::begin(const std::string &id)
+void PerfLog::begin(const String &id)
 {
    Entry *entry = 0;
    
@@ -462,7 +462,7 @@ class Logger
 {
 public:
    
-   typedef std::vector<std::string> Line;
+   typedef std::vector<String> Line;
    
    Logger(int showFlags, int sortFlags, TimeCounter::Units srcUnits, TimeCounter::Units dstUnits)
       : mShowFlags(showFlags)
@@ -529,7 +529,7 @@ public:
       }
    }
    
-   void appendLogLine(const std::string &id, const PerfLog::BaseEntry &entry)
+   void appendLogLine(const String &id, const PerfLog::BaseEntry &entry)
    {
       mLines.push_back(Line());
       Line &lline = mLines.back();
@@ -613,15 +613,15 @@ public:
       }
    }
    
-   void appendLogLines(const PerfLog::EntryMap &entries, const std::string &indent="")
+   void appendLogLines(const PerfLog::EntryMap &entries, const String &indent="")
    {
       if (entries.size() == 0)
       {
          return;
       }
       
-      std::string sindent;
-      std::vector<std::string> order;
+      String sindent;
+      std::vector<String> order;
       
       sortEntries(entries, order);
       
@@ -655,7 +655,7 @@ public:
    
    void appendLogLines(const PerfLog::BaseEntryMap &entries)
    {
-      std::vector<std::string> order;
+      std::vector<String> order;
       PerfLog::BaseEntryMap::const_iterator it;
       
       sortEntries(entries, order);
@@ -769,7 +769,7 @@ private:
       
       for (size_t i=0; i<lline.size(); ++i)
       {
-         const std::string &field = lline[i];
+         const String &field = lline[i];
          
          size_t pad = mFieldLengths[i] - field.length();
          
@@ -799,11 +799,11 @@ private:
    }
    
    template <typename T>
-   void sortById(const std::map<std::string, T> &entries, std::vector<std::string> &order)
+   void sortById(const std::map<String, T> &entries, std::vector<String> &order)
    {
       order.reserve(entries.size());
       
-      typename std::map<std::string, T>::const_iterator it = entries.begin();
+      typename std::map<String, T>::const_iterator it = entries.begin();
       
       while (it != entries.end())
       {
@@ -813,7 +813,7 @@ private:
    }
 
    template <typename T>
-   void sortByTotalTime(const std::map<std::string, T> &entries, std::vector<std::string> &order)
+   void sortByTotalTime(const std::map<String, T> &entries, std::vector<String> &order)
    {
       std::vector<double> tt;
       std::vector<double>::iterator lb;
@@ -822,7 +822,7 @@ private:
       order.reserve(entries.size());
       tt.reserve(entries.size());
       
-      typename std::map<std::string, T>::const_iterator it = entries.begin();
+      typename std::map<String, T>::const_iterator it = entries.begin();
       
       while (it != entries.end())
       {
@@ -835,7 +835,7 @@ private:
    }
 
    template <typename T>
-   void sortByAvgTotalTime(const std::map<std::string, T> &entries, std::vector<std::string> &order)
+   void sortByAvgTotalTime(const std::map<String, T> &entries, std::vector<String> &order)
    {
       std::vector<double> tt;
       std::vector<double>::iterator lb;
@@ -845,7 +845,7 @@ private:
       order.reserve(entries.size());
       tt.reserve(entries.size());
       
-      typename std::map<std::string, T>::const_iterator it = entries.begin();
+      typename std::map<String, T>::const_iterator it = entries.begin();
       
       while (it != entries.end())
       {
@@ -859,7 +859,7 @@ private:
    }
 
    template <typename T>
-   void sortByFuncTime(const std::map<std::string, T> &entries, std::vector<std::string> &order)
+   void sortByFuncTime(const std::map<String, T> &entries, std::vector<String> &order)
    {
       std::vector<double> tt;
       std::vector<double>::iterator lb;
@@ -868,7 +868,7 @@ private:
       order.reserve(entries.size());
       tt.reserve(entries.size());
       
-      typename std::map<std::string, T>::const_iterator it = entries.begin();
+      typename std::map<String, T>::const_iterator it = entries.begin();
       
       while (it != entries.end())
       {
@@ -881,7 +881,7 @@ private:
    }
 
    template <typename T>
-   void sortByAvgFuncTime(const std::map<std::string, T> &entries, std::vector<std::string> &order)
+   void sortByAvgFuncTime(const std::map<String, T> &entries, std::vector<String> &order)
    {
       std::vector<double> tt;
       std::vector<double>::iterator lb;
@@ -891,7 +891,7 @@ private:
       order.reserve(entries.size());
       tt.reserve(entries.size());
       
-      typename std::map<std::string, T>::const_iterator it = entries.begin();
+      typename std::map<String, T>::const_iterator it = entries.begin();
       
       while (it != entries.end())
       {
@@ -905,7 +905,7 @@ private:
    }
 
    template <typename T>
-   void sortByNumCalls(const std::map<std::string, T> &entries, std::vector<std::string> &order)
+   void sortByNumCalls(const std::map<String, T> &entries, std::vector<String> &order)
    {
       std::vector<size_t> ct;
       std::vector<size_t>::iterator lb;
@@ -914,7 +914,7 @@ private:
       order.reserve(entries.size());
       ct.reserve(entries.size());
       
-      typename std::map<std::string, T>::const_iterator it = entries.begin();
+      typename std::map<String, T>::const_iterator it = entries.begin();
       
       while (it != entries.end())
       {
@@ -927,7 +927,7 @@ private:
    }
    
    template <typename T>
-   void sortEntries(const std::map<std::string, T> &entries, std::vector<std::string> &order)
+   void sortEntries(const std::map<String, T> &entries, std::vector<String> &order)
    {
       if (mSortFlags == PerfLog::SortTotalTime)
       {
@@ -1065,13 +1065,13 @@ void PerfLog::print(Log &log, int flags, int sortBy, TimeCounter::Units units)
 
 // ----
 
-ScopedPerfLog::ScopedPerfLog(const std::string &key)
+ScopedPerfLog::ScopedPerfLog(const String &key)
    : mPerfLog(PerfLog::Get())
 {
    mPerfLog.begin(key);
 }
 
-ScopedPerfLog::ScopedPerfLog(PerfLog &plog, const std::string &key)
+ScopedPerfLog::ScopedPerfLog(PerfLog &plog, const String &key)
    : mPerfLog(plog)
 {
    mPerfLog.begin(key);
@@ -1082,5 +1082,5 @@ ScopedPerfLog::~ScopedPerfLog()
    mPerfLog.end();
 }
 
-}
+} // gcore
 

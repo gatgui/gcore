@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
       return 1;
     }
   
-    std::string server = "localhost";
+    gcore::String server = "localhost";
     unsigned short port = 4001;
 
     if (argc >= 2) {

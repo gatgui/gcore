@@ -47,7 +47,7 @@ namespace gcore
             ObjectType
          };
          
-         typedef std::map<gcore::String, Value> Object;
+         typedef std::map<String, Value> Object;
          typedef gcore::List<Value, false> Array;
          
          // Cannot use Object::iterator, Object::const_iterator, Array::iterator,
@@ -98,9 +98,9 @@ namespace gcore
          Value(int num);
          Value(float num);
          Value(double num);
-         Value(gcore::String *str);  // steals ownership
+         Value(String *str);  // steals ownership
          Value(const char *str);
-         Value(const gcore::String &str);
+         Value(const String &str);
          Value(Object *obj);  // steals ownership
          Value(const Object &obj);
          Value(Array *arr);  // steals ownership
@@ -124,9 +124,9 @@ namespace gcore
          Value& operator=(int num);
          Value& operator=(float num);
          Value& operator=(double num);
-         Value& operator=(gcore::String *str);  // steals ownership
+         Value& operator=(String *str);  // steals ownership
          Value& operator=(const char *str);
-         Value& operator=(const gcore::String &str);
+         Value& operator=(const String &str);
          Value& operator=(Object *obj);  // steals ownership
          Value& operator=(const Object &obj);
          Value& operator=(Array *arr);  // steals ownership
@@ -136,11 +136,11 @@ namespace gcore
          operator int () const;
          operator float () const;
          operator double () const;
-         operator const gcore::String& () const;
+         operator const String& () const;
          operator const char* () const;
          operator const Object& () const;
          operator const Array& () const;
-         operator gcore::String& ();
+         operator String& ();
          operator Object& ();
          operator Array& ();
          
@@ -167,16 +167,16 @@ namespace gcore
          const_iterator<Object> obegin() const;
          iterator<Object> oend();
          const_iterator<Object> oend() const;
-         iterator<Object> find(const gcore::String &name);
-         const_iterator<Object> find(const gcore::String &name) const;
+         iterator<Object> find(const String &name);
+         const_iterator<Object> find(const String &name) const;
          iterator<Object> find(const char *name);
          const_iterator<Object> find(const char *name) const;
          
-         bool insert(const gcore::String &key, const Value &value);
-         bool erase(const gcore::String &key);
+         bool insert(const String &key, const Value &value);
+         bool erase(const String &key);
          
-         const Value& operator[](const gcore::String &name) const;
-         Value& operator[](const gcore::String &name);
+         const Value& operator[](const String &name) const;
+         Value& operator[](const String &name);
          const Value& operator[](const char *name) const;
          Value& operator[](const char *name);
          
@@ -186,7 +186,7 @@ namespace gcore
          Status read(std::istream &is);
           
          Status write(const char *path) const;
-         void write(std::ostream &os, const gcore::String indent="", bool skipFirstIndent=false) const;
+         void write(std::ostream &os, const String indent="", bool skipFirstIndent=false) const;
          
          bool toPropertyList(gcore::PropertyList &pl) const;
          
@@ -222,7 +222,7 @@ namespace gcore
          
          Status read(std::istream &is, bool consumeAll, ParserCallbacks *cb);
          
-         bool toPropertyList(gcore::PropertyList &pl, const gcore::String &cprop) const;
+         bool toPropertyList(gcore::PropertyList &pl, const String &cprop) const;
          
       private:
          
@@ -231,7 +231,7 @@ namespace gcore
          {
             bool boo;
             double num;
-            gcore::String *str;
+            String *str;
             Object *obj;
             Array *arr;
          } mValue;

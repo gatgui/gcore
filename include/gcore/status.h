@@ -25,6 +25,7 @@ USA.
 #define __gcore_status_h__
 
 #include <gcore/config.h>
+#include <gcore/string.h>
 
 namespace gcore {
    
@@ -59,7 +60,7 @@ class GCORE_API Status {
     
     bool mSuccess;
     int mErrCode;
-    std::string mMsg;
+    String mMsg;
   };
 }
 

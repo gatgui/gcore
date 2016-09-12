@@ -24,11 +24,7 @@ USA.
 #ifndef __gcore_rex_instruction_h_
 #define __gcore_rex_instruction_h_
 
-#include <iostream>
-#include <vector>
-#include <map>
-#include <algorithm>
-#include <string>
+#include <gcore/string.h>
 
 namespace gcore {
 
@@ -37,12 +33,12 @@ struct MatchInfo
   const char *beg;
   const char *end;
   unsigned short flags;
-  std::vector<std::pair<int,int> > gmatch;
+  std::vector<std::pair<int, int> > gmatch;
   std::vector<unsigned short> fstack;
   std::vector<const char*> cstack;
   bool once;
   std::map<const class Group*, bool> gclosed;
-  std::map<std::string, size_t> gnames;
+  std::map<String, size_t> gnames;
   
   MatchInfo();
   MatchInfo(const char *b, const char *e, unsigned short flags, size_t ngroups);
@@ -78,7 +74,7 @@ class Instruction
       */
     virtual const char* match(const char *cur, MatchInfo &info) const = 0;
     
-    virtual void toStream(std::ostream &os, const std::string &indent="") const = 0;
+    virtual void toStream(std::ostream &os, const String &indent="") const = 0;
     
     static Instruction* CloneList(Instruction *i);
     
@@ -104,7 +100,7 @@ class Single : public Instruction
     
     virtual Instruction* clone() const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     
   protected:
     
@@ -122,7 +118,7 @@ class Any : public Instruction
     
     virtual Instruction* clone() const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
 };
 
 class Word : public Instruction
@@ -134,7 +130,7 @@ class Word : public Instruction
     
     virtual Instruction* clone() const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     
   protected:
     
@@ -150,7 +146,7 @@ class Digit : public Instruction
     
     virtual Instruction* clone() const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     
   protected:
     
@@ -166,7 +162,7 @@ class LowerLetter : public Instruction
       
     virtual Instruction* clone() const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
 };
 
 class UpperLetter : public Instruction
@@ -178,7 +174,7 @@ class UpperLetter : public Instruction
     
     virtual Instruction* clone() const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
 };
 
 class Letter : public Instruction
@@ -190,7 +186,7 @@ class Letter : public Instruction
     
     virtual Instruction* clone() const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     
   protected:
     
@@ -206,7 +202,7 @@ class Hexa : public Instruction
     
     virtual Instruction* clone() const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     
   protected:
     
@@ -222,7 +218,7 @@ class Space : public Instruction
     
     virtual Instruction* clone() const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     
   protected:
     
@@ -237,7 +233,7 @@ class CharRange : public Instruction
     virtual ~CharRange();
     
     virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
     
   protected:
@@ -254,7 +250,7 @@ class CharClass : public Instruction
     virtual ~CharClass();
     
     virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
     
   protected:
@@ -272,7 +268,7 @@ class Repeat : public Instruction
     
     void setInstruction(Instruction *i);
     
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     virtual Instruction* clone() const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
     
@@ -292,7 +288,7 @@ class Alternative : public Instruction
     virtual ~Alternative();
     
     virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
     
     virtual void setGroup(class Group *grp);
@@ -319,7 +315,7 @@ class Group : public Instruction
     
     Group(int index, Instruction *fisrt, bool zerowidth, bool invert,
           unsigned short flags, TriState nc, TriState ml, TriState dnl,
-          const std::string &name="");
+          const String &name="");
     virtual ~Group();
     
     bool end(bool failure, const char *&cur, MatchInfo &info) const;
@@ -327,11 +323,11 @@ class Group : public Instruction
     
     inline bool empty() const {return mFirst == 0;}
     inline bool zeroWidth() const {return mZeroWidth;}
-    inline const std::string& name() const {return mName;}
+    inline const String& name() const {return mName;}
     inline size_t index() const {return mIndex;}
     
     virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
     
   protected:
@@ -345,7 +341,7 @@ class Group : public Instruction
     TriState mNoCase;
     TriState mMultiline;
     unsigned short mFlags;
-    std::string mName;
+    String mName;
 };
 
 class Backsubst : public Instruction
@@ -353,17 +349,17 @@ class Backsubst : public Instruction
   public:
     
     Backsubst(int index);
-    Backsubst(const std::string &n);
+    Backsubst(const String &n);
     virtual ~Backsubst();
     
     virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
     
   protected:
     
     int mIndex;
-    std::string mName;
+    String mName;
 };
 
 class WordStart : public Instruction
@@ -374,7 +370,7 @@ class WordStart : public Instruction
     virtual ~WordStart();
     
     virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
 };
 
@@ -386,7 +382,7 @@ class WordEnd : public Instruction
     virtual ~WordEnd();
     
     virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
 };
 
@@ -398,7 +394,7 @@ class WordBound : public Instruction
     virtual ~WordBound();
     
     virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
   
   protected:
@@ -414,7 +410,7 @@ class LineStart : public Instruction
     virtual ~LineStart();
     
     virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
 };
 
@@ -426,7 +422,7 @@ class LineEnd : public Instruction
     virtual ~LineEnd();
     
     virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
 };
 
@@ -438,7 +434,7 @@ class StrStart : public Instruction
     virtual ~StrStart();
     
     virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
 };
 
@@ -452,7 +448,7 @@ class StrEnd : public Instruction
     virtual ~StrEnd();
     
     virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
 };
 
@@ -466,7 +462,7 @@ class BufferEnd : public Instruction
     virtual ~BufferEnd();
     
     virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
 };
 
@@ -477,11 +473,11 @@ class Conditional : public Instruction
   public:
     
     Conditional(int index, Instruction *ifTrue, Instruction *ifFalse=0);
-    Conditional(const std::string &n, Instruction *ifTrue, Instruction *ifFalse=0);
+    Conditional(const String &n, Instruction *ifTrue, Instruction *ifFalse=0);
     virtual ~Conditional();
     
     virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const std::string &indent="") const;
+    virtual void toStream(std::ostream &os, const String &indent="") const;
     virtual const char* match(const char *cur, MatchInfo &info) const;
     
     virtual void setGroup(class Group *grp);
@@ -489,7 +485,7 @@ class Conditional : public Instruction
   protected:
     
     int mIndex;
-    std::string mName;
+    String mName;
     Instruction *mTrue;
     Instruction *mFalse;
 };

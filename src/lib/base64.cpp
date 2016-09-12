@@ -133,7 +133,7 @@ char* Encode(const void *data, size_t len, size_t &outlen) {
   }
 }
 
-bool Encode(const void *data, size_t len, std::string &out) {
+bool Encode(const void *data, size_t len, String &out) {
   size_t outlen = EncodeLength(len);
   if (outlen == 0) {
     out = "";
@@ -154,25 +154,25 @@ bool Encode(const void *data, size_t len, std::string &out) {
   }
 }
 
-bool Encode(const std::string &in, char *out, size_t outlen) {
+bool Encode(const String &in, char *out, size_t outlen) {
   return (out ? _Encode(in.c_str(), in.length(), out, outlen) : false);
 }
 
-char* Encode(const std::string &in, size_t &outlen) {
+char* Encode(const String &in, size_t &outlen) {
   return Encode(in.c_str(), in.length(), outlen);
 }
 
-bool Encode(const std::string &in, std::string &out) {
+bool Encode(const String &in, String &out) {
   return Encode(in.c_str(), in.length(), out);
 }
 
-std::string Encode(const void *data, size_t len) {
-  std::string rv;
+String Encode(const void *data, size_t len) {
+  String rv;
   Encode(data, len, rv);
   return rv;
 }
 
-std::string Encode(const std::string &in) {
+String Encode(const String &in) {
   return Encode(in.c_str(), in.length());
 }
 
@@ -266,7 +266,7 @@ void* Decode(const char *in, size_t len, size_t &outlen) {
   }
 }
 
-bool Decode(const char *in, size_t len, std::string &out) {
+bool Decode(const char *in, size_t len, String &out) {
   size_t outlen = DecodeLength(in, len);
   if (outlen == 0) {
     out = "";
@@ -288,25 +288,25 @@ bool Decode(const char *in, size_t len, std::string &out) {
   }
 }
 
-bool Decode(const std::string &in, void *out, size_t outlen) {
+bool Decode(const String &in, void *out, size_t outlen) {
   return (out ? _Decode(in.c_str(), in.length(), out, outlen) : false);
 }
 
-void* Decode(const std::string &in, size_t &outlen) {
+void* Decode(const String &in, size_t &outlen) {
   return Decode(in.c_str(), in.length(), outlen);
 }
 
-bool Decode(const std::string &in, std::string &out) {
+bool Decode(const String &in, String &out) {
   return Decode(in.c_str(), in.length(), out);
 }
 
-std::string Decode(const char *in, size_t len) {
-  std::string rv;
+String Decode(const char *in, size_t len) {
+  String rv;
   Decode(in, len, rv);
   return rv;
 }
 
-std::string Decode(const std::string &in) {
+String Decode(const String &in) {
   return Decode(in.c_str(), in.length());
 }
 

@@ -91,7 +91,7 @@ Instruction::~Instruction()
   }
 }
 
-void Instruction::toStream(std::ostream &os, const std::string &indent) const
+void Instruction::toStream(std::ostream &os, const String &indent) const
 {
   if (mNext)
   {
@@ -325,7 +325,7 @@ const char* Single::match(const char *cur, MatchInfo &info) const
   return 0;
 }
 
-void Single::toStream(std::ostream &os, const std::string &indent) const
+void Single::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << "Single \'" << mChar << "\'" << std::endl;
   Instruction::toStream(os, indent);
@@ -371,7 +371,7 @@ const char* Any::match(const char *cur, MatchInfo &info) const
   return 0;
 }
 
-void Any::toStream(std::ostream &os, const std::string &indent) const
+void Any::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << "Any" << std::endl;
   Instruction::toStream(os, indent);
@@ -414,7 +414,7 @@ const char* Word::match(const char *cur, MatchInfo &info) const
   return 0;
 }
 
-void Word::toStream(std::ostream &os, const std::string &indent) const
+void Word::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << (mInvert ? "!Word" : "Word") << std::endl;
   Instruction::toStream(os, indent);
@@ -458,7 +458,7 @@ const char* Digit::match(const char *cur, MatchInfo &info) const
   return 0;
 }
 
-void Digit::toStream(std::ostream &os, const std::string &indent) const
+void Digit::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << (mInvert ? "!Digit" : "Digit") << std::endl;
   Instruction::toStream(os, indent);
@@ -501,7 +501,7 @@ const char* LowerLetter::match(const char *cur, MatchInfo &info) const
   return 0;
 }
 
-void LowerLetter::toStream(std::ostream &os, const std::string &indent) const
+void LowerLetter::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << "LowerLetter" << std::endl;
   Instruction::toStream(os, indent);
@@ -544,7 +544,7 @@ const char* UpperLetter::match(const char *cur, MatchInfo &info) const
   return 0;
 }
 
-void UpperLetter::toStream(std::ostream &os, const std::string &indent) const
+void UpperLetter::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << "UpperLetter" << std::endl;
   Instruction::toStream(os, indent);
@@ -587,7 +587,7 @@ const char* Letter::match(const char *cur, MatchInfo &info) const
   return 0;
 }
 
-void Letter::toStream(std::ostream &os, const std::string &indent) const
+void Letter::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << (mInvert ? "!Letter" : "Letter") << std::endl;
   Instruction::toStream(os, indent);
@@ -630,7 +630,7 @@ const char* Hexa::match(const char *cur, MatchInfo &info) const
   return 0;
 }
 
-void Hexa::toStream(std::ostream &os, const std::string &indent) const
+void Hexa::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << (mInvert ? "!Hexa" : "Hexa") << std::endl;
   Instruction::toStream(os, indent);
@@ -673,7 +673,7 @@ const char* Space::match(const char *cur, MatchInfo &info) const
   return 0;
 }
 
-void Space::toStream(std::ostream &os, const std::string &indent) const
+void Space::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << (mInvert ? "!Space" : "Space") << std::endl;
   Instruction::toStream(os, indent);
@@ -695,7 +695,7 @@ Instruction* CharRange::clone() const
   return new CharRange(mFrom, mTo);
 }
 
-void CharRange::toStream(std::ostream &os, const std::string &indent) const
+void CharRange::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << "CharRange " << mFrom << "-" << mTo << std::endl;
   Instruction::toStream(os, indent);
@@ -768,7 +768,7 @@ Instruction* CharClass::clone() const
   return new CharClass(CloneList(mFirst), mInvert);
 }
 
-void CharClass::toStream(std::ostream &os, const std::string &indent) const
+void CharClass::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << "CharClass[" << std::endl;
   if (mFirst)
@@ -854,7 +854,7 @@ void Repeat::setInstruction(Instruction *i)
   mInst = i;
 }
 
-void Repeat::toStream(std::ostream &os, const std::string &indent) const
+void Repeat::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << "Repeat [" << mMin << ", ";
   if (mMax <= 0)
@@ -1046,7 +1046,7 @@ Instruction* Alternative::clone() const
   return new Alternative(CloneList(mFirst), CloneList(mSecond));
 }
 
-void Alternative::toStream(std::ostream &os, const std::string &indent) const
+void Alternative::toStream(std::ostream &os, const String &indent) const
 {
   if (mFirst)
   {
@@ -1084,7 +1084,7 @@ const char* Alternative::match(const char *cur, MatchInfo &info) const
 
 Group::Group(int index, Instruction *first, bool zerowidth, bool invert,
              unsigned short flags, TriState nc, TriState ml, TriState dnl,
-             const std::string &name)
+             const String &name)
   : Instruction()
   , mIndex(index)
   , mFirst(first)
@@ -1182,7 +1182,7 @@ Instruction* Group::clone() const
                    mFlags, mNoCase, mMultiline, mDotNewline, mName);
 }
 
-void Group::toStream(std::ostream &os, const std::string &indent) const
+void Group::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << "(";
   os << "group:" << mIndex << "[\"" << mName << "\"] ";
@@ -1455,7 +1455,7 @@ Backsubst::Backsubst(int index)
 {      
 }
 
-Backsubst::Backsubst(const std::string &n)
+Backsubst::Backsubst(const String &n)
   : Instruction(), mIndex(-1), mName(n)
 {
 }
@@ -1469,7 +1469,7 @@ Instruction* Backsubst::clone() const
   return (mIndex > 0 ? new Backsubst(mIndex) : new Backsubst(mName));
 }
 
-void Backsubst::toStream(std::ostream &os, const std::string &indent) const
+void Backsubst::toStream(std::ostream &os, const String &indent) const
 {
   //os << indent << "\\" << mIndex << std::endl;
   if (mName.length() > 0)
@@ -1497,7 +1497,7 @@ const char* Backsubst::match(const char *cur, MatchInfo &info) const
   }
   else
   {
-    std::map<std::string, size_t>::iterator it = info.gnames.find(mName);
+    std::map<String, size_t>::iterator it = info.gnames.find(mName);
     if (it == info.gnames.end() || it->second <= 0)
     {
 #ifdef _DEBUG_REX
@@ -1668,7 +1668,7 @@ Instruction* WordStart::clone() const
   return new WordStart();
 }
 
-void WordStart::toStream(std::ostream &os, const std::string &indent) const
+void WordStart::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << "WordStart" << std::endl;
   Instruction::toStream(os, indent);
@@ -1709,7 +1709,7 @@ Instruction* WordEnd::clone() const
   return new WordEnd();
 }
 
-void WordEnd::toStream(std::ostream &os, const std::string &indent) const
+void WordEnd::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << "WordEnd" << std::endl;
   Instruction::toStream(os, indent);
@@ -1750,7 +1750,7 @@ Instruction* WordBound::clone() const
   return new WordBound(mInvert);
 }
 
-void WordBound::toStream(std::ostream &os, const std::string &indent) const
+void WordBound::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << (mInvert ? "!WordBound" : "WordBound") << std::endl;
   Instruction::toStream(os, indent);
@@ -1810,7 +1810,7 @@ Instruction* LineStart::clone() const
   return new LineStart();
 }
 
-void LineStart::toStream(std::ostream &os, const std::string &indent) const
+void LineStart::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << "LineStart" << std::endl;
   Instruction::toStream(os, indent);
@@ -1865,7 +1865,7 @@ Instruction* LineEnd::clone() const
   return new LineEnd();
 }
 
-void LineEnd::toStream(std::ostream &os, const std::string &indent) const
+void LineEnd::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << "LineEnd" << std::endl;
   Instruction::toStream(os, indent);
@@ -1918,7 +1918,7 @@ Instruction* StrStart::clone() const
   return new StrStart();
 }
 
-void StrStart::toStream(std::ostream &os, const std::string &indent) const
+void StrStart::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << "StrStart" << std::endl;
   Instruction::toStream(os, indent);
@@ -1959,7 +1959,7 @@ Instruction* StrEnd::clone() const
 }
 
 
-void StrEnd::toStream(std::ostream &os, const std::string &indent) const
+void StrEnd::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << "StrEnd" << std::endl;
   Instruction::toStream(os, indent);
@@ -2001,7 +2001,7 @@ Instruction* BufferEnd::clone() const
   return new BufferEnd();
 }
 
-void BufferEnd::toStream(std::ostream &os, const std::string &indent) const
+void BufferEnd::toStream(std::ostream &os, const String &indent) const
 {
   os << indent << "BufferEnd" << std::endl;
   Instruction::toStream(os, indent);
@@ -2035,7 +2035,7 @@ Conditional::Conditional(int index, Instruction *ifTrue, Instruction *ifFalse)
 {
 }
 
-Conditional::Conditional(const std::string &n, Instruction *ifTrue, Instruction *ifFalse)
+Conditional::Conditional(const String &n, Instruction *ifTrue, Instruction *ifFalse)
   : mIndex(-1), mName(n), mTrue(ifTrue), mFalse(ifFalse)
 {
 }
@@ -2064,7 +2064,7 @@ Instruction* Conditional::clone() const
   }
 }
 
-void Conditional::toStream(std::ostream &os, const std::string &indent) const
+void Conditional::toStream(std::ostream &os, const String &indent) const
 {
   if (mTrue)
   {
@@ -2110,7 +2110,7 @@ const char* Conditional::match(const char *cur, MatchInfo &info) const
   size_t index = 0;
   if (mName.length() > 0)
   {
-    std::map<std::string, size_t>::iterator it = info.gnames.find(mName);
+    std::map<String, size_t>::iterator it = info.gnames.find(mName);
     if (it != info.gnames.end())
     {
       index = it->second;

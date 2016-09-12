@@ -31,7 +31,7 @@ namespace dirmap {
 static StringDict gsNix2Win;
 static StringDict gsWin2Nix;
 
-static bool IsWindowsPath(const std::string &p) {
+static bool IsWindowsPath(const String &p) {
   static Rex wpe(RAW("^[A-Za-z]:[/\\]"));
   return wpe.match(p);
 }

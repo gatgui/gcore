@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
     
     std::cout << v0[0] << ", " << v0[1] << ", " << v0[2] << ", " << v0[3] << std::endl;
     
-    std::string es = gcore::base64::Encode(v0, 4*sizeof(float));
+    gcore::String es = gcore::base64::Encode(v0, 4*sizeof(float));
     std::cout << es << std::endl;
     
     gcore::base64::Decode(es, v1, 4*sizeof(float));
@@ -45,14 +45,14 @@ int main(int argc, char **argv) {
     return -1;
   }
   
-  std::string str = argv[2];
+  gcore::String str = argv[2];
   
   if (strcmp(argv[1], "--decode") == 0) {
-    std::string dec = gcore::base64::Decode(str);
+    gcore::String dec = gcore::base64::Decode(str);
     std::cout << "\"" << str << "\" -> \"" << dec << "\"" << std::endl;
   
   } else if (strcmp(argv[1], "--encode") == 0) {
-    std::string enc = gcore::base64::Encode(str);
+    gcore::String enc = gcore::base64::Encode(str);
     std::cout << "\"" << str << "\" -> \"" << enc << "\"" << std::endl;
   
   } else {

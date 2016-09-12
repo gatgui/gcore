@@ -121,7 +121,7 @@ namespace gcore {
   };
   
   inline Path operator+(const Path &p0, const Path &p1) {
-    gcore::Path rv(p0);
+    Path rv(p0);
     rv += p1;
     return rv;
   }

@@ -25,8 +25,8 @@ USA.
 
 int main(int argc, char **argv) {
   
-  std::map<std::string, int> csid;
-  std::map<std::string, int>::iterator it;
+  std::map<gcore::String, int> csid;
+  std::map<gcore::String, int>::iterator it;
   
   //float  indata[6] = {1.0f, 2.0f, 3.0f, -3.0f, -2.0f, -1.0f};
   //float  indata[6] = {2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f};
@@ -42,8 +42,8 @@ int main(int argc, char **argv) {
   csid["ipv6"] = gcore::base85::IPV6;
   
   int cs = gcore::base85::Ascii85;
-  std::string encstr = "";
-  std::string decstr = "";
+  gcore::String encstr = "";
+  gcore::String decstr = "";
   
   for (int a=1; a<argc; ++a) {
     if (!strcmp(argv[a], "-cs")) {
@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
   gcore::base85::Decoder *dec = gcore::base85::CreateDecoder(cs);
   
   // test 1
-  std::string es, ds;
+  gcore::String es, ds;
   
   es = gcore::base85::Encode(enc, &indata[0], inlen);
   
@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
   // Custom encoding test
   const gcore::base85::Encoding *ascii85 = gcore::base85::GetEncoding(gcore::base85::Ascii85);
   
-  std::string charset = ascii85->charset + 3;
+  gcore::String charset = ascii85->charset + 3;
   charset += "vwx";
   
   gcore::base85::Encoding e_pack4;

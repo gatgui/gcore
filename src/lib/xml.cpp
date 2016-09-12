@@ -898,7 +898,7 @@ bool XMLDoc::read(std::istream &is) {
             }
 
             if (e == String::npos) {
-              std::string cc;
+              String cc;
               cc.push_back(quoteChar);
               Log::PrintError("[gcore] XMLDoc::read: Missing closing %c for attribute", quoteChar);
               delete elem;

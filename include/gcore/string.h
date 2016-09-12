@@ -33,10 +33,10 @@ namespace gcore {
   class GCORE_API RexMatch;
   class GCORE_API StringList;
   
+  // as String is a subclass of std::string, we defined the operators using std::string 
+  
   class GCORE_API String : public std::string {
     public:
-      
-      //typedef std::vector<String> List;
       
       String();
       String(const std::string &rhs);

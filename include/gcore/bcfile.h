@@ -25,6 +25,7 @@ USA.
 #define __gcore_bcfile_h_
 
 #include <gcore/config.h>
+#include <gcore/string.h>
 
 namespace gcore
 {
@@ -35,7 +36,7 @@ namespace gcore
    GCORE_API void WriteFloat(std::ostream &os, float val);
    GCORE_API void WriteDouble(std::ostream &os, double val);
    GCORE_API void WriteString(std::ostream &os, const char *str);
-   GCORE_API void WriteString(std::ostream &os, const std::string &str);
+   GCORE_API void WriteString(std::ostream &os, const String &str);
 
    GCORE_API bool ReadInt32(std::istream &is, long &val);
    GCORE_API bool ReadUint32(std::istream &is, unsigned long &val);
@@ -44,7 +45,7 @@ namespace gcore
    GCORE_API bool ReadFloat(std::istream &is, float &val);
    GCORE_API bool ReadDouble(std::istream &is, double &val);
    GCORE_API bool ReadString(std::istream &is, char **str);
-   GCORE_API bool ReadString(std::istream &is, std::string &str);
+   GCORE_API bool ReadString(std::istream &is, String &str);
    
    class GCORE_API BCFileElement
    {
@@ -95,16 +96,16 @@ namespace gcore
       ~BCFile();
 
       void clearElements();
-      bool addElement(const std::string &name, BCFileElement *e);
-      bool replaceElement(const std::string &name, BCFileElement *e);
-      bool hasElement(const std::string &name) const;
-      bool readElement(const std::string &name, BCFileElement *elt);
+      bool addElement(const String &name, BCFileElement *e);
+      bool replaceElement(const String &name, BCFileElement *e);
+      bool hasElement(const String &name) const;
+      bool readElement(const String &name, BCFileElement *elt);
 
-      bool write(const std::string &filepath, bool preserveData) const;
+      bool write(const String &filepath, bool preserveData) const;
       // no read function, as we need the FileElement handlers to read properly
       // just bookkeep the offset if the different elements
       // -> that's the reason an internal file object is kept
-      bool readTOC(const std::string &filepath);
+      bool readTOC(const String &filepath);
 
       void doneReading();
 
@@ -124,7 +125,7 @@ namespace gcore
 
    protected:
 
-      mutable std::map<std::string, BCFileElement*> mElements;
+      mutable std::map<String, BCFileElement*> mElements;
       mutable std::ifstream mInFile;
       mutable std::vector<ElementPlaceHolder*> mPlaceHolders;
    };

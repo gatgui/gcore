@@ -14,7 +14,7 @@ ctypedef public class PerfLog [object PyPerfLog, type PyPerfLogType]:
    
    @classmethod
    def Begin(klass, s):
-      gcore.Begin(gcore.string(<char*?>s))
+      gcore.Begin(gcore.String(<char*?>s))
    
    @classmethod
    def End(klass):
@@ -65,7 +65,7 @@ ctypedef public class PerfLog [object PyPerfLog, type PyPerfLogType]:
          self._cobj = NULL
    
    def begin(self, s):
-      self._cobj.begin(gcore.string(<char*?>s))
+      self._cobj.begin(gcore.String(<char*?>s))
    
    def end(self):
       self._cobj.end()

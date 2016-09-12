@@ -7,15 +7,6 @@ cdef extern from "<gcore/platform.h>":
    
    cdef char DIR_SEP 
    cdef char PATH_SEP
-
-
-cdef extern from "<string>" namespace "std":
-  
-   cdef cppclass string:
-      string()
-      string(string &)
-      string(char*)
-      char* c_str()
    
 
 cdef extern from "<gcore/status.h>" namespace "gcore":
@@ -444,7 +435,7 @@ cdef extern from "<gcore/perflog.h>" namespace "gcore":
       
       PerfLog& assign "operator=" (PerfLog&)
       
-      void begin(string&)
+      void begin(String&)
       void end()
       void _print "print" (Output, int, int, TimeCounter.Units)
       void _print "print" (Log&, int, int, TimeCounter.Units)
@@ -454,7 +445,7 @@ cdef extern from "<gcore/perflog.h>" namespace "gcore":
 cdef extern from "<gcore/perflog.h>" namespace "gcore::PerfLog":
    
    PerfLog& Get()
-   void Begin(string&)
+   void Begin(String&)
    void End()
    void Print(Output, int, int, TimeCounter.Units)
    void Print(Log&, int, int, TimeCounter.Units)

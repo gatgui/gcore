@@ -93,7 +93,7 @@ Host::Host() {
   memset(&mAddr, 0, sizeof(struct sockaddr_in));
 }
 
-Host::Host(const std::string &addr, unsigned short port, Status *status) {
+Host::Host(const String &addr, unsigned short port, Status *status) {
 
   memset(&mAddr, 0, sizeof(struct sockaddr_in));
   mAddr.sin_family = AF_INET;
@@ -149,7 +149,7 @@ unsigned short Host::port() const {
   return ntohs(mAddr.sin_port);
 }
 
-std::string Host::address() const {
+String Host::address() const {
   return inet_ntoa(mAddr.sin_addr);
 }
 
@@ -263,7 +263,7 @@ bool Connection::setLinger(bool onoff) {
 #endif
 }
 
-bool Connection::read(std::string &s, double timeout, Status *status) {
+bool Connection::read(String &s, double timeout, Status *status) {
   char *bytes = 0;
   size_t len = 0;
   bool rv = this->read(bytes, len, timeout, status);
@@ -276,7 +276,7 @@ bool Connection::read(std::string &s, double timeout, Status *status) {
   return rv;
 }
 
-bool Connection::readUntil(const char *until, std::string &s, double timeout, Status *status) {
+bool Connection::readUntil(const char *until, String &s, double timeout, Status *status) {
   char *bytes = 0;
   size_t len = 0;
   bool rv = this->readUntil(until, bytes, len, timeout, status);
@@ -289,7 +289,7 @@ bool Connection::readUntil(const char *until, std::string &s, double timeout, St
   return rv;
 }
 
-size_t Connection::write(const std::string &s, double timeout, Status *status) {
+size_t Connection::write(const String &s, double timeout, Status *status) {
    return this->write(s.c_str(), s.length(), timeout, status);
 }
 
@@ -1233,5 +1233,5 @@ TCPConnection* TCPSocket::nextWritable() {
   return rv;
 }
 
-}
+} // gcore
 

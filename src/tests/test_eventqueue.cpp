@@ -25,6 +25,7 @@ USA.
 #include <gcore/functor.h>
 #include <gcore/threadpool.h>
 #include <gcore/eventqueue.h>
+#include <gcore/string.h>
 
 using namespace gcore;
 
@@ -39,7 +40,7 @@ bool gThread3Done = false;
 bool gThread4Done = false;
 const int gLoopCount = 10000;
 Mutex gPrintMutex(true);
-std::map<ThreadID, std::string> gThreadNames;
+std::map<ThreadID, String> gThreadNames;
 
 void safePrint(const char *fmt, ...)
 {

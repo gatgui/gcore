@@ -83,7 +83,7 @@ void Status::set(bool success, int errcode) {
                   NULL, mErrCode, MAKELANGID(LANG_ENGLISH,SUBLANG_DEFAULT),
                   (LPTSTR)&buffer, 0, NULL);
     if (buffer) {
-      mMsg += std::string(buffer);
+      mMsg += String(buffer);
       LocalFree(buffer);
     }
 #else
@@ -125,4 +125,4 @@ void Status::set(bool success, int errcode, const char *msg, va_list args) {
   }
 }
 
-}
+} // gcore

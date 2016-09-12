@@ -26,6 +26,7 @@ USA.
 
 #include <gcore/config.h>
 #include <gcore/platform.h>
+#include <gcore/string.h>
 #include <gcore/status.h>
 
 namespace gcore {
@@ -56,14 +57,14 @@ namespace gcore {
     public:
       
       Host();
-      Host(const std::string &addr, unsigned short port, Status *status=0);
+      Host(const String &addr, unsigned short port, Status *status=0);
       Host(const Host &rhs);
       ~Host();
 
       Host& operator=(const Host &rhs);
 
       unsigned short port() const;
-      std::string address() const;
+      String address() const;
 
       operator struct sockaddr* ();
       operator const struct sockaddr* () const;
@@ -121,9 +122,9 @@ namespace gcore {
       virtual bool readUntil(const char *until, char *&bytes, size_t &len, double timeout=-1, Status *status=0) = 0;
       virtual size_t write(const char* bytes, size_t len, double timeout=-1, Status *status=0) = 0;
       
-      bool read(std::string &s, double timeout=-1, Status *status=0);
-      bool readUntil(const char *until, std::string &s, double timeout=-1, Status *status=0);
-      size_t write(const std::string &s, double timeout=-1, Status *status=0);
+      bool read(String &s, double timeout=-1, Status *status=0);
+      bool readUntil(const char *until, String &s, double timeout=-1, Status *status=0);
+      size_t write(const String &s, double timeout=-1, Status *status=0);
       
       // If bytes is non NULL, alloc will try re-allocating them
       // bytes must have been allocated by 'alloc' method
@@ -176,7 +177,7 @@ namespace gcore {
       // If connection is blocking, so will isAlive be
       virtual bool isAlive() const;
       
-      // Need to add those the std::string overrides of read, readUntil and write are
+      // Need to add those the String overrides of read, readUntil and write are
       //   available to TCPConnection class instances
       // (overrides only work in one scope at a time)
       using Connection::read;

@@ -167,7 +167,7 @@ bool Env::isSet(const String &k) const {
 }
 
 String Env::get(const String &k) const {
-  std::string rv;
+  String rv;
 #ifndef _WIN32
   char *v = getenv(k.c_str());
   if (v != NULL) {
@@ -187,7 +187,7 @@ void Env::set(const String &k, const String &v, bool overwrite) {
 #ifndef _WIN32  
   setenv(k.c_str(), v.c_str(), (overwrite ? 1 : 0));
 #else
-  std::string dummy;
+  String dummy;
   if (overwrite || GetEnvironmentVariableA(k.c_str(), NULL, 0) == 0) {
     SetEnvironmentVariableA(k.c_str(), v.c_str());
   }

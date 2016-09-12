@@ -1036,7 +1036,7 @@ gcore::Status gcore::json::Value::read(std::istream &in, bool consumeAll, gcore:
          #endif
          p0 = remain.find_first_not_of(sSpaces);
          
-         if (p0 == std::string::npos)
+         if (p0 == String::npos)
          {
             remain = "";
          }
@@ -1079,7 +1079,7 @@ gcore::Status gcore::json::Value::read(std::istream &in, bool consumeAll, gcore:
          
          if (readSep)
          {
-            if (p0 != std::string::npos)
+            if (p0 != String::npos)
             {
                if (stack.size() == 0)
                {
@@ -1118,7 +1118,7 @@ gcore::Status gcore::json::Value::read(std::istream &in, bool consumeAll, gcore:
             }
          }
          
-         if (p0 == std::string::npos)
+         if (p0 == String::npos)
          {
             remain = "";
          }
@@ -1201,7 +1201,7 @@ gcore::Status gcore::json::Value::read(std::istream &in, bool consumeAll, gcore:
          
          if (readSep)
          {
-            if (p0 != std::string::npos)
+            if (p0 != String::npos)
             {
                if (stack.size() == 0)
                {
@@ -1240,7 +1240,7 @@ gcore::Status gcore::json::Value::read(std::istream &in, bool consumeAll, gcore:
             }
          }
          
-         if (p0 == std::string::npos)
+         if (p0 == String::npos)
          {
             remain = "";
          }
@@ -1299,7 +1299,7 @@ gcore::Status gcore::json::Value::read(std::istream &in, bool consumeAll, gcore:
          p0 = 0;
          p1 = remain.find('"', p0);
          
-         while (p1 != std::string::npos)
+         while (p1 != String::npos)
          {
             if (p1 == 0)
             {
@@ -1319,7 +1319,7 @@ gcore::Status gcore::json::Value::read(std::istream &in, bool consumeAll, gcore:
             }
          }
          
-         if (p1 == std::string::npos)
+         if (p1 == String::npos)
          {
             // couldn't find closing "
             str += remain + "\n";
@@ -1333,7 +1333,7 @@ gcore::Status gcore::json::Value::read(std::istream &in, bool consumeAll, gcore:
             p0 = 0;
             p1 = str.find('\\', p0);
             
-            while (p1 != std::string::npos)
+            while (p1 != String::npos)
             {
                if (p1 + 1 < len)
                {
@@ -1390,7 +1390,7 @@ gcore::Status gcore::json::Value::read(std::istream &in, bool consumeAll, gcore:
                
                p1 = remain.find_first_not_of(sSpaces);
                
-               if (p1 == std::string::npos || remain[p1] != ':')
+               if (p1 == String::npos || remain[p1] != ':')
                {
                   return Failed(this, lineno, coloff+p1, "Expected : after string value");
                }
@@ -1451,7 +1451,7 @@ gcore::Status gcore::json::Value::read(std::istream &in, bool consumeAll, gcore:
          
          p0 = remain.find_first_not_of(sSpaces);
          
-         if (p0 == std::string::npos)
+         if (p0 == String::npos)
          {
             remain = "";
          }
@@ -1590,7 +1590,7 @@ gcore::Status gcore::json::Value::read(std::istream &in, bool consumeAll, gcore:
                      
                      p1 = remain.find_first_of(sSpaces, p0);
                      
-                     if (p1 == std::string::npos)
+                     if (p1 == String::npos)
                      {
                         numstr = remain.substr(p0);
                         remain = "";
@@ -1637,7 +1637,7 @@ gcore::Status gcore::json::Value::read(std::istream &in, bool consumeAll, gcore:
          
          p0 = remain.find_first_not_of(sSpaces);
          
-         if (p0 != std::string::npos)
+         if (p0 != String::npos)
          {
             return Failed(this, lineno, coloff+p0, "Content after top level object");
          }

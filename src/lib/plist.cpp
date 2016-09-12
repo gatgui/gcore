@@ -1124,7 +1124,7 @@ static plist::Value* GetProperty(plist::Dictionary *dict,
 
   if (!GetPropertyNameParts(prop, parts)) {
     if (status) {
-      std::string msg = "Invalid property \"" + prop + "\"";
+      String msg = "Invalid property \"" + prop + "\"";
       status->set(false, msg.c_str());
     }
     return NULL;
@@ -1230,7 +1230,7 @@ static Status SetProperty(plist::Dictionary *dict,
   StringList parts;
 
   if (!GetPropertyNameParts(prop, parts)) {
-    std::string msg = "Invalid property name \"" + prop + "\"";
+    String msg = "Invalid property name \"" + prop + "\"";
     return Status(false, msg.c_str());
   }
 

@@ -64,7 +64,7 @@ int main(int, char**) {
     while (thr.running()) {
       if (socket.selectReadable(0, &stat)) {
         gcore::TCPConnection *conn;
-        std::string data;
+        gcore::String data;
         
         while ((conn = socket.nextReadable()) != NULL) {
           if (conn->readUntil(" ", data, -1, &stat)) {

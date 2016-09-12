@@ -46,7 +46,7 @@ static const char* GetBuiltinEncodingName(int builtinEncoding) {
 }
 
 struct InternalEncoding {
-  std::string enc;
+  String enc;
   unsigned char dec[256];
   bool revbytes;
   std::map<char, unsigned int> svals;
@@ -102,7 +102,7 @@ class EncodingRegistry {
   private:
     
     typedef std::pair<const Encoding*, InternalEncoding> EncodingEntry;
-    typedef std::map<std::string, EncodingEntry> EncodingMap;
+    typedef std::map<String, EncodingEntry> EncodingMap;
   
   public:
     
@@ -916,7 +916,7 @@ char* Encode(Encoder *e, const void *in, size_t inlen, size_t &outlen) {
   }
 }
 
-bool Encode(Encoder *e, const void *in, size_t inlen, std::string &out) {
+bool Encode(Encoder *e, const void *in, size_t inlen, String &out) {
   size_t outlen = 0;
   char *outbytes = 0;
   
@@ -932,20 +932,20 @@ bool Encode(Encoder *e, const void *in, size_t inlen, std::string &out) {
   }
 }
 
-bool Encode(Encoder *e, const std::string &in, char *out, size_t outlen) {
+bool Encode(Encoder *e, const String &in, char *out, size_t outlen) {
   return Encode(e, in.c_str(), in.length(), out, outlen);
 }
 
-char* Encode(Encoder *e, const std::string &in, size_t &outlen) {
+char* Encode(Encoder *e, const String &in, size_t &outlen) {
   return Encode(e, in.c_str(), in.length(), outlen);
 }
 
-bool Encode(Encoder *e, const std::string &in, std::string &out) {
+bool Encode(Encoder *e, const String &in, String &out) {
   return Encode(e, in.c_str(), in.length(), out);
 }
 
-std::string Encode(Encoder *e, const void *data, size_t len) {
-  std::string rv;
+String Encode(Encoder *e, const void *data, size_t len) {
+  String rv;
   if (Encode(e, data, len, rv)) {
     return rv;
   } else {
@@ -953,7 +953,7 @@ std::string Encode(Encoder *e, const void *data, size_t len) {
   }
 }
 
-std::string Encode(Encoder *e, const std::string &in) {
+String Encode(Encoder *e, const String &in) {
   return Encode(e, in.c_str(), in.length());
 }
 
@@ -976,7 +976,7 @@ void* Decode(Decoder *d, const char *in, size_t len, size_t &outlen) {
   }
 }
 
-bool Decode(Decoder *d, const char *in, size_t len, std::string &out) {
+bool Decode(Decoder *d, const char *in, size_t len, String &out) {
   void *outbytes = 0;
   size_t outlen = 0;
   
@@ -991,20 +991,20 @@ bool Decode(Decoder *d, const char *in, size_t len, std::string &out) {
   }
 }
 
-bool Decode(Decoder *d, const std::string &in, void *&out, size_t &outlen) {
+bool Decode(Decoder *d, const String &in, void *&out, size_t &outlen) {
   return _Decode(d, in.c_str(), in.length(), out, outlen);
 }
 
-void* Decode(Decoder *d, const std::string &in, size_t &outlen) {
+void* Decode(Decoder *d, const String &in, size_t &outlen) {
   return Decode(d, in.c_str(), in.length(), outlen);
 }
 
-bool Decode(Decoder *d, const std::string &in, std::string &out) {
+bool Decode(Decoder *d, const String &in, String &out) {
   return Decode(d, in.c_str(), in.length(), out);
 }
 
-std::string Decode(Decoder *d, const char *in, size_t len) {
-  std::string rv;
+String Decode(Decoder *d, const char *in, size_t len) {
+  String rv;
   if (Decode(d, in, len, rv)) {
     return rv;
   } else {
@@ -1012,7 +1012,7 @@ std::string Decode(Decoder *d, const char *in, size_t len) {
   }
 }
 
-std::string Decode(Decoder *d, const std::string &in) {
+String Decode(Decoder *d, const String &in) {
   return Decode(d, in.c_str(), in.length());
 }
 

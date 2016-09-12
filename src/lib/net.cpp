@@ -327,14 +327,14 @@ bool TCPConnection::isAlive() const {
   }
 }
 
-bool TCPConnection::readShutdown() {
+bool TCPConnection::shutdownRead() {
   if (isValid()) {
     return (::shutdown(mFD, SHUT_RD) == 0);
   }
   return false;
 }
 
-bool TCPConnection::writeShutdown() {
+bool TCPConnection::shutdownWrite() {
   if (isValid()) {
     return (::shutdown(mFD, SHUT_WR) == 0);
   }

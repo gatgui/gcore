@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2009~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -122,7 +122,7 @@ bool ThreadPool::start(size_t numThreads)
    
    if (numThreads == 0)
    {
-      numThreads = Thread::GetProcessorCount();
+      numThreads = Thread::ProcessorCount();
    }
    
    // add workers

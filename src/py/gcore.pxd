@@ -1,3 +1,22 @@
+# Copyright (C) 2010~  Gaetan Guidet
+# 
+# This file is part of gcore.
+# 
+# gcore is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or (at
+# your option) any later version.
+# 
+# gcore is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+# 
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+# USA.
+
 from libcpp.map cimport map
 from cpython cimport PyObject
 import sys
@@ -133,33 +152,33 @@ cdef extern from "<gcore/xml.h>" namespace "gcore":
       void removeChild(XMLElement*)
       void removeChild(size_t)
       
-      XMLElement* getParent()
+      XMLElement* parent()
       size_t numChildren()
-      XMLElement* getChild(size_t)
+      XMLElement* child(size_t)
       
       bint setAttribute(String&, String&)
       void removeAttribute(String&)
       bint hasAttribute(String&)
-      String& getAttribute(String&)
+      String& attribute(String&)
       size_t getAttributes(map[String,String]&)
       
       bint setText(String&, bint)
       bint addText(String&)
-      String& getText()
+      String& text()
       
       void setTag(String&)
-      String& getTag()
+      String& tag()
       
       bint hasChildWithTag(String&)
       size_t numChildrenWithTag(String&)
-      XMLElement* getChildWithTag(String&, size_t)
+      XMLElement* childWithTag(String&, size_t)
       size_t getChildrenWithTag(String&, List[XMLElement*]&)
    
    cdef cppclass XMLDoc:
       XMLDoc()
       
       void setRoot(XMLElement*)
-      XMLElement* getRoot(size_t)
+      XMLElement* root(size_t)
 
       size_t numRoots()
       void addRoot(XMLElement*)
@@ -186,12 +205,22 @@ cdef extern from "<gcore/plist.h>" namespace "gcore":
       
       bint has(String&)
       
-      String getString(String&, Status*)
-      long getInteger(String&, Status*)
-      double getReal(String&, Status*)
-      bint getBoolean(String&, Status*)
+      String asString(String&, Status*)
+      long asInteger(String&, Status*)
+      double asReal(String&, Status*)
+      bint asBoolean(String&, Status*)
       
-      size_t getSize(String&, Status*)
+      String asString(String&, String&)
+      long asInteger(String&, long)
+      double asReal(String&, double)
+      bint asBoolean(String&, bint)
+      
+      Status getString(String&, String&)
+      Status getInteger(String&, long&)
+      Status getReal(String&, double&)
+      Status getBoolean(String&, bint&)
+      
+      size_t size(String&, Status*)
       size_t getKeys(String&, StringList&, Status*)
       Status clear(String&)
       bint remove(String&)

@@ -1,3 +1,22 @@
+# Copyright (C) 2010~  Gaetan Guidet
+# 
+# This file is part of gcore.
+# 
+# gcore is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or (at
+# your option) any later version.
+# 
+# gcore is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+# 
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+# USA.
+
 cimport gcore
 from cython.operator cimport dereference as deref
 
@@ -32,9 +51,8 @@ ctypedef public class Pipe [object PyPipe, type PyPipeType]:
    def isNamed(self):
       return self._cobj.isNamed()
    
-   property name:
-      def __get__(self): return self._cobj.name().c_str()
-      def __set__(self, v): raise Exception("_gcore.Pipe.name is not settable")
+   def name(self):
+      return self._cobj.name().c_str()
    
    def isOwned(self):
       return self._cobj.isOwned()

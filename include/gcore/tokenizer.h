@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2009~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -40,11 +40,11 @@ namespace gcore
       void setDelimiters(const char *d);
       void addDelimiter(char d);
 
-      bool isDelim(char d);
+      bool isDelimiter(char d);
 
       bool next(void);
 
-      const char* getToken(void) const;
+      const char* token(void) const;
 
    private:
 

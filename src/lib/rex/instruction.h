@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2010  Gaetan Guidet
+Copyright (C) 2010~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -26,469 +26,470 @@ USA.
 
 #include <gcore/string.h>
 
-namespace gcore {
-
-struct MatchInfo
+namespace gcore
 {
-  const char *beg;
-  const char *end;
-  unsigned short flags;
-  std::vector<std::pair<int, int> > gmatch;
-  std::vector<unsigned short> fstack;
-  std::vector<const char*> cstack;
-  bool once;
-  std::map<const class Group*, bool> gclosed;
-  std::map<String, size_t> gnames;
-  
-  MatchInfo();
-  MatchInfo(const char *b, const char *e, unsigned short flags, size_t ngroups);
-  MatchInfo(const MatchInfo &rhs);
-  
-  MatchInfo& operator=(const MatchInfo &rhs);
-};
 
-class Instruction
-{
-  public:
-    
-    Instruction();
-    virtual ~Instruction();
-    
-    virtual void setGroup(class Group *grp);
-    void setNext(Instruction *inst);
-    void setPrev(Instruction *inst);
-    
-    class Group* group() const;
-    Instruction* next() const;
-    Instruction* prev() const;
-    
-    virtual Instruction* clone() const = 0;
-    
-    /**
-      * match input string against this instruction
-      * @param input Imput character
-      * @param flags Execution flags
-      * @see Rex::Flags
-      * @param groups Matched group ranges
-      * @return NULL if instruction didn't match, pointer to next character on success
-      */
-    virtual const char* match(const char *cur, MatchInfo &info) const = 0;
-    
-    virtual void toStream(std::ostream &os, const String &indent="") const = 0;
-    
-    static Instruction* CloneList(Instruction *i);
-    
-  protected:
-    
-    bool preStep(const char *&cur, MatchInfo &info) const;
-    const char* postStep(const char *cur, MatchInfo &info) const;
-    virtual const char* matchRemain(const char *cur, MatchInfo &info) const;
-    
-  protected:
-    
-    Instruction *mNext;
-    Instruction *mPrev;
-    class Group *mGroup;
-};
-
-class Single : public Instruction
-{
-  public:
-    
-    Single(char c);
-    virtual ~Single();
-    
-    virtual Instruction* clone() const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    
-  protected:
-    
-    char mChar;
-    char mUpperChar;
-    char mLowerChar;
-};
-
-class Any : public Instruction
-{
-  public:
-    
-    Any();
-    virtual ~Any();
-    
-    virtual Instruction* clone() const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-};
-
-class Word : public Instruction
-{
-  public:
-    
-    Word(bool invert);
-    virtual ~Word();
-    
-    virtual Instruction* clone() const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    
-  protected:
-    
-    bool mInvert;
-};
-
-class Digit : public Instruction
-{
-  public:
-    
-    Digit(bool invert);
-    virtual ~Digit();
-    
-    virtual Instruction* clone() const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    
-  protected:
-    
-    bool mInvert;
-};
-
-class LowerLetter : public Instruction
-{
-  public:
-    
-    LowerLetter();
-    virtual ~LowerLetter();
+   struct MatchInfo
+   {
+      const char *beg;
+      const char *end;
+      unsigned short flags;
+      std::vector<std::pair<int, int> > gmatch;
+      std::vector<unsigned short> fstack;
+      std::vector<const char*> cstack;
+      bool once;
+      std::map<const class Group*, bool> gclosed;
+      std::map<String, size_t> gnames;
       
-    virtual Instruction* clone() const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-};
+      MatchInfo();
+      MatchInfo(const char *b, const char *e, unsigned short flags, size_t ngroups);
+      MatchInfo(const MatchInfo &rhs);
+      
+      MatchInfo& operator=(const MatchInfo &rhs);
+   };
 
-class UpperLetter : public Instruction
-{
-  public:
-    
-    UpperLetter();
-    virtual ~UpperLetter();
-    
-    virtual Instruction* clone() const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-};
+   class Instruction
+   {
+   public:
+      
+      Instruction();
+      virtual ~Instruction();
+      
+      virtual void setGroup(class Group *grp);
+      void setNext(Instruction *inst);
+      void setPrev(Instruction *inst);
+      
+      class Group* group() const;
+      Instruction* next() const;
+      Instruction* prev() const;
+      
+      virtual Instruction* clone() const = 0;
+      
+      /**
+         * match input string against this instruction
+         * @param input Imput character
+         * @param flags Execution flags
+         * @see Rex::Flags
+         * @param groups Matched group ranges
+         * @return NULL if instruction didn't match, pointer to next character on success
+         */
+      virtual const char* match(const char *cur, MatchInfo &info) const = 0;
+      
+      virtual void toStream(std::ostream &os, const String &indent="") const = 0;
+      
+      static Instruction* CloneList(Instruction *i);
+      
+   protected:
+      
+      bool preStep(const char *&cur, MatchInfo &info) const;
+      const char* postStep(const char *cur, MatchInfo &info) const;
+      virtual const char* matchRemain(const char *cur, MatchInfo &info) const;
+      
+   protected:
+      
+      Instruction *mNext;
+      Instruction *mPrev;
+      class Group *mGroup;
+   };
 
-class Letter : public Instruction
-{
-  public:
-    
-    Letter(bool invert);
-    virtual ~Letter();
-    
-    virtual Instruction* clone() const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    
-  protected:
-    
-    bool mInvert;
-};
+   class Single : public Instruction
+   {
+   public:
+      
+      Single(char c);
+      virtual ~Single();
+      
+      virtual Instruction* clone() const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      
+   protected:
+      
+      char mChar;
+      char mUpperChar;
+      char mLowerChar;
+   };
 
-class Hexa : public Instruction
-{
-  public:
-    
-    Hexa(bool invert);
-    virtual ~Hexa();
-    
-    virtual Instruction* clone() const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    
-  protected:
-    
-    bool mInvert;
-};
+   class Any : public Instruction
+   {
+   public:
+      
+      Any();
+      virtual ~Any();
+      
+      virtual Instruction* clone() const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+   };
 
-class Space : public Instruction
-{
-  public:
-    
-    Space(bool invert);
-    virtual ~Space();
-    
-    virtual Instruction* clone() const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    
-  protected:
-    
-    bool mInvert;
-};
+   class Word : public Instruction
+   {
+   public:
+      
+      Word(bool invert);
+      virtual ~Word();
+      
+      virtual Instruction* clone() const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      
+   protected:
+      
+      bool mInvert;
+   };
 
-class CharRange : public Instruction
-{
-  public:
-    
-    CharRange(char from, char to);
-    virtual ~CharRange();
-    
-    virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-    
-  protected:
-    
-    char mFrom;
-    char mTo;
-};
+   class Digit : public Instruction
+   {
+   public:
+      
+      Digit(bool invert);
+      virtual ~Digit();
+      
+      virtual Instruction* clone() const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      
+   protected:
+      
+      bool mInvert;
+   };
 
-class CharClass : public Instruction
-{
-  public:
-    
-    CharClass(Instruction *klass, bool invert);
-    virtual ~CharClass();
-    
-    virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-    
-  protected:
-    
-    bool mInvert;
-    Instruction *mFirst;
-};
+   class LowerLetter : public Instruction
+   {
+   public:
+      
+      LowerLetter();
+      virtual ~LowerLetter();
+         
+      virtual Instruction* clone() const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+   };
 
-class Repeat : public Instruction
-{
-  public:
-    
-    Repeat(Instruction *s, int min=0, int max=-1, bool lazy=false);
-    virtual ~Repeat();
-    
-    void setInstruction(Instruction *i);
-    
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    virtual Instruction* clone() const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-    
-  protected:
-    
-    int mMin;
-    int mMax;
-    bool mLazy;
-    Instruction *mInst;
-};
+   class UpperLetter : public Instruction
+   {
+   public:
+      
+      UpperLetter();
+      virtual ~UpperLetter();
+      
+      virtual Instruction* clone() const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+   };
 
-class Alternative : public Instruction
-{
-  public:
-    
-    Alternative(Instruction *i0, Instruction *i1);
-    virtual ~Alternative();
-    
-    virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-    
-    virtual void setGroup(class Group *grp);
-    
-    inline Instruction* first() const {return mFirst;}
-    inline Instruction* second() const {return mSecond;}
-    
-  protected:
-    
-    Instruction *mFirst;
-    Instruction *mSecond;
-};
+   class Letter : public Instruction
+   {
+   public:
+      
+      Letter(bool invert);
+      virtual ~Letter();
+      
+      virtual Instruction* clone() const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      
+   protected:
+      
+      bool mInvert;
+   };
 
-class Group : public Instruction
-{
-  public:
-    
-    enum TriState
-    {
-      Off = 0,
-      On,
-      Inherit
-    };
-    
-    Group(int index, Instruction *fisrt, bool zerowidth, bool invert,
-          unsigned short flags, TriState nc, TriState ml, TriState dnl,
-          const String &name="");
-    virtual ~Group();
-    
-    bool end(bool failure, const char *&cur, MatchInfo &info) const;
-    void open(const char *cur, MatchInfo &info) const;
-    
-    inline bool empty() const {return mFirst == 0;}
-    inline bool zeroWidth() const {return mZeroWidth;}
-    inline const String& name() const {return mName;}
-    inline size_t index() const {return mIndex;}
-    
-    virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-    
-  protected:
-    
-    int mIndex;
-    Instruction *mFirst;
-    Instruction *mLast;
-    bool mZeroWidth;
-    bool mInvert;
-    TriState mDotNewline;
-    TriState mNoCase;
-    TriState mMultiline;
-    unsigned short mFlags;
-    String mName;
-};
+   class Hexa : public Instruction
+   {
+   public:
+      
+      Hexa(bool invert);
+      virtual ~Hexa();
+      
+      virtual Instruction* clone() const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      
+   protected:
+      
+      bool mInvert;
+   };
 
-class Backsubst : public Instruction
-{
-  public:
-    
-    Backsubst(int index);
-    Backsubst(const String &n);
-    virtual ~Backsubst();
-    
-    virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-    
-  protected:
-    
-    int mIndex;
-    String mName;
-};
+   class Space : public Instruction
+   {
+   public:
+      
+      Space(bool invert);
+      virtual ~Space();
+      
+      virtual Instruction* clone() const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      
+   protected:
+      
+      bool mInvert;
+   };
 
-class WordStart : public Instruction
-{
-  public:
-    
-    WordStart();
-    virtual ~WordStart();
-    
-    virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-};
+   class CharRange : public Instruction
+   {
+   public:
+      
+      CharRange(char from, char to);
+      virtual ~CharRange();
+      
+      virtual Instruction* clone() const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      
+   protected:
+      
+      char mFrom;
+      char mTo;
+   };
 
-class WordEnd : public Instruction
-{
-  public:
-  
-    WordEnd();
-    virtual ~WordEnd();
-    
-    virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-};
+   class CharClass : public Instruction
+   {
+   public:
+      
+      CharClass(Instruction *klass, bool invert);
+      virtual ~CharClass();
+      
+      virtual Instruction* clone() const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      
+   protected:
+      
+      bool mInvert;
+      Instruction *mFirst;
+   };
 
-class WordBound : public Instruction
-{
-  public:
-  
-    WordBound(bool invert);
-    virtual ~WordBound();
-    
-    virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-  
-  protected:
-    
-    bool mInvert;
-};
+   class Repeat : public Instruction
+   {
+   public:
+      
+      Repeat(Instruction *s, int min=0, int max=-1, bool lazy=false);
+      virtual ~Repeat();
+      
+      void setInstruction(Instruction *i);
+      
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      virtual Instruction* clone() const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      
+   protected:
+      
+      int mMin;
+      int mMax;
+      bool mLazy;
+      Instruction *mInst;
+   };
 
-class LineStart : public Instruction
-{
-  public:
-  
-    LineStart();
-    virtual ~LineStart();
-    
-    virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-};
+   class Alternative : public Instruction
+   {
+   public:
+      
+      Alternative(Instruction *i0, Instruction *i1);
+      virtual ~Alternative();
+      
+      virtual Instruction* clone() const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      
+      virtual void setGroup(class Group *grp);
+      
+      inline Instruction* first() const {return mFirst;}
+      inline Instruction* second() const {return mSecond;}
+      
+   protected:
+      
+      Instruction *mFirst;
+      Instruction *mSecond;
+   };
 
-class LineEnd : public Instruction
-{
-  public:
-  
-    LineEnd();
-    virtual ~LineEnd();
-    
-    virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-};
+   class Group : public Instruction
+   {
+   public:
+      
+      enum TriState
+      {
+         Off = 0,
+         On,
+         Inherit
+      };
+      
+      Group(int index, Instruction *fisrt, bool zerowidth, bool invert,
+               unsigned short flags, TriState nc, TriState ml, TriState dnl,
+               const String &name="");
+      virtual ~Group();
+      
+      bool end(bool failure, const char *&cur, MatchInfo &info) const;
+      void open(const char *cur, MatchInfo &info) const;
+      
+      inline bool empty() const {return mFirst == 0;}
+      inline bool zeroWidth() const {return mZeroWidth;}
+      inline const String& name() const {return mName;}
+      inline size_t index() const {return mIndex;}
+      
+      virtual Instruction* clone() const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      
+   protected:
+      
+      int mIndex;
+      Instruction *mFirst;
+      Instruction *mLast;
+      bool mZeroWidth;
+      bool mInvert;
+      TriState mDotNewline;
+      TriState mNoCase;
+      TriState mMultiline;
+      unsigned short mFlags;
+      String mName;
+   };
 
-class StrStart : public Instruction
-{
-  public:
-  
-    StrStart();
-    virtual ~StrStart();
-    
-    virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-};
+   class Backsubst : public Instruction
+   {
+   public:
+      
+      Backsubst(int index);
+      Backsubst(const String &n);
+      virtual ~Backsubst();
+      
+      virtual Instruction* clone() const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      
+   protected:
+      
+      int mIndex;
+      String mName;
+   };
 
-// End of string
-// \Z hum should match before \n if trailing one
-class StrEnd : public Instruction
-{
-  public:
-  
-    StrEnd();
-    virtual ~StrEnd();
-    
-    virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-};
+   class WordStart : public Instruction
+   {
+   public:
+      
+      WordStart();
+      virtual ~WordStart();
+      
+      virtual Instruction* clone() const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+   };
 
-// End of string
-// \z
-class BufferEnd : public Instruction
-{
-  public:
-  
-    BufferEnd();
-    virtual ~BufferEnd();
-    
-    virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-};
+   class WordEnd : public Instruction
+   {
+   public:
+   
+      WordEnd();
+      virtual ~WordEnd();
+      
+      virtual Instruction* clone() const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+   };
 
-// Conditional
-// (?(id|name)true|false)
-class Conditional : public Instruction
-{
-  public:
-    
-    Conditional(int index, Instruction *ifTrue, Instruction *ifFalse=0);
-    Conditional(const String &n, Instruction *ifTrue, Instruction *ifFalse=0);
-    virtual ~Conditional();
-    
-    virtual Instruction* clone() const;
-    virtual void toStream(std::ostream &os, const String &indent="") const;
-    virtual const char* match(const char *cur, MatchInfo &info) const;
-    
-    virtual void setGroup(class Group *grp);
-  
-  protected:
-    
-    int mIndex;
-    String mName;
-    Instruction *mTrue;
-    Instruction *mFalse;
-};
+   class WordBound : public Instruction
+   {
+   public:
+   
+      WordBound(bool invert);
+      virtual ~WordBound();
+      
+      virtual Instruction* clone() const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+   
+   protected:
+      
+      bool mInvert;
+   };
+
+   class LineStart : public Instruction
+   {
+   public:
+   
+      LineStart();
+      virtual ~LineStart();
+      
+      virtual Instruction* clone() const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+   };
+
+   class LineEnd : public Instruction
+   {
+   public:
+   
+      LineEnd();
+      virtual ~LineEnd();
+      
+      virtual Instruction* clone() const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+   };
+
+   class StrStart : public Instruction
+   {
+   public:
+   
+      StrStart();
+      virtual ~StrStart();
+      
+      virtual Instruction* clone() const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+   };
+
+   // End of string
+   // \Z hum should match before \n if trailing one
+   class StrEnd : public Instruction
+   {
+   public:
+   
+      StrEnd();
+      virtual ~StrEnd();
+      
+      virtual Instruction* clone() const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+   };
+
+   // End of string
+   // \z
+   class BufferEnd : public Instruction
+   {
+   public:
+   
+      BufferEnd();
+      virtual ~BufferEnd();
+      
+      virtual Instruction* clone() const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+   };
+
+   // Conditional
+   // (?(id|name)true|false)
+   class Conditional : public Instruction
+   {
+   public:
+      
+      Conditional(int index, Instruction *ifTrue, Instruction *ifFalse=0);
+      Conditional(const String &n, Instruction *ifTrue, Instruction *ifFalse=0);
+      virtual ~Conditional();
+      
+      virtual Instruction* clone() const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      
+      virtual void setGroup(class Group *grp);
+   
+   protected:
+      
+      int mIndex;
+      String mName;
+      Instruction *mTrue;
+      Instruction *mFalse;
+   };
 
 }
 

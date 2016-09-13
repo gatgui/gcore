@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010, 2011  Gaetan Guidet
+Copyright (C) 2010~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -96,7 +96,7 @@ Status String::fromXML(const XMLElement *elt)
    {
       return Status(false, "NULL element.");
    }
-   mValue = elt->getText();
+   mValue = elt->text();
    mValue.strip();
    return Status(true);
 }
@@ -154,11 +154,11 @@ Status Integer::fromXML(const XMLElement *elt)
    {
       return Status(false, "NULL element.");
    }
-   if (elt->getTag() != "integer")
+   if (elt->tag() != "integer")
    {
-      return Status(false, "Invalid tag for integer (%s)", elt->getTag().c_str());
+      return Status(false, "Invalid tag for integer (%s)", elt->tag().c_str());
    }
-   gcore::String txt = elt->getText();
+   gcore::String txt = elt->text();
    if (!txt.strip().toLong(mValue))
    {
       return Status(false, "Not a valid integer value (%s)", txt.c_str());
@@ -219,7 +219,7 @@ Status Real::fromXML(const XMLElement *elt)
    {
       return Status(false, "NULL element.");
    }
-   gcore::String txt = elt->getText();
+   gcore::String txt = elt->text();
    if (!txt.strip().toDouble(mValue))
    {
       return Status(false, "Invalid real value (%s)", txt.c_str());
@@ -280,19 +280,19 @@ Status Boolean::fromXML(const XMLElement *elt)
    {
       return Status(false, "NULL element.");
    }
-   if (elt->getTag() == "false")
+   if (elt->tag() == "false")
    {
       mValue = false;
       return Status(true);
    }
-   else if (elt->getTag() == "true")
+   else if (elt->tag() == "true")
    {
       mValue = true;
       return Status(true);
    }
    else
    {
-      gcore::String txt = elt->getText();
+      gcore::String txt = elt->text();
       if (!txt.strip().toBool(mValue))
       {
          return Status(false, "Invalid boolean value (%s)", txt.c_str());
@@ -478,17 +478,17 @@ Status Array::fromXML(const XMLElement *elt)
    }
    for (size_t i=0; i<elt->numChildren(); ++i)
    {
-      const XMLElement *c = elt->getChild(i);
-      Value *v = PropertyList::NewValue(c->getTag());
+      const XMLElement *c = elt->child(i);
+      Value *v = PropertyList::NewValue(c->tag());
       if (v == 0)
       {
-         if (c->getTag() == "true" || c->getTag() == "false")
+         if (c->tag() == "true" || c->tag() == "false")
          {
             v = new Boolean();
          }
          else
          {
-            return Status(false, "Empty value for tag '%s'", c->getTag().c_str());
+            return Status(false, "Empty value for tag '%s'", c->tag().c_str());
          }
       }
       Status stat = v->fromXML(c);
@@ -670,28 +670,28 @@ Status Dictionary::fromXML(const XMLElement *elt)
    size_t i = 0;
    while (i < elt->numChildren())
    {
-      const XMLElement *k = elt->getChild(i);
-      if (k->getTag() != "key")
+      const XMLElement *k = elt->child(i);
+      if (k->tag() != "key")
       {
          return Status(false, "Missing <key> child tag");
       }
-      gcore::String key = k->getText();
+      gcore::String key = k->text();
       key.strip();
       if (mPairs.find(key) != mPairs.end())
       {
          return Status(false, "Duplicate key '%s'", key.c_str());
       }
-      const XMLElement *v = elt->getChild(i+1);
-      Value *val = PropertyList::NewValue(v->getTag());
+      const XMLElement *v = elt->child(i+1);
+      Value *val = PropertyList::NewValue(v->tag());
       if (val == 0)
       {
-         if (v->getTag() == "true" || v->getTag() == "false")
+         if (v->tag() == "true" || v->tag() == "false")
          {
             val = new Boolean();
          }
          else
          {
-            return Status(false, "Empty value for tag '%s'", v->getTag().c_str());
+            return Status(false, "Empty value for tag '%s'", v->tag().c_str());
          }
       }
       Status stat = val->fromXML(v);
@@ -905,7 +905,7 @@ Status PropertyList::read(const String &filename)
    XMLDoc *doc = new XMLDoc();
    if (doc->read(filename))
    {
-      rv = read(doc->getRoot());
+      rv = read(doc->root());
    }
    else
    {
@@ -1550,7 +1550,7 @@ static Status SetTypedProperty(plist::Dictionary *dict,
    return stat;
 }
 
-size_t PropertyList::getSize(const String &p, Status *status) const
+size_t PropertyList::size(const String &p, Status *status) const
 {
    const plist::Value *val = GetProperty(mTop, p);
    const plist::Dictionary *dict = 0;
@@ -1660,44 +1660,72 @@ bool PropertyList::has(const String &prop) const
    }
 }
 
-const String& PropertyList::getString(const String &p, Status *status) const
+const String& PropertyList::asString(const String &p, Status *status) const
 {
    return GetTypedProperty<plist::String>(mTop, p, NULL, status);
 }
 
-long PropertyList::getInteger(const String &p, Status *status) const
+long PropertyList::asInteger(const String &p, Status *status) const
 {
    return GetTypedProperty<plist::Integer>(mTop, p, NULL, status);
 }
 
-double PropertyList::getReal(const String &p, Status *status) const
+double PropertyList::asReal(const String &p, Status *status) const
 {
    return GetTypedProperty<plist::Real>(mTop, p, NULL, status);
 }
 
-bool PropertyList::getBoolean(const String &p, Status *status) const
+bool PropertyList::asBoolean(const String &p, Status *status) const
 {
    return GetTypedProperty<plist::Boolean>(mTop, p, NULL, status);
 }
 
-const String& PropertyList::getString(const String &p, const String &defaultValue) const
+const String& PropertyList::asString(const String &p, const String &defaultValue) const
 {
-   return GetTypedProperty<plist::String>(mTop, p, &defaultValue);
+   return GetTypedProperty<plist::String>(mTop, p, &defaultValue, NULL);
 }
 
-long PropertyList::getInteger(const String &p, long defaultValue) const
+long PropertyList::asInteger(const String &p, long defaultValue) const
 {
-   return GetTypedProperty<plist::Integer>(mTop, p, &defaultValue);
+   return GetTypedProperty<plist::Integer>(mTop, p, &defaultValue, NULL);
 }
 
-double PropertyList::getReal(const String &p, double defaultValue) const
+double PropertyList::asReal(const String &p, double defaultValue) const
 {
-   return GetTypedProperty<plist::Real>(mTop, p, &defaultValue);
+   return GetTypedProperty<plist::Real>(mTop, p, &defaultValue, NULL);
 }
 
-bool PropertyList::getBoolean(const String &p, bool defaultValue) const
+bool PropertyList::asBoolean(const String &p, bool defaultValue) const
 {
-   return GetTypedProperty<plist::Boolean>(mTop, p, &defaultValue);
+   return GetTypedProperty<plist::Boolean>(mTop, p, &defaultValue, NULL);
+}
+
+Status PropertyList::getString(const String &p, String &val) const
+{
+   Status stat;
+   val = GetTypedProperty<plist::String>(mTop, p, NULL, &stat);
+   return stat;
+}
+
+Status PropertyList::getInteger(const String &p, long &val) const
+{
+   Status stat;
+   val = GetTypedProperty<plist::Integer>(mTop, p, NULL, &stat);
+   return stat;
+}
+
+Status PropertyList::getReal(const String &p, double &val) const
+{
+   Status stat;
+   val = GetTypedProperty<plist::Real>(mTop, p, NULL, &stat);
+   return stat;
+}
+
+Status PropertyList::getBoolean(const String &p, bool &val) const
+{
+   Status stat;
+   val = GetTypedProperty<plist::Boolean>(mTop, p, NULL, &stat);
+   return stat;
 }
 
 Status PropertyList::setString(const String &prop, const String &str)

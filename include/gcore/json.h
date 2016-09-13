@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2016  Gaetan Guidet
+Copyright (C) 2016~  Gaetan Guidet
 
 This file is part of gcore.
 

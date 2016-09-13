@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2010~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -20,6 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
 USA.
 
 */
+
 #ifndef __gcore_perfLog_h__
 #define __gcore_perfLog_h__
 

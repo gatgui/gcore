@@ -6,3 +6,4 @@ excons.cache
 *.xml
 *.json
 *.bfc
+*.pdb

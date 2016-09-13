@@ -64,8 +64,8 @@ ctypedef public class XMLElement [object PyXMLElement, type PyXMLElementType]:
       else:
          self._cobj.removeChild(<size_t?>c)
 
-   def getParent(self):
-      cdef gcore.XMLElement *pe = self._cobj.getParent()
+   def parent(self):
+      cdef gcore.XMLElement *pe = self._cobj.parent()
       if pe != NULL:
          rv = XMLElement(noalloc=True)
          SetXMLElementPtr(rv, pe, False)
@@ -76,8 +76,8 @@ ctypedef public class XMLElement [object PyXMLElement, type PyXMLElementType]:
    def numChildren(self):
       return self._cobj.numChildren()
 
-   def getChild(self, idx):
-      cdef gcore.XMLElement *pe = self._cobj.getChild(<size_t?>idx)
+   def child(self, idx):
+      cdef gcore.XMLElement *pe = self._cobj.child(<size_t?>idx)
       if pe != NULL:
          rv = XMLElement(noalloc=True)
          SetXMLElementPtr(rv, pe, False)
@@ -94,8 +94,8 @@ ctypedef public class XMLElement [object PyXMLElement, type PyXMLElementType]:
    def hasAttribute(self, name):
       return self._cobj.hasAttribute(gcore.String(<char*?>name))
 
-   def getAttribute(self, name):
-      return self._cobj.getAttribute(gcore.String(<char*?>name)).c_str()
+   def attribute(self, name):
+      return self._cobj.attribute(gcore.String(<char*?>name)).c_str()
    
    def getAttributes(self):
       cdef map[gcore.String,gcore.String] cattrs
@@ -117,14 +117,14 @@ ctypedef public class XMLElement [object PyXMLElement, type PyXMLElementType]:
    def addText(self, v):
       return self._cobj.addText(gcore.String(<char*?>v))
 
-   def getText(self):
-      return self._cobj.getText().c_str()
+   def text(self):
+      return self._cobj.text().c_str()
 
    def setTag(self, t):
       self._cobj.setTag(gcore.String(<char*?>t))
 
-   def getTag(self):
-      return self._cobj.getTag().c_str()
+   def tag(self):
+      return self._cobj.tag().c_str()
    
    def hasChildWithTag(self, t):
       return self._cobj.hasChildWithTag(gcore.String(<char*?>t))
@@ -132,8 +132,8 @@ ctypedef public class XMLElement [object PyXMLElement, type PyXMLElementType]:
    def numChildrenWithTag(self, t):
       return self._cobj.numChildrenWithTag(gcore.String(<char*?>t))
    
-   def getChildWithTag(self, t, i=0):
-      cdef gcore.XMLElement *pe = self._cobj.getChildWithTag(gcore.String(<char*?>t), <size_t?>i)
+   def childWithTag(self, t, i=0):
+      cdef gcore.XMLElement *pe = self._cobj.childWithTag(gcore.String(<char*?>t), <size_t?>i)
       if pe != NULL:
          rv = XMLElement(noalloc=True)
          SetXMLElementPtr(rv, pe, False)
@@ -198,8 +198,8 @@ ctypedef public class XMLDoc [object PyXMLDoc, type PyXMLDocType]:
          (<XMLElement?>e)._own = False
       self._cobj.addRoot((<XMLElement?>e)._cobj)
 
-   def getRoot(self, idx=0):
-      cdef gcore.XMLElement *r = self._cobj.getRoot(<size_t?>idx)
+   def root(self, idx=0):
+      cdef gcore.XMLElement *r = self._cobj.root(<size_t?>idx)
       if r != NULL:
          rv = XMLElement(noalloc=True)
          SetXMLElementPtr(rv, r, False)

@@ -152,33 +152,33 @@ cdef extern from "<gcore/xml.h>" namespace "gcore":
       void removeChild(XMLElement*)
       void removeChild(size_t)
       
-      XMLElement* getParent()
+      XMLElement* parent()
       size_t numChildren()
-      XMLElement* getChild(size_t)
+      XMLElement* child(size_t)
       
       bint setAttribute(String&, String&)
       void removeAttribute(String&)
       bint hasAttribute(String&)
-      String& getAttribute(String&)
+      String& attribute(String&)
       size_t getAttributes(map[String,String]&)
       
       bint setText(String&, bint)
       bint addText(String&)
-      String& getText()
+      String& text()
       
       void setTag(String&)
-      String& getTag()
+      String& tag()
       
       bint hasChildWithTag(String&)
       size_t numChildrenWithTag(String&)
-      XMLElement* getChildWithTag(String&, size_t)
+      XMLElement* childWithTag(String&, size_t)
       size_t getChildrenWithTag(String&, List[XMLElement*]&)
    
    cdef cppclass XMLDoc:
       XMLDoc()
       
       void setRoot(XMLElement*)
-      XMLElement* getRoot(size_t)
+      XMLElement* root(size_t)
 
       size_t numRoots()
       void addRoot(XMLElement*)

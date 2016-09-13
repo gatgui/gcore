@@ -354,17 +354,17 @@ bool XMLElement::addText(const String &str)
    return true;
 }
 
-const XMLElement* XMLElement::getParent() const
+const XMLElement* XMLElement::parent() const
 {
    return mParent;
 }
 
-XMLElement* XMLElement::getParent()
+XMLElement* XMLElement::parent()
 {
    return mParent;
 }
 
-const XMLElement* XMLElement::getChild(size_t idx) const
+const XMLElement* XMLElement::child(size_t idx) const
 {
    if (idx < mChildren.size())
    {
@@ -373,7 +373,7 @@ const XMLElement* XMLElement::getChild(size_t idx) const
    return 0;
 }
 
-XMLElement* XMLElement::getChild(size_t idx)
+XMLElement* XMLElement::child(size_t idx)
 {
    if (idx < mChildren.size())
    {
@@ -392,7 +392,7 @@ bool XMLElement::hasAttribute(const String &name) const
    return (mAttrs.find(name) != mAttrs.end());
 }
 
-const String& XMLElement::getAttribute(const String &name) const
+const String& XMLElement::attribute(const String &name) const
 {
    StringDict::const_iterator it = mAttrs.find(name);
    if (it != mAttrs.end())
@@ -417,7 +417,7 @@ size_t XMLElement::getAttributes(StringDict &attrs) const
    return attrs.size();
 }
 
-const String& XMLElement::getText() const
+const String& XMLElement::text() const
 {
    return mText;
 }
@@ -427,7 +427,7 @@ void XMLElement::setTag(const String &tag)
    mTag = tag;
 }
 
-const String& XMLElement::getTag() const
+const String& XMLElement::tag() const
 {
    return mTag;
 }
@@ -436,7 +436,7 @@ bool XMLElement::hasChildWithTag(const String &tag) const
 {
    for (size_t i=0; i<mChildren.size(); ++i)
    {
-      if (mChildren[i]->getTag() == tag)
+      if (mChildren[i]->tag() == tag)
       {
          return true;
       }
@@ -449,7 +449,7 @@ size_t XMLElement::numChildrenWithTag(const String &tag) const
    size_t cnt = 0;
    for (size_t i=0; i<mChildren.size(); ++i)
    {
-      if (mChildren[i]->getTag() == tag)
+      if (mChildren[i]->tag() == tag)
       {
          ++cnt;
       }
@@ -462,7 +462,7 @@ size_t XMLElement::getChildrenWithTag(const String &tag, List<XMLElement*> &el) 
    el.clear();
    for (size_t i=0; i<mChildren.size(); ++i)
    {
-      if (mChildren[i]->getTag() == tag)
+      if (mChildren[i]->tag() == tag)
       {
          el.push_back(mChildren[i]);
       }
@@ -470,12 +470,12 @@ size_t XMLElement::getChildrenWithTag(const String &tag, List<XMLElement*> &el) 
    return el.size();
 }
 
-XMLElement* XMLElement::getChildWithTag(const String &tag, size_t n)
+XMLElement* XMLElement::childWithTag(const String &tag, size_t n)
 {
    size_t cur = 0;
    for (size_t i=0; i<mChildren.size(); ++i)
    {
-      if (mChildren[i]->getTag() == tag)
+      if (mChildren[i]->tag() == tag)
       {
          if (cur == n)
          {
@@ -487,12 +487,12 @@ XMLElement* XMLElement::getChildWithTag(const String &tag, size_t n)
    return NULL;
 }
 
-const XMLElement* XMLElement::getChildWithTag(const String &tag, size_t n) const
+const XMLElement* XMLElement::childWithTag(const String &tag, size_t n) const
 {
    size_t cur = 0;
    for (size_t i=0; i<mChildren.size(); ++i)
    {
-      if (mChildren[i]->getTag() == tag)
+      if (mChildren[i]->tag() == tag)
       {
          if (cur == n)
          {
@@ -535,7 +535,7 @@ void XMLDoc::setRoot(XMLElement *elt)
    }
 }
 
-XMLElement* XMLDoc::getRoot() const
+XMLElement* XMLDoc::root() const
 {
    if (mRoots.size() >= 1)
    {
@@ -552,7 +552,7 @@ size_t XMLDoc::numRoots() const
    return mRoots.size();
 }
 
-XMLElement* XMLDoc::getRoot(size_t i) const
+XMLElement* XMLDoc::root(size_t i) const
 {
    if (i < mRoots.size())
    {
@@ -1202,17 +1202,17 @@ bool XMLDoc::read(std::istream &is)
                   goto failed; 
                }
 
-               if (cur->getTag() != pending)
+               if (cur->tag() != pending)
                {
-                  Log::PrintError("[gcore] XMLDoc::read: Closing tag \"%s\" mismatches opening \"%s\"", pending.c_str(), cur->getTag().c_str());
+                  Log::PrintError("[gcore] XMLDoc::read: Closing tag \"%s\" mismatches opening \"%s\"", pending.c_str(), cur->tag().c_str());
                   goto failed;
                }
 
                taglevel -= 1;
 #ifdef _DEBUG
-               std::cout << "Close tag \"" << cur->getTag() << "\" [level = " << taglevel << "]" << std::endl;
+               std::cout << "Close tag \"" << cur->tag() << "\" [level = " << taglevel << "]" << std::endl;
 #endif
-               cur = cur->getParent();
+               cur = cur->parent();
 
                pending = "";
                state = READ_OPEN;
@@ -1244,7 +1244,7 @@ bool XMLDoc::read(std::istream &is)
    
    if (taglevel != 0)
    {
-      Log::PrintError("[gcore] XMLDoc::read: Unclosed tag <%s>", (cur ? cur->getTag().c_str() : "UNKNOWN"));
+      Log::PrintError("[gcore] XMLDoc::read: Unclosed tag <%s>", (cur ? cur->tag().c_str() : "UNKNOWN"));
       goto failed;
    }
    

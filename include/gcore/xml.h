@@ -40,36 +40,33 @@ namespace gcore
       XMLElement(const String &tag);
       ~XMLElement();
       
+      const XMLElement* parent() const;
+      XMLElement* parent();
+      
       bool addChild(XMLElement *elt);
       void removeChild(XMLElement *elt);
       void removeChild(size_t idx);
-      
-      const XMLElement* getParent() const;
-      XMLElement* getParent();
-      
-      const XMLElement* getChild(size_t idx) const;
-      XMLElement* getChild(size_t idx);
+      const XMLElement* child(size_t idx) const;
+      XMLElement* child(size_t idx);
       size_t numChildren() const;
+      bool hasChildWithTag(const String &tag) const;
+      size_t numChildrenWithTag(const String &tag) const;
+      XMLElement* childWithTag(const String &tag, size_t n=0);
+      const XMLElement* childWithTag(const String &tag, size_t n=0) const;
+      size_t getChildrenWithTag(const String &tag, List<XMLElement*> &el) const;
       
       bool setAttribute(const String &name, const String &value);
       void removeAttribute(const String &name);
-      bool setText(const String &str, bool asCDATA=false);
-      bool addText(const String &str);
-      
       bool hasAttribute(const String &name) const;
-      const String& getAttribute(const String &name) const;
+      const String& attribute(const String &name) const;
       size_t getAttributes(StringDict &) const;
       
-      const String& getText() const;
+      bool setText(const String &str, bool asCDATA=false);
+      bool addText(const String &str);
+      const String& text() const;
       
       void setTag(const String &tag);
-      const String& getTag() const;
-      
-      bool hasChildWithTag(const String &tag) const;
-      size_t numChildrenWithTag(const String &tag) const;
-      XMLElement* getChildWithTag(const String &tag, size_t n=0);
-      const XMLElement* getChildWithTag(const String &tag, size_t n=0) const;
-      size_t getChildrenWithTag(const String &tag, List<XMLElement*> &el) const;
+      const String& tag() const;
    
    protected:
    
@@ -92,10 +89,10 @@ namespace gcore
       ~XMLDoc();
       
       void setRoot(XMLElement *elt);
-      XMLElement* getRoot() const;
+      XMLElement* root() const;
 
       size_t numRoots() const;
-      XMLElement* getRoot(size_t i) const;
+      XMLElement* root(size_t i) const;
       void addRoot(XMLElement *elt);
       
       void write(const String &fileName) const;

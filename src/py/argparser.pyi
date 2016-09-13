@@ -106,9 +106,8 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
          del(self._cobj)
          self._cobj = NULL
    
-   property argumentCount:
-      def __get__(self): return (self._cobj.argumentCount() if self._cobj != NULL else 0)
-      def __set__(self, v): raise Exception("_gcore.ArgParser.argumentCount is not settable")
+   def argumentCount(self):
+      return (self._cobj.argumentCount() if self._cobj != NULL else 0)
    
    def getStringArgument(self, idx):
       cdef gcore.String rv

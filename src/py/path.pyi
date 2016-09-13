@@ -72,9 +72,8 @@ ctypedef public class Path [object PyPath, type PyPathType]:
    def pop(self):
       return self._cobj.pop().c_str()
    
-   property depth:
-      def __get__(self): return self._cobj.depth()
-      def __set__(self, v): raise Exception("_gcore.Path.depth is not settable")
+   def depth(self):
+      return self._cobj.depth()
    
    def removeFile(self):
       return self._cobj.removeFile()
@@ -148,35 +147,25 @@ ctypedef public class Path [object PyPath, type PyPathType]:
       rv += rhs
       return rv
    
-   property basename:
-      def __get__(self): return self._cobj.basename().c_str()
-      def __set__(self, v): raise Exception("_gcore.Path.basename is not settable")
+   def basename(self):
+      return self._cobj.basename().c_str()
    
-   property dirname:
-      def __get__(self): return self._cobj.dirname('/').c_str()
-      def __set__(self, v): raise Exception("_gcore.Path.dirname is not settable")
-   
-   property fullname:
-      def __get__(self): return self._cobj.fullname('/').c_str()
-      def __set__(self, v): raise Exception("_gcore.Path.fullname is not settable")
-   
-   def dirname(self, sep):
+   def dirname(self, sep=None):
       if sep is None:
          return self._cobj.dirname('/').c_str()
       elif not type(sep) in [str, unicode] or len(sep) != 1:
          raise Exception("_gcore.Path.dirname expects a string argument of length 1")
       return self._cobj.dirname((<char*?>sep)[0]).c_str()
    
-   def fullname(self, sep):
+   def fullname(self, sep=None):
       if sep is None:
          return self._cobj.fullname('/').c_str()
       elif not type(sep) in [str, unicode] or len(sep) != 1:
          raise Exception("_gcore.Path.fullname expects a string argument of length 1")
       return self._cobj.fullname((<char*?>sep)[0]).c_str()
    
-   property extension:
-      def __get__(self): return self._cobj.extension().c_str()
-      def __set__(self, v): raise Exception("_gcore.Path.extension is not settable")
+   def extension(self):
+      return self._cobj.extension().c_str()
    
    def checkExtension(self, e):
       return self._cobj.checkExtension(gcore.String(<char*?>e))

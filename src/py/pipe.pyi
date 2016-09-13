@@ -51,9 +51,8 @@ ctypedef public class Pipe [object PyPipe, type PyPipeType]:
    def isNamed(self):
       return self._cobj.isNamed()
    
-   property name:
-      def __get__(self): return self._cobj.name().c_str()
-      def __set__(self, v): raise Exception("_gcore.Pipe.name is not settable")
+   def name(self):
+      return self._cobj.name().c_str()
    
    def isOwned(self):
       return self._cobj.isOwned()

@@ -157,13 +157,11 @@ ctypedef public class Process [object PyProcess, type PyProcessType]:
       st = self._cobj.kill()
       return st.succeeded()
    
-   property returnCode:
-      def __get__(self): return self._cobj.returnCode()
-      def __set__(self, v): raise Exception("_gcore.Process.returnCode is not settable")
+   def returnCode(self):
+      return self._cobj.returnCode()
    
-   property cmdLine:
-      def __get__(self): return self._cobj.cmdLine().c_str()
-      def __set__(self, v): raise Exception("_gcore.Process.cmdLine is not settable")
+   def cmdLine(self):
+      return self._cobj.cmdLine().c_str()
    
    property redirectOut:
       def __get__(self): return self._cobj.redirectOut()

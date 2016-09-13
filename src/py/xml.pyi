@@ -120,11 +120,9 @@ ctypedef public class XMLElement [object PyXMLElement, type PyXMLElementType]:
    def text(self):
       return self._cobj.text().c_str()
 
-   def setTag(self, t):
-      self._cobj.setTag(gcore.String(<char*?>t))
-
-   def tag(self):
-      return self._cobj.tag().c_str()
+   property tag:
+      def __get__(self): return self._cobj.tag().c_str()
+      def __set__(self, v): self._cobj.setTag(gcore.String(<char*?>v))
    
    def hasChildWithTag(self, t):
       return self._cobj.hasChildWithTag(gcore.String(<char*?>t))

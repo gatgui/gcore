@@ -851,7 +851,7 @@ bool Thread::joinable() const
    return (mRunning == true && mProc != 0);
 }
 
-bool Thread::running() const
+bool Thread::isRunning() const
 {
    return mRunning;
 }
@@ -1043,7 +1043,7 @@ Thread::Priority Thread::priority() const
    return result;
 }
 
-bool Thread::priority(Thread::Priority prio)
+bool Thread::setPriority(Thread::Priority prio)
 {
    if (mRunning)
    {
@@ -1079,7 +1079,7 @@ Thread::Scheduling Thread::scheduling() const
    return SCH_DEFAULT;
 }
 
-bool Thread::scheduling(Thread::Scheduling)
+bool Thread::setScheduling(Thread::Scheduling)
 {
    return true;
 }
@@ -1099,7 +1099,7 @@ ThreadID Thread::CurrentID()
    return (void*) GetCurrentThreadId();
 }
 
-int Thread::GetProcessorCount()
+int Thread::ProcessorCount()
 {
    SYSTEM_INFO info;
    GetSystemInfo(&info);
@@ -1326,7 +1326,7 @@ Thread::Priority Thread::priority() const
    return result;
 }
 
-bool Thread::priority(Thread::Priority prio)
+bool Thread::setPriority(Thread::Priority prio)
 {
    if (mRunning)
    {
@@ -1398,7 +1398,7 @@ Thread::Scheduling Thread::scheduling() const
    return result;
 }
 
-bool Thread::scheduling(Thread::Scheduling sced)
+bool Thread::setScheduling(Thread::Scheduling sced)
 {
    if (mRunning)
    {
@@ -1444,7 +1444,7 @@ ThreadID Thread::CurrentID()
    return (ThreadID)pthread_self();
 }
 
-int Thread::GetProcessorCount()
+int Thread::ProcessorCount()
 {
 //#if defined(__APPLE__)
 //  return MPProcessors();

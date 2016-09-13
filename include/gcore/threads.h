@@ -28,7 +28,6 @@ USA.
 
 namespace gcore
 {
-
    class GCORE_API Mutex
    {
    public:
@@ -278,7 +277,7 @@ namespace gcore
       // run the same thread again
       bool restart(bool waitStart=false);
       // is this thread running
-      bool running() const;
+      bool isRunning() const;
       // detach this thread [no join needed to free thread ressources, no effect on windows]
       bool detach();
       // wait for thread to be done and detach
@@ -287,10 +286,10 @@ namespace gcore
       bool cancel();
       // access this thread priority
       Priority priority() const;
-      bool priority(Priority prio);
+      bool setPriority(Priority prio);
       // scheduling
       Scheduling scheduling() const;
-      bool scheduling(Scheduling s);
+      bool setScheduling(Scheduling s);
       // this thread id
       ThreadID id() const;
       // suspend curreny thread
@@ -305,7 +304,7 @@ namespace gcore
       // get current thread id
       static ThreadID CurrentID();
       // get number of processor on machine
-      static int GetProcessorCount();
+      static int ProcessorCount();
       
    private:
       

@@ -86,7 +86,7 @@ int main(int, char**)
       
       std::cout << "Type 'QUIT' to exit." << std::endl;
       
-      while (thr.running())
+      while (thr.isRunning())
       {
          char *buffer = 0;
          size_t len = 0;

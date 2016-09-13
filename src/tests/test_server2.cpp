@@ -67,7 +67,7 @@ int main(int, char**)
       
       std::cout << "Type 'QUIT' to exit." << std::endl;
          
-      while (thr.running())
+      while (thr.isRunning())
       {
          if (socket.selectReadable(0, &stat))
          {

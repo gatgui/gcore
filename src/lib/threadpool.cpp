@@ -122,7 +122,7 @@ bool ThreadPool::start(size_t numThreads)
    
    if (numThreads == 0)
    {
-      numThreads = Thread::GetProcessorCount();
+      numThreads = Thread::ProcessorCount();
    }
    
    // add workers

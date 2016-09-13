@@ -71,28 +71,22 @@ int main(int argc, char **argv)
          json.write("out.json");
       }
       
-      // This will be ambiguous
       //pl.getInteger("font.size", 0);
-      // Use:
-      pl.getInteger("font.size", long(0));
-      // Or:
-      //long defaultValue = 0;
-      //pl.getInteger("font.size", defaultValue);
       
-      std::cout << "Font name: " << pl.getString("font.name", &stat) << " (" << stat << ")" << std::endl;
-      std::cout << "Font size: " << pl.getInteger("font.size", &stat) << " (" << stat << ")" << std::endl;
-      std::cout << "Num schemes: " << pl.getSize("schemes.all", &stat) << " (" << stat << ")" << std::endl;
-      std::cout << "schemes.all[2].name = " << pl.getString("schemes.all[2].name", &stat) << " (" << stat << ")" << std::endl;
-      std::cout << "aaa.bbb1.2.ccc.d2.4 = " << pl.getString("aaa.bbb1.2.ccc.d2.4", &stat) << " (" << stat << ")" << std::endl;
-      std::cout << "aaa.bbb1.3[0].ccc.d2.4 = " << pl.getString("aaa.bbb1.3[0].ccc.d2.4", &stat) << " (" << stat << ")" << std::endl;
+      std::cout << "Font name: " << pl.asString("font.name", &stat) << " (" << stat << ")" << std::endl;
+      std::cout << "Font size: " << pl.asInteger("font.size", &stat) << " (" << stat << ")" << std::endl;
+      std::cout << "Num schemes: " << pl.size("schemes.all", &stat) << " (" << stat << ")" << std::endl;
+      std::cout << "schemes.all[2].name = " << pl.asString("schemes.all[2].name", &stat) << " (" << stat << ")" << std::endl;
+      std::cout << "aaa.bbb1.2.ccc.d2.4 = " << pl.asString("aaa.bbb1.2.ccc.d2.4", &stat) << " (" << stat << ")" << std::endl;
+      std::cout << "aaa.bbb1.3[0].ccc.d2.4 = " << pl.asString("aaa.bbb1.3[0].ccc.d2.4", &stat) << " (" << stat << ")" << std::endl;
 
       pl.remove("aaa.bbb1.2.ccc.d2.4");
       pl.remove("schemes.all[1]");
       
-      std::cout << "Num schemes: " << pl.getSize("schemes.all", &stat) << " (" << stat << ")" << std::endl;
-      std::cout << "schemes.all[0].name = " << pl.getString("schemes.all[0].name", &stat) << " (" << stat << ")" << std::endl;
-      std::cout << "schemes.all[1].name = " << pl.getString("schemes.all[1].name", &stat) << " (" << stat << ")" << std::endl;
-      std::cout << "schemes.all[2].name = " << pl.getString("schemes.all[2].name", &stat) << " (" << stat << ")" << std::endl; 
+      std::cout << "Num schemes: " << pl.size("schemes.all", &stat) << " (" << stat << ")" << std::endl;
+      std::cout << "schemes.all[0].name = " << pl.asString("schemes.all[0].name", &stat) << " (" << stat << ")" << std::endl;
+      std::cout << "schemes.all[1].name = " << pl.asString("schemes.all[1].name", &stat) << " (" << stat << ")" << std::endl;
+      std::cout << "schemes.all[2].name = " << pl.asString("schemes.all[2].name", &stat) << " (" << stat << ")" << std::endl; 
       
    }
    pl.write("test.xml");

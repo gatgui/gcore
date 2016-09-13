@@ -114,22 +114,29 @@ namespace gcore
       bool toJSON(json::Value &v) const;
       
       // When any of the following 4 method call refer to an un-existing property,
-      // the type DefaultValue is returned and status set
+      // the type 'DefaultValue' is returned. status will be filled appropriately
       //    boolean: false
       //    integer: 0
       //    real: 0.0
       //    string: ''
-      const String& getString(const String &prop, Status *status=NULL) const;
-      long getInteger(const String &prop, Status *status=NULL) const;
-      double getReal(const String &prop, Status *status=NULL) const;
-      bool getBoolean(const String &prop, Status *status=NULL) const;
-      // When any of the following 4 method call refer to an un-existing property, the provided default will be used
-      const String& getString(const String &prop, const String &defaultValue) const;
-      long getInteger(const String &prop, long defaultValue) const;
-      double getReal(const String &prop, double defaultValue) const;
-      bool getBoolean(const String &prop, bool defaultValue) const;
+      const String& asString(const String &prop, Status *status=NULL) const;
+      long asInteger(const String &prop, Status *status=NULL) const;
+      double asReal(const String &prop, Status *status=NULL) const;
+      bool asBoolean(const String &prop, Status *status=NULL) const;
+      // When any of the following 4 methods call work as describe above but returns the provided
+      // default value rather than the type one
+      const String& asString(const String &prop, const String &defaultValue) const;
+      long asInteger(const String &prop, long defaultValue) const;
+      double asReal(const String &prop, double defaultValue) const;
+      bool asBoolean(const String &prop, bool defaultValue) const;
+      
+      Status getString(const String &prop, String &val) const;
+      Status getInteger(const String &prop, long &val) const;
+      Status getReal(const String &prop, double &val) const;
+      Status getBoolean(const String &prop, bool &val) const;
+      
       // For arrays and dictionaries
-      size_t getSize(const String &prop, Status *status=NULL) const;
+      size_t size(const String &prop, Status *status=NULL) const;
       // For dictionaries
       size_t getKeys(const String &prop, StringList &keys, Status *status=NULL) const;
       // For arrays and dictionaries

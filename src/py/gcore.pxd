@@ -186,12 +186,22 @@ cdef extern from "<gcore/plist.h>" namespace "gcore":
       
       bint has(String&)
       
-      String getString(String&, Status*)
-      long getInteger(String&, Status*)
-      double getReal(String&, Status*)
-      bint getBoolean(String&, Status*)
+      String asString(String&, Status*)
+      long asInteger(String&, Status*)
+      double asReal(String&, Status*)
+      bint asBoolean(String&, Status*)
       
-      size_t getSize(String&, Status*)
+      String asString(String&, String&)
+      long asInteger(String&, long)
+      double asReal(String&, double)
+      bint asBoolean(String&, bint)
+      
+      Status getString(String&, String&)
+      Status getInteger(String&, long&)
+      Status getReal(String&, double&)
+      Status getBoolean(String&, bint&)
+      
+      size_t size(String&, Status*)
       size_t getKeys(String&, StringList&, Status*)
       Status clear(String&)
       bint remove(String&)

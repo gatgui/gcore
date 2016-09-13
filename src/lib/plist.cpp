@@ -1550,7 +1550,7 @@ static Status SetTypedProperty(plist::Dictionary *dict,
    return stat;
 }
 
-size_t PropertyList::getSize(const String &p, Status *status) const
+size_t PropertyList::size(const String &p, Status *status) const
 {
    const plist::Value *val = GetProperty(mTop, p);
    const plist::Dictionary *dict = 0;
@@ -1660,44 +1660,72 @@ bool PropertyList::has(const String &prop) const
    }
 }
 
-const String& PropertyList::getString(const String &p, Status *status) const
+const String& PropertyList::asString(const String &p, Status *status) const
 {
    return GetTypedProperty<plist::String>(mTop, p, NULL, status);
 }
 
-long PropertyList::getInteger(const String &p, Status *status) const
+long PropertyList::asInteger(const String &p, Status *status) const
 {
    return GetTypedProperty<plist::Integer>(mTop, p, NULL, status);
 }
 
-double PropertyList::getReal(const String &p, Status *status) const
+double PropertyList::asReal(const String &p, Status *status) const
 {
    return GetTypedProperty<plist::Real>(mTop, p, NULL, status);
 }
 
-bool PropertyList::getBoolean(const String &p, Status *status) const
+bool PropertyList::asBoolean(const String &p, Status *status) const
 {
    return GetTypedProperty<plist::Boolean>(mTop, p, NULL, status);
 }
 
-const String& PropertyList::getString(const String &p, const String &defaultValue) const
+const String& PropertyList::asString(const String &p, const String &defaultValue) const
 {
-   return GetTypedProperty<plist::String>(mTop, p, &defaultValue);
+   return GetTypedProperty<plist::String>(mTop, p, &defaultValue, NULL);
 }
 
-long PropertyList::getInteger(const String &p, long defaultValue) const
+long PropertyList::asInteger(const String &p, long defaultValue) const
 {
-   return GetTypedProperty<plist::Integer>(mTop, p, &defaultValue);
+   return GetTypedProperty<plist::Integer>(mTop, p, &defaultValue, NULL);
 }
 
-double PropertyList::getReal(const String &p, double defaultValue) const
+double PropertyList::asReal(const String &p, double defaultValue) const
 {
-   return GetTypedProperty<plist::Real>(mTop, p, &defaultValue);
+   return GetTypedProperty<plist::Real>(mTop, p, &defaultValue, NULL);
 }
 
-bool PropertyList::getBoolean(const String &p, bool defaultValue) const
+bool PropertyList::asBoolean(const String &p, bool defaultValue) const
 {
-   return GetTypedProperty<plist::Boolean>(mTop, p, &defaultValue);
+   return GetTypedProperty<plist::Boolean>(mTop, p, &defaultValue, NULL);
+}
+
+Status PropertyList::getString(const String &p, String &val) const
+{
+   Status stat;
+   val = GetTypedProperty<plist::String>(mTop, p, NULL, &stat);
+   return stat;
+}
+
+Status PropertyList::getInteger(const String &p, long &val) const
+{
+   Status stat;
+   val = GetTypedProperty<plist::Integer>(mTop, p, NULL, &stat);
+   return stat;
+}
+
+Status PropertyList::getReal(const String &p, double &val) const
+{
+   Status stat;
+   val = GetTypedProperty<plist::Real>(mTop, p, NULL, &stat);
+   return stat;
+}
+
+Status PropertyList::getBoolean(const String &p, bool &val) const
+{
+   Status stat;
+   val = GetTypedProperty<plist::Boolean>(mTop, p, NULL, &stat);
+   return stat;
 }
 
 Status PropertyList::setString(const String &prop, const String &str)

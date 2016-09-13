@@ -40,11 +40,11 @@ namespace gcore
       void setDelimiters(const char *d);
       void addDelimiter(char d);
 
-      bool isDelim(char d);
+      bool isDelimiter(char d);
 
       bool next(void);
 
-      const char* getToken(void) const;
+      const char* token(void) const;
 
    private:
 

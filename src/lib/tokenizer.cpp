@@ -86,14 +86,14 @@ void Tokenizer::setDelimiters(const char *d)
 
 void Tokenizer::addDelimiter(char d)
 {
-   if (!isDelim(d))
+   if (!isDelimiter(d))
    {
       mDelims[mNumDelim] = d;
       mNumDelim++;
    }
 }
 
-bool Tokenizer::isDelim(char d)
+bool Tokenizer::isDelimiter(char d)
 {
    if (d == '\0')
    {
@@ -116,12 +116,12 @@ bool Tokenizer::next(void)
    {
       return false;
    }
-   while (isDelim(*mToken))
+   while (isDelimiter(*mToken))
    {
       mToken++;
    }
    char *tokenend = mToken + 1;
-   while (!isDelim(*tokenend))
+   while (!isDelimiter(*tokenend))
    {
       tokenend++;
    }
@@ -137,7 +137,7 @@ bool Tokenizer::next(void)
    return true;
 }
 
-const char* Tokenizer::getToken(void) const
+const char* Tokenizer::token(void) const
 {
    return mToken;
 }

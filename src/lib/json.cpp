@@ -965,6 +965,17 @@ Status Value::Parse(const char *path, Value::ParserCallbacks &callbacks)
    }
 }
 
+Status Value::Parse(std::istream &is, ParserCallbacks &callbacks)
+{
+   json::Value val;
+   
+   Status rv = val.read(is, true, &callbacks);
+   
+   val.reset();
+   
+   return rv;
+}
+
 struct ParserStackItem
 {
    Value::ParserState state;

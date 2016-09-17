@@ -965,6 +965,17 @@ Status Value::Parse(const char *path, Value::ParserCallbacks &callbacks)
    }
 }
 
+Status Value::Parse(std::istream &is, ParserCallbacks &callbacks)
+{
+   json::Value val;
+   
+   Status rv = val.read(is, true, &callbacks);
+   
+   val.reset();
+   
+   return rv;
+}
+
 struct ParserStackItem
 {
    Value::ParserState state;
@@ -1008,6 +1019,7 @@ static Status Failed(Value *value, size_t line, size_t col, const char *fmt, ...
 Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb)
 {
    static const char *sSpaces = " \t\r\n";
+   static const char *sNumberChars = "0123456789.eE+-";
    
    reset();
    
@@ -1020,12 +1032,14 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
    String key = "";
    bool readSep = true;
    bool hasSep = false;
+   std::streampos lastReadPos = in.tellg();
    
    while (in.good())
    {
       if (remain.length() == 0)
       {
          // Note: getline discards the trailing '\n'
+         lastReadPos = in.tellg();
          std::getline(in, remain);
          #ifdef _DEBUG
          std::cout << "Parse| Read line '" << remain << "'" << std::endl;
@@ -1155,16 +1169,14 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                }
                else
                {
-                  remain = remain.substr(p0 + 1);
-                  
-                  if (remain.strip().length() > 0)
-                  {
-                     return Failed(this, lineno, coloff+p0, "Unexpected characters after top level object's end");
-                  }
-                  else
-                  {
-                     return Status(true);
-                  }
+                  // Reset stream position just after p0
+                  // - p0 is relative to begining or 'remain'
+                  // - coloff is the 1-based column number of the begining of 'remain'
+                  //   => coloff + p0 - 1 is the offset in last read line which starts at 'lastReadPos'
+                  // Next character position in stream is thus:
+                  //   lastReadPos + (coloff - 1) + p0 + 1
+                  in.seekg(lastReadPos + std::streamoff(coloff + p0));
+                  return Status(true);
                }
             }
             else
@@ -1594,7 +1606,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                      // must be a number
                      String numstr;
                      
-                     p1 = remain.find_first_of(sSpaces, p0);
+                     p1 = remain.find_first_not_of(sNumberChars, p0);
                      
                      if (p1 == String::npos)
                      {
@@ -1641,12 +1653,13 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
          std::cout << "Parse|End (remain = '" << remain << "')" << std::endl;
          #endif
          
-         p0 = remain.find_first_not_of(sSpaces);
+         // p0 = remain.find_first_not_of(sSpaces);
+         // if (p0 != String::npos)
+         // {
+         //    return Failed(this, lineno, coloff+p0, "Content after top level object");
+         // }
          
-         if (p0 != String::npos)
-         {
-            return Failed(this, lineno, coloff+p0, "Content after top level object");
-         }
+         remain = "";
          
       default:
          break;

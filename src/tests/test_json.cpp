@@ -169,6 +169,8 @@ int main(int argc, char **argv)
    {
       const char *path = argv[1];
       
+      // Single object parsing
+      
       std::cout << "Read '" << path << "'..." << std::endl;
       
       json::Value top;
@@ -194,12 +196,39 @@ int main(int argc, char **argv)
          std::cout << "Failed: " << stat << std::endl;
       }
       
+      // Callback based parser
+      
       Parser parser;
       
       stat = parser.parse(path);
       if (!stat)
       {
          std::cout << "Failed: " << stat << std::endl;
+      }
+      
+      // Stream parsing
+      
+      std::ifstream ifs(path);
+      if (ifs.is_open())
+      {
+         size_t count = 0;
+         json::Value val;
+         
+         stat = val.read(ifs);
+         
+         while (stat && !val.isNull())
+         {
+            ++count;
+            
+            std::cout << "[" << count << "]: " << val << std::endl;
+            
+            stat = val.read(ifs);
+         }
+         
+         if (!stat)
+         {
+            std::cout << stat << std::endl;
+         }
       }
    }
    

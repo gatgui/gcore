@@ -217,6 +217,7 @@ namespace gcore
          };
          
          static Status Parse(const char *path, ParserCallbacks &callbacks);
+         static Status Parse(std::istream &is, ParserCallbacks &callbacks);
       
       private:
          

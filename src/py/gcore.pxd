@@ -1,20 +1,53 @@
+# Copyright (C) 2010~  Gaetan Guidet
+# 
+# This file is part of gcore.
+# 
+# gcore is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or (at
+# your option) any later version.
+# 
+# gcore is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+# 
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+# USA.
+
 from libcpp.map cimport map
 from cpython cimport PyObject
+import sys
+
 
 cdef extern from "<gcore/platform.h>":
    
    cdef char DIR_SEP 
    cdef char PATH_SEP
+   
 
-
-cdef extern from "<string>" namespace "std":
-  
-   cdef cppclass string:
-      string()
-      string(string &)
-      string(char*)
-      char* c_str()
-     
+cdef extern from "<gcore/status.h>" namespace "gcore":
+   
+   cdef cppclass Status:
+      Status()
+      Status(bint)
+      Status(bint, char*)
+      Status(bint, int)
+      Status(bint, int, char*)
+      
+      void clear()
+      void set(bint success)
+      void set(bint success, int errcode)
+      void set(bint success, char *msg)
+      void set(bint success, int errcode, char *msg)
+      
+      bint succeeded()
+      bint failed()
+      int errcode()
+      char* message()
+   
 
 cdef extern from "<gcore/list.h>" namespace "gcore":
    
@@ -64,6 +97,7 @@ cdef extern from "<gcore/path.h>" namespace "gcore":
       
       String& to_string "operator gcore::String&" ()
       
+      int depth()
       String& operator[](int)
       
       bint isAbsolute()
@@ -73,7 +107,7 @@ cdef extern from "<gcore/path.h>" namespace "gcore":
       String basename()
       String dirname(char) # char sep=DIR_SEP
       String fullname(char) # char sep=DIR_SEP
-      String getExtension()
+      String extension()
       bint checkExtension(String&)
       size_t fileSize()
       
@@ -93,10 +127,10 @@ cdef extern from "<gcore/path.h>" namespace "gcore":
 
 cdef extern from "<gcore/path.h>" namespace "gcore::Path":
    
-   cdef Path GetCurrentDir()
+   cdef Path CurrentDir()
    
-   cdef enum EachTarget:
-      ET_FILE, ET_DIRECTORY, ET_HIDDEN, ET_ALL
+   cdef enum ForEachTarget:
+      FE_FILE, FE_DIRECTORY, FE_HIDDEN, FE_ALL
 
 
 cdef extern from "pathenumerator.h":
@@ -118,35 +152,35 @@ cdef extern from "<gcore/xml.h>" namespace "gcore":
       void removeChild(XMLElement*)
       void removeChild(size_t)
       
-      XMLElement* getParent()
-      size_t numChildren()
-      XMLElement* getChild(size_t)
+      XMLElement* parent()
+      size_t childCount()
+      XMLElement* child(size_t)
       
       bint setAttribute(String&, String&)
       void removeAttribute(String&)
       bint hasAttribute(String&)
-      String& getAttribute(String&)
+      String& attribute(String&)
       size_t getAttributes(map[String,String]&)
       
       bint setText(String&, bint)
       bint addText(String&)
-      String& getText()
+      String& text()
       
       void setTag(String&)
-      String& getTag()
+      String& tag()
       
       bint hasChildWithTag(String&)
-      size_t numChildrenWithTag(String&)
-      XMLElement* getChildWithTag(String&, size_t)
+      size_t countChildrenWithTag(String&)
+      XMLElement* childWithTag(String&, size_t)
       size_t getChildrenWithTag(String&, List[XMLElement*]&)
    
    cdef cppclass XMLDoc:
       XMLDoc()
       
       void setRoot(XMLElement*)
-      XMLElement* getRoot(size_t)
+      XMLElement* root(size_t)
 
-      size_t numRoots()
+      size_t rootCount()
       void addRoot(XMLElement*)
       
       void write(String&)
@@ -164,31 +198,40 @@ cdef extern from "<gcore/plist.h>" namespace "gcore":
       
       void create()
       
-      bint read(String&)
-      bint read(XMLElement*)
+      Status read(String&)
+      Status read(XMLElement*)
       void write(String&)
       XMLElement* write(XMLElement*)
       
       bint has(String&)
       
-      #String& getString(String&) except +
-      String getString(String&) except +
-      long getInteger(String&) except +
-      double getReal(String&) except +
-      bint getBoolean(String&) except +
+      String asString(String&, Status*)
+      long asInteger(String&, Status*)
+      double asReal(String&, Status*)
+      bint asBoolean(String&, Status*)
       
-      size_t getSize(String&) except +
-      size_t getKeys(String&, StringList&) except +
-      void clear(String&) except +
+      String asString(String&, String&)
+      long asInteger(String&, long)
+      double asReal(String&, double)
+      bint asBoolean(String&, bint)
+      
+      Status getString(String&, String&)
+      Status getInteger(String&, long&)
+      Status getReal(String&, double&)
+      Status getBoolean(String&, bint&)
+      
+      size_t size(String&, Status*)
+      size_t getKeys(String&, StringList&, Status*)
+      Status clear(String&)
       bint remove(String&)
       
-      void setString(String&, String&) except +
-      void setInteger(String&, long) except +
-      void setReal(String&, double) except +
-      void setBoolean(String&, bint) except +
+      Status setString(String&, String&)
+      Status setInteger(String&, long)
+      Status setReal(String&, double)
+      Status setBoolean(String&, bint)
    
 
-cdef extern from "<gcore/dirmap.h>" namespace "gcore::Dirmap":
+cdef extern from "<gcore/dirmap.h>" namespace "gcore::dirmap":
    
    void AddMapping(String&, String&)
    void RemoveMapping(String&, String&)
@@ -207,18 +250,18 @@ cdef extern from "<gcore/env.h>" namespace "gcore":
       bint isSet(String&)
       String get(String&)
       void set(String&, String&, bint)
-      void setAll(map[String,String]&, bint)
+      void set(map[String,String]&, bint)
       
       size_t asDict(map[String,String]&)
    
 
 cdef extern from "<gcore/env.h>" namespace "gcore::Env":
    
-   String GetUser()
-   String GetHost()
+   String Username()
+   String Hostname()
    String Get(String&)
    void Set(String&, String&, bint)
-   void SetAll(map[String,String]&, bint)
+   void Set(map[String,String]&, bint)
    bint IsSet(String&)
    size_t ListPaths(String&, List[Path]&)
    
@@ -240,7 +283,7 @@ cdef extern from "<gcore/argparser.h>" namespace "gcore":
    cdef cppclass ArgParser:
       ArgParser(FlagDesc*, int)
 
-      size_t getArgumentCount()
+      size_t argumentCount()
       bint getArgument(size_t, String&)
       bint getArgument(size_t, float&)
       bint getArgument(size_t, double&)
@@ -249,8 +292,8 @@ cdef extern from "<gcore/argparser.h>" namespace "gcore":
       bint getArgument(size_t, bint&)
 
       bint isFlagSet(String&)
-      size_t getFlagOccurenceCount(String&)
-      size_t getFlagArgumentCount(String&, size_t)
+      size_t flagOccurenceCount(String&)
+      size_t flagArgumentCount(String&, size_t)
       bint getFlagArgument(String&, size_t, String&)
       bint getFlagArgument(String&, size_t, float&)
       bint getFlagArgument(String&, size_t, double&)
@@ -264,8 +307,8 @@ cdef extern from "<gcore/argparser.h>" namespace "gcore":
       bint getMultiFlagArgument(String&, size_t, size_t, unsigned int&)
       bint getMultiFlagArgument(String&, size_t, size_t, bint&)
 
-      void parse(int, char **) except +
-
+      Status parse(int, char **)
+   
 
 cdef extern from "<gcore/log.h>" namespace "gcore":
    
@@ -279,8 +322,8 @@ cdef extern from "<gcore/log.h>" namespace "gcore":
       
       Log& assign "operator=" (Log&)
       
-      void selectOutputs(unsigned int)
-      unsigned int selectedOutputs()
+      void setLevelMask(unsigned int)
+      unsigned int levelMask()
       
       void printError(char*)
       void printWarning(char*)
@@ -288,24 +331,24 @@ cdef extern from "<gcore/log.h>" namespace "gcore":
       void printInfo(char*)
       
       void setIndentLevel(unsigned int)
-      unsigned int getIndentLevel()
+      unsigned int indentLevel()
       void indent()
       void unIndent()
       
       void setIndentWidth(unsigned int)
-      unsigned int getIndentWidth()
+      unsigned int indentWidth()
       
-      void enableColors(bint)
-      bint colorsEnabled()
+      void setColorOutput(bint)
+      bint colorOutput()
       
-      void showTimeStamps(bint)
-      bint timeStampsShown()
+      void setShowTimeStamps(bint)
+      bint showTimeStamps()
 
 
 cdef extern from "<gcore/log.h>" namespace "gcore::Log":
    
-   void SelectOutputs(unsigned int flags)
-   unsigned int SelectedOutputs()
+   void SetLevelMask(unsigned int mask)
+   unsigned int LevelMask()
    
    void PrintError(char *fmt)
    void PrintWarning(char *fmt)
@@ -313,18 +356,18 @@ cdef extern from "<gcore/log.h>" namespace "gcore::Log":
    void PrintInfo(char *fmt)
    
    void SetIndentLevel(unsigned int n)
-   unsigned int GetIndentLevel()
+   unsigned int IndentLevel()
    void Indent()
    void UnIndent()
    
    void SetIndentWidth(unsigned int w)
-   unsigned int GetIndentWidth()
+   unsigned int IndentWidth()
    
-   void EnableColors(bint onoff)
-   bint ColorsEnabled()
+   void SetColorOutput(bint onoff)
+   bint ColorOutput()
    
-   void ShowTimeStamps(bint onoff)
-   bint TimeStampsShown()
+   void SetShowTimeStamps(bint onoff)
+   bint ShowTimeStamps()
    
 
 cdef extern from "log.h":
@@ -353,12 +396,54 @@ cdef extern from "<gcore/md5.h>" namespace "gcore":
       void clear()
       
       String asString()
-      
+   
 
-cdef extern from "<gcore/perflog.h>" namespace "gcore::PerfLog":
+cdef extern from "<gcore/time.h>" namespace "gcore::TimeCounter":
    
    cdef enum Units:
-      CurrentUnits, NanoSeconds, MilliSeconds, Seconds, Minutes, Hours
+      CurrentUnits, NanoSeconds, MicroSeconds, MilliSeconds, Seconds, Minutes, Hours
+   
+   char* UnitsString(Units)
+   double ConvertUnits(double, Units, Units)
+   
+
+cdef extern from "<gcore/time.h>" namespace "gcore":
+   
+   cdef cppclass TimeCounter:
+      TimeCounter()
+      TimeCounter(Units)
+      TimeCounter(double)
+      TimeCounter(double, Units)
+      TimeCounter(TimeCounter&)
+      
+      TimeCounter& assign "operator=" (TimeCounter&)
+      TimeCounter& plus_eq "operator+=" (TimeCounter&)
+      TimeCounter& plus_eq "operator+=" (double)
+      TimeCounter& sub_eq "operator-=" (TimeCounter&)
+      TimeCounter& sub_eq "operator-=" (double)
+      # Compare operator? <= < == != > >=
+      
+      void restart()
+      
+      bint setUnits(Units)
+      Units units()
+      
+      bint setValue(double)
+      bint setValue(double, Units)
+      double value()
+      double value(Units)
+      
+      double nanoseconds()
+      double microseconds()
+      double milliseconds()
+      double seconds()
+      double minutes()
+      double hours()
+      
+      TimeCounter elapsed()
+   
+
+cdef extern from "<gcore/perflog.h>" namespace "gcore::PerfLog":
    
    cdef enum ShowFlags:
       ShowTotalTime, ShowFuncTime, ShowAvgTotalTime, ShowAvgFuncTime, ShowNumCalls, ShowDetailed, ShowFlag, ShowDefaults, ShowAll
@@ -368,33 +453,101 @@ cdef extern from "<gcore/perflog.h>" namespace "gcore::PerfLog":
    
    cdef enum Output:
       ConsoleOutput, LogOutput
-
+   
 
 cdef extern from "<gcore/perflog.h>" namespace "gcore":
    
    cdef cppclass PerfLog:
       PerfLog()
-      PerfLog(Units)
+      PerfLog(TimeCounter.Units)
       PerfLog(PerfLog&)
       
       PerfLog& assign "operator=" (PerfLog&)
       
-      void begin(string&)
+      void begin(String&)
       void end()
-      void _print "print" (Output, int, int, Units)
-      void _print "print" (Log&, int, int, Units)
+      void _print "print" (Output, int, int, TimeCounter.Units)
+      void _print "print" (Log&, int, int, TimeCounter.Units)
       void clear()
    
 
-
 cdef extern from "<gcore/perflog.h>" namespace "gcore::PerfLog":
    
-   PerfLog& SharedInstance()
-   void Begin(string&)
+   PerfLog& Get()
+   void Begin(String&)
    void End()
-   void Print(Output, int, int, Units)
-   void Print(Log&, int, int, Units)
+   void Print(Output, int, int, TimeCounter.Units)
+   void Print(Log&, int, int, TimeCounter.Units)
    void Clear()
-   char* UnitsString(Units)
-   double ConvertUnits(double, Units, Units)
 
+
+cdef extern from "<gcore/pipe.h>" namespace "gcore":
+   
+   cdef cppclass Pipe:
+      Pipe()
+      Pipe(Pipe&)
+      
+      Pipe& assign "operator=" (Pipe&)
+      
+      bint isNamed()
+      String& name()
+      
+      bint isOwned()
+      bint canRead()
+      bint canWrite()
+      
+      Status create()
+      Status open(String&)
+      
+      void close()
+      void closeRead()
+      void closeWrite()
+      
+      int read(char*, int, Status*)
+      int write(String&, Status*)
+   
+
+cdef extern from "<gcore/process.h>" namespace "gcore":
+   
+   cdef cppclass Process:
+      Process()
+      
+      void setEnv(String&, String&)
+      
+      void setRedirectOut(bint)
+      bint redirectOut()
+      
+      void setRedirectErr(bint)
+      bint redirectErr()
+      
+      void setRedirectErrToOut(bint)
+      bint redirectErrToOut()
+      
+      void setRedirectIn(bint)
+      bint redirectIn()
+      
+      void setShowConsole(bint)
+      bint showConsole()
+      
+      void setKeepAlive(bint)
+      bint keepAlive()
+      
+      int id()
+      
+      Status run(String&)
+      Status run(StringList&)
+      bint isRunning()
+      int wait(bint, Status*)
+      Status kill()
+      int returnCode()
+      String& cmdLine()
+      
+      bint canReadOut()
+      int readOut(char*, int, Status*)
+      bint canReadErr()
+      int readErr(char*, int, Status*)
+      bint canWriteIn()
+      int write(String&, Status*)
+      
+      
+   

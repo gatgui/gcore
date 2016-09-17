@@ -1,3 +1,22 @@
+# Copyright (C) 2010~  Gaetan Guidet
+# 
+# This file is part of gcore.
+# 
+# gcore is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or (at
+# your option) any later version.
+# 
+# gcore is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+# 
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+# USA.
+
 cimport gcore
 from cython.operator cimport dereference as deref
 #from cython.operator cimport reference as ref
@@ -7,14 +26,14 @@ ctypedef public class PerfLog [object PyPerfLog, type PyPerfLogType]:
    cdef bint _own
    
    @classmethod
-   def SharedInstance(klass):
+   def Get(klass):
       rv = PerfLog(noalloc=True)
-      SetPerfLogPtr(rv, &(gcore.SharedInstance()), False)
+      SetPerfLogPtr(rv, &(gcore.Get()), False)
       return rv
    
    @classmethod
    def Begin(klass, s):
-      gcore.Begin(gcore.string(<char*?>s))
+      gcore.Begin(gcore.String(<char*?>s))
    
    @classmethod
    def End(klass):
@@ -65,7 +84,7 @@ ctypedef public class PerfLog [object PyPerfLog, type PyPerfLogType]:
          self._cobj = NULL
    
    def begin(self, s):
-      self._cobj.begin(gcore.string(<char*?>s))
+      self._cobj.begin(gcore.String(<char*?>s))
    
    def end(self):
       self._cobj.end()

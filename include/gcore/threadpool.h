@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2009~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -27,16 +27,16 @@ USA.
 #include <gcore/threads.h>
 #include <gcore/list.h>
 
-namespace gcore {
-  
-  typedef Functor0 Task;
-  
-  const Functor0 NullTask;
-  
-  class GCORE_API ThreadPool {
-    
-    public:
-    
+namespace gcore
+{
+   typedef Functor0 Task;
+   
+   const Functor0 NullTask;
+   
+   class GCORE_API ThreadPool
+   {
+   public:
+   
       ThreadPool();
       
       ~ThreadPool();
@@ -55,43 +55,46 @@ namespace gcore {
       
       bool removeWorkers(size_t n);
       
-      size_t numIdleWorkers();
+      size_t idleWorkerCount();
 
-      size_t numWorkers();
+      size_t workerCount();
 
-    protected:
+   protected:
 
-      class Worker {
-        private:
-        
-          Thread *mThr;
-          ThreadPool *mPool;
-          bool mProcessing;
-        
-        public:
-          
-          friend class ThreadPool;
-        
-          Worker(ThreadPool *p);
-          ~Worker();
-          
-          inline bool processing() const {
+      class Worker
+      {
+      private:
+      
+         Thread *mThr;
+         ThreadPool *mPool;
+         bool mProcessing;
+      
+      public:
+         
+         friend class ThreadPool;
+      
+         Worker(ThreadPool *p);
+         ~Worker();
+         
+         inline bool processing() const
+         {
             return mProcessing;
-          }
-          
-          int run();
-          void done(int);
+         }
+         
+         int run();
+         void done(int);
 
-        protected:
-        
-          inline void processing(bool p) {
+      protected:
+      
+         inline void processing(bool p)
+         {
             mProcessing = p;
-          }
+         }
       };
       
       friend class Worker;
       
-    protected:
+   protected:
       
       Task getTask(Worker *wt);
 
@@ -99,14 +102,15 @@ namespace gcore {
 
       void notifyDone(Worker *wt);
       
-      size_t _numIdleWorkers();
+      size_t _idleWorkerCount();
 
-    protected:
+   protected:
       
-      enum State {
-        TPS_STOPPED,
-        TPS_RUNNING,
-        TPS_WAITING
+      enum State
+      {
+         TPS_STOPPED,
+         TPS_RUNNING,
+         TPS_WAITING
       };
       
       State mState;
@@ -120,10 +124,7 @@ namespace gcore {
       
       Mutex mTasksAccess;
       Condition mTasksChanged;
-      
-  };
-  
-  
+   };
 }
 
 #endif

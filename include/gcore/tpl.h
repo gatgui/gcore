@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2016  Gaetan Guidet
+Copyright (C) 2010~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -26,15 +26,17 @@ USA.
 
 #include <gcore/config.h>
 
-namespace gcore {
-   
+namespace gcore
+{
    template <bool Cond, class TrueType, class FalseType>
-   struct TCond {
+   struct TCond
+   {
       typedef FalseType Type;
    };
    
    template <class TrueType, class FalseType>
-   struct TCond<true, TrueType, FalseType> {
+   struct TCond<true, TrueType, FalseType>
+   {
       typedef TrueType Type;
    };
 }

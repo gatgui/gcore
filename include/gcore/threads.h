@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2009~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -26,10 +26,11 @@ USA.
 
 #include <gcore/functor.h>
 
-namespace gcore {
-
-  class GCORE_API Mutex {
-    public:
+namespace gcore
+{
+   class GCORE_API Mutex
+   {
+   public:
       
       friend class Condition;
       
@@ -41,23 +42,24 @@ namespace gcore {
       void unlock();
       bool isLocked();
       
-    private:
+   private:
       
       Mutex(const Mutex &){}
       Mutex& operator=(const Mutex &){return *this;}
       
-    private:
+   private:
       
       unsigned char mData[64];
 
       //sizeof(CRITICAL_SECTION) == 24
       //sizeof(pthread_mutex_t)  == 44 (OSX)
       //round up to closest power of 2
-  };
-  
-  // another kind of lock in pthread: rwlock !
-  class GCORE_API RWLock {
-    public:
+   };
+   
+   // another kind of lock in pthread: rwlock !
+   class GCORE_API RWLock
+   {
+   public:
       
       RWLock();
       virtual ~RWLock();
@@ -70,18 +72,19 @@ namespace gcore {
       bool tryWriteLock();
       void writeUnlock();
       
-    private:
-    
+   private:
+   
       RWLock(const RWLock&){}
       RWLock& operator=(const RWLock&){return *this;}
       
-    private:
+   private:
       
       unsigned char mData[64];
-  };
-  
-  class GCORE_API Condition {
-    public:
+   };
+   
+   class GCORE_API Condition
+   {
+   public:
       
       Condition();
       virtual ~Condition();
@@ -93,12 +96,12 @@ namespace gcore {
       void notify();
       void notifyAll();
       
-    private:
+   private:
       
       Condition(const Condition &);
       Condition& operator=(const Condition &){return *this;}
       
-    private:
+   private:
       
       unsigned char  mData[64];
 
@@ -106,12 +109,13 @@ namespace gcore {
       //2*sizeof(HANDLE) + sizeof(CRITICAL_SECTION) + sizeof(ulong) == 48
       //    [with 64 bits HANDLE]
       //round up to closest power of 2
-  };
-  
-  // a semaphore is in some way a mutex that you can be locked several times
-  // [dec will block when its count reach 0, until it get greater than 0]
-  class GCORE_API Semaphore {
-    public:
+   };
+   
+   // a semaphore is in some way a mutex that you can be locked several times
+   // [dec will block when its count reach 0, until it get greater than 0]
+   class GCORE_API Semaphore
+   {
+   public:
       
       Semaphore(long init, long maxval=0x7FFFFFF);
       virtual ~Semaphore();
@@ -121,76 +125,86 @@ namespace gcore {
       bool tryDecrement();          //try lock
       bool timedDecrement(unsigned long ms);
       
-    private:
+   private:
       
       Semaphore(const Semaphore &){}
       Semaphore& operator=(const Semaphore &){return *this;}
       
       //long mMax;
       unsigned char mData[128];
-  };
+   };
 
 
-  class GCORE_API ScopeLock {
-    public:
+   class GCORE_API ScopeLock
+   {
+   public:
       inline ScopeLock(Mutex &mtx)
-        : mMutex(mtx) {
-        mMutex.lock();
+         : mMutex(mtx)
+      {
+         mMutex.lock();
       }
-      inline ~ScopeLock() {
-        mMutex.unlock();
+      inline ~ScopeLock()
+      {
+         mMutex.unlock();
       }
-    private:
+   private:
       ScopeLock();
       ScopeLock(const ScopeLock&);
       ScopeLock& operator=(const ScopeLock&); 
-    private:
+   private:
       Mutex &mMutex;
-  };
+   };
 
 
-  class GCORE_API ScopeUnlock {
-    public:
+   class GCORE_API ScopeUnlock
+   {
+   public:
       inline ScopeUnlock(Mutex &mtx)
-        : mMutex(mtx) {
-        mMutex.unlock();
+         : mMutex(mtx)
+      {
+         mMutex.unlock();
       }
-      inline ~ScopeUnlock() {
-        mMutex.lock();
+      inline ~ScopeUnlock()
+      {
+         mMutex.lock();
       }
-    private:
+   private:
       ScopeUnlock();
       ScopeUnlock(const ScopeUnlock&);
       ScopeUnlock& operator=(const ScopeUnlock&); 
-    private:
+   private:
       Mutex &mMutex;
-  };
+   };
 
-  typedef void* ThreadID;
+   typedef void* ThreadID;
 
-  class GCORE_API Thread {
-    
-    public:
-    
-      enum Priority {
-        PRI_UNKNOWN = -1,
-        PRI_DEFAULT,
-        PRI_VERY_LOW,
-        PRI_LOW,
-        PRI_NORMAL,
-        PRI_HIGH,
-        PRI_VERY_HIGH
+   class GCORE_API Thread
+   {
+   public:
+   
+      enum Priority
+      {
+         PRI_UNKNOWN = -1,
+         PRI_DEFAULT,
+         PRI_VERY_LOW,
+         PRI_LOW,
+         PRI_NORMAL,
+         PRI_HIGH,
+         PRI_VERY_HIGH
       };
 
-      enum Scheduling {
-        SCH_UNKNOWN = -1,
-        SCH_DEFAULT,
-        SCH_FIFO,
-        SCH_RR
+      enum Scheduling
+      {
+         SCH_UNKNOWN = -1,
+         SCH_DEFAULT,
+         SCH_FIFO,
+         SCH_RR
       };
       
       typedef Functor0wR<int> Procedure;
       typedef Functor1<int> EndCallback;
+   
+   public:
       
       Thread();
       
@@ -198,51 +212,64 @@ namespace gcore {
       
       template <typename R>
       Thread(R (*run)(), void (*done)(int)=0, bool waitStart=false)
-        : mRunning(false), mStarted(false) {
-        Bind(run, mProc);
-        if (done) {
-          Bind(done, mEndCB);
-        }
-        restart(waitStart);
+         : mRunning(false)
+         , mStarted(false)
+      {
+         Bind(run, mProc);
+         if (done)
+         {
+            Bind(done, mEndCB);
+         }
+         restart(waitStart);
       }
       
       template <typename R, typename T>
       Thread(R (*run)(), T *obj, void (T::*done)(int), bool waitStart=false)
-        : mRunning(false), mStarted(false) {
-        Bind(run, mProc);
-        Bind(obj, done, mEndCB);  
-        restart(waitStart);
+         : mRunning(false)
+         , mStarted(false)
+      {
+         Bind(run, mProc);
+         Bind(obj, done, mEndCB);  
+         restart(waitStart);
       }
       
       template <typename T, typename R>
       Thread(T *obj, R (T::*run)(), bool waitStart=false)
-        : mRunning(false), mStarted(false) {
-        Bind(obj, run, mProc);
-        restart(waitStart);  
+         : mRunning(false)
+         , mStarted(false)
+      {
+         Bind(obj, run, mProc);
+         restart(waitStart);  
       }
       
       template <typename T, typename R>
       Thread(T *obj, R (T::*run)(), void (T::*done)(int), bool waitStart=false)
-        : mRunning(false), mStarted(false) {
-        Bind(obj, run, mProc);
-        Bind(obj, done, mEndCB);
-        restart(waitStart);  
+         : mRunning(false)
+         , mStarted(false)
+      {
+         Bind(obj, run, mProc);
+         Bind(obj, done, mEndCB);
+         restart(waitStart);  
       }
       
       template <typename T, typename R, typename U>
       Thread(T *obj0, R (T::*run)(), U *obj1, void (U::*done)(int), bool waitStart=false)
-        : mRunning(false), mStarted(false) {
-        Bind(obj0, run, mProc);
-        Bind(obj1, done, mEndCB);  
-        restart(waitStart);
+         : mRunning(false)
+         , mStarted(false)
+      {
+         Bind(obj0, run, mProc);
+         Bind(obj1, done, mEndCB);  
+         restart(waitStart);
       }
       
       template <typename T, typename R, typename U>
       Thread(T *obj0, R (T::*run)(), void (*done)(int), bool waitStart=false)
-        : mRunning(false), mStarted(false) {
-        Bind(obj0, run, mProc);
-        Bind(done, mEndCB);  
-        restart(waitStart);
+         : mRunning(false)
+         , mStarted(false)
+      {
+         Bind(obj0, run, mProc);
+         Bind(done, mEndCB);  
+         restart(waitStart);
       }
       
       virtual ~Thread();
@@ -250,7 +277,7 @@ namespace gcore {
       // run the same thread again
       bool restart(bool waitStart=false);
       // is this thread running
-      bool running() const;
+      bool isRunning() const;
       // detach this thread [no join needed to free thread ressources, no effect on windows]
       bool detach();
       // wait for thread to be done and detach
@@ -259,10 +286,10 @@ namespace gcore {
       bool cancel();
       // access this thread priority
       Priority priority() const;
-      bool priority(Priority prio);
+      bool setPriority(Priority prio);
       // scheduling
       Scheduling scheduling() const;
-      bool scheduling(Scheduling s);
+      bool setScheduling(Scheduling s);
       // this thread id
       ThreadID id() const;
       // suspend curreny thread
@@ -277,9 +304,9 @@ namespace gcore {
       // get current thread id
       static ThreadID CurrentID();
       // get number of processor on machine
-      static int GetProcessorCount();
+      static int ProcessorCount();
       
-    private:
+   private:
       
       bool detachable() const;
       bool suspendable() const;
@@ -305,7 +332,7 @@ namespace gcore {
       Condition mStartedCond;
       Mutex mMutex;
       bool mStarted;
-  };
+   };
 }
 
 

@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2010  Gaetan Guidet
+Copyright (C) 2010~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -23,31 +23,34 @@ USA.
 
 #include <gcore/dirmap.h>
 
-int main(int argc, char **argv) {
-  
-  if (argc <= 1) {
-    gcore::Dirmap::AddMapping("z:/home", "/Users");
-    gcore::Dirmap::AddMapping("z:/work", "/Work");
-  } else {
-    gcore::Dirmap::ReadMappingsFromFile(gcore::Path(argv[1]));
-  }
-  
-  gcore::String path0 = "/Users/gatgui/dev/temp";
-  gcore::String path1 = "/Work/projectA/data/";
-  gcore::String path2 = "z:\\home\\gatgui/.preferences";
-  gcore::String path3 = "z:/WORK/ProjectA/scenes\\";
-  
-  std::cout << path0 << " -> " << gcore::Dirmap::Map(path0) << std::endl;
-  std::cout << path1 << " -> " << gcore::Dirmap::Map(path1) << std::endl;
-  std::cout << path2 << " -> " << gcore::Dirmap::Map(path2) << std::endl;
-  std::cout << path3 << " -> " << gcore::Dirmap::Map(path3) << std::endl;
-  
-  
-  gcore::Path npath("/Users/gatgui/music");
-  std::cout << npath.fullname() << std::endl;
-  
-  gcore::Path wpath("z:\\home\\GatGui/Music");
-  std::cout << wpath.fullname() << std::endl;
-  
-  return 0;
+int main(int argc, char **argv)
+{
+   if (argc <= 1)
+   {
+      gcore::dirmap::AddMapping("z:/home", "/Users");
+      gcore::dirmap::AddMapping("z:/work", "/Work");
+   }
+   else
+   {
+      gcore::dirmap::ReadMappingsFromFile(gcore::Path(argv[1]));
+   }
+   
+   gcore::String path0 = "/Users/gatgui/dev/temp";
+   gcore::String path1 = "/Work/projectA/data/";
+   gcore::String path2 = "z:\\home\\gatgui/.preferences";
+   gcore::String path3 = "z:/WORK/ProjectA/scenes\\";
+   
+   std::cout << path0 << " -> " << gcore::dirmap::Map(path0) << std::endl;
+   std::cout << path1 << " -> " << gcore::dirmap::Map(path1) << std::endl;
+   std::cout << path2 << " -> " << gcore::dirmap::Map(path2) << std::endl;
+   std::cout << path3 << " -> " << gcore::dirmap::Map(path3) << std::endl;
+   
+   
+   gcore::Path npath("/Users/gatgui/music");
+   std::cout << npath.fullname() << std::endl;
+   
+   gcore::Path wpath("z:\\home\\GatGui/Music");
+   std::cout << wpath.fullname() << std::endl;
+   
+   return 0;
 }

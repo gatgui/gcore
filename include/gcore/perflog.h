@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2010~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -20,12 +20,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
 USA.
 
 */
+
 #ifndef __gcore_perfLog_h__
 #define __gcore_perfLog_h__
 
 #include <gcore/config.h>
 #include <gcore/platform.h>
 #include <gcore/time.h>
+#include <gcore/string.h>
 
 namespace gcore
 {
@@ -69,8 +71,8 @@ namespace gcore
       
    public:
       
-      static PerfLog& SharedInstance();
-      static void Begin(const std::string &id);
+      static PerfLog& Get();
+      static void Begin(const String &id);
       static void End();
       static void Print(Output output=ConsoleOutput, int flags=ShowDefaults, int sortBy=SortFuncTime, TimeCounter::Units units=TimeCounter::CurrentUnits);
       static void Print(std::ostream &os, int flags=ShowDefaults, int sortBy=SortFuncTime, TimeCounter::Units units=TimeCounter::CurrentUnits);
@@ -85,7 +87,7 @@ namespace gcore
       
       PerfLog& operator=(const PerfLog&);
       
-      void begin(const std::string &id);
+      void begin(const String &id);
       void end();
       void print(Output output=ConsoleOutput, int flags=ShowDefaults, int sortBy=SortFuncTime, TimeCounter::Units units=TimeCounter::CurrentUnits);
       void print(std::ostream &os, int flags=ShowDefaults, int sortBy=SortFuncTime, TimeCounter::Units units=TimeCounter::CurrentUnits);
@@ -115,7 +117,7 @@ namespace gcore
       {
       public:
       
-         std::map<std::string, Entry> subs;
+         std::map<String, Entry> subs;
       
          Entry();
          Entry(const Entry &);
@@ -128,13 +130,13 @@ namespace gcore
       {
       public:
          Entry *entry;
-         std::string id;
+         String id;
          int recursionCount;
          TimeCounter start;
          TimeCounter selfStart;
       
          StackItem();
-         StackItem(const std::string &_id, Entry *_entry);
+         StackItem(const String &_id, Entry *_entry);
          StackItem(const StackItem &);
          StackItem& operator=(const StackItem &);
       
@@ -150,8 +152,8 @@ namespace gcore
          bool selfStopped;
       };
    
-      typedef std::map<std::string, BaseEntry> BaseEntryMap;
-      typedef std::map<std::string, Entry> EntryMap;
+      typedef std::map<String, BaseEntry> BaseEntryMap;
+      typedef std::map<String, Entry> EntryMap;
       
       
    private:
@@ -172,8 +174,8 @@ namespace gcore
    {
    public:
    
-      ScopedPerfLog(const std::string &msg);
-      ScopedPerfLog(PerfLog &plog, const std::string &msg);
+      ScopedPerfLog(const String &msg);
+      ScopedPerfLog(PerfLog &plog, const String &msg);
       ~ScopedPerfLog();
    
    private:

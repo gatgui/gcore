@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2016  Gaetan Guidet
+Copyright (C) 2016~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -26,6 +26,7 @@ USA.
 
 #include <gcore/string.h>
 #include <gcore/functor.h>
+#include <gcore/status.h>
 
 namespace gcore
 {
@@ -33,54 +34,6 @@ namespace gcore
    
    namespace json
    {
-      class GCORE_API Exception : public std::exception
-      {
-      public:
-         explicit Exception(const gcore::String &msg);
-         explicit Exception(const char *fmt, ...);
-         virtual ~Exception() throw();
-          
-         virtual const char* what() const throw();
-      
-      protected:
-         gcore::String mMsg;
-      };
-      
-      class GCORE_API ParserError : public Exception
-      {
-      public:
-         explicit ParserError(size_t line, size_t col, const gcore::String &msg);
-         explicit ParserError(size_t line, size_t col, const char *fmt, ...);
-         virtual ~ParserError() throw();
-         
-         inline size_t line() const { return mLine; }
-         inline size_t column() const { return mCol; }
-         
-      protected:
-         size_t mLine;
-         size_t mCol;
-      };
-      
-      class GCORE_API TypeError : public Exception
-      {
-      public:
-         explicit TypeError(const gcore::String &msg);
-         explicit TypeError(const char *fmt, ...);
-         virtual ~TypeError() throw();
-      };
-      
-      class GCORE_API MemberError : public Exception
-      {
-      public:
-         explicit MemberError(const gcore::String &name);
-         virtual ~MemberError() throw();
-         
-         inline const char* name() const { return mName.c_str(); }
-         
-      protected:
-         gcore::String mName;
-      };
-      
       class GCORE_API Value
       {
       public:
@@ -94,7 +47,7 @@ namespace gcore
             ObjectType
          };
          
-         typedef std::map<gcore::String, Value> Object;
+         typedef std::map<String, Value> Object;
          typedef gcore::List<Value, false> Array;
          
          // Cannot use Object::iterator, Object::const_iterator, Array::iterator,
@@ -145,92 +98,98 @@ namespace gcore
          Value(int num);
          Value(float num);
          Value(double num);
-         Value(gcore::String *str); // steals ownership
+         Value(String *str);  // steals ownership
          Value(const char *str);
-         Value(const gcore::String &str);
-         Value(Object *obj); // steals ownership
+         Value(const String &str);
+         Value(Object *obj);  // steals ownership
          Value(const Object &obj);
-         Value(Array *arr); // steals ownership
+         Value(Array *arr);  // steals ownership
          Value(const Array &arr);
          Value(const Value &rhs);
          ~Value();
          
-         bool toPropertyList(gcore::PropertyList &pl) const;
+         void reset();
          
+         Type type() const;
+         inline bool isNull() const { return type() == NullType; }
+         inline bool isBoolean() const { return type() == BooleanType; }
+         inline bool isNumber() const { return type() == NumberType; }
+         inline bool isString() const { return type() == StringType; }
+         inline bool isArray() const { return type() == ArrayType; }
+         inline bool isObject() const { return type() == ObjectType; }
+         
+         // changes current type if neccesary
          Value& operator=(const Value &rhs);
          Value& operator=(bool b);
          Value& operator=(int num);
          Value& operator=(float num);
          Value& operator=(double num);
-         Value& operator=(gcore::String *str); // steals ownership
+         Value& operator=(String *str);  // steals ownership
          Value& operator=(const char *str);
-         Value& operator=(const gcore::String &str);
-         Value& operator=(Object *obj); // steals ownership
+         Value& operator=(const String &str);
+         Value& operator=(Object *obj);  // steals ownership
          Value& operator=(const Object &obj);
-         Value& operator=(Array *arr); // steals ownership
+         Value& operator=(Array *arr);  // steals ownership
          Value& operator=(const Array &arr);
          
-         Type type() const;
-         
-         // All the cast operators may throw a TypeError exception
          operator bool () const;
          operator int () const;
          operator float () const;
          operator double () const;
-         operator const gcore::String& () const;
+         operator const String& () const;
          operator const char* () const;
          operator const Object& () const;
          operator const Array& () const;
-         operator gcore::String& ();
+         operator String& ();
          operator Object& ();
          operator Array& ();
          
-         void reset();
-         
-         // Read methods may throw ParserError exception
-         void read(const char *path);
-         void read(std::istream &is);
-          
-         bool write(const char *path) const;
-         void write(std::ostream &os, const gcore::String indent="", bool skipFirstIndent=false) const;
-         
-         // The remaining methods are shortcuts for Array and Object type values
-         // size()  => ((const Array&)value).size()
-         //            ((const Object&)value).size()
-         // clear() => ((Array&)value).clear()
-         //            ((Object&)value).clear()
-         // ...
-         
-         // ArrayType or ObjectType.
+         // ArrayType or ObjectType only
          // - size returns 0 for any other type
          // - clear does nothing for ant other type
          size_t size() const;
          void clear();
          
-         // ArrayType only, may throw TypeError exception
+         // ArrayType only
          iterator<Array> abegin();
          const_iterator<Array> abegin() const;
          iterator<Array> aend();
          const_iterator<Array> aend() const;
+         
+         bool insert(size_t pos, const Value &value);
+         bool erase(size_t pos, size_t cnt=1);
+         
          const Value& operator[](size_t idx) const;
          Value& operator[](size_t idx);
-         void insert(size_t pos, const Value &value);
-         void erase(size_t pos, size_t cnt=1);
          
-         // ObjectType only, may throw TypeError or MemberError exception
+         // ObjectType only
          iterator<Object> obegin();
          const_iterator<Object> obegin() const;
          iterator<Object> oend();
          const_iterator<Object> oend() const;
-         iterator<Object> find(const gcore::String &name);
-         const_iterator<Object> find(const gcore::String &name) const;
+         iterator<Object> find(const String &name);
+         const_iterator<Object> find(const String &name) const;
          iterator<Object> find(const char *name);
          const_iterator<Object> find(const char *name) const;
-         const Value& operator[](const gcore::String &name) const;
-         Value& operator[](const gcore::String &name);
+         
+         bool insert(const String &key, const Value &value);
+         bool erase(const String &key);
+         
+         const Value& operator[](const String &name) const;
+         Value& operator[](const String &name);
          const Value& operator[](const char *name) const;
          Value& operator[](const char *name);
-      
+         
+         // ---
+         
+         Status read(const char *path);
+         Status read(std::istream &is);
+          
+         Status write(const char *path) const;
+         void write(std::ostream &os, const String indent="", bool skipFirstIndent=false) const;
+         
+         bool toPropertyList(gcore::PropertyList &pl) const;
+         
       public:
          
          enum ParserState
@@ -257,13 +216,13 @@ namespace gcore
             gcore::Functor0 nullScalar;
          };
          
-         static void Parse(const char *path, ParserCallbacks *callbacks);
+         static Status Parse(const char *path, ParserCallbacks &callbacks);
       
       private:
          
-         void read(std::istream &is, bool consumeAll, ParserCallbacks *cb);
+         Status read(std::istream &is, bool consumeAll, ParserCallbacks *cb);
          
-         bool toPropertyList(gcore::PropertyList &pl, const gcore::String &cprop) const;
+         bool toPropertyList(gcore::PropertyList &pl, const String &cprop) const;
          
       private:
          
@@ -272,7 +231,7 @@ namespace gcore
          {
             bool boo;
             double num;
-            gcore::String *str;
+            String *str;
             Object *obj;
             Array *arr;
          } mValue;
@@ -285,25 +244,6 @@ namespace gcore
       typedef Value::Array Array;
       typedef Value::iterator<Value::Array> ArrayIterator;
       typedef Value::const_iterator<Value::Array> ArrayConstIterator;
-      
-      class GCORE_API Parser
-      {
-      public:
-         Parser();
-         Parser(const char *path);
-         ~Parser();
-         
-         bool read(const char *path);
-         
-         Value& top();
-         const Value& top() const;
-         
-      private:
-         
-      
-      private:
-         Value mTop;
-      };
       
       // Schema and Validator
    }

@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2010~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -40,10 +40,9 @@ USA.
 #define CTL '\c'
 #define BCK '\b'
 
-namespace gcore {
-
-extern unsigned char gCharClass[256];
-
+namespace gcore
+{
+   extern unsigned char gCharClass[256];
 }
 
 #define CHAR_IS(c, flags) ((gCharClass[(unsigned char)c] & (flags)) != 0)

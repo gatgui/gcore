@@ -1,3 +1,26 @@
+/*
+
+Copyright (C) 2010~  Gaetan Guidet
+
+This file is part of gcore.
+
+gcore is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation; either version 2.1 of the License, or (at
+your option) any later version.
+
+gcore is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+USA.
+
+*/
+
 #include <gcore/log.h>
 
 #ifdef _WIN32
@@ -89,14 +112,14 @@ static void ResetTermColors()
 #define TERM_COL_FGBASE    30
 #define TERM_COL_BGBASE    40
 
-static std::string MakeTermCode(int cmd, int fg, int bg)
+static gcore::String MakeTermCode(int cmd, int fg, int bg)
 {
    //char tmp[13];
    //sprintf(tmp, "%c[%d;%d;%dm", 0x1B, cmd, TERM_COL_FGBASE+fg, TERM_COL_BGBASE+bg);
    //return tmp;
    char tmp[16];
    
-   std::string code;
+   gcore::String code;
    bool needSep = false;
    code = "\033[";
    if (cmd >= 0)
@@ -141,19 +164,19 @@ namespace gcore
 Log Log::msSharedLog;
 char Log::msBuffer[2048];
 
-Log& Log::Shared()
+Log& Log::Get()
 {
    return msSharedLog;
 }
 
-void Log::SelectOutputs(unsigned int flags)
+void Log::SetLevelMask(unsigned int mask)
 {
-   msSharedLog.selectOutputs(flags);
+   msSharedLog.setLevelMask(mask);
 }
 
-unsigned int Log::SelectedOutputs()
+unsigned int Log::LevelMask()
 {
-   return msSharedLog.selectedOutputs();
+   return msSharedLog.levelMask();
 }
 
 void Log::SetOutputFunc(OutputFunc func)
@@ -206,9 +229,9 @@ void Log::SetIndentLevel(unsigned int n)
    msSharedLog.setIndentLevel(n);
 }
 
-unsigned int Log::GetIndentLevel()
+unsigned int Log::IndentLevel()
 {
-   return msSharedLog.getIndentLevel();
+   return msSharedLog.indentLevel();
 }
 
 void Log::Indent()
@@ -226,67 +249,67 @@ void Log::SetIndentWidth(unsigned int w)
    msSharedLog.setIndentWidth(w);
 }
 
-unsigned int Log::GetIndentWidth()
+unsigned int Log::IndentWidth()
 {
-   return msSharedLog.getIndentWidth();
+   return msSharedLog.indentWidth();
 }
 
-void Log::EnableColors(bool onoff)
+void Log::SetColorOutput(bool onoff)
 {
-   msSharedLog.enableColors(onoff);
+   msSharedLog.setColorOutput(onoff);
 }
 
-bool Log::ColorsEnabled()
+bool Log::ColorOutput()
 {
-   return msSharedLog.colorsEnabled();
+   return msSharedLog.colorOutput();
 }
 
-void Log::ShowTimeStamps(bool onoff)
+void Log::SetShowTimeStamps(bool onoff)
 {
-   msSharedLog.showTimeStamps(onoff);
+   msSharedLog.setShowTimeStamps(onoff);
 }
 
-bool Log::TimeStampsShown()
+bool Log::ShowTimeStamps()
 {
-   return msSharedLog.timeStampsShown();
+   return msSharedLog.showTimeStamps();
 }
 
 // ---
 
 Log::Log()
-   : mOutputs(LOG_ERROR|LOG_WARNING|LOG_INFO)
-   , mColors(true)
-   , mTimeStamps(true)
+   : mLevelMask(LOG_ERROR|LOG_WARNING|LOG_INFO)
+   , mColorOutput(true)
+   , mShowTimeStamps(true)
    , mIndentLevel(0)
    , mIndentWidth(2)
    , mToFile(false)
 {
 #ifdef _DEBUG
-   mOutputs |= LOG_DEBUG;
+   mLevelMask |= LOG_DEBUG;
 #endif
    Bind(PrintStdout, mOutFunc);
 }
 
 Log::Log(const Path &path)
-   : mOutputs(LOG_ERROR|LOG_WARNING|LOG_INFO)
-   , mColors(true)
-   , mTimeStamps(true)
+   : mLevelMask(LOG_ERROR|LOG_WARNING|LOG_INFO)
+   , mColorOutput(true)
+   , mShowTimeStamps(true)
    , mIndentLevel(0)
    , mIndentWidth(2)
    , mToFile(true)
    , mFilePath(path)
 {
 #ifdef _DEBUG
-   mOutputs |= LOG_DEBUG;
+   mLevelMask |= LOG_DEBUG;
 #endif
    mOutFile.open(path.fullname().c_str(), std::ofstream::app|std::ofstream::out);
 }
 
 Log::Log(const Log &rhs)
    : mOutFunc(rhs.mOutFunc)
-   , mOutputs(rhs.mOutputs)
-   , mColors(rhs.mColors)
-   , mTimeStamps(rhs.mTimeStamps)
+   , mLevelMask(rhs.mLevelMask)
+   , mColorOutput(rhs.mColorOutput)
+   , mShowTimeStamps(rhs.mShowTimeStamps)
    , mIndentLevel(rhs.mIndentLevel)
    , mIndentWidth(rhs.mIndentWidth)
    , mToFile(rhs.mToFile)
@@ -311,9 +334,9 @@ Log& Log::operator=(const Log &rhs)
    if (this != &rhs)
    {
       mOutFunc = rhs.mOutFunc;
-      mOutputs = rhs.mOutputs;
-      mColors = rhs.mColors;
-      mTimeStamps = rhs.mTimeStamps;
+      mLevelMask = rhs.mLevelMask;
+      mColorOutput = rhs.mColorOutput;
+      mShowTimeStamps = rhs.mShowTimeStamps;
       mIndentLevel = rhs.mIndentLevel;
       mIndentWidth = rhs.mIndentWidth;
       if (mToFile && mOutFile.is_open())
@@ -340,19 +363,19 @@ void Log::setOutputFunc(Log::OutputFunc func)
    mOutFunc = func;
 }
 
-void Log::selectOutputs(unsigned int flags)
+void Log::setLevelMask(unsigned int mask)
 {
-   mOutputs = flags;
+   mLevelMask = mask;
 }
 
-unsigned int Log::selectedOutputs() const
+unsigned int Log::levelMask() const
 {
-   return mOutputs;
+   return mLevelMask;
 }
 
 void Log::print(LogLevel lvl, const char *msg) const
 {
-   if ((mOutputs & lvl) == 0 ||
+   if ((mLevelMask & lvl) == 0 ||
        ( mToFile && !mOutFile.good()) ||
        (!mToFile &&  mOutFunc == 0))
    {
@@ -364,14 +387,14 @@ void Log::print(LogLevel lvl, const char *msg) const
    String trailing = "";
    StringList lines;
    
-   if (mTimeStamps)
+   if (mShowTimeStamps)
    {
       Date now;
       ts = now.format("%Y/%m/%d %H:%M:%S");
       ts += " ";
    }
    
-   bool useColors = (!mToFile && mColors);
+   bool useColors = (!mToFile && mColorOutput);
    
    switch (lvl)
    {
@@ -501,7 +524,7 @@ void Log::setIndentLevel(unsigned int l)
    mIndentLevel = l;
 }
 
-unsigned int Log::getIndentLevel() const
+unsigned int Log::indentLevel() const
 {
    return mIndentLevel;
 }
@@ -524,29 +547,29 @@ void Log::setIndentWidth(unsigned int w)
    mIndentWidth = w;
 }
 
-unsigned int Log::getIndentWidth() const
+unsigned int Log::indentWidth() const
 {
    return mIndentWidth;
 }
 
-void Log::enableColors(bool onoff)
+void Log::setColorOutput(bool onoff)
 {
-   mColors = onoff;
+   mColorOutput = onoff;
 }
 
-bool Log::colorsEnabled() const
+bool Log::colorOutput() const
 {
-   return mColors;
+   return mColorOutput;
 }
 
-void Log::showTimeStamps(bool onoff)
+void Log::setShowTimeStamps(bool onoff)
 {
-   mTimeStamps = onoff;
+   mShowTimeStamps = onoff;
 }
 
-bool Log::timeStampsShown() const
+bool Log::showTimeStamps() const
 {
-   return mTimeStamps;
+   return mShowTimeStamps;
 }
 
 }

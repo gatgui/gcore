@@ -1,3 +1,26 @@
+/*
+
+Copyright (C) 2011~  Gaetan Guidet
+
+This file is part of gcore.
+
+gcore is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation; either version 2.1 of the License, or (at
+your option) any later version.
+
+gcore is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+USA.
+
+*/
+
 #include <gcore/bcfile.h>
 #include <gcore/log.h>
 
@@ -59,7 +82,7 @@ void WriteString(std::ostream &os, const char *str)
    os.write(&eos, 1);
 }
 
-void WriteString(std::ostream &os, const std::string &str)
+void WriteString(std::ostream &os, const String &str)
 {
    char eos = '\0';
    WriteUint32(os, (unsigned long)str.length()+1);
@@ -144,7 +167,7 @@ bool ReadString(std::istream &is, char **str)
    return (!is.bad());
 }
 
-bool ReadString(std::istream &is, std::string &str)
+bool ReadString(std::istream &is, String &str)
 {
    // len includes the trailing eos
    char eos = '\0';
@@ -177,7 +200,7 @@ BCFile::ElementPlaceHolder::~ElementPlaceHolder()
    }
 }
 
-size_t BCFile::ElementPlaceHolder::getByteSize() const
+size_t BCFile::ElementPlaceHolder::size() const
 {
    return mSize;
 }
@@ -249,13 +272,13 @@ void BCFile::clearElements()
    mPlaceHolders.clear();
 }
 
-bool BCFile::addElement(const std::string &name, BCFileElement *e)
+bool BCFile::addElement(const String &name, BCFileElement *e)
 {
    if (!e)
    {
       return false;
    }
-   std::map<std::string, BCFileElement*>::iterator elt = mElements.find(name);
+   std::map<String, BCFileElement*>::iterator elt = mElements.find(name);
    if (elt == mElements.end())
    {
       mElements[name] = e;
@@ -267,13 +290,13 @@ bool BCFile::addElement(const std::string &name, BCFileElement *e)
    }
 }
 
-bool BCFile::replaceElement(const std::string &name, BCFileElement *e)
+bool BCFile::replaceElement(const String &name, BCFileElement *e)
 {
    if (!e)
    {
       return false;
    }
-   std::map<std::string, BCFileElement*>::iterator elt = mElements.find(name);
+   std::map<String, BCFileElement*>::iterator elt = mElements.find(name);
    if (elt == mElements.end())
    {
       return false;
@@ -299,17 +322,17 @@ bool BCFile::replaceElement(const std::string &name, BCFileElement *e)
    }
 }
 
-bool BCFile::hasElement(const std::string &name) const
+bool BCFile::hasElement(const String &name) const
 {
    return (mElements.find(name) != mElements.end());
 }
 
-bool BCFile::write(const std::string &filepath, bool preserveData) const
+bool BCFile::write(const String &filepath, bool preserveData) const
 {
    // first read all placeholders data if mInFile is open
    if (preserveData && mInFile.is_open())
    {
-      std::map<std::string, BCFileElement*>::iterator elt = mElements.begin();
+      std::map<String, BCFileElement*>::iterator elt = mElements.begin();
       while (elt != mElements.end())
       {
          ElementPlaceHolder *feph = dynamic_cast<ElementPlaceHolder*>(elt->second);
@@ -319,7 +342,7 @@ bool BCFile::write(const std::string &filepath, bool preserveData) const
             if (!mInFile.good() || !feph->read(mInFile))
             {
                // remove element
-               std::map<std::string, BCFileElement*>::iterator tmp = elt;
+               std::map<String, BCFileElement*>::iterator tmp = elt;
                ++elt;
                mElements.erase(tmp);
                
@@ -364,7 +387,7 @@ bool BCFile::write(const std::string &filepath, bool preserveData) const
    return true;
 }
 
-bool BCFile::readTOC(const std::string &filepath)
+bool BCFile::readTOC(const String &filepath)
 {
    char buffer[8];
    
@@ -423,14 +446,14 @@ bool BCFile::readTOC(const std::string &filepath)
    return rv;
 }
 
-bool BCFile::readElement(const std::string &name, BCFileElement *elt)
+bool BCFile::readElement(const String &name, BCFileElement *elt)
 {
    if (!elt)
    {
       return false;
    }
    
-   std::map<std::string, BCFileElement*>::iterator it = mElements.find(name);
+   std::map<String, BCFileElement*>::iterator it = mElements.find(name);
    
    if (it == mElements.end())
    {
@@ -494,7 +517,7 @@ void BCFile::write_0_1(std::ofstream &ofile, size_t baseOff) const
 {
    baseOff += 4; // number of elements
    
-   std::map<std::string, BCFileElement*>::const_iterator elt = mElements.begin();
+   std::map<String, BCFileElement*>::const_iterator elt = mElements.begin();
    
    // optimize that by calculating index size as elements are added
    while (elt != mElements.end())
@@ -512,7 +535,7 @@ void BCFile::write_0_1(std::ofstream &ofile, size_t baseOff) const
    {
       WriteString(ofile, elt->first);
       WriteUint32(ofile, (unsigned long)baseOff);
-      baseOff += elt->second->getByteSize();
+      baseOff += elt->second->size();
       ++elt;
    }
    
@@ -530,7 +553,7 @@ void BCFile::write_0_2(std::ofstream &ofile, size_t baseOff) const
 {
    baseOff += 4; // number of elements
    
-   std::map<std::string, BCFileElement*>::const_iterator elt = mElements.begin();
+   std::map<String, BCFileElement*>::const_iterator elt = mElements.begin();
    
    // optimize that by calculating index size as elements are added
    while (elt != mElements.end())
@@ -549,7 +572,7 @@ void BCFile::write_0_2(std::ofstream &ofile, size_t baseOff) const
    elt = mElements.begin();
    while (elt != mElements.end())
    {
-      sz = elt->second->getByteSize();
+      sz = elt->second->size();
       WriteString(ofile, elt->first);
       WriteUint32(ofile, (unsigned long)baseOff);
       WriteUint32(ofile, (unsigned long)sz);
@@ -583,7 +606,7 @@ bool BCFile::read_0_1(std::ifstream &ifile)
    
    for (unsigned long i=0; i<nelems; ++i)
    {
-      std::string name; // ReadString if dubious
+      String name; // ReadString if dubious
       
       if (ifile.eof())
       {
@@ -627,7 +650,7 @@ bool BCFile::read_0_2(std::ifstream &ifile)
    
    for (unsigned long i=0; i<nelems; ++i)
    {
-      std::string name; // ReadString if dubious
+      String name; // ReadString if dubious
       
       if (ifile.eof())
       {
@@ -660,6 +683,6 @@ bool BCFile::read_0_2(std::ifstream &ifile)
    return true;
 }
 
-}
+} // gcore
 
 

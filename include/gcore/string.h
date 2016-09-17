@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2010  Gaetan Guidet
+Copyright (C) 2010~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -27,16 +27,17 @@ USA.
 #include <gcore/config.h>
 #include <gcore/list.h>
 
-namespace gcore {
-  
-  class GCORE_API Rex;
-  class GCORE_API RexMatch;
-  class GCORE_API StringList;
-  
-  class GCORE_API String : public std::string {
-    public:
-      
-      //typedef std::vector<String> List;
+namespace gcore
+{
+   class GCORE_API Rex;
+   class GCORE_API RexMatch;
+   class GCORE_API StringList;
+   
+   // as String is a subclass of std::string, we defined the operators using std::string 
+   
+   class GCORE_API String : public std::string
+   {
+   public:
       
       String();
       String(const std::string &rhs);
@@ -116,10 +117,11 @@ namespace gcore {
       bool toFloat(float &f) const;
       bool toDouble(double &d) const;
       bool toBool(bool &b) const;
-  };
-  
-  class GCORE_API StringList : public List<String> {
-    public:
+   };
+   
+   class GCORE_API StringList : public List<String>
+   {
+   public:
       
       StringList();
       StringList(size_t n, const String &s=String());
@@ -132,23 +134,26 @@ namespace gcore {
       
       template <typename InputIterator>
       StringList(InputIterator first, InputIterator last)
-        : List<String>(first, last) {
+         : List<String>(first, last)
+      {
       }
-  };
-  
-  typedef std::map<String, String> StringDict;
+   };
+   
+   typedef std::map<String, String> StringDict;
 }
 
-inline gcore::String operator*(const gcore::String &s, size_t n) {
-  gcore::String rv(s);
-  rv *= n;
-  return rv;
+inline gcore::String operator*(const gcore::String &s, size_t n)
+{
+   gcore::String rv(s);
+   rv *= n;
+   return rv;
 }
 
-inline gcore::String operator*(size_t n, const gcore::String &s) {
-  gcore::String rv(s);
-  rv *= n;
-  return rv;
+inline gcore::String operator*(size_t n, const gcore::String &s)
+{
+   gcore::String rv(s);
+   rv *= n;
+   return rv;
 }
 
 #endif

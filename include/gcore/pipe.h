@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2009~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -25,64 +25,68 @@ USA.
 #define __gcore_pipe_h_
 
 #include <gcore/string.h>
+#include <gcore/status.h>
 
-namespace gcore {
+namespace gcore
+{
 
 #ifdef _WIN32
-  
-  typedef void* PipeID;
-  const PipeID INVALID_PIPE = 0;
-  
-  inline bool IsValidPipeID(PipeID pi) {
-    return (pi != 0);
-  }
-  
+   
+   typedef void* PipeID;
+   const PipeID INVALID_PIPE = 0;
+   
+   inline bool IsValidPipeID(PipeID pi)
+   {
+      return (pi != 0);
+   }
+   
 #else
-  
-  typedef int PipeID;
-  const PipeID INVALID_PIPE = -1;
-  
-  inline bool IsValidPipeID(PipeID pi) {
-    return (pi >= 0);
-  }
-  
+   
+   typedef int PipeID;
+   const PipeID INVALID_PIPE = -1;
+   
+   inline bool IsValidPipeID(PipeID pi)
+   {
+      return (pi >= 0);
+   }
+   
 #endif
-  
-  class GCORE_API Pipe {
-    public:
+   
+   class GCORE_API Pipe
+   {
+   public:
       
       static PipeID StdInID();
       static PipeID StdOutID();
       static PipeID StdErrID();
-    
-    public:
-    
+   
+   public:
+   
       Pipe();
       Pipe(PipeID readId, PipeID writeId);
       Pipe(const Pipe &rhs);
       virtual ~Pipe();
       
       bool isNamed() const;
-      const String& getName() const;
+      const String& name() const;
       bool isOwned() const;
       bool canRead() const;
       bool canWrite() const;
-      bool open(const String &name);
+      Status open(const String &name);
       void close();
-      bool create();
-      bool create(const String &name);
+      Status create();
+      Status create(const String &name);
       void closeRead();
       void closeWrite();
-      int read(char *buffer, int size, bool retryOnInterrupt=false) const;
-      int read(String &str, bool retryOnInterrupt=false) const;
-      int write(const char *buffer, int size) const;
-      int write(const String &str) const;
+      int read(char *buffer, int size, Status *status=0) const;
+      int write(const char *buffer, int size, Status *status=0) const;
+      int write(const String &str, Status *status=0) const;
       PipeID readID() const;
       PipeID writeID() const;
       
       Pipe& operator=(const Pipe &rhs);
       
-    private:
+   private:
 
       PipeID mDesc[2];
       mutable bool mOwn; // Ownership transferred by copy constructor and assignment
@@ -90,7 +94,7 @@ namespace gcore {
 #ifdef _WIN32
       mutable bool mConnected;
 #endif
-  };
+   };
 }
 
 #endif

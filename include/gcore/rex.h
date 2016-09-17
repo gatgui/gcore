@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2010  Gaetan Guidet
+Copyright (C) 2010~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -32,96 +32,99 @@ USA.
 
 namespace gcore {
 
-  struct GCORE_API _RawString {
-    
-    _RawString(const char *s);
-    operator String () const;
-    
-    private:
+   struct GCORE_API _RawString
+   {
+      _RawString(const char *s);
+      operator String () const;
+      
+   private:
       String e;
-  };
+   };
 
-  class GCORE_API RexMatch {
-    public:
-    
+   class GCORE_API RexMatch
+   {
+   public:
+   
       friend class Rex;
-    
+   
       typedef std::pair<int,int> Range;
-    
+   
       RexMatch();
       RexMatch(const RexMatch &rhs);
       ~RexMatch();
-    
+   
       RexMatch& operator=(const RexMatch &rhs);
-    
+   
       String pre() const;
-    
+   
       String post() const;
-    
+   
       String group(size_t i) const;
-      String group(const std::string &n) const;
-    
+      String group(const String &n) const;
+   
       // offset in matched string (group(0))
       size_t offset(size_t i) const;
-  
+
       size_t length(size_t i) const;
-    
-      size_t numGroups() const;
-    
+   
+      size_t groupCount() const;
+   
       bool hasGroup(size_t i) const;
-      bool hasNamedGroup(const std::string &n) const;
-    
-    protected:
-    
+      bool hasNamedGroup(const String &n) const;
+   
+   protected:
+   
       String mStr;
       Range mRange;
       List<Range> mGroups; // 0 if full match
-      std::map<std::string, size_t> mNamedGroups;
-  };
+      std::map<String, size_t> mNamedGroups;
+   };
 
-  class GCORE_API Rex {
-    public:
-    
+   class GCORE_API Rex
+   {
+   public:
+   
       // Remove Consume, Capture, Not and Inherit stuffs
-      enum Flags {
-        NoCase          = 0x0001, // ignore case
-        Reverse         = 0x0008, // apply backwards (no group capture)
-        Multiline       = 0x0010, // makes ^ and $ match at line boundaries (instead of buffer like \A \Z)
-        DotMatchNewline = 0x0040, // dot matches new line chars \r and/or \n
+      enum Flags
+      {
+         NoCase          = 0x0001, // ignore case
+         Reverse         = 0x0008, // apply backwards (no group capture)
+         Multiline       = 0x0010, // makes ^ and $ match at line boundaries (instead of buffer like \A \Z)
+         DotMatchNewline = 0x0040, // dot matches new line chars \r and/or \n
       };
-    
-    public:
-    
+   
+   public:
+   
       Rex();
       Rex(const String &exp);
       Rex(const Rex &rhs);
       ~Rex();
-    
+   
       Rex& operator=(const Rex &rhs);
-    
+   
       bool valid() const;
-    
+   
       void set(const String &exp);
       const String get() const;
-    
+   
       bool search(const String &s, RexMatch &m, unsigned short flags=0, size_t offset=0, size_t len=size_t(-1)) const;
       bool search(const String &s, unsigned short execflags=0, size_t offset=0, size_t len=size_t(-1)) const;
-    
+   
       bool match(const String &s, RexMatch &m, unsigned short flags=0, size_t offset=0, size_t len=size_t(-1)) const;
       bool match(const String &s, unsigned short execflags=0, size_t offset=0, size_t len=size_t(-1)) const;
       
       String substitute(const RexMatch &m, const String &in) const;
       String substitute(const String &in, const String &by, int maxCount=-1) const;
-    
+   
       friend GCORE_API std::ostream& operator<<(std::ostream &os, const Rex &r);
-    
-    protected:
-    
+   
+   protected:
+   
       bool mValid;
       String mExp;
       class Instruction *mCode;
       int mNumGroups;
-  };
+   };
 
 }
 

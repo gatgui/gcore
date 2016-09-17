@@ -1,3 +1,22 @@
+# Copyright (C) 2010~  Gaetan Guidet
+# 
+# This file is part of gcore.
+# 
+# gcore is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or (at
+# your option) any later version.
+# 
+# gcore is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+# 
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+# USA.
+
 cimport gcore
 from cython.operator cimport dereference as deref
 import sys
@@ -8,15 +27,15 @@ ctypedef public class Path [object PyPath, type PyPathType]:
    cdef gcore.Path *_cobj
    cdef bint _own
    
-   ET_FILE = gcore.ET_FILE
-   ET_DIRECTORY = gcore.ET_DIRECTORY
-   ET_HIDDEN = gcore.ET_HIDDEN
-   ET_ALL = gcore.ET_ALL
+   FE_FILE = gcore.FE_FILE
+   FE_DIRECTORY = gcore.FE_DIRECTORY
+   FE_HIDDEN = gcore.FE_HIDDEN
+   FE_ALL = gcore.FE_ALL
    
    @classmethod
-   def GetCurrentDir(klass):
+   def CurrentDir(klass):
       p = Path()
-      p._cobj.assign(gcore.GetCurrentDir())
+      p._cobj.assign(gcore.CurrentDir())
       return p
    
    def __cinit__(self, *args, **kwargs):
@@ -53,6 +72,9 @@ ctypedef public class Path [object PyPath, type PyPathType]:
    def pop(self):
       return self._cobj.pop().c_str()
    
+   def depth(self):
+      return self._cobj.depth()
+   
    def removeFile(self):
       return self._cobj.removeFile()
    
@@ -82,12 +104,12 @@ ctypedef public class Path [object PyPath, type PyPathType]:
       self._cobj.normalize()
       return self
    
-   def each(self, func, recursive=False, flags=Path.ET_ALL):
+   def forEach(self, func, recursive=False, flags=Path.FE_ALL):
       cdef gcore.PathEnumerator enumerator
       enumerator.setPyFunc(<gcore.PyObject*>func)
       enumerator.apply(deref(self._cobj), <bint?>recursive, <int>flags)
    
-   def listDir(self, recursive=False, flags=Path.ET_ALL):
+   def listDir(self, recursive=False, flags=Path.FE_ALL):
       cdef gcore.List[gcore.Path] paths
       cdef size_t i = 0
       cdef size_t n = self._cobj.listDir(paths, <bint?>recursive, <int?>flags)
@@ -128,22 +150,22 @@ ctypedef public class Path [object PyPath, type PyPathType]:
    def basename(self):
       return self._cobj.basename().c_str()
    
-   def dirname(self, sep=DIR_SEP):
+   def dirname(self, sep=None):
       if sep is None:
-         return self._cobj.dirname(gcore.DIR_SEP).c_str()
+         return self._cobj.dirname('/').c_str()
       elif not type(sep) in [str, unicode] or len(sep) != 1:
          raise Exception("_gcore.Path.dirname expects a string argument of length 1")
       return self._cobj.dirname((<char*?>sep)[0]).c_str()
    
-   def fullname(self, sep=DIR_SEP):
+   def fullname(self, sep=None):
       if sep is None:
-         return self._cobj.fullname(gcore.DIR_SEP).c_str()
+         return self._cobj.fullname('/').c_str()
       elif not type(sep) in [str, unicode] or len(sep) != 1:
          raise Exception("_gcore.Path.fullname expects a string argument of length 1")
       return self._cobj.fullname((<char*?>sep)[0]).c_str()
    
-   def getExtension(self):
-      return self._cobj.getExtension().c_str()
+   def extension(self):
+      return self._cobj.extension().c_str()
    
    def checkExtension(self, e):
       return self._cobj.checkExtension(gcore.String(<char*?>e))

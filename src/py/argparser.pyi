@@ -1,3 +1,22 @@
+# Copyright (C) 2010~  Gaetan Guidet
+# 
+# This file is part of gcore.
+# 
+# gcore is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or (at
+# your option) any later version.
+# 
+# gcore is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+# 
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+# USA.
+
 cimport gcore
 from cython.operator cimport dereference as deref
 from libc.stdlib cimport malloc, free
@@ -87,13 +106,13 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
          del(self._cobj)
          self._cobj = NULL
    
-   def getArgumentCount(self):
-      return (self._cobj.getArgumentCount() if self._cobj != NULL else 0)
+   def argumentCount(self):
+      return (self._cobj.argumentCount() if self._cobj != NULL else 0)
    
    def getStringArgument(self, idx):
       cdef gcore.String rv
       if not self._cobj.getArgument(<size_t?>idx, rv):
-         if idx < 0 or idx >= self.getArgumentCount():
+         if idx < 0 or idx >= self.argumentCount:
             raise Exception("_gcore.ArgParser.getStringArgument: Invalid argument index %d" % idx)
          else:
             raise Exception("_gcore.ArgParser.getStringArgument: Argument %d cannot be converted to string" % idx)
@@ -102,7 +121,7 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
    def getFloatArgument(self, idx):
       cdef float rv = 0
       if not self._cobj.getArgument(<size_t?>idx, rv):
-         if idx < 0 or idx >= self.getArgumentCount():
+         if idx < 0 or idx >= self.argumentCount:
             raise Exception("_gcore.ArgParser.getFloatArgument: Invalid argument index %d" % idx)
          else:
             raise Exception("_gcore.ArgParser.getFloatArgument: Argument %d cannot be converted to float" % idx)
@@ -111,7 +130,7 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
    def getDoubleArgument(self, idx):
       cdef double rv = 0
       if not self._cobj.getArgument(<size_t?>idx, rv):
-         if idx < 0 or idx >= self.getArgumentCount():
+         if idx < 0 or idx >= self.argumentCount:
             raise Exception("_gcore.ArgParser.getDoubleArgument: Invalid argument index %d" % idx)
          else:
             raise Exception("_gcore.ArgParser.getDoubleArgument: Argument %d cannot be converted to double" % idx)
@@ -120,7 +139,7 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
    def getIntArgument(self, idx):
       cdef int rv = 0
       if not self._cobj.getArgument(<size_t?>idx, rv):
-         if idx < 0 or idx >= self.getArgumentCount():
+         if idx < 0 or idx >= self.argumentCount:
             raise Exception("_gcore.ArgParser.getIntArgument: Invalid argument index %d" % idx)
          else:
             raise Exception("_gcore.ArgParser.getIntArgument: Argument %d cannot be converted to int" % idx)
@@ -129,7 +148,7 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
    def getUIntArgument(self, idx):
       cdef unsigned int rv = 0
       if not self._cobj.getArgument(<size_t?>idx, rv):
-         if idx < 0 or idx >= self.getArgumentCount():
+         if idx < 0 or idx >= self.argumentCount:
             raise Exception("_gcore.ArgParser.getUIntArgument: Invalid argument index %d" % idx)
          else:
             raise Exception("_gcore.ArgParser.getUIntArgument: Argument %d cannot be converted to unsigned int" % idx)
@@ -138,7 +157,7 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
    def getBoolArgument(self, idx):
       cdef bint rv = False
       if not self._cobj.getArgument(<size_t?>idx, rv):
-         if idx < 0 or idx >= self.getArgumentCount():
+         if idx < 0 or idx >= self.argumentCount:
             raise Exception("_gcore.ArgParser.getBoolArgument: Invalid argument index %d" % idx)
          else:
             raise Exception("_gcore.ArgParser.getBoolArgument: Argument %d cannot be converted to bool" % idx)
@@ -147,18 +166,18 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
    def isFlagSet(self, name):
       return self._cobj.isFlagSet(gcore.String(<char*?> name))
    
-   def getFlagOccurenceCount(self, name):
-      return self._cobj.getFlagOccurenceCount(gcore.String(<char*?> name))
+   def flagOccurenceCount(self, name):
+      return self._cobj.flagOccurenceCount(gcore.String(<char*?> name))
    
-   def getFlagArgumentCount(self, name, occurence=0):
-      return self._cobj.getFlagArgumentCount(gcore.String(<char*?>name), <size_t?>occurence)
+   def flagArgumentCount(self, name, occurence=0):
+      return self._cobj.flagArgumentCount(gcore.String(<char*?>name), <size_t?>occurence)
    
    def _flagError(self, name, occ, idx, funcname, typename):
       if not self.isFlagSet(name):
          raise Exception("_gcore.ArgParser.%s: Invalid flag argument \"%s\"" % (funcname, name))
-      elif occ < 0 or occ >= self.getFlagOccurenceCount(name):
+      elif occ < 0 or occ >= self.flagOccurenceCount(name):
          raise Exception("_gcore.ArgParser.%s: Invalid occurence %d for flag argument \"%s\"" % (funcname, occ, name))
-      elif idx < 0 or idx >= self.getFlagArgumentCount(name, occ):
+      elif idx < 0 or idx >= self.flagArgumentCount(name, occ):
          raise Exception("_gcore.ArgParser.%s: Invalid index %d for flag argument \"%s\" (%d)" % (funcname, idx, name, occ))
       else:
          raise Exception("_gcore.ArgParser.%s: Flag argument \"%s\" %d (%d) cannot be converted to %s" % (funcname, name, idx, occ, typename))
@@ -252,6 +271,7 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
       cdef char **argv = <char**> malloc((argc + 1) * sizeof(char*))
       cdef int i = 0
       cdef char *arg = NULL
+      cdef gcore.Status stat
       
       if not argv:
          raise MemoryError()
@@ -261,7 +281,11 @@ ctypedef public class ArgParser [object PyArgParser, type PyArgParserType]:
          i += 1
       argv[argc] = NULL
 
-      self._cobj.parse(argc, &argv[0])
+      stat = self._cobj.parse(argc, &argv[0])
 
       free(argv)
+      
+      if not stat.succeeded():
+         raise Exception(stat.message())
+   
 

@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2009~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -30,26 +30,27 @@ USA.
 #include <gcore/platform.h>
 #include <gcore/date.h>
 
-namespace gcore {
-  
-  class GCORE_API Path {
-    public:
+namespace gcore
+{
+   class GCORE_API Path
+   {
+   public:
       
-      static Path GetCurrentDir();
+      static Path CurrentDir();
       
-    public:
+   public:
       
-      typedef Functor1wR<bool, const Path &> EachFunc;
+      typedef Functor1wR<bool, const Path &> ForEachFunc;
       
-      enum EachTarget
+      enum ForEachTarget
       {
-        ET_FILE      = 0x01,
-        ET_DIRECTORY = 0x02,
-        ET_HIDDEN    = 0x04, // file/dir starting with a .
-        ET_ALL       = ET_FILE|ET_DIRECTORY|ET_HIDDEN
+         FE_FILE      = 0x01,
+         FE_DIRECTORY = 0x02,
+         FE_HIDDEN    = 0x04, // file/dir starting with a .
+         FE_ALL       = FE_FILE|FE_DIRECTORY|FE_HIDDEN
       };
       
-    public:
+   public:
       
       Path();
       Path(const char *s);
@@ -64,15 +65,14 @@ namespace gcore {
       Path& operator+=(const Path &rhs);
       
       bool operator==(const Path &rhs) const;
-      inline bool operator!=(const Path &rhs) const {
-        return !operator==(rhs);
-      }
+      bool operator!=(const Path &rhs) const;
       
-      // those will use DIR_SEP
+      // those will use '/'
       operator const String& () const;
       operator String& ();
       
       // can use negative numbers -> index from the end
+      int depth() const;
       String& operator[](int idx);
       const String& operator[](int idx) const;
       
@@ -86,8 +86,8 @@ namespace gcore {
       Path& normalize();
       
       String basename() const;
-      String dirname(char sep=DIR_SEP) const;
-      String fullname(char sep=DIR_SEP) const;
+      String dirname(char sep='/') const;
+      String fullname(char sep='/') const;
       
       bool isDir() const;
       bool isFile() const;
@@ -97,38 +97,51 @@ namespace gcore {
       Date lastModification() const;
       
       // file extension without .
-      String getExtension() const;
+      String extension() const;
       bool checkExtension(const String &ext) const;
       size_t fileSize() const;
       
       bool createDir(bool recursive=false) const;
       bool removeFile() const;
       
-      void each(EachFunc cb, bool recurse=false, unsigned short flags=ET_ALL) const;
-      size_t listDir(List<Path> &l, bool recurse=false, unsigned short flags=ET_ALL) const;
+      // flags is a bit wise combination of constants defined in ForEachTarget enum
+      void forEach(ForEachFunc cb, bool recurse=false, unsigned short flags=FE_ALL) const;
+      size_t listDir(List<Path> &l, bool recurse=false, unsigned short flags=FE_ALL) const;
       
       String pop();
       Path& push(const String &s);
       
-    protected:
+   protected:
       
       StringList mPaths;
       String mFullName;
-  };
-  
-  inline Path operator+(const Path &p0, const Path &p1) {
-    gcore::Path rv(p0);
-    rv += p1;
-    return rv;
-  }
+   };
+   
+   inline bool Path::operator!=(const Path &rhs) const
+   {
+      return !operator==(rhs);
+   }
+   
+   inline int Path::depth() const
+   {
+      return int(mPaths.size());
+   }
+   
+   inline Path operator+(const Path &p0, const Path &p1)
+   {
+      Path rv(p0);
+      rv += p1;
+      return rv;
+   }
 
-  inline std::ostream& operator<<(std::ostream &os, const Path &p) {
-    os << p.fullname();
-    return os;
-  }
-  
-  typedef List<Path> PathList;
-  
+   inline std::ostream& operator<<(std::ostream &os, const Path &p)
+   {
+      os << p.fullname();
+      return os;
+   }
+   
+   typedef List<Path> PathList;
+   
 }
 
 #endif

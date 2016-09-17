@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2009~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -45,12 +45,21 @@ USA.
 #ifdef _MSC_VER
 // always disable
 // 4251: warning on template class not having a dll-interface
-// 4290: throw(ExceptionList) ignore warning
-# pragma warning(disable: 4251 4290 4702)
+// 4275: non-dll interface class used as base for dll-interface class
+# pragma warning(disable: 4251 4275 4702)
 #endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cmath>
+#include <cassert>
+#include <cstring>
+#include <cstdarg>
+#include <cerrno>
+#include <ctime>
 #include <map>
 #include <vector>
 #include <deque>
@@ -61,12 +70,6 @@ USA.
 #include <iostream>
 #include <sstream>
 #include <fstream>
-#include <cstdlib>
-#include <cstdio>
-#include <cassert>
-#include <cstring>
-#include <cstdarg>
-#include <ctime>
 #include <exception>
 #include <stdexcept>
 

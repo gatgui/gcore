@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2009~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -53,6 +53,8 @@ USA.
 #include <gcore/perflog.h>
 #include <gcore/functor.h>
 #include <gcore/time.h>
+#include <gcore/status.h>
+#include <gcore/net.h>
 
 #endif 
 

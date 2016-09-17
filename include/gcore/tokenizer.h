@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2009~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -26,11 +26,11 @@ USA.
 
 #include <gcore/config.h>
 
-namespace gcore {
-  
-  class GCORE_API Tokenizer {
-    
-    public:
+namespace gcore
+{
+   class GCORE_API Tokenizer
+   {
+   public:
 
       Tokenizer();
       Tokenizer(const char *dlims);
@@ -40,22 +40,20 @@ namespace gcore {
       void setDelimiters(const char *d);
       void addDelimiter(char d);
 
-      bool isDelim(char d);
+      bool isDelimiter(char d);
 
       bool next(void);
 
-      const char* getToken(void) const;
+      const char* token(void) const;
 
-    private:
+   private:
 
       char *mStr;
       char *mToken;
       char *mNextToken;
       char mDelims[256];
       unsigned int mNumDelim;
-  };
-  
-  
+   };
 }
 
 

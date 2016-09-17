@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2010~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -25,37 +25,38 @@ USA.
 #include <string.h>
 #include "charclass.h"
 
-namespace gcore {
+namespace gcore
+{
 
 unsigned char gCharClass[256];
 
 class CharClassInitializer
 {
-  public:
-    
-    CharClassInitializer()
-    {
+public:
+   
+   CharClassInitializer()
+   {
       unsigned char c;
       
       memset(gCharClass, 0, 256);
       
       for (c='a'; c<='z'; ++c) {
-        gCharClass[c] = LOWER_CHAR|WORD_CHAR;
+         gCharClass[c] = LOWER_CHAR|WORD_CHAR;
       }
       for (c='A'; c<='Z'; ++c) {
-        gCharClass[c] = UPPER_CHAR|WORD_CHAR;
+         gCharClass[c] = UPPER_CHAR|WORD_CHAR;
       }
       gCharClass[(unsigned char)'_'] = WORD_CHAR;
       
       for (c='0'; c<='9'; ++c) {
-        gCharClass[c] = DIGIT_CHAR|HEXA_CHAR;
+         gCharClass[c] = DIGIT_CHAR|HEXA_CHAR;
       }
       
       for (c='a'; c<='f'; ++c) {
-        gCharClass[c] |= HEXA_CHAR;
+         gCharClass[c] |= HEXA_CHAR;
       }
       for (c='A'; c<='F'; ++c) {
-        gCharClass[c] |= HEXA_CHAR;
+         gCharClass[c] |= HEXA_CHAR;
       }
       
       gCharClass[(unsigned char)'\t'] = SPACE_CHAR|ESCAPE_CHAR;
@@ -88,13 +89,13 @@ class CharClassInitializer
       gCharClass[(unsigned char)'$'] = SPECIAL_CHAR;
       gCharClass[(unsigned char)'|'] = SPECIAL_CHAR;
       //gCharClass[(unsigned char)'\\'] = SPECIAL_CHAR;
-    }
-    
-    ~CharClassInitializer()
-    {
-    } 
+   }
+   
+   ~CharClassInitializer()
+   {
+   }
 };
 
 static CharClassInitializer gsCharClassInit;
 
-}
+} // gcore

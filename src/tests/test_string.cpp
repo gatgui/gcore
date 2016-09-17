@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2010  Gaetan Guidet
+Copyright (C) 2010~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -24,43 +24,45 @@ USA.
 #include <gcore/string.h>
 #include <gcore/path.h>
 
-void QuoteString(gcore::String &s) {
-  s = "\"" + s + "\"";
+void QuoteString(gcore::String &s)
+{
+   s = "\"" + s + "\"";
 }
 
-int main(int, char**) {
-  
-  gcore::String s0 = "Z:\\ve\\home/GaetanG/dev\\deploy";
-  
-  gcore::String s1 = s0 + "/\tPoo  ";
-  s1.replace('\\', '/');
-  
-  gcore::String s2 = s1;
-  s2.replace("GaetanG", "PetitN");
-  
-  gcore::StringList splits;
-  s2.split('/', splits);
-  for (size_t i=0; i<splits.size(); ++i) {
-    splits[i].strip();
-  }
-  
-  std::cout << "s0 = \"" << s0 << "\"" << std::endl;
-  std::cout << "s1 = \"" << s1 << "\"" << std::endl;
-  std::cout << "s2 = \"" << s2 << "\"" << std::endl;
-  std::cout << "ToUpper s2:" << std::endl;
-  std::cout << "   = \"" << s2.toupper() << "\"" << std::endl;
-  std::cout << "ToLower s2:" << std::endl;
-  std::cout << "   = \"" << s2.tolower() << "\"" << std::endl;
-  std::cout << "Split Strip s1:" << std::endl;
-  
-  gcore::StringList::MapFunc quote;
-  gcore::Bind(QuoteString, quote);
-  std::cout << splits.map(quote) << std::endl;
+int main(int, char**)
+{
+   gcore::String s0 = "Z:\\ve\\home/GaetanG/dev\\deploy";
 
-  std::cout << "s0 = \"" << s0 << "\" starts with 'Z:' ? " << s0.startswith("Z:") << std::endl;
-  std::cout << "s0 = \"" << s0 << "\" starts with 'z:' ? " << s0.startswith("z:") << std::endl;
-  std::cout << "s0 = \"" << s0 << "\" ends with 'deploy' ? " << s0.endswith("deploy") << std::endl;
-  std::cout << "s0 = \"" << s0 << "\" ends with 'Deploy' ? " << s0.endswith("Deploy") << std::endl;
-  
-  return 0;
+   gcore::String s1 = s0 + "/\tPoo  ";
+   s1.replace('\\', '/');
+
+   gcore::String s2 = s1;
+   s2.replace("GaetanG", "PetitN");
+
+   gcore::StringList splits;
+   s2.split('/', splits);
+   for (size_t i=0; i<splits.size(); ++i)
+   {
+      splits[i].strip();
+   }
+
+   std::cout << "s0 = \"" << s0 << "\"" << std::endl;
+   std::cout << "s1 = \"" << s1 << "\"" << std::endl;
+   std::cout << "s2 = \"" << s2 << "\"" << std::endl;
+   std::cout << "ToUpper s2:" << std::endl;
+   std::cout << "   = \"" << s2.toupper() << "\"" << std::endl;
+   std::cout << "ToLower s2:" << std::endl;
+   std::cout << "   = \"" << s2.tolower() << "\"" << std::endl;
+   std::cout << "Split Strip s1:" << std::endl;
+
+   gcore::StringList::MapFunc quote;
+   gcore::Bind(QuoteString, quote);
+   std::cout << splits.map(quote) << std::endl;
+
+   std::cout << "s0 = \"" << s0 << "\" starts with 'Z:' ? " << s0.startswith("Z:") << std::endl;
+   std::cout << "s0 = \"" << s0 << "\" starts with 'z:' ? " << s0.startswith("z:") << std::endl;
+   std::cout << "s0 = \"" << s0 << "\" ends with 'deploy' ? " << s0.endswith("deploy") << std::endl;
+   std::cout << "s0 = \"" << s0 << "\" ends with 'Deploy' ? " << s0.endswith("Deploy") << std::endl;
+
+   return 0;
 }

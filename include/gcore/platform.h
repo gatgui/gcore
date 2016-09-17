@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2009~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -33,14 +33,36 @@ USA.
 # endif
 //# define _WIN32_WINNT 0x0500
 # include <windows.h>
-//# include <winsock2.h> // gethostname, requires linking winsock32.lib
+# include <winsock2.h>
+//# pragma comment(lib, "wsock32.lib")
+# pragma comment(lib, "ws2_32.lib")
+# define NULL_SOCKET INVALID_SOCKET
+# define sock_close closesocket
+# define sock_errno WSAGetLastError
+# ifndef SHUT_RD
+#  define SHUT_RD SD_RECEIVE
+# endif
+# ifndef SHUT_WR
+#  define SHUT_WR SD_SEND
+# endif
+# ifndef SHUT_RDWR
+#  define SHUT_RDWR SD_BOTH
+# endif
 # define DIR_SEP '\\'
 # define PATH_SEP ';'
-#else
+# define std_errno GetLastError
+typedef SOCKET sock_t;
+typedef int socklen_t;
+#else // _WIN32
 # include <sys/types.h>
 # include <sys/wait.h>
 # include <sys/time.h>
 # include <sys/stat.h>
+# include <sys/socket.h>
+# include <sys/select.h>
+# include <netinet/in.h>
+# include <arpa/inet.h>
+# include <netdb.h>
 # include <unistd.h>
 # include <errno.h>
 # include <fcntl.h>
@@ -52,13 +74,18 @@ USA.
 # include <signal.h>
 # define DIR_SEP '/'
 # define PATH_SEP ':'
+# define NULL_SOCKET -1
+# define sock_close   ::close
+# define sock_errno() errno
+# define std_errno() errno
 # ifdef __APPLE__
 #  include <crt_externs.h>
 #  define environ (*_NSGetEnviron())
-# else
+# else // __APPLE__
 extern char **environ;
-# endif
-#endif
+# endif // __APPLE__
+typedef int sock_t;
+#endif // _WIN32
 
 #endif
 

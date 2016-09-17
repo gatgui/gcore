@@ -1,3 +1,22 @@
+# Copyright (C) 2010~  Gaetan Guidet
+# 
+# This file is part of gcore.
+# 
+# gcore is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or (at
+# your option) any later version.
+# 
+# gcore is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+# 
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+# USA.
+
 cimport gcore
 from libcpp.map cimport map
 from cython.operator cimport dereference as deref
@@ -37,14 +56,16 @@ ctypedef public class Env [object PyEnv, type PyEnvType]:
    def get(self, char* key):
       return self._cobj.get(gcore.String(key)).c_str()
    
-   def set(self, char* key, char* val, bint overwrite):
-      self._cobj.set(gcore.String(key), gcore.String(val), overwrite)
-   
-   def setAll(self, edict, bint overwrite):
+   def set(self, *args):
       cdef map[gcore.String, gcore.String] cd
-      for k, v in edict.iteritems():
-         cd[gcore.String(<char*?>k)] = gcore.String(<char*?>v)
-      self._cobj.setAll(cd, overwrite)
+      if len(args) < 2 or len(args) > 3:
+         raise Exception("_gcore.Env.set takes 2 to 3 arguments")
+      elif len(args) == 2:
+         for k, v in args[0].iteritems():
+            cd[gcore.String(<char*?>k)] = gcore.String(<char*?>v)
+         self._cobj.set(cd, <bint?>args[1])
+      else:
+         self._cobj.set(gcore.String(<char*?>args[0]), gcore.String(<char*?>args[1]), <bint?>args[2])
    
    def asDict(self):
       cdef map[gcore.String, gcore.String] cd
@@ -58,11 +79,11 @@ ctypedef public class Env [object PyEnv, type PyEnvType]:
       return rv
    
    @classmethod
-   def GetUser(klass):
+   def Username(klass):
       return gcore.GetUser().c_str()
    
    @classmethod
-   def GetHost(klass):
+   def Hostname(klass):
       return gcore.GetHost().c_str()
    
    @classmethod
@@ -74,15 +95,16 @@ ctypedef public class Env [object PyEnv, type PyEnvType]:
       return gcore.Get(gcore.String(key)).c_str()
    
    @classmethod
-   def Set(klass, char* key, char* val, bint overwrite):
-      gcore.Set(gcore.String(key), gcore.String(val), overwrite)
-   
-   @classmethod
-   def SetAll(klass, edict, bint overwrite):
+   def Set(klass, *args):
       cdef map[gcore.String, gcore.String] cd
-      for k, v in edict.iteritems():
-         cd[gcore.String(<char*?>k)] = gcore.String(<char*?>v)
-      gcore.SetAll(cd, overwrite)
+      if len(args) < 2 or len(args) > 3:
+         raise Exception("_gcore.Env.Set takes 2 to 3 arguments")
+      elif len(args) == 2:
+         for k, v in args[0].iteritems():
+            cd[gcore.String(<char*?>k)] = gcore.String(<char*?>v)
+         gcore.Set(cd, <bint?>args[1])
+      else:
+         gcore.Set(gcore.String(<char*?>args[0]), gcore.String(<char*?>args[1]), <bint?>args[2])
    
    @classmethod
    def ListPath(klass, char* key):

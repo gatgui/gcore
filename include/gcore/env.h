@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2010  Gaetan Guidet
+Copyright (C) 2010~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -29,23 +29,24 @@ USA.
 #include <gcore/list.h>
 #include <gcore/path.h>
 
-namespace gcore {
-  
-  class GCORE_API Env {
-    public:
+namespace gcore
+{
+   class GCORE_API Env
+   {
+   public:
       
-      typedef Functor1wR<bool, const Path&> EachInPathFunc;
+      typedef Functor1wR<bool, const Path&> ForEachInPathFunc;
       
-      static String GetUser();
-      static String GetHost();
+      static String Username();
+      static String Hostname();
       static String Get(const String &k);
       static void Set(const String &k, const String &v, bool overwrite);
-      static void SetAll(const StringDict &d, bool overwrite);
+      static void Set(const StringDict &d, bool overwrite);
       static bool IsSet(const String &k);
-      static void EachInPath(const String &e, EachInPathFunc callback);
+      static void ForEachInPath(const String &e, ForEachInPathFunc callback);
       static size_t ListPaths(const String &e, PathList &l);
       
-    public:
+   public:
       
       Env();
       Env(bool verbose);
@@ -57,15 +58,15 @@ namespace gcore {
       bool isSet(const String &key) const;
       String get(const String &key) const;
       void set(const String &key, const String &val, bool overwrite);
-      void setAll(const StringDict &d, bool overwrite);
+      void set(const StringDict &d, bool overwrite);
       
       size_t asDict(StringDict &d) const;
       
-    protected:
+   protected:
       
       List<StringDict> mEnvStack;
       bool mVerbose;
-  };
+   };
 }
 
 #endif

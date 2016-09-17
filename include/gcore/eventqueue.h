@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2010~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -28,50 +28,50 @@ USA.
 
 namespace gcore
 {
-  typedef Functor0 Event;
-  
-  class GCORE_API EventQueue
-  {
-  public:
-    
-    struct EventInfo
-    {
-      Event func;
-      bool sync;
-      size_t id;
-    };
-    
-    typedef std::deque<EventInfo> EventInfoList;
-    
-  public:
-    
-    EventQueue();
-    virtual ~EventQueue();
-    
-    bool push(Event evt, bool sync=false);
-    size_t poll(size_t count);
-    void acceptEvents(bool v);
-    
-  private:
-    
-    EventQueue(const EventQueue &);
-    EventQueue& operator=(const EventQueue &);
-    
-    size_t newID();
-    
-  protected:
-    
-    ThreadID mOwner;
-    EventInfoList mEvents;
-    bool mAcceptEvents;
-    size_t mDoneID;
-    std::set<size_t> mQueueIDs;
-    size_t mCurID;
-    
-    Mutex mEventsMutex;
-    Mutex mDoneMutex;
-    Condition mDoneCond;
-  };
+   typedef Functor0 Event;
+   
+   class GCORE_API EventQueue
+   {
+   public:
+      
+      struct EventInfo
+      {
+         Event func;
+         bool sync;
+         size_t id;
+      };
+      
+      typedef std::deque<EventInfo> EventInfoList;
+      
+   public:
+      
+      EventQueue();
+      virtual ~EventQueue();
+      
+      bool push(Event evt, bool sync=false);
+      size_t poll(size_t count);
+      void acceptEvents(bool v);
+      
+   private:
+      
+      EventQueue(const EventQueue &);
+      EventQueue& operator=(const EventQueue &);
+      
+      size_t newID();
+      
+   protected:
+      
+      ThreadID mOwner;
+      EventInfoList mEvents;
+      bool mAcceptEvents;
+      size_t mDoneID;
+      std::set<size_t> mQueueIDs;
+      size_t mCurID;
+      
+      Mutex mEventsMutex;
+      Mutex mDoneMutex;
+      Condition mDoneCond;
+   };
 }
 
 #endif

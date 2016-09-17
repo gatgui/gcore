@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2013  Gaetan Guidet
+Copyright (C) 2013~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -25,37 +25,36 @@ USA.
 #define __gcore_base64_h_
 
 #include <gcore/config.h>
-#include <string>
+#include <gcore/string.h>
 
-namespace gcore {
-  
-  class GCORE_API Base64 {
-    public:
-    
-      static size_t EncodeLength(size_t inlen);
+namespace gcore
+{
+   namespace base64
+   {
+      GCORE_API size_t EncodeLength(size_t inlen);
       
-      static bool Encode(const void *in, size_t inlen, char *out, size_t outlen);
-      static char* Encode(const void *in, size_t inlen, size_t &outlen);
-      static bool Encode(const void *in, size_t inlen, std::string &out);
-      static bool Encode(const std::string &in, char *out, size_t outlen);
-      static char* Encode(const std::string &in, size_t &outlen);
-      static bool Encode(const std::string &in, std::string &out);
-      static std::string Encode(const void *data, size_t len);
-      static std::string Encode(const std::string &in);
+      GCORE_API bool Encode(const void *in, size_t inlen, char *out, size_t outlen);
+      GCORE_API char* Encode(const void *in, size_t inlen, size_t &outlen);
+      GCORE_API bool Encode(const void *in, size_t inlen, String &out);
+      GCORE_API bool Encode(const String &in, char *out, size_t outlen);
+      GCORE_API char* Encode(const String &in, size_t &outlen);
+      GCORE_API bool Encode(const String &in, String &out);
+      GCORE_API String Encode(const void *data, size_t len);
+      GCORE_API String Encode(const String &in);
       
       // ---
 
-      static size_t DecodeLength(const char *in, size_t len);
+      GCORE_API size_t DecodeLength(const char *in, size_t len);
 
-      static bool Decode(const char *in, size_t len, void *out, size_t outlen);
-      static void* Decode(const char *in, size_t len, size_t &outlen);
-      static bool Decode(const char *in, size_t len, std::string &out);
-      static bool Decode(const std::string &in, void *out, size_t outlen);
-      static void* Decode(const std::string &in, size_t &outlen);
-      static bool Decode(const std::string &in, std::string &out);
-      static std::string Decode(const char *in, size_t len);
-      static std::string Decode(const std::string &in);
-  };
+      GCORE_API bool Decode(const char *in, size_t len, void *out, size_t outlen);
+      GCORE_API void* Decode(const char *in, size_t len, size_t &outlen);
+      GCORE_API bool Decode(const char *in, size_t len, String &out);
+      GCORE_API bool Decode(const String &in, void *out, size_t outlen);
+      GCORE_API void* Decode(const String &in, size_t &outlen);
+      GCORE_API bool Decode(const String &in, String &out);
+      GCORE_API String Decode(const char *in, size_t len);
+      GCORE_API String Decode(const String &in);
+   }
 }
 
 #endif

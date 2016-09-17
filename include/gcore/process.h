@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2009~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -30,108 +30,135 @@ namespace gcore
 {
 
 #ifdef _WIN32
-  
-  typedef unsigned long ProcessID;
-  const ProcessID INVALID_PID = 0;
-  
-  inline bool IsValidProcessID(ProcessID pid) {
-    return (pid != 0);
-  }
-  
+   
+   typedef unsigned long ProcessID;
+   const ProcessID INVALID_PID = 0;
+   
+   inline bool IsValidProcessID(ProcessID pid)
+   {
+      return (pid != 0);
+   }
+   
 #else
-  
-  typedef int ProcessID;
-  const ProcessID INVALID_PID = -1;
-  
-  inline bool IsValidProcessID(ProcessID pid) {
-    return (pid > 0);
-  }
-  
+   
+   typedef int ProcessID;
+   const ProcessID INVALID_PID = -1;
+   
+   inline bool IsValidProcessID(ProcessID pid)
+   {
+      return (pid > 0);
+   }
+   
 #endif
 
-  class GCORE_API Process {
-    
-    public:
-    
-      typedef void (*OutputFunc)(const char*);
-
+   class GCORE_API Process
+   {
+   public:
+         
+      struct GCORE_API Options
+      {
+         bool redirectOut;
+         bool redirectErr;
+         bool redirectErrToOut;
+         bool redirectIn;
+         bool showConsole;
+         bool keepAlive;
+         StringDict env;
+      };
+      
+      static void SetDefaultOptions(Options &opts);
+      
+   public:
+   
       Process();
+      Process(const char *cmdline, Options *options=0, Status *status=0);
+      Process(int argc, const char **argv, Options *options=0, Status *status=0);
+      Process(const String &cmdline, Options *options=0, Status *status=0);
+      Process(const StringList &args, Options *options=0, Status *status=0);
       ~Process();
 
-      void setOutputFunc(OutputFunc of);
+      // Process setup
+      
       void setEnv(const String &key, const String &value);
-
-      ProcessID run(const String &cmdline);
-      ProcessID run(const String &progPath, char **argv);
-      ProcessID run(const String &progPath, int argc, ...);
       
-      ProcessID getId() const;
-
-      int read(char *buffer, int size) const;
-      int read(String &str) const;
-      int write(const char *buffer, int size) const;
-      int write(const String &str) const;
-      int readErr(String &str) const;
-      int writeErr(const String &str) const;
+      const Options& options() const;
+      void setOptions(const Options &options);
       
-      PipeID readID() const;
-      PipeID writeID() const;
+      void setRedirectOut(bool ro);
+      bool redirectOut() const;
+
+      void setRedirectErr(bool re);
+      bool redirectErr() const;
       
-      inline const String& getCmdLine() const {
-        return mCmdLine;
-      } 
-
-      //what about err?
-      void captureOut(bool co);
-      bool captureOut() const;
-
-      void captureErr(bool enable, bool errToOut=false);
-      bool captureErr() const;
+      void setRedirectErrToOut(bool e2o);
       bool redirectErrToOut() const;
 
-      void redirectIn(bool ri);
+      void setRedirectIn(bool ri);
       bool redirectIn() const;
 
-      void verbose(bool v);
-      bool verbose() const;
-
-      bool running();
-      int wait(bool blocking);
-      int kill();
-
-      // for windows
-      void showConsole(bool sc);
+      // windows only
+      void setShowConsole(bool sc);
       bool showConsole() const;
 
-      void keepAlive(bool ka);
+      // don't kill process in Process object destructor
+      void setKeepAlive(bool ka);
       bool keepAlive() const;
 
-    private:
+      // Running process 
+      
+      Status run(const char *cmdline);
+      Status run(int argc, const char **args);
+      Status run(int argc, ...);
+      Status run(const String &cmdline);
+      Status run(const StringList &args);
 
-      static void std_output(const char*);
+      ProcessID id() const;
 
-      ProcessID run();
+      bool isRunning();
+      // Returns -1 on failure, 0 if process is still running (non-blocking mode) or 1 if process completed
+      // In blocking mode, will wait for process completion
+      int wait(bool blocking, Status *status=0);
+      // Returns -1 on failure
+      Status kill();
+
+      inline const String& cmdLine() const { return mCmdLine; }
+      // return code is initialized to -1
+      inline int returnCode() const { return mReturnCode; }
+
+      // Interacting with running process
+
+      // Returns -1 on error, read/written bytes otherwise
+      bool canReadOut() const;
+      int readOut(char *buffer, int size, Status *status=0) const;
+      bool canReadErr() const;
+      int readErr(char *buffer, int size, Status *status=0) const;
+      bool canWriteIn() const;
+      int write(const char *buffer, int size, Status *status=0) const;
+      int write(const String &str, Status *status=0) const;
+
+      PipeID readOutID() const;
+      PipeID readErrID() const;
+      PipeID writeID() const;
+
+   private:
+
+      int waitNoClose(bool blocking, Status *status=0);
+      Status run(int argc, va_list va);
+      Status run();
       void closePipes();
 
-    private:
+   private:
 
       StringList  mArgs;
       ProcessID   mPID;
-      OutputFunc  mOutFunc;
-      Pipe        mReadPipe;
+      Options     mOpts;
+      Pipe        mReadOutPipe;
+      Pipe        mReadErrPipe;
       Pipe        mWritePipe;
-      Pipe        mErrorPipe;
-      bool        mCapture;
-      bool        mRedirect;
-      bool        mVerbose;
-      bool        mShowConsole;
-      char**      mStdArgs; // used on nix
+      char**      mStdArgs;
       String      mCmdLine;
-      bool        mCaptureErr;
-      bool        mErrToOut;
-      bool        mKeepAlive;
-      StringDict  mEnv;
-  };
+      int         mReturnCode;
+   };
 }
 
 #endif

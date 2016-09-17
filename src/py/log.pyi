@@ -1,3 +1,22 @@
+# Copyright (C) 2010~  Gaetan Guidet
+# 
+# This file is part of gcore.
+# 
+# gcore is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or (at
+# your option) any later version.
+# 
+# gcore is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+# 
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+# USA.
+
 cimport gcore
 from cython.operator import dereference as deref
 import sys
@@ -14,20 +33,20 @@ ctypedef public class Log [object PyLog, type PyLogType]:
    cdef bint _own
    
    @classmethod
-   def SelectOutputs(klass, int flags):
-      gcore.SelectOutputs(flags)
+   def SetLevelMask(klass, int mask):
+      gcore.SetLevelMask(mask)
    
    @classmethod
-   def SelectedOutputs(klass):
-      return gcore.SelectedOutputs()
+   def LevelMask(klass):
+      return gcore.LevelMask()
    
    @classmethod
    def SetIndentLevel(klass, int l):
       gcore.SetIndentLevel(l)
    
    @classmethod
-   def GetIndentLevel(klass):
-      return gcore.GetIndentLevel()
+   def IndentLevel(klass):
+      return gcore.IndentLevel()
    
    @classmethod
    def Indent(klass):
@@ -42,24 +61,24 @@ ctypedef public class Log [object PyLog, type PyLogType]:
       gcore.SetIndentWidth(w)
    
    @classmethod
-   def GetIndentWidth(klass):
-      return gcore.GetIndentWidth()
+   def IndentWidth(klass):
+      return gcore.IndentWidth()
    
    @classmethod
-   def EnableColors(klass, bint onoff):
-      gcore.EnableColors(onoff)
+   def SetColorOutput(klass, bint onoff):
+      gcore.SetColorOutput(onoff)
    
    @classmethod
-   def ColorsEnabled(klass):
-      return gcore.ColorsEnabled()
+   def ColorOutput(klass):
+      return gcore.ColorOutput()
    
    @classmethod
-   def ShowTimeStamps(klass, bint onoff):
-      gcore.ShowTimeStamps(onoff)
+   def SetShowTimeStamps(klass, bint onoff):
+      gcore.SetShowTimeStamps(onoff)
    
    @classmethod
-   def TimeStampsShown(klass):
-      return gcore.TimeStampsShown()
+   def ShowTimeStamps(klass):
+      return gcore.ShowTimeStamps()
    
    @classmethod
    def PrintError(klass, char* msg):
@@ -131,17 +150,17 @@ ctypedef public class Log [object PyLog, type PyLogType]:
    def printInfo(self, msg):
       self._cobj.printInfo(<char*?>msg)
    
-   def selectOutputs(self, o):
-      self._cobj.selectOutputs(<unsigned int>o)
+   property levelMask:
+      def __get__(self): return self._cobj.levelMask()
+      def __set__(self, v): self._cobj.setLevelMask(<unsigned int>v)
    
-   def selectedOutputs(self):
-      return self._cobj.selectedOutputs()
+   property indentLevel:
+      def __get__(self): return self._cobj.indentLevel()
+      def __set__(self, v): self._cobj.setIndentLevel(<unsigned int>v)
    
-   def setIndentLevel(self, l):
-      self._cobj.setIndentLevel(<unsigned int>l)
-   
-   def getIndentLevel(self):
-      return self._cobj.getIndentLevel()
+   property indentWidth:
+      def __get__(self): return self._cobj.indentWidth()
+      def __set__(self, v): self._cobj.setIndentWidth(<unsigned int>v)
    
    def indent(self):
       self._cobj.indent()
@@ -149,23 +168,13 @@ ctypedef public class Log [object PyLog, type PyLogType]:
    def unIndent(self):
       self._cobj.unIndent()
    
-   def setIndentWidth(self, w):
-      self._cobj.setIndentWidth(<unsigned int>w)
+   property colorOutput:
+      def __get__(self): return self._cobj.colorOutput()
+      def __set__(self, v): self._cobj.setColorOutput(<bint>v)
    
-   def getIndentWidth(self):
-      return self._cobj.getIndentWidth()
-   
-   def enableColors(self, onoff):
-      self._cobj.enableColors(<bint>onoff)
-   
-   def colorsEnabled(self):
-      return self._cobj.colorsEnabled()
-   
-   def showTimeStamps(self, onoff):
-      self._cobj.showTimeStamps(<bint>onoff)
-   
-   def timeStampsShown(self):
-      return self._cobj.timeStampsShown()
+   property showTimeStamps:
+      def __get__(self): return self._cobj.showTimeStamps()
+      def __set__(self, v): self._cobj.setShowTimeStamps(<bint>v)
    
    def setOutputFunc(self, func):
       if func is None:

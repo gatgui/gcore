@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2009~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -26,39 +26,36 @@ USA.
 
 #include <gcore/string.h>
 #include <gcore/list.h>
+#include <gcore/status.h>
 
 #define ACCEPTS_NOFLAG_ARGUMENTS(arity) {(gcore::FlagDesc::Option)0, "", "", arity}
 
-namespace gcore {
+namespace gcore
+{
 
-  struct GCORE_API FlagDesc {
-    enum Option {
-      FT_OPTIONAL = 0x01,  // flag is optional
-      FT_NEEDED = 0x02,    // flag is required
-      FT_MULTI = 0x04      // flag can appear several times
-    };
-    Option opts;
-    String longname;  // -<shortName>
-    String shortname; // --<longName>
-    int arity;             // <0: any
-  };
-  
-  class GCORE_API ArgParserError : public std::exception {
-    public:
-      ArgParserError(const String &message);
-      virtual ~ArgParserError() throw();
-      virtual const char* what() const throw();
-    protected:
-      String mMessage;
-  };
-
-  class GCORE_API ArgParser {
-    public:
+   struct GCORE_API FlagDesc
+   {
+      enum Option
+      {
+         FT_OPTIONAL = 0x01,  // flag is optional
+         FT_NEEDED = 0x02,    // flag is required
+         FT_MULTI = 0x04      // flag can appear several times
+      };
+      
+      Option opts;
+      String longname;  // -<shortName>
+      String shortname; // --<longName>
+      int arity;             // <0: any
+   };
+   
+   class GCORE_API ArgParser
+   {
+   public:
 
       ArgParser(const FlagDesc *flags, int n);
       ~ArgParser();
 
-      size_t getArgumentCount() const;
+      size_t argumentCount() const;
       bool getArgument(size_t idx, String &out) const;
       bool getArgument(size_t idx, float &out) const;
       bool getArgument(size_t idx, double &out) const;
@@ -67,8 +64,8 @@ namespace gcore {
       bool getArgument(size_t idx, bool &out) const;
 
       bool isFlagSet(const String &name) const;
-      size_t getFlagOccurenceCount(const String &name) const;// if flag is multi
-      size_t getFlagArgumentCount(const String &name, size_t occurence=0) const;
+      size_t flagOccurenceCount(const String &name) const;
+      size_t flagArgumentCount(const String &name, size_t occurence=0) const;
       bool getFlagArgument(const String &name, size_t idx, String &out) const;
       bool getFlagArgument(const String &name, size_t idx, float &out) const;
       bool getFlagArgument(const String &name, size_t idx, double &out) const;
@@ -82,15 +79,15 @@ namespace gcore {
       bool getMultiFlagArgument(const String &name, size_t occurence,  size_t idx, unsigned int &out) const;
       bool getMultiFlagArgument(const String &name, size_t occurence,  size_t idx, bool &out) const;
 
-      void parse(int argc, char **argv) throw (ArgParserError);
+      Status parse(int argc, char **argv);
 
-    protected:
+   protected:
 
       FlagDesc* findLongFlag(const String &name);
       FlagDesc* findShortFlag(const String &name);
       void reset();
       
-    protected:
+   protected:
       
       typedef StringList FlagValues;
       typedef List<FlagValues> FlagOccurencesValues;
@@ -103,11 +100,11 @@ namespace gcore {
       FlagsMap mFlagsMap;
       List<FlagOccurencesValues> mDatas;
 
-    private:
+   private:
 
-      ArgParser(){}
+      ArgParser() {}
       ArgParser& operator=(const ArgParser&) {return *this;}
-  };
+   };
 
 }
 

@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2009, 2010  Gaetan Guidet
+Copyright (C) 2009~  Gaetan Guidet
 
 This file is part of gcore.
 
@@ -21,47 +21,47 @@ USA.
 
 */
 
-#include <gcore/all.h>
+#include <gcore/dmodule.h>
 #include <iostream>
 
 // This describe a dll interface in an object so that calling method
 // on this obejct call the dll function
 // DLL used this way do not have to be link at compile time
 // A possible use is for a plugin architecture
-GCORE_BEGIN_MODULE_INTERFACE   ( MyDll                               )
-  GCORE_DEFINE_MODULE_SYMBOL0  (       initialize                    )
-  GCORE_DEFINE_MODULE_SYMBOL0  (       reset                         )
-  GCORE_DEFINE_MODULE_SYMBOL0  (       update                        )
-  GCORE_DEFINE_MODULE_SYMBOL0R ( bool, isLoaded                      )
-  GCORE_DEFINE_MODULE_SYMBOL1R ( bool, load,      const std::string& )
+GCORE_BEGIN_MODULE_INTERFACE    ( MyDll                               )
+   GCORE_DEFINE_MODULE_SYMBOL0  (       initialize                    )
+   GCORE_DEFINE_MODULE_SYMBOL0  (       reset                         )
+   GCORE_DEFINE_MODULE_SYMBOL0  (       update                        )
+   GCORE_DEFINE_MODULE_SYMBOL0R ( bool, isLoaded                      )
+   GCORE_DEFINE_MODULE_SYMBOL1R ( bool, load,      const std::string& )
 GCORE_END_MODULE_INTERFACE
 
 int main(int,char**)
 {
 #if defined(WIN32)
-  MyDll dll("testmodule.dll");
+   MyDll dll("testmodule.dll");
 #elif defined(__APPLE__)
-  MyDll dll("testmodule.bundle");
+   MyDll dll("testmodule.bundle");
 #else
-  MyDll dll("testmodule.so");
+   MyDll dll("testmodule.so");
 #endif
 
-  dll.initialize();
+   dll.initialize();
 
-  if (dll.isLoaded())
-  {
-    dll.load("./conf.cfg");
-  }
-  else
-  {
-    std::cerr << "Could not load library" << std::endl;
-    std::cerr << dll._getError() << std::endl;
-  }
+   if (dll.isLoaded())
+   {
+      dll.load("./conf.cfg");
+   }
+   else
+   {
+      std::cerr << "Could not load library" << std::endl;
+      std::cerr << dll._getError() << std::endl;
+   }
 
-  dll.update();
+   dll.update();
 
-  dll.reset();
+   dll.reset();
 
-  return 0;
+   return 0;
 }
 

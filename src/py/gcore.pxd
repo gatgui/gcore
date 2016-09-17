@@ -153,7 +153,7 @@ cdef extern from "<gcore/xml.h>" namespace "gcore":
       void removeChild(size_t)
       
       XMLElement* parent()
-      size_t numChildren()
+      size_t childCount()
       XMLElement* child(size_t)
       
       bint setAttribute(String&, String&)
@@ -170,7 +170,7 @@ cdef extern from "<gcore/xml.h>" namespace "gcore":
       String& tag()
       
       bint hasChildWithTag(String&)
-      size_t numChildrenWithTag(String&)
+      size_t countChildrenWithTag(String&)
       XMLElement* childWithTag(String&, size_t)
       size_t getChildrenWithTag(String&, List[XMLElement*]&)
    
@@ -180,7 +180,7 @@ cdef extern from "<gcore/xml.h>" namespace "gcore":
       void setRoot(XMLElement*)
       XMLElement* root(size_t)
 
-      size_t numRoots()
+      size_t rootCount()
       void addRoot(XMLElement*)
       
       void write(String&)

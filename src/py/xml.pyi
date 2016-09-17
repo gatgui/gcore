@@ -73,8 +73,8 @@ ctypedef public class XMLElement [object PyXMLElement, type PyXMLElementType]:
       else:
          return None
 
-   def numChildren(self):
-      return self._cobj.numChildren()
+   def childCount(self):
+      return self._cobj.childCount()
 
    def child(self, idx):
       cdef gcore.XMLElement *pe = self._cobj.child(<size_t?>idx)
@@ -127,8 +127,8 @@ ctypedef public class XMLElement [object PyXMLElement, type PyXMLElementType]:
    def hasChildWithTag(self, t):
       return self._cobj.hasChildWithTag(gcore.String(<char*?>t))
 
-   def numChildrenWithTag(self, t):
-      return self._cobj.numChildrenWithTag(gcore.String(<char*?>t))
+   def countChildrenWithTag(self, t):
+      return self._cobj.countChildrenWithTag(gcore.String(<char*?>t))
    
    def childWithTag(self, t, i=0):
       cdef gcore.XMLElement *pe = self._cobj.childWithTag(gcore.String(<char*?>t), <size_t?>i)
@@ -183,8 +183,8 @@ ctypedef public class XMLDoc [object PyXMLDoc, type PyXMLDocType]:
          del(self._cobj)
          self._cobj = NULL
 
-   def numRoots(self):
-      return self._cobj.numRoots()
+   def rootCount(self):
+      return self._cobj.rootCount()
    
    def setRoot(self, e):
       if e:

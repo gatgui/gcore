@@ -136,7 +136,7 @@ size_t RexMatch::length(size_t i) const
    return (mGroups[i].second - mGroups[i].first + 1);
 }
 
-size_t RexMatch::numGroups() const
+size_t RexMatch::groupCount() const
 {
    return mGroups.size();
 }

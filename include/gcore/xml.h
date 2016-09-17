@@ -48,9 +48,9 @@ namespace gcore
       void removeChild(size_t idx);
       const XMLElement* child(size_t idx) const;
       XMLElement* child(size_t idx);
-      size_t numChildren() const;
+      size_t childCount() const;
       bool hasChildWithTag(const String &tag) const;
-      size_t numChildrenWithTag(const String &tag) const;
+      size_t countChildrenWithTag(const String &tag) const;
       XMLElement* childWithTag(const String &tag, size_t n=0);
       const XMLElement* childWithTag(const String &tag, size_t n=0) const;
       size_t getChildrenWithTag(const String &tag, List<XMLElement*> &el) const;
@@ -91,7 +91,7 @@ namespace gcore
       void setRoot(XMLElement *elt);
       XMLElement* root() const;
 
-      size_t numRoots() const;
+      size_t rootCount() const;
       XMLElement* root(size_t i) const;
       void addRoot(XMLElement *elt);
       

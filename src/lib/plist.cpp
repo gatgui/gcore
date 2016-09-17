@@ -476,7 +476,7 @@ Status Array::fromXML(const XMLElement *elt)
    {
       return Status(false, "NULL element.");
    }
-   for (size_t i=0; i<elt->numChildren(); ++i)
+   for (size_t i=0; i<elt->childCount(); ++i)
    {
       const XMLElement *c = elt->child(i);
       Value *v = PropertyList::NewValue(c->tag());
@@ -668,7 +668,7 @@ Status Dictionary::fromXML(const XMLElement *elt)
       return Status(false, "NULL element.");
    }
    size_t i = 0;
-   while (i < elt->numChildren())
+   while (i < elt->childCount())
    {
       const XMLElement *k = elt->child(i);
       if (k->tag() != "key")

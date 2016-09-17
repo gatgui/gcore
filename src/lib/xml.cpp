@@ -382,7 +382,7 @@ XMLElement* XMLElement::child(size_t idx)
    return 0;
 }
 
-size_t XMLElement::numChildren() const
+size_t XMLElement::childCount() const
 {
    return mChildren.size();
 }
@@ -444,7 +444,7 @@ bool XMLElement::hasChildWithTag(const String &tag) const
    return false;
 }
 
-size_t XMLElement::numChildrenWithTag(const String &tag) const
+size_t XMLElement::countChildrenWithTag(const String &tag) const
 {
    size_t cnt = 0;
    for (size_t i=0; i<mChildren.size(); ++i)
@@ -547,7 +547,7 @@ XMLElement* XMLDoc::root() const
    }
 }
 
-size_t XMLDoc::numRoots() const
+size_t XMLDoc::rootCount() const
 {
    return mRoots.size();
 }
@@ -1248,32 +1248,15 @@ bool XMLDoc::read(std::istream &is)
       goto failed;
    }
    
-   //if (root == NULL)
-   //{
-   if (numRoots() == 0)
+   if (rootCount() == 0)
    {
       Log::PrintError("[gcore] XMLDoc::read: No root element found");
       return false;
    }
 
-   //setRoot(root);
-
    return true;
 
 failed:
-   /*
-   if (root)
-   {
-      delete root;
-   }
-   else
-   {
-      if (cur)
-      {
-         delete cur;
-      }
-   }
-   */
    for (size_t i=0; i<mRoots.size(); ++i)
    {
       delete mRoots[i];

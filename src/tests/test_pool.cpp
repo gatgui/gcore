@@ -110,7 +110,7 @@ int main(int, char**)
    safe_print("Start thread pool\n");
    pool.start(8);
    
-   n = pool.numWorkers();
+   n = pool.workerCount();
    safe_print("%d workers\n", n);
 
    safe_print("Add 10 tasks\n");
@@ -122,7 +122,7 @@ int main(int, char**)
    safe_print("Wait workers...\n");
    pool.wait();
    
-   n = pool.numWorkers();
+   n = pool.workerCount();
    safe_print("%d workers waiting for tasks\n", n);
    
    safe_print("Add 300 tasks\n");

@@ -70,7 +70,7 @@ ThreadPool::~ThreadPool()
    stop();
 }
 
-size_t ThreadPool::_numIdleWorkers()
+size_t ThreadPool::_idleWorkerCount()
 {
    size_t n = 0;
    for (size_t i=0; i<mWorkers.size(); ++i)
@@ -80,13 +80,13 @@ size_t ThreadPool::_numIdleWorkers()
    return n;
 }
 
-size_t ThreadPool::numIdleWorkers()
+size_t ThreadPool::idleWorkerCount()
 {
    ScopeLock lock(mWorkersAccess);
-   return _numIdleWorkers();
+   return _idleWorkerCount();
 }
 
-size_t ThreadPool::numWorkers()
+size_t ThreadPool::workerCount()
 {
    ScopeLock lock(mWorkersAccess);
    return mWorkers.size();
@@ -173,7 +173,7 @@ bool ThreadPool::wait()
    
    // wait for all workers to run idle
    mWorkersAccess.lock();
-   while (_numIdleWorkers() != mWorkers.size())
+   while (_idleWorkerCount() != mWorkers.size())
    {
       mWorkersChanged.wait(mWorkersAccess);
    }
@@ -208,7 +208,7 @@ bool ThreadPool::stop()
    mTasksChanged.notifyAll();
    mTasksAccess.unlock();
 
-   mRestartWorkersCount = numWorkers();
+   mRestartWorkersCount = workerCount();
    
    // wait all workers to be done
 

@@ -55,9 +55,9 @@ namespace gcore
       
       bool removeWorkers(size_t n);
       
-      size_t numIdleWorkers();
+      size_t idleWorkerCount();
 
-      size_t numWorkers();
+      size_t workerCount();
 
    protected:
 
@@ -102,7 +102,7 @@ namespace gcore
 
       void notifyDone(Worker *wt);
       
-      size_t _numIdleWorkers();
+      size_t _idleWorkerCount();
 
    protected:
       

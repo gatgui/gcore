@@ -67,7 +67,7 @@ namespace gcore {
 
       size_t length(size_t i) const;
    
-      size_t numGroups() const;
+      size_t groupCount() const;
    
       bool hasGroup(size_t i) const;
       bool hasNamedGroup(const String &n) const;

@@ -189,7 +189,8 @@ Host::operator const struct sockaddr* () const
 // ---
 
 Connection::Connection()
-   : mBufferSize(0)
+   : mFD(NULL_SOCKET)
+   , mBufferSize(0)
    , mBuffer(0)
    , mBufferOffset(0)
 {
@@ -200,6 +201,7 @@ Connection::Connection(sock_t fd)
    : mFD(fd)
    , mBufferSize(0)
    , mBuffer(0)
+   , mBufferOffset(0)
 {
    setBufferSize(512);
 }
@@ -301,7 +303,7 @@ bool Connection::setLinger(bool onoff)
       return false;
    }
 #ifdef SO_LINGER
-   struct linger l;
+   struct linger l = {0, 0};
    socklen_t optlen = sizeof(struct linger);
    if (onoff)
    {
@@ -360,7 +362,8 @@ size_t Connection::write(const String &s, double timeout, Status *status)
 // ---
 
 TCPConnection::TCPConnection()
-   : mSocket(0)
+   : Connection()
+   , mSocket(0)
 {
 }
 
@@ -825,6 +828,11 @@ size_t TCPConnection::write(const char *bytes, size_t len, double timeout, Statu
 
 // ---
 
+Socket::Socket()
+   : mFD(NULL_SOCKET)
+{
+}
+
 Socket::Socket(unsigned short port, Status *status)
    : mFD(NULL_SOCKET)
    , mHost("localhost", port, status)
@@ -847,6 +855,12 @@ Socket::Socket(sock_t fd, const Host &host)
 {
 }
 
+Socket::Socket(const Socket &rhs)
+   : mFD(NULL_SOCKET)
+   , mHost(rhs.mHost)
+{
+}
+
 Socket::~Socket()
 {
 }
@@ -861,14 +875,6 @@ void Socket::invalidate()
    mFD = NULL_SOCKET;
 }
 
-Socket::Socket()
-{
-}
-
-Socket::Socket(const Socket&)
-{
-}
-
 Socket& Socket::operator=(const Socket&)
 {
    return *this;
@@ -877,11 +883,16 @@ Socket& Socket::operator=(const Socket&)
 // ---
 
 TCPSocket::TCPSocket()
+   : Socket()
+   , mMaxConnections(0)
+   , mDefaultBlocking(false)
+   , mDefaultLinger(true)
 {
 }
 
 TCPSocket::TCPSocket(unsigned short port, Status *status)
    : Socket(port, status)
+   , mMaxConnections(0)
    , mDefaultBlocking(false)
    , mDefaultLinger(true)
 {
@@ -899,6 +910,7 @@ TCPSocket::TCPSocket(unsigned short port, Status *status)
 
 TCPSocket::TCPSocket(const Host &host, Status *status)
    : Socket(host, status)
+   , mMaxConnections(0)
    , mDefaultBlocking(false)
    , mDefaultLinger(true)
 {
@@ -916,6 +928,9 @@ TCPSocket::TCPSocket(const Host &host, Status *status)
 
 TCPSocket::TCPSocket(const TCPSocket &rhs)
    : Socket(rhs)
+   , mMaxConnections(0)
+   , mDefaultBlocking(false)
+   , mDefaultLinger(true)
 {
 }
 
@@ -951,10 +966,12 @@ Status TCPSocket::listen(int maxConnections)
 {
    if (::listen(mFD, maxConnections) == 0)
    {
+      mMaxConnections = maxConnections;
       return Status(true);
    }
    else
    {
+      mMaxConnections = 0;
       return Status(false, sock_errno(), "[gcore::TCPSocket::listen]");
    }
 }

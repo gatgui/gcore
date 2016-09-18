@@ -165,6 +165,39 @@ int main(int argc, char **argv)
       }
    }
    
+   // --- streaming test ---
+   
+   {
+      std::stringstream ss;
+      
+      ss << std::endl;
+      ss << std::endl;
+      ss << "{" << std::endl;
+      ss << "  \"key\":";
+      std::cout << "Parse JSON from stream '" << ss.str() << "'" << std::endl;
+      
+      std::cout << "Stream pos: " << ss.tellg() << std::endl;
+      
+      json::Value val;
+      Status stat = val.read(ss);
+      if (!stat)
+      {
+         std::cerr << stat << std::endl;
+         std::cout << "-> Stream pos: " << ss.tellg() << std::endl;
+      }
+      
+      ss << " [1, 2, 3, 4]" << std::endl;
+      ss << "}" << std::endl;
+      std::cout << "Parse JSON from stream '" << ss.str() << "'" << std::endl;
+      
+      std::cout << "-> Stream pos: " << ss.tellg() << std::endl;
+      stat = val.read(ss);
+      if (stat)
+      {
+         std::cout << "Successfully read JSON stream: " << val << std::endl;
+      }
+   }
+   
    if (argc > 1)
    {
       const char *path = argv[1];
@@ -211,19 +244,26 @@ int main(int argc, char **argv)
       std::ifstream ifs(path);
       if (ifs.is_open())
       {
+         std::streampos lastPos = ifs.tellg();
          size_t count = 0;
          json::Value val;
          
+         std::cout << "Read starts at " << lastPos << std::endl;
          stat = val.read(ifs);
          
-         while (stat && !val.isNull())
+         while (stat) // && !val.isNull())
          {
             ++count;
             
             std::cout << "[" << count << "]: " << val << std::endl;
             
+            lastPos = ifs.tellg();
+            std::cout << "Read starts at " << lastPos << std::endl;
             stat = val.read(ifs);
          }
+         
+         lastPos = ifs.tellg();
+         std::cout << "Final pos " << lastPos << std::endl;
          
          if (!stat)
          {

@@ -3,7 +3,7 @@
 release
 debug
 excons.cache
-*.xml
-*.json
-*.bfc
-*.pdb
+/*.xml
+/*.json
+/*.bfc
+/*.pdb

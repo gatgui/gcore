@@ -92,6 +92,10 @@ prjs = [
       "type"    : "program",
       "srcs"    : ["yaml.cpp"],
       "custom"  : [RequireGcore]
+   },
+   {  "name"    : "yamlref",
+      "type"    : "program",
+      "srcs"    : ["yaml_ref.cpp"]
    }
 ]
 

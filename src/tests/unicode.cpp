@@ -81,7 +81,7 @@ inline bool IsBigEndian()
 {
    // If the machine the code was compiled on is big endian
    // 0x01 will be interpreted as least significant byte in c.i
-   Char16 c = {{0}};
+   Char16 c = {.i=0};
    c.b[0] = 0x00;
    c.b[1] = 0x01;
    return (c.i == 0x0001);
@@ -110,30 +110,6 @@ inline bool IsCombiningMark(unsigned int cp)
    {
       return false;
    }
-}
-
-inline std::ostream& PrintBytes(std::ostream &os, const void *ptr, size_t len, size_t spacing=2)
-{
-   os << "[" << len << "] 0x" << std::hex;
-   const unsigned char *b = (const unsigned char *) ptr;
-   for (size_t i=0, j=0; i<len; ++i, ++b)
-   {
-      if (*b == 0)
-      {
-         os << "00";
-      }
-      else
-      {
-         os << int(*b);
-      }
-      if (++j == spacing)
-      {
-         os << " ";
-         j = 0;
-      }
-   }
-   os << std::dec;
-   return os;
 }
 
 // --- UTF-8 Utilities ---
@@ -395,7 +371,7 @@ inline unsigned int DecodeUTF16(const char *bytes, bool bigendian=true)
 {
    const int (&order)[2] = UTF16BytesOrder[IsBigEndian() != bigendian];
    
-   Char16 c = {{0}};
+   Char16 c = {.i=0};
    
    c.b[order[0]] = bytes[0];
    c.b[order[1]] = bytes[1];
@@ -412,7 +388,7 @@ inline unsigned int DecodeUTF16(const char *bytes, bool bigendian=true)
       {
          // Invalid for UCS-2
          // Need read next, if not a surrogate, invalud char
-         Char16 hs = {{c.i}};
+         Char16 hs = {.i=c.i};
          
          c.b[order[0]] = bytes[2];
          c.b[order[1]] = bytes[3];
@@ -451,7 +427,7 @@ inline unsigned int DecodeUTF32(const char *bytes, bool bigendian=true)
 {
    const int (&order)[4] = UTF32BytesOrder[IsBigEndian() != bigendian];
    
-   Char32 c = {{0}};
+   Char32 c = {.i=0};
    
    c.b[order[0]] = bytes[0];
    c.b[order[1]] = bytes[1];
@@ -467,11 +443,14 @@ inline bool EncodeUTF8(Encoding e, const char *s, std::string &out)
 {
    if (s)
    {
-      size_t i, j, k, n;
-      char c8;
-      Char32 c32;
-      const char *cc;
-      unsigned int cp;
+      size_t i = 0;
+      size_t j = 0;
+      size_t k = 0;
+      size_t n = 0;
+      char c8 = 0;
+      Char32 c32 = {.i=0};
+      const char *cc = s;
+      unsigned int cp = InvalidCodepoint;
       
       switch (e)
       {
@@ -619,8 +598,8 @@ inline bool DecodeUTF8(const char *s, Encoding e, std::string &out)
    {
       size_t n = 0;
       char c8 = 0;
-      Char16 c16 = {{0}};
-      Char32 c32 = {{0}};
+      Char16 c16 = {.i=0};
+      Char32 c32 = {.i=0};
       const char *cc = s;
       unsigned int cp = InvalidCodepoint;
       
@@ -741,6 +720,30 @@ inline bool DecodeUTF8(const char *s, std::wstring &out)
 }
 
 // ---
+
+inline std::ostream& PrintBytes(std::ostream &os, const void *ptr, size_t len, size_t spacing=2)
+{
+   os << "[" << len << "] 0x" << std::hex;
+   const unsigned char *b = (const unsigned char *) ptr;
+   for (size_t i=0, j=0; i<len; ++i, ++b)
+   {
+      if (*b == 0)
+      {
+         os << "00";
+      }
+      else
+      {
+         os << int(*b);
+      }
+      if (++j == spacing)
+      {
+         os << " ";
+         j = 0;
+      }
+   }
+   os << std::dec;
+   return os;
+}
 
 int main(int, char **)
 {

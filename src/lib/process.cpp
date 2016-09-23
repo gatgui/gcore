@@ -615,7 +615,7 @@ Status Process::run()
    mPID = 0;
    
    PROCESS_INFORMATION pinfo;
-   STARTUPINFO sinfo;
+   STARTUPINFOA sinfo;
    
    ZeroMemory(&sinfo, sizeof(sinfo));
    
@@ -702,8 +702,8 @@ Status Process::run()
    }
    
    // Don't try to inheritHandles when using .bat files
-   if (CreateProcess(NULL, (char*)mCmdLine.c_str(), NULL, NULL,
-                     (isBat ? FALSE : TRUE), 0, 0, NULL, &sinfo, &pinfo))
+   if (CreateProcessA(NULL, (char*)mCmdLine.c_str(), NULL, NULL,
+                      (isBat ? FALSE : TRUE), 0, 0, NULL, &sinfo, &pinfo))
    {
       // In parent only
       

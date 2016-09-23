@@ -90,10 +90,10 @@ void Status::set(bool success, int errcode)
    {
       mMsg += " (";
 #ifdef _WIN32
-      LPTSTR buffer = NULL; 
-      FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,
-                           NULL, mErrCode, MAKELANGID(LANG_ENGLISH,SUBLANG_DEFAULT),
-                           (LPTSTR)&buffer, 0, NULL);
+      LPSTR buffer = NULL; 
+      FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,
+                     NULL, mErrCode, MAKELANGID(LANG_ENGLISH,SUBLANG_DEFAULT),
+                     (LPSTR)&buffer, 0, NULL);
       if (buffer)
       {
          mMsg += String(buffer);

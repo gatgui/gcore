@@ -68,7 +68,7 @@ String Env::Hostname()
 #ifdef _WIN32
    DWORD sz = 1024;
    //ComputerNameDnsHostname?
-   GetComputerNameEx(ComputerNamePhysicalDnsHostname, buffer, &sz);
+   GetComputerNameExA(ComputerNamePhysicalDnsHostname, buffer, &sz);
    return buffer;
 #else
    gethostname(buffer, 1024);
@@ -264,7 +264,15 @@ size_t Env::asDict(StringDict &d) const
       curvar = environ[idx];
    }
 #else
-   char *curenv = GetEnvironmentStringsA();
+#ifdef _UNICODE
+   // GetEnvironmentStrings is defined to GetEnvironmentStringsW
+   //   shadowing the origin GetEnvironmentStrings function
+   //   there's no GetEnvironmentStringsA
+   #ifdef GetEnvironmentStrings
+   #undef GetEnvironmentStrings
+   #endif
+#endif
+   char *curenv = GetEnvironmentStrings();
    char *curvar = curenv;
    while (*curvar != '\0')
    {
@@ -290,7 +298,7 @@ size_t Env::asDict(StringDict &d) const
       }
       curvar += len + 1;
    }
-   FreeEnvironmentStrings(curenv);
+   FreeEnvironmentStringsA(curenv);
 #endif
    return d.size();
 }

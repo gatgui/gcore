@@ -326,7 +326,7 @@ bool Path::isDir() const
 {
 #ifdef _WIN32
    DWORD fa;
-   fa = GetFileAttributes(mFullName.c_str());
+   fa = GetFileAttributesA(mFullName.c_str());
    if (fa != 0xFFFFFFFF)
    {
       return ((fa & FILE_ATTRIBUTE_DIRECTORY) != 0);
@@ -345,7 +345,7 @@ bool Path::isFile() const
 {
 #ifdef _WIN32
    DWORD fa;
-   fa = GetFileAttributes(mFullName.c_str());
+   fa = GetFileAttributesA(mFullName.c_str());
    if (fa != 0xFFFFFFFF)
    {
       return ((fa & FILE_ATTRIBUTE_DIRECTORY) == 0);
@@ -364,7 +364,7 @@ bool Path::exists() const
 {
 #ifdef _WIN32
    DWORD fa;
-   fa = GetFileAttributes(mFullName.c_str());
+   fa = GetFileAttributesA(mFullName.c_str());
    if (fa != 0xFFFFFFFF)
    {
       return true;
@@ -436,7 +436,7 @@ bool Path::createDir(bool recursive) const
       }
    }
 #ifdef _WIN32
-   return (CreateDirectory(mFullName.c_str(), NULL) == TRUE);
+   return (CreateDirectoryA(mFullName.c_str(), NULL) == TRUE);
 #else
    return (mkdir(mFullName.c_str(), S_IRWXU) == 0);
 #endif
@@ -459,7 +459,7 @@ void Path::forEach(ForEachFunc callback, bool recurse, unsigned short flags) con
    }
    Path path(*this);
 #ifdef _WIN32
-   WIN32_FIND_DATA fd;
+   WIN32_FIND_DATAA fd;
    HANDLE hFile;
    String fffs; // find first file string 
    if (mFullName.length() == 0)
@@ -485,7 +485,7 @@ void Path::forEach(ForEachFunc callback, bool recurse, unsigned short flags) con
          fffs = mFullName;
       }
    }
-   hFile = FindFirstFile(fffs.c_str(), &fd);
+   hFile = FindFirstFileA(fffs.c_str(), &fd);
    if (hFile != INVALID_HANDLE_VALUE)
    {
       do
@@ -519,7 +519,7 @@ void Path::forEach(ForEachFunc callback, bool recurse, unsigned short flags) con
             }
          }
          path.pop();
-      } while (FindNextFile(hFile, &fd));
+      } while (FindNextFileA(hFile, &fd));
       FindClose(hFile);
    }
 #else
@@ -586,9 +586,9 @@ size_t Path::listDir(PathList &l, bool recurse, unsigned short flags) const
 Path Path::CurrentDir()
 {
 #ifdef _WIN32
-   DWORD cwdLen = GetCurrentDirectory(0, NULL);
+   DWORD cwdLen = GetCurrentDirectoryA(0, NULL);
    char *cwd = (char*)malloc(cwdLen * sizeof(char));
-   GetCurrentDirectory(cwdLen, cwd);
+   GetCurrentDirectoryA(cwdLen, cwd);
 #else
    size_t bufLen = 1024;
    char *buf = (char*)malloc(bufLen * sizeof(char));

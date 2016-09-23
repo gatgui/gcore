@@ -68,7 +68,7 @@ bool DynamicModule::_open(const String &name)
    // RTLD_GLOBAL / RTLD_LOCAL (symbol can be access by using RTLD_DEFAULT or RTLD_NEXT handle, or only through dlopen handle)
    _mHandle = dlopen(name.c_str(), RTLD_LAZY|RTLD_LOCAL);
 #else   //_WIN32
-   _mHandle = LoadLibraryEx(name.c_str(), NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+   _mHandle = LoadLibraryExA(name.c_str(), NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
 #endif  //_WIN32
    return (_mHandle != 0);
 }

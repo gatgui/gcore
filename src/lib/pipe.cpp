@@ -162,8 +162,8 @@ Status Pipe::open(const String &name)
    }
 #else
    String pipename = "\\\\.\\pipe\\" + name;
-   HANDLE hdl = CreateFile(pipename.c_str(), GENERIC_READ | GENERIC_WRITE,
-                                       0, NULL, OPEN_EXISTING, 0, NULL);
+   HANDLE hdl = CreateFileA(pipename.c_str(), GENERIC_READ | GENERIC_WRITE,
+                            0, NULL, OPEN_EXISTING, 0, NULL);
    if (hdl != INVALID_HANDLE_VALUE)
    {
       mName = name;
@@ -219,9 +219,9 @@ Status Pipe::create(const String &name)
 #else
    // Note: May want to expose in/out buffer size
    String pipename = "\\\\.\\pipe\\" + name;
-   HANDLE hdl = CreateNamedPipe(pipename.c_str(), PIPE_ACCESS_DUPLEX,
-                                              PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
-                                              1, 4096, 4096, 0, NULL);
+   HANDLE hdl = CreateNamedPipeA(pipename.c_str(), PIPE_ACCESS_DUPLEX,
+                                 PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
+                                 1, 4096, 4096, 0, NULL);
    if (hdl != INVALID_HANDLE_VALUE)
    {
       mOwn = true;

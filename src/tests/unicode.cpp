@@ -1,4 +1,4 @@
-// -*- coding: utf-8 -*-
+﻿// -*- coding: utf-8 -*-
 #include <string>
 #include <iostream>
 #include <cstring>
@@ -937,18 +937,15 @@ std::ostream& PrintBytes(std::ostream &os, const void *ptr, size_t len, size_t s
    return os;
 }
 
+/*
 #ifdef _WIN32
 
-std::wstring ToWideString(const char *s, int codepage=-1)
+std::wstring ToWideString(const char *s, int codepage=CP_ACP)
 {
    std::wstring wstr;
    
    if (s)
    {
-      if (codepage == -1)
-      {
-         codepage = GetACP();
-      }
       int slen = int(strlen(s));
       int wslen = MultiByteToWideChar(codepage, 0, s, slen, NULL, 0);
       wchar_t *ws = new wchar_t[wslen + 1];
@@ -976,58 +973,20 @@ std::string ToUTF8String(const wchar_t *ws)
       }
    }
    
+   // size_t slen = wcstombs(NULL, ws, 0);
+   // if (slen != size_t(-1))
+   // {
+   //    char *s = new char[slen + 1];
+   //    wcstombs(s, wtest, slen);
+   //    str = s;
+   //    delete[] s;
+   // }
+   
    return str;
 }
 
-void WindowsTests()
-{
-   const wchar_t *wtest = L"片道";
-   size_t wlen = wcslen(wtest) * sizeof(wchar_t);
-   const char *atest = "片道";
-   size_t alen = strlen(atest);
-   
-   std::cout << "=== WINDOWS TESTS ===" << std::endl;
-   
-   std::string  nt0 = ToUTF8String(wtest);
-   std::wstring wt0 = ToWideString(nt0.c_str(), CP_UTF8);
-   
-   std::wstring wt1 = ToWideString(atest);
-   std::string  nt1 = ToUTF8String(wt1.c_str());
-   
-   std::wstring wt2 = ToWideString((const char*)wtest);
-   std::string  nt2 = ToUTF8String(wt2.c_str());
-   
-   std::wstring wt3 = ToWideString(atest, CP_UTF8);
-   std::string  nt3 = ToUTF8String(wt3.c_str());
-   
-   std::cout << "(wtest) "; PrintBytes(std::cout, wtest, wlen) << std::endl;
-   std::cout << "(atest) "; PrintBytes(std::cout, atest, alen) << std::endl;
-   std::cout << "(nt0)   "; PrintBytes(std::cout, nt0.c_str(), nt0.length()) << std::endl;
-   std::cout << "(wt0)   "; PrintBytes(std::cout, wt0.c_str(), wt0.length() * sizeof(wchar_t)) << std::endl;
-   std::cout << "(wt1)   "; PrintBytes(std::cout, wt1.c_str(), wt1.length() * sizeof(wchar_t)) << std::endl;
-   std::cout << "(nt1)   "; PrintBytes(std::cout, nt1.c_str(), nt1.length()) << std::endl;
-   std::cout << "(wt2)   "; PrintBytes(std::cout, wt2.c_str(), wt2.length() * sizeof(wchar_t)) << std::endl;
-   std::cout << "(nt2)   "; PrintBytes(std::cout, nt2.c_str(), nt2.length()) << std::endl;
-   std::cout << "(wt3)   "; PrintBytes(std::cout, wt3.c_str(), wt3.length() * sizeof(wchar_t)) << std::endl;
-   std::cout << "(nt3)   "; PrintBytes(std::cout, nt3.c_str(), nt3.length()) << std::endl;
-   
-   std::wstring wt4;
-   if (DecodeUTF8(atest, wt4))
-   {
-      std::cout << "(wt4)   "; PrintBytes(std::cout, wt4.c_str(), wt4.length() * sizeof(wchar_t)) << std::endl;
-   }
-   
-   std::cout << "===" << std::endl;
-   std::cout << std::endl;
-}
-
-#else
-
-void WindowsTests()
-{
-}
-
 #endif
+*/
 
 typedef Codepoint (*DecodeFunc)(const Byte*, size_t, size_t*, bool);
 
@@ -1038,13 +997,18 @@ int main(int, char **)
    std::cout << "IsBigEndian: " << IsBigEndian() << std::endl;
    std::cout << std::endl;
 
-
-   // On linux/osx, seems that UTF-8 is the default encoding for narrow string
-   // On windows, well... this is a mess that I'm still trying to decipher
-   //   => compiling with _MBCS or _UNICODE does swap between 'A' and 'W' variants of win32 API functions
-   //   => wchar_t is supported to be UTF-16 but... doesn't look like so...
-   WindowsTests();
-
+   // On linux/osx, it seems that UTF-8 is the default encoding for narrow string
+   //               wide strings are UTF-32
+   // On windows, at least if _UNICODE is not defined, narrow string will be encoded in current codepage
+   //               wide strings are UTF-16
+   // Also, for this test to be properly compiled, cl.exe must be able to figure out the encoding
+   // => use BOM even for UTF-8
+   // BOMs
+   //    UTF-32be  0x00 0x00 0xFE 0xFF
+   //    UTF-32le  0xFF 0xFE 0x00 0x00
+   //    UTF-16be  0xFE 0xFF
+   //    UTF-16le  0xFF 0xFE 
+   //    UTF-8     0xEF 0xBB 0xBF 
 
    const wchar_t *tests[6] = {
       L"片道",

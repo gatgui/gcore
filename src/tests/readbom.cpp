@@ -20,7 +20,7 @@ int main(int argc, char **argv)
    
    unsigned char BOM[4];
    bool found = false;   
-   size_t n = fread(BOM, 1, 8, f);
+   size_t n = fread(BOM, 1, 4, f);
    
    if (n >= 2)
    {

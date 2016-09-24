@@ -28,29 +28,29 @@ int main(int argc, char **argv)
       {
          if (n == 4 && BOM[2] == 0 && BOM[3] == 0)
          {
-            std::cout << "UTF-32 LE" << std::endl;
+            std::cout << "utf-32le" << std::endl;
          }
          else
          {
-            std::cout << "UTF-16 LE" << std::endl;
+            std::cout << "utf-16le" << std::endl;
          }
          found = true;
       }
       else if (BOM[0] == 0xFE && BOM[1] == 0xFF)
       {
-         std::cout << "UTF-16 BE" << std::endl;
+         std::cout << "utf-16/utf-16be" << std::endl;
          found = true;
       }
       else if (n >= 3)
       {
          if (BOM[0] == 0xEF && BOM[1] == 0xBB && BOM[2] == 0xBF)
          {
-            std::cout << "UTF-8" << std::endl;
+            std::cout << "utf-8" << std::endl;
             found = true;
          }
          else if (n == 4 && BOM[0] == 0 && BOM[1] == 0 && BOM[2] == 0xFE && BOM[3] == 0xFF)
          {
-            std::cout << "UTF-32 BE" << std::endl;
+            std::cout << "utf-32/utf-32be" << std::endl;
             found = true;
          }
       }
@@ -58,7 +58,7 @@ int main(int argc, char **argv)
    
    if (!found)
    {
-      std::cout << "No BOM found" << std::endl;
+      std::cout << "none" << std::endl;
    }
    
    fclose(f);

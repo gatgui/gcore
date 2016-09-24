@@ -7,7 +7,7 @@ int main(int argc, char **argv)
 {
    if (argc != 3)
    {
-      std::cout << "writebom <path> utf-8|utf-16|utf-16-be|utf-16-le|utf-32|utf-32-be|utf-32-le|none" << std::endl;
+      std::cout << "writebom <path> utf-8|utf-16|utf-16be|utf-16le|utf-32|utf-32be|utf-32le|none" << std::endl;
       return 1;
    }
    
@@ -24,20 +24,20 @@ int main(int argc, char **argv)
       bs = 3;
    }
    else if (!strcmp(argv[2], "utf-16") ||
-            !strcmp(argv[2], "utf-16-be"))
+            !strcmp(argv[2], "utf-16be"))
    {
       BOM[0] = 0xFE;
       BOM[1] = 0xFF;
       bs = 2;
    }
-   else if (!strcmp(argv[2], "utf-16-le"))
+   else if (!strcmp(argv[2], "utf-16le"))
    {
       BOM[0] = 0xFF;
       BOM[1] = 0xFE;
       bs = 2;
    }
    else if (!strcmp(argv[2], "utf-32") ||
-            !strcmp(argv[2], "utf-32-be"))
+            !strcmp(argv[2], "utf-32be"))
    {
       BOM[0] = 0x00;
       BOM[1] = 0x00;
@@ -45,7 +45,7 @@ int main(int argc, char **argv)
       BOM[3] = 0xFF;
       bs = 4;
    }
-   else if (!strcmp(argv[2], "utf-32-le"))
+   else if (!strcmp(argv[2], "utf-32le"))
    {
       BOM[0] = 0xFF;
       BOM[1] = 0xFE;
@@ -63,6 +63,13 @@ int main(int argc, char **argv)
       return 1;
    }
    
+   std::cout << "Target BOM: ";
+   for (size_t i=0; i<bs; ++i)
+   {
+      std::cout << std::hex << (unsigned short)BOM[i] << std::dec << " ";
+   }
+   std::cout << std::endl;
+   
    FILE *f = fopen(argv[1], "rb");
    if (!f)
    {
@@ -72,10 +79,12 @@ int main(int argc, char **argv)
    
    unsigned char curBOM[4];
    size_t cbs = 0;
-   size_t n = fread(curBOM, 1, 8, f);
+   size_t n = fread(curBOM, 1, 4, f);
+   
+   std::cout << "File first " << n << " byte(s): ";
    for (size_t i=0; i<n; ++i)
    {
-      std::cout << std::hex << (unsigned int)BOM[i] << std::dec << " ";
+      std::cout << std::hex << (unsigned short)curBOM[i] << std::dec << " ";
    }
    std::cout << std::endl;
    
@@ -85,86 +94,94 @@ int main(int argc, char **argv)
       {
          if (n == 4 && curBOM[2] == 0 && curBOM[3] == 0)
          {
+            std::cout << "Current BOM: utf-32le" << std::endl;
             cbs = 4;
          }
          else
          {
+            std::cout << "Current BOM: utf-16le" << std::endl;
             cbs = 2;
          }
       }
       else if (curBOM[0] == 0xFE && curBOM[1] == 0xFF)
       {
+         std::cout << "Current BOM: utf-16(be)" << std::endl;
          cbs = 2;
       }
       else if (n >= 3)
       {
          if (curBOM[0] == 0xEF && curBOM[1] == 0xBB && curBOM[2] == 0xBF)
          {
+            std::cout << "Current BOM: utf-8" << std::endl;
             cbs = 3;
          }
          else if (n == 4 && curBOM[0] == 0 && curBOM[1] == 0 && curBOM[2] == 0xFE && curBOM[3] == 0xFF)
          {
+            std::cout << "Current BOM: utf-32(be)" << std::endl;
             cbs = 4;
          }
       }
    }
    
-   if (!remove)
+   // Check if file has to be modified
+   if (remove)
    {
       if (cbs == 0)
       {
-         // there we go read the whole file as binary and insert bom
-         fseek(f, 0, SEEK_END);
-         size_t fs = size_t(ftell(f));
-         unsigned char *content = (unsigned char*) malloc(fs);
-         
-         fseek(f, 0, SEEK_SET);
-         if (fread(content, 1, fs, f) == fs)
-         {
-            fclose(f);
-            
-            f = fopen(argv[1], "wb");
-            // doesn't work
-            fwrite(BOM, 1, bs, f);
-            fwrite(content, 1, fs, f);
-         }
-         else
-         {
-            std::cout << "Failed to read file content" << std::endl;
-         }
-      }
-      else
-      {
-         std::cout << "BOM already set" << std::endl;
+         std::cout << "No BOM to remove" << std::endl;
+         fclose(f);
+         return 0;
       }
    }
    else
    {
-      if (cbs > 0)
+      if (cbs == bs)
       {
-         fseek(f, 0, SEEK_END);
-         size_t fs = size_t(ftell(f));
-         unsigned char *content = (unsigned char*) malloc(fs);
+         bool changed = false;
          
-         fseek(f, 0, SEEK_SET);
-         if (fread(content, 1, fs, f) == fs)
+         for (size_t i=0; i<bs; ++i)
          {
+            if (curBOM[i] != BOM[i])
+            {
+               changed = true;
+               break;
+            }
+         }
+         
+         if (!changed)
+         {
+            std::cout << "BOM already set to " << argv[2] << std::endl;
             fclose(f);
-            f = fopen(argv[1], "wb");
-            fwrite(content + cbs, 1, fs - cbs, f);
+            return 0;
          }
-         else
-         {
-            std::cout << "Failed to read file content" << std::endl;
-         }
-      }
-      else
-      {
-         std::cout << "No BOM to remove" << std::endl;
       }
    }
    
+   // Read current file content
+   fseek(f, 0, SEEK_END);
+   size_t fs = size_t(ftell(f));
+   unsigned char *content = (unsigned char*) malloc(fs);
+   fseek(f, 0, SEEK_SET);
+   n = fread(content, 1, fs, f);
    fclose(f);
+   
+   if (n != fs)
+   {
+      std::cout << "Failed to read file content" << std::endl;
+      return 1;
+   }
+   else
+   {
+      f = fopen(argv[1], "wb");
+      if (!remove)
+      {
+         fwrite(BOM, 1, bs, f);
+      }
+      fwrite(content + cbs, 1, fs - cbs, f);
+      fclose(f);
+   }
+   
+   free(content);
 
    return 0;
 }

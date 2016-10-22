@@ -77,6 +77,10 @@ prjs = [
       "custom"    : [RequireGcore, python.SoftRequire, SilentCythonWarnings],
       "install"   : {python.ModulePrefix(): ["src/py/gcore.py", "src/py/tests"]}
    },
+   {  "name" : "gcore_utils",
+      "type" : "testprograms",
+      "srcs" : glob.glob("src/bin/*.cpp")
+   },
    {  "name"    : "testmodule",
       "type"    : "dynamicmodule",
       "prefix"  : "bin",

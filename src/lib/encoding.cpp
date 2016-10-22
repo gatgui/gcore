@@ -1,179 +1,31 @@
-﻿// -*- coding: utf-8 -*-
-#include <string>
-#include <iostream>
-#include <cstring>
+/*
 
+Copyright (C) 2016~  Gaetan Guidet
 
-enum Encoding
-{
-   ASCII = 0,
-   ASCII_ISO_8859_1,
-   ASCII_ISO_8859_2,
-   ASCII_ISO_8859_3,
-   ASCII_ISO_8859_4,
-   ASCII_ISO_8859_5,
-   ASCII_ISO_8859_6,
-   ASCII_ISO_8859_7,
-   ASCII_ISO_8859_8,
-   ASCII_ISO_8859_9,
-   ASCII_ISO_8859_10,
-   ASCII_ISO_8859_11,
-   ASCII_ISO_8859_13,
-   ASCII_ISO_8859_14,
-   ASCII_ISO_8859_15,
-   ASCII_ISO_8859_16,
-   UTF_8,
-   UCS_2,
-   UCS_2BE = UCS_2,
-   UCS_2LE,
-   UTF_16,
-   UTF_16BE = UTF_16,
-   UTF_16LE,
-   UCS_4,
-   UCS_4BE = UCS_4,
-   UCS_4LE,
-   UTF_32,
-   UTF_32BE = UTF_32,
-   UTF_32LE,
-   MAX_ENCODING
-};
+This file is part of gcore.
 
-const char* EncodingStr[MAX_ENCODING] =
-{
-   "ascii",
-   "iso-8859-1",
-   "iso-8859-2",
-   "iso-8859-3",
-   "iso-8859-4",
-   "iso-8859-5",
-   "iso-8859-6",
-   "iso-8859-7",
-   "iso-8859-8",
-   "iso-8859-9",
-   "iso-8859-10",
-   "iso-8859-11",
-   "iso-8859-13",
-   "iso-8859-14",
-   "iso-8859-15",
-   "iso-8859-16",
-   "utf-8",
-   "ucs-2",
-   "ucs-2le",
-   "utf-16",
-   "utf-16le",
-   "ucs-4",
-   "ucs-4le",
-   "utf-32",
-   "utf-32le"
-};
+gcore is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation; either version 2.1 of the License, or (at
+your option) any later version.
 
-// ---
+gcore is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
 
-typedef unsigned char  Byte;
-typedef unsigned short Byte2;
-typedef unsigned int   Byte4;
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+USA.
 
-typedef char Char8;
+*/
 
-union Char16
-{
-   Byte b[2];
-   Byte2 i;
-   
-   Char16() : i(0) {}
-   Char16(Byte2 v) : i(v) {}
-};
-
-union Char32
-{
-   Byte b[4];
-   Byte4 i;
-   
-   Char32() : i(0) {}
-   Char32(Byte4 v) : i(v) {}
-};
-
-typedef unsigned int Codepoint;
-
-// ---
-
-static const Byte UTF8ContinuationCharBits = 0x80; // 10xx xxxx
-static const Byte UTF8LeadingChar2Bits     = 0xC0; // 110x xxxx
-static const Byte UTF8LeadingChar3Bits     = 0xE0; // 1110 xxxx
-static const Byte UTF8LeadingChar4Bits     = 0xF0; // 1111 0xxx
-
-static const Byte UTF8SingleCharMask       = 0x7F; // 0111 1111
-static const Byte UTF8ContinuationCharMask = 0x3F; // 0011 1111
-static const Byte UTF8LeadingChar2Mask     = 0x1F; // 0001 1111
-static const Byte UTF8LeadingChar3Mask     = 0x0F; // 0000 1111
-static const Byte UTF8LeadingChar4Mask     = 0x07; // 0000 0111
-
-#define UTF8ContinuationCharShift 6;
-
-Codepoint UTF8ByteRange[4][2] = {
-   {0x00000000, 0x0000007F}, // 1 byte
-   {0x00000080, 0x000007FF}, // 2 bytes
-   {0x00000800, 0x0000FFFF}, // 3 bytes
-   {0x00010000, 0x0010FFFF}  // 4 bytes
-};
-
-// ---
-
-static const Byte4 UTF16HighSurrogateMask = 0x000FFC00;
-static const Byte4 UTF16LowSurrogateMask  = 0x000003FF;
-
-static const int UTF16BytesOrder[2][2] = {
-   {0, 1},
-   {1, 0} // swap
-};
-
-// ---
-
-static const int UTF32BytesOrder[2][4] = {
-   {0, 1, 2, 3},
-   {3, 2, 1, 0} // swap
-};
-
-// --- Utilities ---
-
-inline bool IsBigEndian()
-{
-   // If the machine the code was compiled on is big endian
-   // 0x01 will be interpreted as least significant byte in c.i
-   Char16 c; // = {.i=0};
-   c.b[0] = 0x00;
-   c.b[1] = 0x01;
-   return (c.i == 0x0001);
-}
-
-// Unicode code point are 32 bits but only 0x0000 0000 -> 0x0010 FFFF are used
-
-const Codepoint InvalidCodepoint = 0xFFFFFFFF;
-
-inline bool IsValidCodepoint(Codepoint cp)
-{
-   return (cp <= UTF8ByteRange[3][1] && (cp < 0xD800 || 0xDFFF < cp));
-}
-
-inline bool IsCombiningMark(Codepoint cp)
-{
-   if ((0x0300 <= cp && cp <= 0x036F) || // Combining Diacritical Marks
-       (0x1AB0 <= cp && cp <= 0x1AFF) || // Combining Diacritical Marks Extended
-       (0x1DC0 <= cp && cp <= 0x1DFF) || // Combining Diacritical Marks Supplement
-       (0x20D0 <= cp && cp <= 0x20FF) || // Combining Diacritical Marks for Symbols
-       (0xFE20 <= cp && cp <= 0xFE2F))   // Combining Half Marks
-   {
-      return true;
-   }
-   else
-   {
-      return false;
-   }
-}
-
-// --- ISO 8859 1~16 codepoints
-
+#include <gcore/encoding.h>
 #include <gcore/hashmap.h>
+#ifdef _WIN32
+#include <gcore/platform.h>
+#endif
 
 #define C0_NUL 0x0000 // (^@) [\0] null
 #define C0_SOH 0x0001 // (^A)      start of heading
@@ -262,6 +114,80 @@ inline bool IsCombiningMark(Codepoint cp)
    0x60,  0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6A, 0x6B, 0x6C, 0x6D, 0x6E, 0x6F, \
    0x70,  0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D, 0x7E, C0_DEL
 
+
+namespace gcore
+{
+
+// --- Private types
+
+typedef unsigned char  Byte;
+typedef unsigned short Byte2;
+typedef unsigned int   Byte4;
+
+typedef char Char8;
+
+union Char16
+{
+   Byte b[2];
+   Byte2 i;
+   
+   Char16() : i(0) {}
+   Char16(Byte2 v) : i(v) {}
+};
+
+union Char32
+{
+   Byte b[4];
+   Byte4 i;
+   
+   Char32() : i(0) {}
+   Char32(Byte4 v) : i(v) {}
+};
+
+typedef unsigned int Codepoint;
+
+// --- Private constants
+
+// Unicode code point are 32 bits but only 0x0000 0000 -> 0x0010 FFFF are used
+const Codepoint InvalidCodepoint = 0xFFFFFFFF;
+
+// UTF-8
+static const Byte UTF8ContinuationCharBits = 0x80; // 10xx xxxx
+static const Byte UTF8LeadingChar2Bits     = 0xC0; // 110x xxxx
+static const Byte UTF8LeadingChar3Bits     = 0xE0; // 1110 xxxx
+static const Byte UTF8LeadingChar4Bits     = 0xF0; // 1111 0xxx
+
+static const Byte UTF8SingleCharMask       = 0x7F; // 0111 1111
+static const Byte UTF8ContinuationCharMask = 0x3F; // 0011 1111
+static const Byte UTF8LeadingChar2Mask     = 0x1F; // 0001 1111
+static const Byte UTF8LeadingChar3Mask     = 0x0F; // 0000 1111
+static const Byte UTF8LeadingChar4Mask     = 0x07; // 0000 0111
+
+#define UTF8ContinuationCharShift 6;
+
+Codepoint UTF8ByteRange[4][2] = {
+   {0x00000000, 0x0000007F}, // 1 byte
+   {0x00000080, 0x000007FF}, // 2 bytes
+   {0x00000800, 0x0000FFFF}, // 3 bytes
+   {0x00010000, 0x0010FFFF}  // 4 bytes
+};
+
+// UTF-16
+static const Byte4 UTF16HighSurrogateMask = 0x000FFC00;
+static const Byte4 UTF16LowSurrogateMask  = 0x000003FF;
+
+static const int UTF16BytesOrder[2][2] = {
+   {0, 1},
+   {1, 0} // swap
+};
+
+// UTF-32
+static const int UTF32BytesOrder[2][4] = {
+   {0, 1, 2, 3},
+   {3, 2, 1, 0} // swap
+};
+
+// ISO 8859 1~16 codepoints
 const Codepoint iso_8859[15][256] =
 {
    // ISO 8859-1
@@ -431,10 +357,33 @@ const Codepoint iso_8859[15][256] =
    }
 };
 
+// Reverse mapping for ISO 8859 1~16
+HashMap<Codepoint, unsigned char> iso_8859_rev[15];
 
-gcore::HashMap<Codepoint, unsigned char> iso_8859_rev[15];
+// --- Private functions
 
-void InitASCIIReverseMappings()
+inline bool IsValidCodepoint(Codepoint cp)
+{
+   return (cp <= UTF8ByteRange[3][1] && (cp < 0xD800 || 0xDFFF < cp));
+}
+
+inline bool IsCombiningMark(Codepoint cp)
+{
+   if ((0x0300 <= cp && cp <= 0x036F) || // Combining Diacritical Marks
+       (0x1AB0 <= cp && cp <= 0x1AFF) || // Combining Diacritical Marks Extended
+       (0x1DC0 <= cp && cp <= 0x1DFF) || // Combining Diacritical Marks Supplement
+       (0x20D0 <= cp && cp <= 0x20FF) || // Combining Diacritical Marks for Symbols
+       (0xFE20 <= cp && cp <= 0xFE2F))   // Combining Half Marks
+   {
+      return true;
+   }
+   else
+   {
+      return false;
+   }
+}
+
+static void InitASCIIReverseMappings()
 {
    if (iso_8859_rev[0].size() > 0)
    {
@@ -444,82 +393,19 @@ void InitASCIIReverseMappings()
    for (int i=0; i<15; ++i)
    {
       const Codepoint (&mapping)[256] = iso_8859[i];
-      gcore::HashMap<Codepoint, unsigned char> &rmapping = iso_8859_rev[i];
+      HashMap<Codepoint, unsigned char> &rmapping = iso_8859_rev[i];
       
       for (size_t j=0; j<256; ++j)
       {
-         // if (rmapping.find(mapping[j]) != rmapping.end())
-         // {
-         //    std::cerr << "Duplicate code point in '" << EncodingStr[ASCII_ISO_8859_1 + i] << "': " << std::hex << mapping[j] << std::dec << std::endl;
-         // }
+#ifdef _DEBUG
+         if (rmapping.find(mapping[j]) != rmapping.end())
+         {
+            std::cerr << "Duplicate code point in '" << EncodingString(ASCII_ISO_8859_1 + i) << "': " << std::hex << mapping[j] << std::dec << std::endl;
+         }
+#endif
          rmapping[mapping[j]] = (unsigned char)(j & 0x00FF);
       }
    }
-}
-
-// --- UTF-8 Utilities ---
-
-bool IsUTF8(const char *s)
-{
-   if (!s)
-   {
-      return false;
-   }
-
-   const Byte *bytes = (const Byte*)s;
-   Codepoint cp = InvalidCodepoint;
-   int num = 0, i = 0;
-
-   while (*bytes != 0x00)
-   {
-      if ((*bytes & 0x80) == 0x00)
-      {
-         cp = (*bytes & 0x7F);
-         num = 1;
-      }
-      else if ((*bytes & 0xE0) == 0xC0) // E0: 1110 0000, C0: 1100 0000
-      {
-         cp = (*bytes & 0x1F);
-         num = 2;
-      }
-      else if ((*bytes & 0xF0) == 0xE0) // F0: 1111 0000, E0: 1110 0000
-      {
-         cp = (*bytes & 0x0F);
-         num = 3;
-      }
-      else if ((*bytes & 0xF8) == 0xF0) // F8: 1111 1000, F0: 1111 0000
-      {
-         cp = (*bytes & 0x07);
-         num = 4;
-      }
-      else
-      {
-         return false;
-      }
-
-      bytes += 1;
-      for (i=1; i<num; ++i)
-      {
-         if ((*bytes & 0xC0) != 0x80)
-         {
-            return false;
-         }
-         cp = (cp << 6) | (*bytes & 0x3F);
-         bytes += 1;
-      }
-
-      if ((cp > 0x10FFFF) ||
-          ((cp >= 0xD800) && (cp <= 0xDFFF)) ||
-          ((cp <= 0x007F) && (num != 1)) ||
-          ((cp >= 0x0080) && (cp <= 0x07FF) && (num != 2)) ||
-          ((cp >= 0x0800) && (cp <= 0xFFFF) && (num != 3)) ||
-          ((cp >= 0x10000) && (cp <= 0x1FFFFF) && (num != 4)))
-      {
-         return false;
-      }
-   }
-
-   return true;
 }
 
 inline bool IsUTF8SingleChar(char c)
@@ -540,9 +426,9 @@ inline bool IsUTF8ContinuationChar(char c)
    return ((c & 0xC0) == 0x80);
 }
 
-// --- Length function ---
+// Length functions
 
-size_t UTF8Length(const Byte *bytes)
+static size_t UTF8Length(const Byte *bytes)
 {
    if (!bytes)
    {
@@ -559,7 +445,7 @@ size_t UTF8Length(const Byte *bytes)
    }
 }
 
-size_t UTF16Length(const Byte *bytes)
+static size_t UTF16Length(const Byte *bytes)
 {
    if (!bytes)
    {
@@ -576,12 +462,12 @@ size_t UTF16Length(const Byte *bytes)
    }
 }
 
-size_t UCS2Length(const Byte *bytes)
+static size_t UCS2Length(const Byte *bytes)
 {
    return UTF16Length(bytes);
 }
 
-size_t UTF32Length(const Byte *bytes)
+static size_t UTF32Length(const Byte *bytes)
 {
    if (!bytes)
    {
@@ -598,9 +484,9 @@ size_t UTF32Length(const Byte *bytes)
    }
 }
 
-// --- Encode functions ---
+// Single codepoint encode functions
 
-size_t EncodeUTF8(Codepoint cp, Byte *bytes, size_t maxlen, size_t pos)
+static size_t EncodeUTF8(Codepoint cp, Byte *bytes, size_t maxlen, size_t pos)
 {
    if (!IsValidCodepoint(cp))
    {
@@ -664,7 +550,7 @@ size_t EncodeUTF8(Codepoint cp, Byte *bytes, size_t maxlen, size_t pos)
    }
 }
 
-size_t EncodeUTF16(Codepoint cp, Byte *bytes, size_t maxlen, size_t pos, bool bigendian)
+static size_t EncodeUTF16(Codepoint cp, Byte *bytes, size_t maxlen, size_t pos, bool bigendian)
 {
    if (pos + 1 >= maxlen || !IsValidCodepoint(cp))
    {
@@ -707,7 +593,7 @@ size_t EncodeUTF16(Codepoint cp, Byte *bytes, size_t maxlen, size_t pos, bool bi
    }
 }
 
-size_t EncodeUCS2(Codepoint cp, Byte *bytes, size_t maxlen, size_t pos, bool bigendian)
+static size_t EncodeUCS2(Codepoint cp, Byte *bytes, size_t maxlen, size_t pos, bool bigendian)
 {
    if (cp <= 0xD7FF || (0xE000 <= cp && cp <= 0xFFFF))
    {
@@ -719,7 +605,7 @@ size_t EncodeUCS2(Codepoint cp, Byte *bytes, size_t maxlen, size_t pos, bool big
    }
 }
 
-size_t EncodeUTF32(Codepoint cp, Byte *bytes, size_t maxlen, size_t pos, bool bigendian)
+static size_t EncodeUTF32(Codepoint cp, Byte *bytes, size_t maxlen, size_t pos, bool bigendian)
 {
    if (pos + 3 >= maxlen)
    {
@@ -737,9 +623,9 @@ size_t EncodeUTF32(Codepoint cp, Byte *bytes, size_t maxlen, size_t pos, bool bi
    }
 }
 
-// --- Decode functions ---
+// Single codepoint decode functions
 
-Codepoint DecodeUTF8(const Byte *bytes, size_t len, size_t *_pos)
+static Codepoint DecodeUTF8(const Byte *bytes, size_t len, size_t *_pos)
 {
    if (!_pos)
    {
@@ -815,13 +701,7 @@ Codepoint DecodeUTF8(const Byte *bytes, size_t len, size_t *_pos)
    }
 }
 
-inline Codepoint DecodeUTF8(const Byte *bytes, size_t len)
-{
-   size_t pos = 0;
-   return DecodeUTF8(bytes, len, &pos);
-}
-
-Codepoint DecodeUTF16(const Byte *bytes, size_t len, size_t *_pos, bool bigendian)
+static Codepoint DecodeUTF16(const Byte *bytes, size_t len, size_t *_pos, bool bigendian)
 {
    if (!_pos || *_pos + 1 >= len)
    {
@@ -879,13 +759,7 @@ Codepoint DecodeUTF16(const Byte *bytes, size_t len, size_t *_pos, bool bigendia
    }
 }
 
-inline Codepoint DecodeUTF16(const Byte *bytes, size_t len, bool bigendian)
-{
-   size_t pos = 0;
-   return DecodeUTF16(bytes, len, &pos, bigendian);
-}
-
-Codepoint DecodeUCS2(const Byte *bytes, size_t len, size_t *pos, bool bigendian)
+static Codepoint DecodeUCS2(const Byte *bytes, size_t len, size_t *pos, bool bigendian)
 {
    Codepoint cp = DecodeUTF16(bytes, len, pos, bigendian);
    if (cp <= 0xD7FF || (0xE000 <= cp && cp <= 0xFFFF))
@@ -899,13 +773,7 @@ Codepoint DecodeUCS2(const Byte *bytes, size_t len, size_t *pos, bool bigendian)
    }
 }
 
-inline Codepoint DecodeUCS2(const Byte *bytes, size_t len, bool bigendian)
-{
-   size_t pos = 0;
-   return DecodeUCS2(bytes, len, &pos, bigendian);
-}
-
-Codepoint DecodeUTF32(const Byte *bytes, size_t len, size_t *_pos, bool bigendian)
+static Codepoint DecodeUTF32(const Byte *bytes, size_t len, size_t *_pos, bool bigendian)
 {
    if (!_pos || *_pos + 3 >= len)
    {
@@ -927,13 +795,139 @@ Codepoint DecodeUTF32(const Byte *bytes, size_t len, size_t *_pos, bool bigendia
    }
 }
 
+inline Codepoint DecodeUTF8(const Byte *bytes, size_t len)
+{
+   size_t pos = 0;
+   return DecodeUTF8(bytes, len, &pos);
+}
+
+inline Codepoint DecodeUTF16(const Byte *bytes, size_t len, bool bigendian)
+{
+   size_t pos = 0;
+   return DecodeUTF16(bytes, len, &pos, bigendian);
+}
+
+inline Codepoint DecodeUCS2(const Byte *bytes, size_t len, bool bigendian)
+{
+   size_t pos = 0;
+   return DecodeUCS2(bytes, len, &pos, bigendian);
+}
+
 inline Codepoint DecodeUTF32(const Byte *bytes, size_t len, bool bigendian)
 {
    size_t pos = 0;
    return DecodeUTF32(bytes, len, &pos, bigendian);
 }
 
-// ---
+// --- Public functions
+
+const char* EncodingString(Encoding e)
+{
+   const char* sEncodingStr[MAX_ENCODING] =
+   {
+      "ascii",
+      "iso-8859-1",
+      "iso-8859-2",
+      "iso-8859-3",
+      "iso-8859-4",
+      "iso-8859-5",
+      "iso-8859-6",
+      "iso-8859-7",
+      "iso-8859-8",
+      "iso-8859-9",
+      "iso-8859-10",
+      "iso-8859-11",
+      "iso-8859-13",
+      "iso-8859-14",
+      "iso-8859-15",
+      "iso-8859-16",
+      "utf-8",
+      "ucs-2",
+      "ucs-2le",
+      "utf-16",
+      "utf-16le",
+      "ucs-4",
+      "ucs-4le",
+      "utf-32",
+      "utf-32le"
+   };
+   
+   int idx = int(e);
+   return ((e < 0 || e >= MAX_ENCODING) ? 0 : sEncodingStr[idx]);
+}
+
+bool IsBigEndian()
+{
+   // If the machine the code was compiled on is big endian
+   // 0x01 will be interpreted as least significant byte in c.i
+   Char16 c; // = {.i=0};
+   c.b[0] = 0x00;
+   c.b[1] = 0x01;
+   return (c.i == 0x0001);
+}
+
+bool IsUTF8(const char *s)
+{
+   if (!s)
+   {
+      return false;
+   }
+
+   const Byte *bytes = (const Byte*)s;
+   Codepoint cp = InvalidCodepoint;
+   int num = 0, i = 0;
+
+   while (*bytes != 0x00)
+   {
+      if ((*bytes & 0x80) == 0x00)
+      {
+         cp = (*bytes & 0x7F);
+         num = 1;
+      }
+      else if ((*bytes & 0xE0) == 0xC0) // E0: 1110 0000, C0: 1100 0000
+      {
+         cp = (*bytes & 0x1F);
+         num = 2;
+      }
+      else if ((*bytes & 0xF0) == 0xE0) // F0: 1111 0000, E0: 1110 0000
+      {
+         cp = (*bytes & 0x0F);
+         num = 3;
+      }
+      else if ((*bytes & 0xF8) == 0xF0) // F8: 1111 1000, F0: 1111 0000
+      {
+         cp = (*bytes & 0x07);
+         num = 4;
+      }
+      else
+      {
+         return false;
+      }
+
+      bytes += 1;
+      for (i=1; i<num; ++i)
+      {
+         if ((*bytes & 0xC0) != 0x80)
+         {
+            return false;
+         }
+         cp = (cp << 6) | (*bytes & 0x3F);
+         bytes += 1;
+      }
+
+      if ((cp > 0x10FFFF) ||
+          ((cp >= 0xD800) && (cp <= 0xDFFF)) ||
+          ((cp <= 0x007F) && (num != 1)) ||
+          ((cp >= 0x0080) && (cp <= 0x07FF) && (num != 2)) ||
+          ((cp >= 0x0800) && (cp <= 0xFFFF) && (num != 3)) ||
+          ((cp >= 0x10000) && (cp <= 0x1FFFFF) && (num != 4)))
+      {
+         return false;
+      }
+   }
+
+   return true;
+}
 
 bool EncodeUTF8(Encoding e, const char *s, std::string &out)
 {
@@ -970,38 +964,6 @@ bool EncodeUTF8(Encoding e, const char *s, std::string &out)
          }
          return true;
       
-      /*
-      case ASCII_ISO_8859_1:
-         n = strlen(s);
-         out.reserve(n * 2); // at most
-         out.clear();
-         for (i=0; i<n; ++i)
-         {
-            c8 = s[i];
-            if (c8 < 0)
-            {
-               cp = (unsigned int) c8;
-               j = EncodeUTF8(cp & 0x00FF, c32.b, 4, 0);
-               if (j == 0)
-               {
-                  std::cerr << "Invalid ASCII code (@" << i << "): " << c8 << " (" << int(c8) << ")" << std::endl;
-                  out.clear();
-                  return false;
-               }
-               for (k=0; k<j; ++k)
-               {
-                  out.push_back(c32.b[k]);
-               }
-            }
-            else
-            {
-               out.push_back(c8);
-            }
-         }
-         return true;
-      */
-      
-      // ASCII_ISO_8859_1 could be handled here too
       case ASCII_ISO_8859_1:
       case ASCII_ISO_8859_2:
       case ASCII_ISO_8859_3:
@@ -1165,24 +1127,6 @@ bool DecodeUTF8(const char *s, Encoding e, std::string &out)
          }
          return true;
       
-      /*
-      case ASCII_ISO_8859_1:
-         out.clear();
-         while (i < n)
-         {
-            cp = DecodeUTF8(bytes, n, &i);
-            if (cp <= 255)
-            {
-               out.push_back(char(cp & 0xFF));
-            }
-            else
-            {
-               return false;
-            }
-         }
-         return true;
-      */
-      
       case ASCII_ISO_8859_1:
       case ASCII_ISO_8859_2:
       case ASCII_ISO_8859_3:
@@ -1327,41 +1271,13 @@ bool DecodeUTF8(const char *s, std::wstring &out)
    return true;
 }
 
-// ---
-
-#include <gcore/config.h>
-#include <gcore/platform.h>
-
-std::ostream& PrintBytes(std::ostream &os, const void *ptr, size_t len, size_t spacing=2)
-{
-   os << "[" << len << "] 0x" << std::hex;
-   const unsigned char *b = (const unsigned char *) ptr;
-   for (size_t i=0, j=0; i<len; ++i, ++b)
-   {
-      if (*b == 0)
-      {
-         os << "00";
-      }
-      else
-      {
-         os << int(*b);
-      }
-      if (++j == spacing)
-      {
-         os << " ";
-         j = 0;
-      }
-   }
-   os << std::dec;
-   return os;
-}
-
-/*
 #ifdef _WIN32
 
-std::wstring ToWideString(const char *s, int codepage=CP_ACP)
+// CP_ACP  : Current code page
+// CP_UTF8 : utf-8 
+bool ToWideString(int codepage, const char *s, std::wstring &out)
 {
-   std::wstring wstr;
+   bool rv = false;
    
    if (s)
    {
@@ -1370,196 +1286,45 @@ std::wstring ToWideString(const char *s, int codepage=CP_ACP)
       wchar_t *ws = new wchar_t[wslen + 1];
       if (MultiByteToWideChar(codepage, 0, s, slen, ws, wslen + 1) != 0)
       {
-         wstr = ws;
+         out = ws;
+         rv = true;
       }
+      delete[] ws;
    }
    
-   return wstr;
+   if (!rv)
+   {
+      out.clear();
+   }
+   
+   return false;
 }
 
-std::string ToUTF8String(const wchar_t *ws)
+bool ToMultiByteString(const wchar_t *ws, int codepage, std::string &out)
 {
-   std::string str;
+   bool rv = false;
    
    if (ws)
    {
       int wslen = int(wcslen(ws));
-      int slen = WideCharToMultiByte(CP_UTF8, 0, ws, wslen, NULL, 0, NULL, NULL);
+      int slen = WideCharToMultiByte(codepage, 0, ws, wslen, NULL, 0, NULL, NULL);
       char *s = new char[slen + 1];
-      if (WideCharToMultiByte(CP_UTF8, 0, ws, wslen, s, slen + 1, NULL, NULL) != 0)
+      if (WideCharToMultiByte(codepage, 0, ws, wslen, s, slen + 1, NULL, NULL) != 0)
       {
-         str = s;
+         out = s;
+         rv = true;
       }
+      delete[] s;
    }
    
-   // size_t slen = wcstombs(NULL, ws, 0);
-   // if (slen != size_t(-1))
-   // {
-   //    char *s = new char[slen + 1];
-   //    wcstombs(s, wtest, slen);
-   //    str = s;
-   //    delete[] s;
-   // }
+   if (!rv)
+   {
+      out.clear();
+   }
    
-   return str;
+   return rv;
 }
 
 #endif
-*/
 
-typedef Codepoint (*DecodeFunc)(const Byte*, size_t, size_t*, bool);
-
-int main(int, char **)
-{
-   std::cout << "sizeof(wchar_t)=" << sizeof(wchar_t) << std::endl;
-   std::cout << "sizeof(unsigned int)=" << sizeof(unsigned int) << std::endl;
-   std::cout << "IsBigEndian: " << IsBigEndian() << std::endl;
-   std::cout << std::endl;
-
-   // On linux/osx, it seems that UTF-8 is the default encoding for narrow string
-   //               wide strings are UTF-32
-   // On windows, at least if _UNICODE is not defined, narrow string will be encoded in current codepage
-   //               wide strings are UTF-16
-   // Also, for this test to be properly compiled, cl.exe must be able to figure out the encoding
-   // => use BOM even for UTF-8
-   // BOMs
-   //    UTF-32be  0x00 0x00 0xFE 0xFF
-   //    UTF-32le  0xFF 0xFE 0x00 0x00
-   //    UTF-16be  0xFE 0xFF
-   //    UTF-16le  0xFF 0xFE 
-   //    UTF-8     0xEF 0xBB 0xBF 
-
-   const wchar_t *tests[6] = {
-      L"片道",
-      L"à",
-      L"bien sûr.",
-      L"Dans l’idéal évidement.",
-      L"Si cela pouvait être implémenté proprement.",
-      L"Plein de gros becs à mes petites chéries et aussi à la grande."
-   };
-
-   const Byte *bytes = (const Byte*) tests[0];
-   size_t len = wcslen(tests[0]) * sizeof(wchar_t);
-
-   PrintBytes(std::cout, tests[0], len) << std::endl;
-   std::cout << std::hex << "0x" << tests[0][0] << " 0x" << tests[0][1] << std::dec << std::endl;
-   std::cout << std::endl;
-   
-   DecodeFunc decode = (sizeof(wchar_t) == 4 ? (DecodeFunc)DecodeUTF32 : (DecodeFunc)DecodeUTF16);
-   
-   Codepoint cp[2];
-   size_t j = 0;
-   cp[0] = decode(bytes, len, &j, IsBigEndian());
-   cp[1] = decode(bytes, len, &j, IsBigEndian());
-   PrintBytes(std::cout, &cp[0], 2 * sizeof(Codepoint)) << std::endl;
-   std::cout << std::hex << "0x" << cp[0] << " 0x" << cp[1] << std::dec << std::endl;
-   std::cout << std::endl;
-   
-   Byte str[8];
-   size_t n;
-   
-   for (int i=0; i<2; ++i)
-   {
-      std::cout << "Codepoint[" << i << "]: " << cp[i] << std::endl;
-      
-      memset(str, 0, 8);
-      n = EncodeUTF32(cp[i], str, 8, 0, true);
-      std::cout << "  => UTF32: [" << n << "] " << str << std::endl;
-      std::cout << "  => Unicode: " << std::hex << DecodeUTF32(str, n, true) << std::dec << std::endl;
-      std::cout << "  ";
-      PrintBytes(std::cout, str, n) << std::endl;
-      std::cout << std::endl;
-      
-      memset(str, 0, 8);
-      n = EncodeUTF16(cp[i], str, 8, 0, true);
-      std::cout << "  => UTF16: [" << n << "] " << str << std::endl;
-      std::cout << "  => Unicode: " << std::hex << DecodeUTF16(str, n, true) << std::dec << std::endl;
-      std::cout << "  ";
-      PrintBytes(std::cout, str, n) << std::endl;
-      std::cout << std::endl;
-      
-      memset(str, 0, 8);
-      n = EncodeUTF8(cp[i], str, 8, 0);
-      std::cout << "  => UTF8: [" << n << "] " << str << std::endl;
-      std::cout << "  => Unicode: " << std::hex << DecodeUTF8(str, n) << std::dec << std::endl;
-      std::cout << "  ";
-      PrintBytes(std::cout, str, n) << std::endl;
-      std::cout << std::endl;
-   }
-   
-   std::string utf8;
-   std::wstring wstr;
-   std::string utf16;
-   for (int i=0; i<6; ++i)
-   {
-      std::cout << "tests[" << i << "]" << std::endl;
-      PrintBytes(std::cout, tests[i], wcslen(tests[i]) * sizeof(wchar_t), 4) << std::endl;
-      if (EncodeUTF8(tests[i], utf8))
-      {
-         std::cout << tests[i] << " -> utf-8 -> [" << utf8.length() << "] \"" << utf8 << "\"" << std::endl;
-         PrintBytes(std::cout, utf8.c_str(), utf8.length(), 1) << std::endl;
-         
-         if (!DecodeUTF8(utf8.c_str(), wstr) || wstr != tests[i])
-         {
-            std::cerr << "Re-encoding failed" << std::endl;
-         }
-         if (DecodeUTF8(utf8.c_str(), UTF_16, utf16))
-         {
-            std::cout << "-> utf-16 -> ";
-            PrintBytes(std::cout, utf16.c_str(), utf16.length(), 2) << std::endl;
-         }
-      }
-      std::cout << std::endl;
-   }
-   
-   FILE *f = fopen("testdata/iso8859.txt", "r");
-   if (f)
-   {
-      char buffer[256];
-      fgets(buffer, 256, f);
-      fclose(f);
-      
-      size_t len = strlen(buffer);
-      if (len > 0 && buffer[len-1] == '\n')
-      {
-         buffer[len-1] = '\0';
-      }
-      
-      for (int i=0; i<15; ++i)
-      {
-         // should cleanup string from all unsupported character
-         Encoding encoding = Encoding(ASCII_ISO_8859_1 + i);
-         if (EncodeUTF8(encoding, buffer, utf8))
-         {
-            std::cout << EncodingStr[encoding] << ": " << utf8 << std::endl;
-            
-            std::string ascii;
-            if (DecodeUTF8(utf8.c_str(), encoding, ascii))
-            {
-               if (ascii != buffer)
-               {
-                  // only fails if size is different or letter that mismatched as the replacement char 0xFFFD
-                  std::cout << "!!! Round trip failed (decoding error)" << std::endl;
-                  std::cout << "length (org): " << strlen(buffer) << std::endl;
-                  std::cout << "length (dec): " << ascii.length() << std::endl;
-                  for (size_t j=0; j<ascii.length(); ++j)
-                  {
-                     if (ascii[j] != buffer[j])
-                     {
-                        std::cout << "[" << j << "]: " << std::hex << (int(buffer[j]) & 0x00FF) << std::dec << " != "
-                                                       << std::hex << (int(ascii[j]) & 0x00FF) << std::dec << std::endl;
-                     }
-                  }
-               }
-            }
-            else
-            {
-               std::cout << "!!! Round trip failed (can't decode)" << std::endl;
-            }
-         }
-      }
-   }
-   
-   return 0;
 }
-

@@ -65,6 +65,7 @@ namespace gcore
    GCORE_API const char* EncodingString(Encoding e);
    
    GCORE_API bool IsBigEndian();
+   GCORE_API bool IsASCII(const char *s);
    GCORE_API bool IsUTF8(const char *s);
    
    // Encode 'e' encoded string 's' to UTF-8

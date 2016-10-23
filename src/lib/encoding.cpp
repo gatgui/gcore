@@ -866,6 +866,27 @@ bool IsBigEndian()
    return (c.i == 0x0001);
 }
 
+bool IsASCII(const char *s)
+{
+   if (!s)
+   {
+      return false;
+   }
+   
+   const Byte *bytes = (const Byte*)s;
+   
+   while (*bytes != 0x00)
+   {
+      if (*bytes > 127)
+      {
+         return false;
+      }
+      ++bytes;
+   }
+   
+   return true;
+}
+
 bool IsUTF8(const char *s)
 {
    if (!s)

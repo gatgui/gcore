@@ -24,8 +24,10 @@ USA.
 #include <gcore/string.h>
 #include <gcore/platform.h>
 #include <gcore/rex.h>
+#include <gcore/encoding.h>
 
-namespace gcore {
+namespace gcore
+{
 
 StringList::StringList()
    : List<String>()
@@ -93,6 +95,30 @@ String::String(const char *s)
 String::String(const char *s, size_t n)
    : std::string(s, n)
 {
+}
+
+String::String(const std::wstring &rhs)
+   : std::string()
+{
+   EncodeUTF8(rhs.c_str(), *this);
+}
+
+String::String(const std::wstring &rhs, size_t pos, size_t n)
+   : std::string()
+{
+   EncodeUTF8(rhs.c_str() + pos, n, *this);
+}
+
+String::String(const wchar_t *ws)
+   : std::string()
+{
+   EncodeUTF8(ws, *this);
+}
+
+String::String(const wchar_t *ws, size_t n)
+   : std::string()
+{
+   EncodeUTF8(ws, n, *this);
 }
 
 String::String(char c)
@@ -186,6 +212,18 @@ String& String::operator=(const std::string &rhs)
 String& String::operator=(const char *s)
 {
    std::string::operator=(s);
+   return *this;
+}
+
+String& String::operator=(const std::wstring &rhs)
+{
+   EncodeUTF8(rhs.c_str(), *this);
+   return *this;
+}
+
+String& String::operator=(const wchar_t *ws)
+{
+   EncodeUTF8(ws, *this);
    return *this;
 }
 

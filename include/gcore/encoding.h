@@ -70,12 +70,16 @@ namespace gcore
    
    // Encode 'e' encoded string 's' to UTF-8
    GCORE_API bool EncodeUTF8(Encoding e, const char *s, std::string &out);
+   GCORE_API bool EncodeUTF8(Encoding e, const char *s, size_t len, std::string &out);
    // Encode UTF-16/32 wide string to UTF-8
    GCORE_API bool EncodeUTF8(const wchar_t *s, std::string &out);
+   GCORE_API bool EncodeUTF8(const wchar_t *s, size_t len, std::string &out);
    // Decode UTF-8 string to 'e' encoding
    GCORE_API bool DecodeUTF8(const char *s, Encoding e, std::string &out);
+   GCORE_API bool DecodeUTF8(const char *s, size_t len, Encoding e, std::string &out);
    // Decode UTF-8 string to UTF-16/32
    GCORE_API bool DecodeUTF8(const char *s, std::wstring &out);
+   GCORE_API bool DecodeUTF8(const char *s, size_t len, std::wstring &out);
    
 #ifdef _WIN32
    GCORE_API bool ToWideString(int codepage, const char *s, std::wstring &out);

@@ -954,10 +954,51 @@ bool EncodeUTF8(Encoding e, const char *s, std::string &out)
 {
    if (s)
    {
+      size_t len = 0;
+      
+      switch (e)
+      {
+      case UCS_2BE:
+      case UCS_2LE:
+         len = UCS2Length((const Byte*)s);
+         break;
+         
+      case UTF_16BE:
+      case UTF_16LE:
+         len = UTF16Length((const Byte*)s);
+         break;
+      
+      case UTF_32BE:
+      case UTF_32LE:
+      case UCS_4BE:
+      case UCS_4LE:
+         len = UTF32Length((const Byte*)s);
+         break;
+      
+      case UTF_8:
+         out = s;
+         return true;
+      
+      default:
+         len = strlen(s);
+      }
+      
+      return EncodeUTF8(e, s, len, out);
+   }
+   else
+   {
+      return false;
+   }
+}
+
+bool EncodeUTF8(Encoding e, const char *s, size_t len, std::string &out)
+{
+   if (s)
+   {
       size_t i = 0;
       size_t j = 0;
       size_t k = 0;
-      size_t n = 0;
+      size_t n = len;
       char c8 = 0;
       Char32 c32;
       const Byte *bytes = (const Byte*)s;
@@ -966,11 +1007,14 @@ bool EncodeUTF8(Encoding e, const char *s, std::string &out)
       switch (e)
       {
       case UTF_8:
-         out = s;
+         //out = s;
+         n = std::min(n, UTF8Length(bytes));
+         out.assign(s, n);
          return true;
 
       case ASCII:
-         n = strlen(s);
+         //n = strlen(s);
+         n = std::min(n, strlen(s));
          out.resize(n);
          for (i=0; i<n; ++i)
          {
@@ -1003,7 +1047,8 @@ bool EncodeUTF8(Encoding e, const char *s, std::string &out)
          {
             const Codepoint (&mapping)[256] = iso_8859[e - ASCII_ISO_8859_1];
             
-            n = strlen(s);
+            //n = strlen(s);
+            n = std::min(n, strlen(s));
             out.reserve(n * 4);
             out.clear();
             for (i=0; i<n; ++i)
@@ -1027,8 +1072,10 @@ bool EncodeUTF8(Encoding e, const char *s, std::string &out)
       
       case UCS_2BE:
       case UCS_2LE:
+         out.reserve(n * 4);
          out.clear();
-         n = UCS2Length(bytes);
+         //n = UCS2Length(bytes);
+         n = std::min(n, UCS2Length(bytes));
          while (i < n)
          {
             cp = DecodeUCS2(bytes, n, &i, (e == UCS_2BE));
@@ -1048,8 +1095,10 @@ bool EncodeUTF8(Encoding e, const char *s, std::string &out)
          
       case UTF_16BE:
       case UTF_16LE:
+         out.reserve(n * 4);
          out.clear();
-         n = UTF16Length(bytes);
+         //n = UTF16Length(bytes);
+         n = std::min(n, UTF16Length(bytes));
          while (i < n)
          {
             cp = DecodeUTF16(bytes, n, &i, (e == UTF_16BE));
@@ -1071,8 +1120,10 @@ bool EncodeUTF8(Encoding e, const char *s, std::string &out)
       case UTF_32LE:
       case UCS_4BE:
       case UCS_4LE:
+         out.reserve(n * 4);
          out.clear();
-         n = UTF32Length(bytes);
+         //n = UTF32Length(bytes);
+         n = std::min(n, UTF32Length(bytes));
          while (i < n)
          {
             cp = DecodeUTF32(bytes, n, &i, (e == UTF_32BE || e == UCS_4BE));
@@ -1101,18 +1152,28 @@ bool EncodeUTF8(Encoding e, const char *s, std::string &out)
 
 bool EncodeUTF8(const wchar_t *s, std::string &out)
 {
+   return EncodeUTF8(s, (s ? wcslen(s) : 0), out);
+}
+
+bool EncodeUTF8(const wchar_t *s, size_t len, std::string &out)
+{
    switch (sizeof(wchar_t))
    {
    case 4:
-      return EncodeUTF8(IsBigEndian() ? UTF_32BE : UTF_32LE, (const char*)s, out);
+      return EncodeUTF8(IsBigEndian() ? UTF_32BE : UTF_32LE, (const char*)s, 4 * len, out);
    case 2:
-      return EncodeUTF8(IsBigEndian() ? UTF_16BE : UTF_16LE, (const char*)s, out);
+      return EncodeUTF8(IsBigEndian() ? UTF_16BE : UTF_16LE, (const char*)s, 2 * len, out);
    default:
       return false;
    }
 }
 
 bool DecodeUTF8(const char *s, Encoding e, std::string &out)
+{
+   return DecodeUTF8(s, UTF8Length((const Byte*)s), e, out);
+}
+
+bool DecodeUTF8(const char *s, size_t len, Encoding e, std::string &out)
 {
    if (s)
    {
@@ -1122,16 +1183,19 @@ bool DecodeUTF8(const char *s, Encoding e, std::string &out)
       Char16 c16;
       Char32 c32;
       const Byte *bytes = (const Byte*)s;
-      size_t n = UTF8Length(bytes);
+      //size_t n = UTF8Length(bytes);
+      size_t n = std::min(len, UTF8Length(bytes));
       unsigned int cp = InvalidCodepoint;
       
       switch (e)
       {
       case UTF_8:
-         out = s;
+         //out = s;
+         out.assign(s, n);
          return true;
       
       case ASCII:
+         out.reserve(n);
          out.clear();
          while (i < n)
          {
@@ -1167,7 +1231,10 @@ bool DecodeUTF8(const char *s, Encoding e, std::string &out)
             InitASCIIReverseMappings();
             
             const gcore::HashMap<Codepoint, unsigned char> &rmapping = iso_8859_rev[e - ASCII_ISO_8859_1];
+            
+            out.reserve(n);
             out.clear();
+            
             try
             {
                while (i < n)
@@ -1194,7 +1261,9 @@ bool DecodeUTF8(const char *s, Encoding e, std::string &out)
       
       case UCS_2BE:
       case UCS_2LE:
+         out.reserve(n * 2);
          out.clear();
+         
          while (i < n)
          {
             c16.i = 0;
@@ -1213,6 +1282,7 @@ bool DecodeUTF8(const char *s, Encoding e, std::string &out)
       
       case UTF_16BE:
       case UTF_16LE:
+         out.reserve(n * 2);
          out.clear();
          while (i < n)
          {
@@ -1239,6 +1309,7 @@ bool DecodeUTF8(const char *s, Encoding e, std::string &out)
       case UCS_4LE:
       case UTF_32BE:
       case UTF_32LE:
+         out.reserve(n * 4);
          out.clear();
          while (i < n)
          {
@@ -1267,18 +1338,23 @@ bool DecodeUTF8(const char *s, Encoding e, std::string &out)
 
 bool DecodeUTF8(const char *s, std::wstring &out)
 {
+   return DecodeUTF8(s, UTF8Length((const Byte*)s), out);
+}
+
+bool DecodeUTF8(const char *s, size_t len, std::wstring &out)
+{
    std::string tmp;
    
    switch (sizeof(wchar_t))
    {
    case 4:
-      if (!DecodeUTF8(s, IsBigEndian() ? UTF_32BE : UTF_32LE, tmp))
+      if (!DecodeUTF8(s, len, IsBigEndian() ? UTF_32BE : UTF_32LE, tmp))
       {
          return false;
       }
       break;
    case 2:
-      if (!DecodeUTF8(s, IsBigEndian() ? UTF_16BE : UTF_16LE, tmp))
+      if (!DecodeUTF8(s, len, IsBigEndian() ? UTF_16BE : UTF_16LE, tmp))
       {
          return false;
       }

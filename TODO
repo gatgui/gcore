@@ -1,8 +1,14 @@
-Added new regex syntaxes:
+Regex
+   x Comment: (?#...)
+   x Named group: (?P<name>...)
+   x Named group referemce: (?P=name)
+   - Conditional expression: (?(id/name)yes-pattern|no-pattern)
+     with 'no-pattern' optional
 
-x Comment: (?#...)
-x Named group: (?P<name>...)
-x Named group referemce: (?P=name)
-- Conditional expression: (?(id/name)yes-pattern|no-pattern)
-  (no-pattern optional)
-
+Unicode
+   - On windows, properly handle _UNICODE define
+   - Review all windows system call as they expect MBCS in current codepage unless _UNICODE
+     is defined. In that case, UTF-16 is expected (or UCS2 at least)
+   - Review ArgParser: What is the encoding of command line arguments strings?
+   - Support in Rex
+   - Support XML encoding

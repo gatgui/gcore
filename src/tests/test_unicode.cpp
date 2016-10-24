@@ -1,5 +1,6 @@
 ﻿// -*- coding: utf-8 -*-
 #include <gcore/encoding.h>
+#include <gcore/argparser.h>
 
 std::ostream& PrintBytes(std::ostream &os, const void *ptr, size_t len, size_t spacing=2)
 {
@@ -27,9 +28,23 @@ std::ostream& PrintBytes(std::ostream &os, const void *ptr, size_t len, size_t s
 
 int main(int argc, char **argv)
 {
-   for (int i=1; i<argc; ++i)
+   gcore::FlagDesc flags[1] = {ACCEPTS_NOFLAG_ARGUMENTS(-1)};
+   gcore::ArgParser args(flags, 1);
+   
+   gcore::Status stat = args.parse(argc, argv);
+   if (stat)
    {
-      std::cout << "argv[i] = \"" << argv[i] << "\" [ascii=" << gcore::IsASCII(argv[i]) << ", utf-8=" << gcore::IsUTF8(argv[i]) << "]" << std::endl;
+      size_t n = args.argumentCount();
+      gcore::String arg;
+      for (size_t i=0; i<n; ++i)
+      {
+         args.getArgument(i, arg);
+         std::cout << "arg[" << i << "] = " << arg << " (ascii: " << gcore::IsASCII(arg.c_str())<< ", utf-8: " << gcore::IsUTF8(arg.c_str()) << ")" << std::endl;
+      }
+   }
+   else
+   {
+      std::cerr << stat << std::endl;
    }
    
    std::cout << "sizeof(wchar_t)=" << sizeof(wchar_t) << std::endl;

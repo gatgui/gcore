@@ -9,6 +9,6 @@ Unicode
    - On windows, properly handle _UNICODE define
    - Review all windows system call as they expect MBCS in current codepage unless _UNICODE
      is defined. In that case, UTF-16 is expected (or UCS2 at least)
-   - Review ArgParser: What is the encoding of command line arguments strings?
+   x Review ArgParser (command line arguments strings are utf-8 on osx/linux so far I could see, current codepage on windows...)
    - Support in Rex
    - Support XML encoding

@@ -65,6 +65,7 @@ int main(int argc, char **argv)
    std::cout << std::hex << "0x" << tests[0][0] << " 0x" << tests[0][1] << std::dec << std::endl;
    std::cout << std::endl;
    
+   std::string str;
    std::string utf8;
    std::wstring wstr;
    std::string utf16;
@@ -74,13 +75,49 @@ int main(int argc, char **argv)
       PrintBytes(std::cout, tests[i], wcslen(tests[i]) * sizeof(wchar_t), 4) << std::endl;
       if (gcore::EncodeUTF8(tests[i], utf8))
       {
-         std::cout << tests[i] << " -> utf-8 -> [" << utf8.length() << "] \"" << utf8 << "\"" << std::endl;
+#ifdef _WIN32
+         // Note: Current codepage doesn't necessarily support all characters encoded in utf8, but it is a bit better than 
+         //       trying to output utf-8 string directly anyway...
+         gcore::ToWideString(gcore::UTF8Codepage, utf8.c_str(), wstr);
+         gcore::ToMultiByteString(wstr.c_str(), gcore::CurrentCodepage, str);
+#else
+         str = utf8;
+#endif
+         std::cout << tests[i] << " -> utf-8 -> [" << utf8.length() << "] \"" << str << "\"" << std::endl;
          PrintBytes(std::cout, utf8.c_str(), utf8.length(), 1) << std::endl;
          
-         if (!gcore::DecodeUTF8(utf8.c_str(), wstr) || wstr != tests[i])
+         if (!gcore::DecodeUTF8(utf8.c_str(), wstr))
          {
-            std::cerr << "Re-encoding failed" << std::endl;
+            std::cerr << "Re-encoding failed (DecodeUTF8 failure)" << std::endl;
          }
+         else if (wstr != tests[i])
+         {
+            std::cerr << "Re-encoding failed (Ouptut differs)" << std::endl;
+            size_t l0 = wcslen(tests[i]);
+            size_t l1 = wstr.length();
+            if (l0 != l1)
+            {
+               std::cerr << "  Length: " << l0 << " -> " << l1 << std::endl;
+               if (l1 > l0)
+               {
+                  for (size_t j=l0; j<l1; ++j)
+                  {
+                     std::cerr << "  +[" << j << "]: " << std::hex << size_t(wstr[j]) << std::dec << std::endl;
+                  }
+               }
+            }
+            else
+            {
+               for (size_t j=0; j<l0; ++j)
+               {
+                  if (wstr[j] != tests[i][j])
+                  {
+                     std::cerr << "  [" << j << "]: " << std::hex << size_t(tests[i][j]) << std::dec << " -> " << std::hex << size_t(wstr[j]) << std::dec << std::endl;
+                  }
+               }
+            }
+         }
+         
          if (gcore::DecodeUTF8(utf8.c_str(), gcore::UTF_16, utf16))
          {
             std::cout << "-> utf-16 -> ";
@@ -109,7 +146,16 @@ int main(int argc, char **argv)
          gcore::Encoding encoding = gcore::Encoding(gcore::ASCII_ISO_8859_1 + i);
          if (gcore::EncodeUTF8(encoding, buffer, utf8))
          {
-            std::cout << gcore::EncodingString(encoding) << ": " << utf8 << std::endl;
+#ifdef _WIN32
+            // Note: Current codepage doesn't necessarily support all characters encoded in utf8, but it is a bit better than 
+            //       trying to output utf-8 string directly anyway...
+            gcore::ToWideString(gcore::UTF8Codepage, utf8.c_str(), wstr);
+            gcore::ToMultiByteString(wstr.c_str(), gcore::CurrentCodepage, str);
+#else
+            str = utf8;
+#endif
+            //std::cout << gcore::EncodingString(encoding) << ": " << utf8 << std::endl;
+            std::cout << gcore::EncodingString(encoding) << ": " << str << std::endl;
             
             std::string ascii;
             if (gcore::DecodeUTF8(utf8.c_str(), encoding, ascii))

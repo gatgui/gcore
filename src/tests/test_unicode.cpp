@@ -25,8 +25,13 @@ std::ostream& PrintBytes(std::ostream &os, const void *ptr, size_t len, size_t s
    return os;
 }
 
-int main(int, char **)
+int main(int argc, char **argv)
 {
+   for (int i=1; i<argc; ++i)
+   {
+      std::cout << "argv[i] = \"" << argv[i] << "\" [ascii=" << gcore::IsASCII(argv[i]) << ", utf-8=" << gcore::IsUTF8(argv[i]) << "]" << std::endl;
+   }
+   
    std::cout << "sizeof(wchar_t)=" << sizeof(wchar_t) << std::endl;
    std::cout << "sizeof(unsigned int)=" << sizeof(unsigned int) << std::endl;
    std::cout << "IsBigEndian: " << gcore::IsBigEndian() << std::endl;

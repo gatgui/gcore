@@ -1344,8 +1344,9 @@ bool DecodeUTF8(const char *s, std::wstring &out)
 bool DecodeUTF8(const char *s, size_t len, std::wstring &out)
 {
    std::string tmp;
+   size_t cw = sizeof(wchar_t);
    
-   switch (sizeof(wchar_t))
+   switch (cw)
    {
    case 4:
       if (!DecodeUTF8(s, len, IsBigEndian() ? UTF_32BE : UTF_32LE, tmp))
@@ -1363,15 +1364,20 @@ bool DecodeUTF8(const char *s, size_t len, std::wstring &out)
       return false;
    }
    
-   out = (const wchar_t*) tmp.c_str();
+   size_t blen = tmp.length();
+   out.resize(blen / cw);
+   unsigned char *dst = (unsigned char*) out.c_str();
+   unsigned char *src = (unsigned char*) tmp.c_str();
+   memcpy(dst, src, blen);
    
    return true;
 }
 
 #ifdef _WIN32
 
-// CP_ACP  : Current code page
-// CP_UTF8 : utf-8 
+const int CurrentCodepage = CP_ACP;
+const int UTF8Codepage = CP_UTF8;
+
 bool ToWideString(int codepage, const char *s, std::wstring &out)
 {
    bool rv = false;

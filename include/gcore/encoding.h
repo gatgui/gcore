@@ -82,6 +82,9 @@ namespace gcore
    GCORE_API bool DecodeUTF8(const char *s, size_t len, std::wstring &out);
    
 #ifdef _WIN32
+   GCORE_API extern const int CurrentCodepage;
+   GCORE_API extern const int UTF8Codepage;
+   
    GCORE_API bool ToWideString(int codepage, const char *s, std::wstring &out);
    GCORE_API bool ToMultiByteString(const wchar_t *ws, int codepage, std::string &out);
 #endif

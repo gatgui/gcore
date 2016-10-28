@@ -1,6 +1,5 @@
 import excons
 import os
-import re
 import sys
 import glob
 import excons.tools
@@ -8,8 +7,6 @@ from excons.tools import threads
 from excons.tools import dl
 from excons.tools import python
 
-cython = excons.GetArgument("with-cython", "cython")
-cython_gen = excons.GetArgument("cython-gen", 1, int)
 static = excons.GetArgument("static", 0, int)
 debugrex = excons.GetArgument("debug-rex", 0, int)
 plat = str(Platform())
@@ -74,7 +71,7 @@ prjs = [
       "bldprefix" : python.Version(),
       "srcs"      : ["src/py/_gcore.cpp", "src/py/log.cpp", "src/py/pathenumerator.cpp"],
       "deps"      : ["gcore"],
-      "custom"    : [RequireGcore, python.SoftRequire, SilentCythonWarnings],
+      "custom"    : [RequireGcore, python.SoftRequire, python.RequireCython, SilentCythonWarnings],
       "install"   : {python.ModulePrefix(): ["src/py/gcore.py", "src/py/tests"]}
    },
    {  "name" : "gcore_utils",
@@ -96,32 +93,15 @@ prjs = [
 
 env = excons.MakeBaseEnv()
 
-# Setup cython
-cython_include_re = re.compile(r"^include\s+([\"'])(\S+)\1", re.MULTILINE)
-
-def scan_cython_includes(node, env, path):
-   if hasattr(node, "get_text_contents"):
-      lst = [m[1] for m in cython_include_re.findall(node.get_text_contents())]
-      return lst
-   elif hasattr(node, "get_contents"):
-      lst = [m[1] for m in cython_include_re.findall(str(node.get_contents()))]
-      return lst
-   else:
-      return []
-
-cython_scanner = Scanner(function=scan_cython_includes, skeys=".pyx")
-
-env.Append(SCANNERS=cython_scanner)
+# Generate cpp files from cython
+if "gcorepy" in BUILD_TARGETS:
+   if excons.GetArgument("cython-gen", 1, int):
+      python.CythonGenerate(env, "src/py/_gcore.pyx", incdirs=["include"], cpp=True)
+   elif not os.path.isfile("src/py/_gcore.cpp") or not os.path.isfile("src/py/_gcore.h"):
+      print("Cannot build gcore python module: cython sources not generated")
+      sys.exit(1)
 
 # Declare targets
 excons.DeclareTargets(env, prjs)
-
-# Generate cpp files from cython
-if cython_gen:
-   cygen = env.Command(["src/py/_gcore.cpp", "src/py/_gcore.h"], "src/py/_gcore.pyx", "%s -I include --cplus --embed-positions -o $TARGET $SOURCE" % cython)
-elif not os.path.isfile("src/py/_gcore.cpp") or not os.path.isfile("src/py/_gcore.h"):
-   if "gcorepy" in COMMAND_LINE_TARGETS:
-      print("Cannot build gcore python module: cython sources not generated")
-      sys.exit(1)
 
 Default(["gcore"])

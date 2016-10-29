@@ -23,6 +23,7 @@ USA.
 
 #include <gcore/status.h>
 #include <gcore/platform.h>
+#include <gcore/encoding.h>
 
 namespace gcore
 {
@@ -90,13 +91,15 @@ void Status::set(bool success, int errcode)
    {
       mMsg += " (";
 #ifdef _WIN32
-      LPSTR buffer = NULL; 
-      FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,
+      LPWSTR buffer = NULL;
+      FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,
                      NULL, mErrCode, MAKELANGID(LANG_ENGLISH,SUBLANG_DEFAULT),
-                     (LPSTR)&buffer, 0, NULL);
+                     (LPWSTR)&buffer, 0, NULL);
       if (buffer)
       {
-         mMsg += String(buffer);
+         String tmp;
+         ToMultiByteString(buffer, UTF8Codepage, tmp);
+         mMsg += tmp;
          LocalFree(buffer);
       }
 #else

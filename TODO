@@ -14,6 +14,8 @@ Unicode
    - Support XML encoding
    
    Notes:
+      - All C narrow string (char*) are assumed to be utf-8 encoded but for the specific encoding/decoding
+        functions found in 'encoding.h'
       - Dirmap mapping file assumed utf-8 encoding
-      - XML parser also supposes utf-8 encoding (regardless of 'encoding' attribute in 'xml' tag)
-      - JSON parser assumes utf-8 encoding too
+      - XML parser assumes utf-8 encoding regardless of 'encoding' attribute in 'xml' tag (to be fixed eventually)
+      - JSON parser assumes utf-8 encoding

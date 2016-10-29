@@ -24,6 +24,7 @@ USA.
 #include <gcore/process.h>
 #include <gcore/platform.h>
 #include <gcore/env.h>
+#include <gcore/encoding.h>
 
 //------------------------------------------------------------------------------
 
@@ -615,7 +616,7 @@ Status Process::run()
    mPID = 0;
    
    PROCESS_INFORMATION pinfo;
-   STARTUPINFOA sinfo;
+   STARTUPINFOW sinfo;
    
    ZeroMemory(&sinfo, sizeof(sinfo));
    
@@ -702,7 +703,9 @@ Status Process::run()
    }
    
    // Don't try to inheritHandles when using .bat files
-   if (CreateProcessA(NULL, (char*)mCmdLine.c_str(), NULL, NULL,
+   std::wstring wcmd;
+   ToWideString(UTF8Codepage, mCmdLine.c_str(), wcmd);
+   if (CreateProcessW(NULL, (wchar_t*)wcmd.c_str(), NULL, NULL,
                       (isBat ? FALSE : TRUE), 0, 0, NULL, &sinfo, &pinfo))
    {
       // In parent only

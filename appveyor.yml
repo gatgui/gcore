@@ -17,6 +17,8 @@ install:
     easy_install scons
 
     pip install Cython
+before_build:
+- cmd: scons submodule update --init --recursive
 build_script:
 - cmd: >-
     scons with-python=2.7 no-cache=1 mscver=12.0 static=1 gcore gcorepy gcore_utils

@@ -221,7 +221,7 @@ Status Pipe::create(const String &name)
    }
 #else
    // Note: May want to expose in/out buffer size
-   std::string wpn;
+   std::wstring wpn;
    String pipename = "\\\\.\\pipe\\" + name;
    ToWideString(UTF8Codepage, pipename.c_str(), wpn);
    HANDLE hdl = CreateNamedPipeW(wpn.c_str(), PIPE_ACCESS_DUPLEX,

@@ -23,7 +23,7 @@ before_install:
     fi
   - pip install --user cython
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
-      export PATH=~/.local/bin:$PATH
+      export PATH=~/.local/bin:$PATH;
     fi
   - which python
   - python --version

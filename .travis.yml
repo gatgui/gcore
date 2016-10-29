@@ -14,7 +14,7 @@ matrix:
 git:
   submodules: false
 
-before_install:
+install:
   - git submodule update --init --recursive
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
       brew update;
@@ -23,12 +23,10 @@ before_install:
     fi
   - pip install --user cython
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
-      export PATH=~/.local/bin:$PATH;
+      export PATH=$HOME/.local/bin:$PATH;
     fi
   - which python
-  - python --version
   - which cython
-  - cython --version
 
 script:
   - scons no-cache=1 static=1 gcore gcorepy gcore_utils gcore_tests

@@ -12,3 +12,7 @@ Unicode
    x Review ArgParser (command line arguments strings are utf-8 on osx/linux so far I could see, current codepage on windows...)
    - Support in Rex
    - Support XML encoding
+   
+   Notes:
+      - Dirmap mapping file assumed utf-8 encoding
+      - For now, XML also supposes utf-8 encoding (regardless of 'encoding' attribute in 'xml' tag)

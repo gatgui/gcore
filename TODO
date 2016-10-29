@@ -15,4 +15,5 @@ Unicode
    
    Notes:
       - Dirmap mapping file assumed utf-8 encoding
-      - For now, XML also supposes utf-8 encoding (regardless of 'encoding' attribute in 'xml' tag)
+      - XML parser also supposes utf-8 encoding (regardless of 'encoding' attribute in 'xml' tag)
+      - JSON parser assumes utf-8 encoding too

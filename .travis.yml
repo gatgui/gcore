@@ -1,5 +1,8 @@
 language: cpp
 
+python:
+  - "2.7"
+
 matrix:
   include:
     - os: linux
@@ -17,7 +20,7 @@ before_install:
       brew update;
       brew install scons;
     fi
-  - pip install Cython
+  - pip install --user cython
 
 script:
   - scons no-cache=1 static=1 gcore gcorepy gcore_utils gcore_tests

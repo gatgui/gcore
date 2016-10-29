@@ -71,8 +71,6 @@ namespace gcore
    public:
    
       Process();
-      Process(const char *cmdline, Options *options=0, Status *status=0);
-      Process(int argc, const char **argv, Options *options=0, Status *status=0);
       Process(const String &cmdline, Options *options=0, Status *status=0);
       Process(const StringList &args, Options *options=0, Status *status=0);
       ~Process();
@@ -106,9 +104,6 @@ namespace gcore
 
       // Running process 
       
-      Status run(const char *cmdline);
-      Status run(int argc, const char **args);
-      Status run(int argc, ...);
       Status run(const String &cmdline);
       Status run(const StringList &args);
 

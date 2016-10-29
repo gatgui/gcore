@@ -172,48 +172,6 @@ Process::Process()
    SetDefaultOptions(mOpts);
 }
 
-Process::Process(const char *cmdline, Process::Options *opts, Status *status)
-   : mPID(INVALID_PID)
-   , mStdArgs(0)
-   , mCmdLine("")
-   , mReturnCode(-1)
-{
-   if (opts)
-   {
-      mOpts = *opts;
-   }
-   else
-   {
-      SetDefaultOptions(mOpts);
-   }
-   Status stat = run(cmdline);
-   if (status)
-   {
-      *status = stat;
-   }
-}
-
-Process::Process(int argc, const char **argv, Process::Options *opts, Status *status)
-   : mPID(INVALID_PID)
-   , mStdArgs(0)
-   , mCmdLine("")
-   , mReturnCode(-1)
-{
-   if (opts)
-   {
-      mOpts = *opts;
-   }
-   else
-   {
-      SetDefaultOptions(mOpts);
-   }
-   Status stat = run(argc, argv);
-   if (status)
-   {
-      *status = stat;
-   }
-}
-
 Process::Process(const String &cmdline, Process::Options *opts, Status *status)
    : mPID(INVALID_PID)
    , mStdArgs(0)
@@ -744,15 +702,17 @@ Status Process::run()
 
 }
 
-Status Process::run(const char *cmdline)
+Status Process::run(const String &cmdline)
 {
-   if (!cmdline)
+   if (cmdline.length() == 0)
    {
       return Status(false, "gcore::Process::run: Invalid command.");
    }
+   
    String tmp = cmdline;
    bool inSingleQuote = false;
    bool inDoubleQuote = false;
+   
    for (size_t i=0; i<tmp.length(); ++i)
    {
       if (tmp[i] == '\"')
@@ -799,49 +759,6 @@ Status Process::run(const char *cmdline)
    }
    
    return run();
-}
-
-Status Process::run(int argc, const char **argv)
-{
-   mArgs.clear();
-   for (int i=0; i<argc; ++i)
-   {
-      if (!argv[i])
-      {
-         return Status(false, "gcore::Process::run: Invalid argument at %d", i);
-      }
-      mArgs.push(argv[i]);
-   }
-   return run();
-}
-
-Status Process::run(int argc, ...)
-{
-   va_list va;
-   va_start(va, argc);
-   Status rv = run(argc, va);
-   va_end(va);
-   return rv;
-}
-
-Status Process::run(int argc, va_list va)
-{
-   mArgs.clear();
-   for (int i=0; i<argc; ++i)
-   {
-      const char *carg = va_arg(va, const char*);
-      if (!carg)
-      {
-         return Status(false, "gcore::Process::run: Invalid argument at %d.", i);
-      }
-      mArgs.push(carg);
-   }
-   return run();
-}
-
-Status Process::run(const String &cmdline)
-{
-   return run(cmdline.c_str());
 }
 
 Status Process::run(const StringList &args)

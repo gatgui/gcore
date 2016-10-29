@@ -14,9 +14,7 @@ install:
 - cmd: >-
     set PATH=C:\Python27;C:\Python27\Scripts;%PATH%
 
-    pip install --disable-pip-version-check --user --upgrade pip
-
-    pip install SCons
+    easy_install scons
 
     pip install Cython
 build_script:

@@ -70,7 +70,7 @@ String Env::Hostname()
    std::vector<wchar_t> buffer(1024, 0);
    DWORD sz = 1024;
    // or should that be ComputerNameDnsHostname?
-   if (GetComputerNameExAW(ComputerNamePhysicalDnsHostname, &buffer[0], &sz))
+   if (GetComputerNameExW(ComputerNamePhysicalDnsHostname, &buffer[0], &sz))
    {
       ToMultiByteString(&buffer[0], UTF8Codepage, rv);
    }
@@ -79,7 +79,7 @@ String Env::Hostname()
       if (GetLastError() == ERROR_MORE_DATA)
       {
          buffer.resize(sz, 0);
-         if (GetComputerNameExAW(ComputerNamePhysicalDnsHostname, &buffer[0], &sz))
+         if (GetComputerNameExW(ComputerNamePhysicalDnsHostname, &buffer[0], &sz))
          {
             ToMultiByteString(&buffer[0], UTF8Codepage, rv);
          }

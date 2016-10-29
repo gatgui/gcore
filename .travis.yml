@@ -23,7 +23,7 @@ install:
     fi
   - pip install --user cython
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
-      export PATH=$HOME/.local/bin:$PATH;
+      export PATH=~/Library/Python/2.7/bin:$PATH;
     fi
   - which python
   - which cython

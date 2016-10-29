@@ -23,6 +23,7 @@ USA.
 
 #include <gcore/pipe.h>
 #include <gcore/platform.h>
+#include <gcore/encoding.h>
 
 namespace gcore
 {
@@ -161,8 +162,10 @@ Status Pipe::open(const String &name)
       return Status(true);
    }
 #else
+   std::wstring wpn;
    String pipename = "\\\\.\\pipe\\" + name;
-   HANDLE hdl = CreateFileA(pipename.c_str(), GENERIC_READ | GENERIC_WRITE,
+   ToWideString(UTF8Codepage, pipename.c_str(), wpn);
+   HANDLE hdl = CreateFileW(wpn.c_str(), GENERIC_READ | GENERIC_WRITE,
                             0, NULL, OPEN_EXISTING, 0, NULL);
    if (hdl != INVALID_HANDLE_VALUE)
    {
@@ -218,8 +221,10 @@ Status Pipe::create(const String &name)
    }
 #else
    // Note: May want to expose in/out buffer size
+   std::string wpn;
    String pipename = "\\\\.\\pipe\\" + name;
-   HANDLE hdl = CreateNamedPipeA(pipename.c_str(), PIPE_ACCESS_DUPLEX,
+   ToWideString(UTF8Codepage, pipename.c_str(), wpn);
+   HANDLE hdl = CreateNamedPipeW(wpn.c_str(), PIPE_ACCESS_DUPLEX,
                                  PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
                                  1, 4096, 4096, 0, NULL);
    if (hdl != INVALID_HANDLE_VALUE)

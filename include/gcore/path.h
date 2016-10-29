@@ -54,6 +54,7 @@ namespace gcore
       
       Path();
       Path(const char *s);
+      Path(const wchar_t *ws);
       Path(const String &s);
       Path(const Path &rhs);
       ~Path();
@@ -61,6 +62,7 @@ namespace gcore
       Path& operator=(const Path &rhs);
       Path& operator=(const String &s);
       Path& operator=(const char *s);
+      Path& operator=(const wchar_t *ws);
       
       Path& operator+=(const Path &rhs);
       
@@ -115,6 +117,9 @@ namespace gcore
       
       StringList mPaths;
       String mFullName;
+#ifdef _WIN32
+      mutable std::wstring mFullNameW;
+#endif
    };
    
    inline bool Path::operator!=(const Path &rhs) const

@@ -24,6 +24,7 @@ USA.
 #include <gcore/path.h>
 #include <gcore/platform.h>
 #include <gcore/dirmap.h>
+#include <gcore/encoding.h>
 
 namespace gcore
 {
@@ -62,6 +63,11 @@ Path::Path(const char *s)
    operator=(s);
 }
 
+Path::Path(const wchar_t *ws)
+{
+   operator=(ws);
+}
+
 Path::Path(const String &s)
 {
    operator=(s);
@@ -70,6 +76,9 @@ Path::Path(const String &s)
 Path::Path(const Path &rhs)
    : mPaths(rhs.mPaths)
    , mFullName(rhs.mFullName)
+#ifdef _WIN32
+   , mFullNameW(rhs.mFullNameW)
+#endif
 {
 }
 
@@ -82,6 +91,9 @@ Path& Path::operator=(const Path &rhs)
    {
       mPaths = rhs.mPaths;
       mFullName = rhs.mFullName;
+#ifdef _WIN32
+      mFullNameW = rhs.mFullNameW;
+#endif
    }
    return *this;
 }
@@ -118,6 +130,42 @@ Path& Path::operator=(const char *s)
       }
    }
    mFullName = fullname('/');
+#ifdef _WIN32
+   mFullNameW.clear();
+#endif
+   return *this;
+}
+
+Path& Path::operator=(const wchar_t *ws)
+{
+   String tmp(ws);
+   //tmp = Dirmap::Map(tmp);
+   tmp.replace('\\', '/');
+   tmp.split('/', mPaths);
+   size_t i = 0;
+   while (i < mPaths.size())
+   {
+      mPaths[i].strip();
+      if (mPaths[i].length() == 0)
+      {
+//#ifndef _WIN32
+         if (i == 0)
+         {
+            ++i;
+            continue;
+         }
+//#endif
+         mPaths.erase(mPaths.begin()+i);
+      }
+      else
+      {
+         ++i;
+      }
+   }
+   mFullName = fullname('/');
+#ifdef _WIN32
+   mFullNameW.clear();
+#endif
    return *this;
 }
 
@@ -127,6 +175,9 @@ Path& Path::operator+=(const Path &rhs)
    {
       mPaths.insert(mPaths.end(), rhs.mPaths.begin(), rhs.mPaths.end());
       mFullName = fullname('/');
+#ifdef _WIN32
+      mFullNameW.clear();
+#endif
    }
    return *this;
 }
@@ -203,6 +254,9 @@ String Path::pop()
       rv = mPaths.back();
       mPaths.pop_back();
       mFullName = fullname('/');
+#ifdef _WIN32
+      mFullNameW.clear();
+#endif
    }
    return rv;
 }
@@ -211,6 +265,9 @@ Path& Path::push(const String &s)
 {
    mPaths.push_back(s);
    mFullName = fullname('/');
+#ifdef _WIN32
+   mFullNameW.clear();
+#endif
    return *this;
 }
 
@@ -235,6 +292,9 @@ Path& Path::makeAbsolute()
       Path cwd = CurrentDir();
       mPaths.insert(mPaths.begin(), cwd.mPaths.begin(), cwd.mPaths.end());
       mFullName = fullname('/');
+#ifdef _WIN32
+      mFullNameW.clear();
+#endif
    }
    return *this;
 }
@@ -281,6 +341,9 @@ Path& Path::normalize()
       }
    }
    mFullName = fullname('/');
+#ifdef _WIN32
+   mFullNameW.clear();
+#endif
    return *this;
 }
 
@@ -326,7 +389,11 @@ bool Path::isDir() const
 {
 #ifdef _WIN32
    DWORD fa;
-   fa = GetFileAttributesA(mFullName.c_str());
+   if (mFullNameW.empty())
+   {
+      ToWideString(UTF8Codepage, mFullName.c_str(), mFullNameW);
+   }
+   fa = GetFileAttributesW(mFullNameW.c_str());
    if (fa != 0xFFFFFFFF)
    {
       return ((fa & FILE_ATTRIBUTE_DIRECTORY) != 0);
@@ -345,7 +412,11 @@ bool Path::isFile() const
 {
 #ifdef _WIN32
    DWORD fa;
-   fa = GetFileAttributesA(mFullName.c_str());
+   if (mFullNameW.empty())
+   {
+      ToWideString(UTF8Codepage, mFullName.c_str(), mFullNameW);
+   }
+   fa = GetFileAttributesW(mFullNameW.c_str());
    if (fa != 0xFFFFFFFF)
    {
       return ((fa & FILE_ATTRIBUTE_DIRECTORY) == 0);
@@ -364,7 +435,11 @@ bool Path::exists() const
 {
 #ifdef _WIN32
    DWORD fa;
-   fa = GetFileAttributesA(mFullName.c_str());
+   if (mFullNameW.empty())
+   {
+      ToWideString(UTF8Codepage, mFullName.c_str(), mFullNameW);
+   }
+   fa = GetFileAttributesW(mFullNameW.c_str());
    if (fa != 0xFFFFFFFF)
    {
       return true;
@@ -436,7 +511,11 @@ bool Path::createDir(bool recursive) const
       }
    }
 #ifdef _WIN32
-   return (CreateDirectoryA(mFullName.c_str(), NULL) == TRUE);
+   if (mFullNameW.empty())
+   {
+      ToWideString(UTF8Codepage, mFullName.c_str(), mFullNameW);
+   }
+   return (CreateDirectoryW(mFullNameW.c_str(), NULL) == TRUE);
 #else
    return (mkdir(mFullName.c_str(), S_IRWXU) == 0);
 #endif
@@ -459,7 +538,7 @@ void Path::forEach(ForEachFunc callback, bool recurse, unsigned short flags) con
    }
    Path path(*this);
 #ifdef _WIN32
-   WIN32_FIND_DATAA fd;
+   WIN32_FIND_DATAW fd;
    HANDLE hFile;
    String fffs; // find first file string 
    if (mFullName.length() == 0)
@@ -485,12 +564,15 @@ void Path::forEach(ForEachFunc callback, bool recurse, unsigned short flags) con
          fffs = mFullName;
       }
    }
-   hFile = FindFirstFileA(fffs.c_str(), &fd);
+   std::wstring wfffs;
+   ToWideString(UTF8Codepage, fffs.c_str(), wfffs);
+   hFile = FindFirstFileW(wfffs.c_str(), &fd);
    if (hFile != INVALID_HANDLE_VALUE)
    {
+      String fname;
       do
       {
-         String fname = fd.cFileName;
+         ToMultiByteString(fd.cFileName, UTF8Codepage, fname);
          if (fname == "." ||  fname == "..")
          {
             continue;
@@ -519,7 +601,7 @@ void Path::forEach(ForEachFunc callback, bool recurse, unsigned short flags) con
             }
          }
          path.pop();
-      } while (FindNextFileA(hFile, &fd));
+      } while (FindNextFileW(hFile, &fd));
       FindClose(hFile);
    }
 #else
@@ -586,9 +668,9 @@ size_t Path::listDir(PathList &l, bool recurse, unsigned short flags) const
 Path Path::CurrentDir()
 {
 #ifdef _WIN32
-   DWORD cwdLen = GetCurrentDirectoryA(0, NULL);
-   char *cwd = (char*)malloc(cwdLen * sizeof(char));
-   GetCurrentDirectoryA(cwdLen, cwd);
+   DWORD cwdLen = GetCurrentDirectoryW(0, NULL);
+   wchar_t *cwd = (wchar_t*)malloc(cwdLen * sizeof(wchar_t));
+   GetCurrentDirectoryW(cwdLen, cwd);
 #else
    size_t bufLen = 1024;
    char *buf = (char*)malloc(bufLen * sizeof(char));

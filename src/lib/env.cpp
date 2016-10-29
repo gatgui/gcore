@@ -24,6 +24,7 @@ USA.
 #include <gcore/env.h>
 #include <gcore/platform.h>
 #include <gcore/log.h>
+#include <gcore/encoding.h>
 
 namespace gcore
 {
@@ -64,17 +65,41 @@ String Env::Username()
 
 String Env::Hostname()
 {
-   char buffer[1024];
+   String rv;
 #ifdef _WIN32
+   std::vector<wchar_t> buffer(1024, 0);
    DWORD sz = 1024;
-   //ComputerNameDnsHostname?
-   GetComputerNameExA(ComputerNamePhysicalDnsHostname, buffer, &sz);
-   return buffer;
+   // or should that be ComputerNameDnsHostname?
+   if (GetComputerNameExAW(ComputerNamePhysicalDnsHostname, &buffer[0], &sz))
+   {
+      ToMultiByteString(&buffer[0], UTF8Codepage, rv);
+   }
+   else
+   {
+      if (GetLastError() == ERROR_MORE_DATA)
+      {
+         buffer.resize(sz, 0);
+         if (GetComputerNameExAW(ComputerNamePhysicalDnsHostname, &buffer[0], &sz))
+         {
+            ToMultiByteString(&buffer[0], UTF8Codepage, rv);
+         }
+      }
+   }
+   
 #else
-   gethostname(buffer, 1024);
-   buffer[1023] = '\0';
-   return buffer;
+   std::vector<char> buffer(1024, '\0');
+   int ret = gethostname(&buffer[0], buffer.size());
+   while (ret != 0 && errno == ENAMETOOLONG)
+   {
+      buffer.resize(2 * buffer.size(), '\0');
+      ret = gethostname(&buffer[0], buffer.size());
+   }
+   if (ret == 0)
+   {
+      rv = &buffer[0];
+   }
 #endif
+   return rv;
 }
 
 String Env::Get(const String &k)
@@ -103,21 +128,24 @@ void Env::ForEachInPath(const String &e, Env::ForEachInPathFunc callback)
    {
       return;
    }
-   char *envVal = getenv(e.c_str());
-   if (envVal)
+   
+   String v = Env().get(e);
+   if (v.length() == 0)
    {
-      String v = envVal;
-      StringList lst;
-      v.split(PATH_SEP, lst);
-      for (size_t i=0; i<lst.size(); ++i)
+      return;
+   }
+   
+   StringList lst;
+   v.split(PATH_SEP, lst);
+   
+   for (size_t i=0; i<lst.size(); ++i)
+   {
+      if (lst[i].length() > 0)
       {
-         if (lst[i].length() > 0)
+         gcore::Path path(lst[i]);
+         if (!callback(path))
          {
-            gcore::Path path(lst[i]);
-            if (!callback(path))
-            {
-               return;
-            }
+            return;
          }
       }
    }
@@ -209,11 +237,14 @@ String Env::get(const String &k) const
       rv = v;
    }
 #else
-   DWORD sz = GetEnvironmentVariableA(k.c_str(), NULL, 0);
+   std::wstring wk, wv;
+   ToWideString(UTF8Codepage, k.c_str(), wk);
+   DWORD sz = GetEnvironmentVariableW(wk.c_str(), NULL, 0);
    if (sz > 0)
    {
-      rv.resize(sz-1);
-      GetEnvironmentVariableA(k.c_str(), (char*) rv.data(), sz);
+      wv.resize(sz - 1);
+      GetEnvironmentVariableW(wk.c_str(), (wchar_t*) wv.data(), sz);
+      ToMultiByteString(wv.c_str(), UTF8Codepage, rv);
    }
 #endif
    return rv;
@@ -224,10 +255,12 @@ void Env::set(const String &k, const String &v, bool overwrite)
 #ifndef _WIN32  
    setenv(k.c_str(), v.c_str(), (overwrite ? 1 : 0));
 #else
-   String dummy;
-   if (overwrite || GetEnvironmentVariableA(k.c_str(), NULL, 0) == 0)
+   std::wstring wk, wv;
+   ToWideString(UTF8Codepage, k.c_str(), wk);
+   ToWideString(UTF8Codepage, v.c_str(), wv);
+   if (overwrite || GetEnvironmentVariableW(wk.c_str(), NULL, 0) == 0)
    {
-      SetEnvironmentVariableA(k.c_str(), v.c_str());
+      SetEnvironmentVariableW(wk.c_str(), wv.c_str());
    }
 #endif
 }
@@ -235,9 +268,11 @@ void Env::set(const String &k, const String &v, bool overwrite)
 size_t Env::asDict(StringDict &d) const
 {
    d.clear();
+   
 #ifndef _WIN32
    int idx = 0;
    char *curvar = environ[idx];
+   
    while (curvar != 0)
    {
       char *es = strchr(curvar, '=');
@@ -245,6 +280,7 @@ size_t Env::asDict(StringDict &d) const
       {
          size_t klen = es - curvar;
          size_t vlen = strlen(curvar) - klen - 1;
+         
          if (klen > 0)
          {
             String key, val;
@@ -264,41 +300,38 @@ size_t Env::asDict(StringDict &d) const
       curvar = environ[idx];
    }
 #else
-#ifdef _UNICODE
-   // GetEnvironmentStrings is defined to GetEnvironmentStringsW
-   //   shadowing the origin GetEnvironmentStrings function
-   //   there's no GetEnvironmentStringsA
-   #ifdef GetEnvironmentStrings
-   #undef GetEnvironmentStrings
-   #endif
-#endif
-   char *curenv = GetEnvironmentStrings();
-   char *curvar = curenv;
-   while (*curvar != '\0')
+   wchar_t *allenv = GetEnvironmentStringsW();
+   wchar_t *curenv = allenv;
+   String keyval, key, val;
+   
+   while (*curenv)
    {
-      size_t len = strlen(curvar);
-      char *es = strchr(curvar, '=');
-      if (es != 0)
+      ToMultiByteString(curenv, UTF8Codepage, keyval);
+      size_t pos = keyval.find('=');
+      
+      if (pos != std::string::npos)
       {
-         if (es == curvar)
+         if (pos == 0)
          { 
             if (mVerbose)
             {
-               Log::PrintInfo("[gcore] Env::asDict: Ignore env string \"%s\"", curvar);
+               Log::PrintInfo("[gcore] Env::asDict: Ignore env string \"%s\"", keyval.c_str());
             }
          }
          else
          {
-            *es = '\0';
-            if (strlen(curvar) > 0)
+            key = keyval.substr(0, pos);
+            val = keyval.substr(pos+1);
+            
+            if (key.length() > 0)
             {
-               d[curvar] = es+1;
+               d[key] = val;
             }
          }
       }
-      curvar += len + 1;
+      curenv += wcslen(curenv) + 1;
    }
-   FreeEnvironmentStringsA(curenv);
+   FreeEnvironmentStringsW(allenv);
 #endif
    return d.size();
 }

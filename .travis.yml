@@ -19,8 +19,8 @@ before_install:
     fi
 
 script:
-  - scons static=1 no-cache=1 gcore
-  - scons static=0 no-cache=1 gcore
+  - scons no-cache=1 static=1 gcore gcorepy gcore_utils gcore_tests
+  - scons no-cache=1 static=0 gcore gcorepy gcore_utils gcore_tests
 
 env:
   global:

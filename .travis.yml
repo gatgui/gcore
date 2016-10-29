@@ -18,7 +18,9 @@ before_install:
   - git submodule update --init --recursive
   - if [ `uname -s` = "Darwin" ]; then
       brew update;
+      brew install python;
       brew install scons;
+      pip install --upgrade pip setuptools;
     fi
   - pip install --user cython
 

@@ -4,12 +4,9 @@ branches:
   - master
   - develop
   - FB-unicode
-skip_tags: true
 image:
 - Visual Studio 2013
 - Visual Studio 2015
-shallow_clone: true
-clone_folder: c:\projects\sources\gcore
 install:
 - cmd: >-
     set PATH=C:\Python27;C:\Python27\Scripts;%PATH%

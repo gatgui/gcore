@@ -795,7 +795,7 @@ size_t TCPConnection::write(const void *bytes, size_t len, double timeout, Statu
          // No workaround SIGPIPE signal
 # endif // SIGPIPE
 #endif // MSG_NOSIGNAL
-         n = send(mFD, OffsetBuffer(bytes, offset), remaining, flags);
+         n = send(mFD, (const char*)OffsetBuffer(bytes, offset), remaining, flags);
       }
 
       if (n == -1)

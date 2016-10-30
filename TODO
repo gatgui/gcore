@@ -5,15 +5,31 @@ Regex
    x Conditional expression: (?(id/name)yes-pattern|no-pattern)
      with 'no-pattern' optional
 
+Others
+   - Add memory mapped file class
+
 Unicode
    x On windows, properly handle _UNICODE define
    x Review all windows system call as they expect MBCS in current codepage unless _UNICODE
      is defined. In that case, UTF-16 is expected (or UCS2 at least)
+     => use UTF-16 version of all those API regardless of _UNICODE define
    x Review ArgParser (command line arguments strings are utf-8 on osx/linux so far I could see, current codepage on windows...)
-   - Support in Rex
-   - Support XML encoding
+   - Regular expression support
+      * add support for \u[0-9a-fA-F]{4}, \U[0-9a-fA-F]{8} and \u\{[0-9a-fA-F]+\} notation
+      * support codepoint matching instruction (merge with character)
+      * assumes utf-8 encoding for expressions
+      * add wchar_t variants where sensible
+   - JSON support
+      * add encoding parameter to read/write/parse methods
+      * if not specified assumes utf-8
+      * add support for \u[0-9a-fA-F]{4} notation
+      * add option to force ascii in write method (using above notation for non-ascii char)
+      * add wchar_t variants for some methods 
+   - XML support
+      * at read time, if encoding is not specified assumes utf-8
+      * also check for BOM (UTF-x)
    
-   Notes:
+   Notes on current implementation:
       - All C narrow string (char*) are assumed to be utf-8 encoded but for the specific encoding/decoding
         functions found in 'encoding.h'
       - Dirmap mapping file assumed utf-8 encoding

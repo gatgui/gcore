@@ -242,7 +242,7 @@ bool Process::canReadOut() const
    return mReadOutPipe.canRead();
 }
 
-int Process::readOut(char *buffer, int size, Status *status) const
+int Process::readOut(void *buffer, int size, Status *status) const
 {
    return mReadOutPipe.read(buffer, size, status);
 }
@@ -252,7 +252,7 @@ bool Process::canReadErr() const
    return mReadErrPipe.canRead();
 }
 
-int Process::readErr(char *buffer, int size, Status *status) const
+int Process::readErr(void *buffer, int size, Status *status) const
 {
    return mReadErrPipe.read(buffer, size, status);
 }
@@ -262,7 +262,7 @@ bool Process::canWriteIn() const
    return mWritePipe.canWrite();
 }
 
-int Process::write(const char *buffer, int size, Status *status) const
+int Process::write(const void *buffer, int size, Status *status) const
 {
    return mWritePipe.write(buffer, size, status);
 }

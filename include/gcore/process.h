@@ -124,11 +124,11 @@ namespace gcore
 
       // Returns -1 on error, read/written bytes otherwise
       bool canReadOut() const;
-      int readOut(char *buffer, int size, Status *status=0) const;
+      int readOut(void *buffer, int size, Status *status=0) const;
       bool canReadErr() const;
-      int readErr(char *buffer, int size, Status *status=0) const;
+      int readErr(void *buffer, int size, Status *status=0) const;
       bool canWriteIn() const;
-      int write(const char *buffer, int size, Status *status=0) const;
+      int write(const void *buffer, int size, Status *status=0) const;
       int write(const String &str, Status *status=0) const;
 
       PipeID readOutID() const;

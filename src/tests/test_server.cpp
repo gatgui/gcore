@@ -88,7 +88,7 @@ int main(int, char**)
       
       while (thr.isRunning())
       {
-         char *buffer = 0;
+         void *buffer = 0;
          size_t len = 0;
          
          gcore::TCPConnection *conn = socket.accept(&stat);
@@ -99,11 +99,11 @@ int main(int, char**)
          }
          
          //if (conn->read(buffer, len, -1, &stat)) {
-         if (conn->readUntil(" ", buffer, len, -1, &stat))
+         if (conn->readUntil(" ", 1, buffer, len, -1, &stat))
          {
             if (buffer)
             {
-               std::cout << "\"" << buffer << "\"" << std::endl;
+               std::cout << "\"" << (const char*)buffer << "\"" << std::endl;
             }
             else
             {
@@ -118,7 +118,7 @@ int main(int, char**)
          {
             if (buffer)
             {
-               std::cout << "[partial] \"" << buffer << "\"" << std::endl;
+               std::cout << "[partial] \"" << (const char*)buffer << "\"" << std::endl;
             }
          }
          

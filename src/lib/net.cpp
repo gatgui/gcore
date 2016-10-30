@@ -67,6 +67,23 @@ public:
 };
 #endif
 
+inline void* OffsetBuffer(void *buffer, size_t nbytes)
+{
+   unsigned char *bytes = (unsigned char*)buffer;
+   return (void*)(bytes + nbytes);
+}
+
+inline const void* OffsetBuffer(const void *buffer, size_t nbytes)
+{
+   const unsigned char *bytes = (const unsigned char*)buffer;
+   return (const void*)(bytes + nbytes);
+}
+
+inline void SetBufferByte(void *buffer, size_t pos, unsigned char val)
+{
+   unsigned char *bytes = (unsigned char*)buffer;
+   bytes[pos] = val;
+}
 
 namespace gcore
 {
@@ -221,19 +238,19 @@ Connection::~Connection()
    }
 }
 
-char* Connection::alloc(size_t sz, char *bytes)
+void* Connection::alloc(size_t sz, void *bytes)
 {
    if (bytes)
    {
-      return (char*) realloc((void*)bytes, sz);
+      return realloc(bytes, sz);
    }
    else
    {
-      return (char*) malloc(sz);
+      return malloc(sz);
    }
 }
 
-void Connection::free(char *&bytes)
+void Connection::free(void *&bytes)
 {
    if (bytes)
    {
@@ -266,7 +283,7 @@ void Connection::setBufferSize(unsigned long n)
          delete[] mBuffer;
          mBuffer = 0;
       }
-      mBuffer = new char[n];
+      mBuffer = new unsigned char[n];
       memset(mBuffer, 0, n*sizeof(char));
       mBufferOffset = 0;
    }
@@ -322,12 +339,12 @@ bool Connection::setLinger(bool onoff)
 
 bool Connection::read(String &s, double timeout, Status *status)
 {
-   char *bytes = 0;
+   void *bytes = 0;
    size_t len = 0;
    bool rv = this->read(bytes, len, timeout, status);
    if (bytes != 0)
    {
-      s = bytes;
+      s = (const char*)bytes;
       this->free(bytes);
    }
    else
@@ -339,12 +356,12 @@ bool Connection::read(String &s, double timeout, Status *status)
 
 bool Connection::readUntil(const char *until, String &s, double timeout, Status *status)
 {
-   char *bytes = 0;
+   void *bytes = 0;
    size_t len = 0;
-   bool rv = this->readUntil(until, bytes, len, timeout, status);
+   bool rv = this->readUntil(until, strlen(until), bytes, len, timeout, status);
    if (bytes != 0)
    {
-      s = bytes;
+      s = (const char*)bytes;
       this->free(bytes);
    }
    else
@@ -432,58 +449,83 @@ bool TCPConnection::shutdown()
    return false;
 }
 
-bool TCPConnection::read(char *&bytes, size_t &len, double timeout, Status *status)
+bool TCPConnection::read(void *&bytes, size_t &len, double timeout, Status *status)
 {
-   return readUntil(NULL, bytes, len, timeout, status);
+   return readUntil(NULL, 0, bytes, len, timeout, status);
 }
 
-bool TCPConnection::checkUntil(const char *until, char *in, size_t inlen, char *&out, size_t &outlen)
+bool TCPConnection::checkUntil(const void *_until, size_t unlen, void *_in, size_t inlen, void *&_out, size_t &outlen)
 {
-   if (until != NULL && in && inlen > 0)
+   if (_until != NULL && unlen > 0 && _in != NULL && inlen > 0)
    {
-      // if out is set, in must be a substring
+      const unsigned char *until = (const unsigned char*)_until;
+      unsigned char *in = (unsigned char*)_in;
+      unsigned char *out = (unsigned char*)_out;
+      
       if (out && (in < out || in + inlen > out + outlen))
       {
+         // 'out' is set but doesn't include 'in'
+         return false;
+      }
+      else if (inlen < unlen)
+      {
+         // 'in' is too short to match 'until'
          return false;
       }
       
-      size_t ulen = strlen(until);
-      char *found = strstr(in, until);
+      //size_t ulen = strlen(until);
+      //char *found = strstr(ins, until);
+      unsigned char *found = NULL;
+      size_t last = inlen - unlen;
       
-      if (found != NULL)
+      for (size_t i=0; i<=last; ++i)
       {
-         size_t sublen = found + ulen - in;
-         size_t rmnlen = inlen - sublen;
+         found = in + i;
          
-         if (!out)
+         for (size_t j=0; j<unlen; ++j)
          {
-            out = this->alloc(sublen+1);
-            outlen = sublen;
-            memcpy(out, in, sublen);
-            out[sublen] = '\0';
-         }
-         else
-         {
-            found[ulen] = '\0';
-            outlen -= rmnlen;
+            if (in[i + j] != until[j])
+            {
+               found = NULL;
+               break;
+            }
          }
          
-         // Keep any bytes after until in internal buffer
-         mBufferOffset = (unsigned long)rmnlen;
-         for (size_t i=0; i<rmnlen; ++i)
+         if (found != NULL)
          {
-            mBuffer[i] = mBuffer[sublen+i];
+            size_t sublen = found + unlen - in;
+            size_t rmnlen = inlen - sublen;
+            
+            if (!_out)
+            {
+               _out = this->alloc(sublen + 1);
+               outlen = sublen;
+               memcpy(_out, _in, sublen);
+               SetBufferByte(_out, sublen, 0);
+            }
+            else
+            {
+               found[unlen] = 0;
+               outlen -= rmnlen;
+            }
+            
+            // Keep any bytes after until in internal buffer
+            mBufferOffset = (unsigned long)rmnlen;
+            for (size_t j=0; j<rmnlen; ++j)
+            {
+               mBuffer[j] = mBuffer[sublen + j];
+            }
+            mBuffer[rmnlen] = 0;
+            
+            return true;
          }
-         mBuffer[rmnlen] = '\0';
-         
-         return true;
       }
    }
    
    return false;
 }
 
-bool TCPConnection::readUntil(const char *until, char *&bytes, size_t &len, double timeout, Status *status)
+bool TCPConnection::readUntil(const void *until, size_t unlen, void *&bytes, size_t &len, double timeout, Status *status)
 {
    bytes = 0;
    len = 0;
@@ -500,7 +542,7 @@ bool TCPConnection::readUntil(const char *until, char *&bytes, size_t &len, doub
       len = mBufferOffset;
       bytes = this->alloc(len + 1);
       memcpy(bytes, mBuffer, len);
-      bytes[len] = '\0';
+      SetBufferByte(bytes, len, 0);
       
       mBufferOffset = 0;
       
@@ -508,7 +550,7 @@ bool TCPConnection::readUntil(const char *until, char *&bytes, size_t &len, doub
       searchOffset = 0;
    }
    
-   if (checkUntil(until, bytes, len, bytes, len))
+   if (checkUntil(until, unlen, bytes, len, bytes, len))
    {
       if (status)
       {
@@ -559,7 +601,7 @@ bool TCPConnection::readUntil(const char *until, char *&bytes, size_t &len, doub
       // data comes in, defeating the purpose of 'timeout'
       // Be sure to call 'setBlocking(false)' before make use of the method with timeout
       // The TCPSocket class will do it on all the TCPConnection intances it creates
-      n = recv(mFD, mBuffer+mBufferOffset, mBufferSize-mBufferOffset, 0);
+      n = recv(mFD, mBuffer + mBufferOffset, mBufferSize - mBufferOffset, 0);
       
       if (n == -1)
       {
@@ -632,9 +674,9 @@ bool TCPConnection::readUntil(const char *until, char *&bytes, size_t &len, doub
       {
          len = n;
          allocated = n;
-         bytes = this->alloc(allocated+1);
+         bytes = this->alloc(allocated + 1);
          memcpy(bytes, mBuffer, n);
-         bytes[len] = '\0';
+         SetBufferByte(bytes, len, 0);
          searchOffset = 0;
       }
       else
@@ -645,15 +687,15 @@ bool TCPConnection::readUntil(const char *until, char *&bytes, size_t &len, doub
             {
                allocated <<= 1;
             }
-            bytes = this->alloc(allocated+1, bytes);
+            bytes = this->alloc(allocated + 1, bytes);
          }
-         memcpy(bytes+len, mBuffer, n);
+         memcpy(OffsetBuffer(bytes, len), mBuffer, n);
          searchOffset = len;
          len += n;
-         bytes[len] = '\0';
+         SetBufferByte(bytes, len, 0);
       }
       
-      if (checkUntil(until, bytes + searchOffset, size_t(n), bytes, len))
+      if (checkUntil(until, unlen, OffsetBuffer(bytes, searchOffset), size_t(n), bytes, len))
       {
          if (status)
          {
@@ -678,7 +720,7 @@ bool TCPConnection::readUntil(const char *until, char *&bytes, size_t &len, doub
    return true;
 }
 
-size_t TCPConnection::write(const char *bytes, size_t len, double timeout, Status *status)
+size_t TCPConnection::write(const void *bytes, size_t len, double timeout, Status *status)
 {
    if (!isValid())
    {
@@ -753,7 +795,7 @@ size_t TCPConnection::write(const char *bytes, size_t len, double timeout, Statu
          // No workaround SIGPIPE signal
 # endif // SIGPIPE
 #endif // MSG_NOSIGNAL
-         n = send(mFD, bytes+offset, remaining, flags);
+         n = send(mFD, OffsetBuffer(bytes, offset), remaining, flags);
       }
 
       if (n == -1)

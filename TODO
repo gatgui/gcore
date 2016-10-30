@@ -2,12 +2,12 @@ Regex
    x Comment: (?#...)
    x Named group: (?P<name>...)
    x Named group referemce: (?P=name)
-   - Conditional expression: (?(id/name)yes-pattern|no-pattern)
+   x Conditional expression: (?(id/name)yes-pattern|no-pattern)
      with 'no-pattern' optional
 
 Unicode
-   - On windows, properly handle _UNICODE define
-   - Review all windows system call as they expect MBCS in current codepage unless _UNICODE
+   x On windows, properly handle _UNICODE define
+   x Review all windows system call as they expect MBCS in current codepage unless _UNICODE
      is defined. In that case, UTF-16 is expected (or UCS2 at least)
    x Review ArgParser (command line arguments strings are utf-8 on osx/linux so far I could see, current codepage on windows...)
    - Support in Rex

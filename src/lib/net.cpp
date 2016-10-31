@@ -601,7 +601,7 @@ bool TCPConnection::readUntil(const void *until, size_t unlen, void *&bytes, siz
       // data comes in, defeating the purpose of 'timeout'
       // Be sure to call 'setBlocking(false)' before make use of the method with timeout
       // The TCPSocket class will do it on all the TCPConnection intances it creates
-      n = recv(mFD, mBuffer + mBufferOffset, mBufferSize - mBufferOffset, 0);
+      n = recv(mFD, (char*)(mBuffer + mBufferOffset), mBufferSize - mBufferOffset, 0);
       
       if (n == -1)
       {

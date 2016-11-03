@@ -104,4 +104,9 @@ if "gcorepy" in BUILD_TARGETS:
 # Declare targets
 excons.DeclareTargets(env, prjs)
 
+Alias("all", "gcore")
+Alias("all", "gcorepy")
+Alias("all", "gcore_utils")
+Alias("all", "gcore_tests")
+
 Default(["gcore"])

@@ -29,8 +29,8 @@ install:
   - which cython
 
 script:
-  - scons no-cache=1 static=1 gcore gcorepy gcore_utils gcore_tests
-  - scons no-cache=1 static=0 gcore gcorepy gcore_utils gcore_tests
+  - scons no-cache=1 static=1 all
+  - scons no-cache=1 static=0 all
 
 env:
   global:

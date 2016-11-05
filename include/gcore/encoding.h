@@ -66,9 +66,30 @@ namespace gcore
    GCORE_API const char* EncodingToString(Encoding e);
    GCORE_API Encoding StringToEncoding(const char *s);
    
+   // ---
+   
    GCORE_API bool IsBigEndian();
    GCORE_API bool IsASCII(const char *s);
    GCORE_API bool IsUTF8(const char *s);
+   
+   // --- Encode/Decode single code points to/from utf-8
+   
+   // Unicode code points are 32 bits but only values from 0x00000000 to 0x0010FFFF are used
+   typedef unsigned int Codepoint;
+   
+   GCORE_API extern const Codepoint InvalidCodepoint;
+   GCORE_API bool IsValidCodepoint(Codepoint cp);
+   
+   // Encode a single Codepoint to utf-8
+   //   Return number of bytes required to encode the given Codepoint
+   //     output will be placed in out whose maximum size is specified by outlen
+   //   If any error occurs, 0 is returned
+   GCORE_API size_t EncodeUTF8(Codepoint cp, char *out, size_t outlen);
+   // Decode a single Codepoint from utf-8 string
+   //   Returns InvalidCodepoint on error
+   GCORE_API Codepoint DecodeUTF8(const char *in, size_t inlen);
+   
+   // --- Encode/Decode strings to/from utf-8
    
    // Encode 'e' encoded string 's' to UTF-8
    GCORE_API bool EncodeUTF8(Encoding e, const char *s, std::string &out);

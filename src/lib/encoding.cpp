@@ -144,8 +144,6 @@ union Char32
    Char32(Byte4 v) : i(v) {}
 };
 
-typedef unsigned int Codepoint;
-
 // --- Private constants
 
 // Unicode code point are 32 bits but only 0x0000 0000 -> 0x0010 FFFF are used
@@ -361,11 +359,6 @@ const Codepoint iso_8859[15][256] =
 HashMap<Codepoint, unsigned char> iso_8859_rev[15];
 
 // --- Private functions
-
-inline bool IsValidCodepoint(Codepoint cp)
-{
-   return (cp <= UTF8ByteRange[3][1] && (cp < 0xD800 || 0xDFFF < cp));
-}
 
 inline bool IsCombiningMark(Codepoint cp)
 {
@@ -873,6 +866,11 @@ const char* EncodingToString(Encoding e)
    return ((e < 0 || e >= MAX_ENCODING) ? 0 : gsEncodingStr[idx]);
 }
 
+bool IsValidCodepoint(Codepoint cp)
+{
+   return (cp <= UTF8ByteRange[3][1] && (cp < 0xD800 || 0xDFFF < cp));
+}
+
 bool IsBigEndian()
 {
    // If the machine the code was compiled on is big endian
@@ -965,6 +963,16 @@ bool IsUTF8(const char *s)
    }
 
    return true;
+}
+
+size_t EncodeUTF8(Codepoint cp, char *out, size_t outlen)
+{
+   return EncodeUTF8(cp, (Byte*)out, outlen, 0);
+}
+
+Codepoint DecodeUTF8(const char *in, size_t inlen)
+{
+   return DecodeUTF8((const Byte*)in, inlen);
 }
 
 bool EncodeUTF8(Encoding e, const char *s, std::string &out)

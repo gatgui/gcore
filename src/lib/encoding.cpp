@@ -401,24 +401,6 @@ static void InitASCIIReverseMappings()
    }
 }
 
-inline bool IsUTF8SingleChar(char c)
-{
-   // ASCII bytes starts with         0xxxxxxx
-   return ((c & 0x80) == 0x00);
-}
-
-inline bool IsUTF8LeadingChar(char c)
-{
-   // Leading multi bytes starts with 11xxxxxx
-   return ((c & 0xC0) == 0xC0);
-}
-
-inline bool IsUTF8ContinuationChar(char c)
-{
-   // Continuation bytes starts with  10xxxxxx
-   return ((c & 0xC0) == 0x80);
-}
-
 // Length functions
 
 static size_t UTF8Length(const Byte *bytes)
@@ -1198,6 +1180,24 @@ bool IsUTF8(const char *s)
    }
 
    return true;
+}
+
+bool IsUTF8SingleChar(char c)
+{
+   // ASCII bytes starts with         0xxxxxxx
+   return ((c & 0x80) == 0x00);
+}
+
+bool IsUTF8LeadingChar(char c)
+{
+   // Leading multi bytes starts with 11xxxxxx
+   return ((c & 0xC0) == 0xC0);
+}
+
+bool IsUTF8ContinuationChar(char c)
+{
+   // Continuation bytes starts with  10xxxxxx
+   return ((c & 0xC0) == 0x80);
 }
 
 size_t EncodeUTF8(Codepoint cp, char *out, size_t outlen)

@@ -14,11 +14,11 @@ Unicode
      is defined. In that case, UTF-16 is expected (or UCS2 at least)
      => use UTF-16 version of all those API regardless of _UNICODE define
    x Review ArgParser (command line arguments strings are utf-8 on osx/linux so far I could see, current codepage on windows...)
-   - Add codepoint to ASCII and ASCII to codepoint conversion functions
+   x Add codepoint to ASCII and ASCII to codepoint conversion functions
        Fix4: \u[0-9a-fA-F]{4}
        Fix8: \U[0-9a-fA-F]{8}
        Var : \u\{[0-9a-fA-F]+\}
-   - Export more of internal API
+   x Export more of internal API
    - Regular expression support
       - add support for \u[0-9a-fA-F]{4}, \U[0-9a-fA-F]{8} and \u\{[0-9a-fA-F]+\} notation
       - support codepoint matching instruction (merge with character)

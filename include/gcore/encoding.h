@@ -72,6 +72,10 @@ namespace gcore
    GCORE_API bool IsASCII(const char *s);
    GCORE_API bool IsUTF8(const char *s);
    
+   GCORE_API bool IsUTF8SingleChar(char c);
+   GCORE_API bool IsUTF8LeadingChar(char c);
+   GCORE_API bool IsUTF8ContinuationChar(char c);
+   
    // --- Encode/Decode single code points to/from utf-8
    
    // Unicode code points are 32 bits but only values from 0x00000000 to 0x0010FFFF are used

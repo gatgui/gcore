@@ -82,7 +82,7 @@ namespace gcore
    
    enum ASCIICodepointFormat
    {
-      ACF_16, // 16 bits: \u0000
+      ACF_16 = 0, // 16 bits: \u0000
       ACF_32, // 32 bits: \U00000000
       ACF_VARIABLE // \u{000}
    };

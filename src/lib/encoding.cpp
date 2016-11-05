@@ -875,11 +875,11 @@ inline int hex2int(char c)
 {
    if ('a' <= c && c <= 'f')
    {
-      return ((c - 'a') + 9);
+      return ((c - 'a') + 10);
    }
    else if ('A' <= c && c <= 'F')
    {
-      return ((c - 'A') + 9);
+      return ((c - 'A') + 10);
    }
    else if ('0' <= c && c <= '9')
    {
@@ -1012,6 +1012,7 @@ size_t ASCIIToCodepoint(const char *in, Codepoint &cp)
          const char *c = in + 3;
          Codepoint rv = 0;
          int num = 0;
+         int nhex = 0;
          bool leading = true;
          
          while (*c != '\0' && *c != '}')
@@ -1024,6 +1025,11 @@ size_t ASCIIToCodepoint(const char *in, Codepoint &cp)
             
             if (!leading || num != 0)
             {
+               if (++nhex > 8)
+               {
+                  // don't allow more than 8 hex digits
+                  return 0;
+               }
                rv = (rv << 4) | (num & 0x0F);
                leading = false;
             }

@@ -185,6 +185,47 @@ int main(int argc, char **argv)
       }
    }
    
+   gcore::Codepoint cps[3] = {0x000128CC, 0x0000F4CE, 0x01FFFFFF};
+   gcore::Codepoint cp0, cp1;
+   char out[16];
+   size_t n;
+   
+   for (int i=0; i<3; ++i)
+   {
+      cp0 = cps[i];
+      
+      for (int j=0; j<3; ++j)
+      {
+         n = gcore::CodepointToASCII(cp0, gcore::ASCIICodepointFormat(j), out, 15);
+         if (n > 0)
+         {
+            out[n] = '\0';
+            std::cout << "0x" << std::hex << cp0 << std::dec << " -> " << out << std::endl;
+            
+            n = gcore::ASCIIToCodepoint(out, cp1);
+            if (n > 0)
+            {
+               if (cp1 != cp0)
+               {
+                  std::cout << "Bad value, got 0x" << std::hex << cp1 << std::dec << " expected 0x" << std::hex << cp0 << std::dec << std::endl;
+               }
+               else
+               {
+                  std::cout << out << " -> " << "0x" << std::hex << cp0 << std::dec << std::endl;
+               }
+            }
+            else
+            {
+               std::cout << "Failed to convert ascii " << out << " to codepoint" << std::endl;
+            }
+         }
+         else
+         {
+            std::cout << "Failed to convert codepoint 0x" << std::hex << cp0 << std::dec << " to ascii" << std::endl;
+         }
+      }
+   }
+   
    return 0;
 }
 

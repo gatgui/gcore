@@ -871,6 +871,235 @@ bool IsValidCodepoint(Codepoint cp)
    return (cp <= UTF8ByteRange[3][1] && (cp < 0xD800 || 0xDFFF < cp));
 }
 
+inline int hex2int(char c)
+{
+   if ('a' <= c && c <= 'f')
+   {
+      return ((c - 'a') + 9);
+   }
+   else if ('A' <= c && c <= 'F')
+   {
+      return ((c - 'A') + 9);
+   }
+   else if ('0' <= c && c <= '9')
+   {
+      return (c - '0');
+   }
+   else
+   {
+      return -1;
+   }
+}
+
+inline char int2hex(int val)
+{
+   if (val < 0 || val > 15)
+   {
+      return '\0';
+   }
+   else
+   {
+      static const char *sHex = "0123456789ABCDEF";
+      return sHex[val];
+   }
+}
+
+size_t CodepointToASCII(Codepoint cp, ASCIICodepointFormat fmt, char *out, size_t outlen)
+{
+   if (!IsValidCodepoint(cp))
+   {
+      return 0;
+   }
+   
+   switch (fmt)
+   {
+   case ACF_16:
+      if (cp > 0x0000FFFF || outlen < 6)
+      {
+         return 0;
+      }
+      out[0] = '\\';
+      out[1] = 'u';
+      out[2] = int2hex((cp & 0xF000) >> 12);
+      out[3] = int2hex((cp & 0x0F00) >> 8);
+      out[4] = int2hex((cp & 0x00F0) >> 4);
+      out[5] = int2hex( cp & 0x000F);
+      return 6;
+   case ACF_32:
+      if (outlen < 10)
+      {
+         return 0;
+      }
+      out[0] = '\\';
+      out[1] = 'U';
+      out[2] = int2hex((cp & 0xF0000000) >> 28);
+      out[3] = int2hex((cp & 0x0F000000) >> 24);
+      out[4] = int2hex((cp & 0x00F00000) >> 20);
+      out[5] = int2hex((cp & 0x000F0000) >> 16);
+      out[6] = int2hex((cp & 0x0000F000) >> 12);
+      out[7] = int2hex((cp & 0x00000F00) >> 8);
+      out[8] = int2hex((cp & 0x000000F0) >> 4);
+      out[9] = int2hex( cp & 0x0000000F);
+      return 10;
+   case ACF_VARIABLE:
+      if (outlen < 4)
+      {
+         return false;
+      }
+      out[0] = '\\';
+      out[1] = 'u';
+      out[2] = '{';
+      {
+         unsigned int mask = 0xF0000000;
+         unsigned int shift = 28;
+         size_t p = 3;
+         bool leading = true;
+         
+         for (int i=0; i<8 && p<outlen; ++i)
+         {
+            char hex = int2hex((cp & mask) >> shift);
+            
+            if (!leading || hex != '0')
+            {
+               out[p] = hex;
+               leading = false;
+               ++p;
+            }
+            
+            mask >>= 4;
+            shift -= 4;
+         }
+         
+         if (p >= outlen)
+         {
+            return 0;
+         }
+         else
+         {
+            out[p] = '}';
+            return (p + 1);
+         }
+      }
+   default:
+      return 0;
+   }
+}
+
+size_t ASCIIToCodepoint(const char *in, Codepoint &cp)
+{
+   cp = InvalidCodepoint;
+   
+   if (!in)
+   {
+      return 0;
+   }
+   
+   size_t len = strlen(in);
+   if (len < 4)
+   {
+      return 0;
+   }
+   
+   if (in[0] != '\\')
+   {
+      return 0;
+   }
+   
+   if (in[1] == 'u')
+   {
+      if (in[2] == '{')
+      {
+         const char *c = in + 3;
+         Codepoint rv = 0;
+         int num = 0;
+         bool leading = true;
+         
+         while (*c != '\0' && *c != '}')
+         {
+            num = hex2int(*c);
+            if (num < 0)
+            {
+               return 0;
+            }
+            
+            if (!leading || num != 0)
+            {
+               rv = (rv << 4) | (num & 0x0F);
+               leading = false;
+            }
+            
+            ++c;
+         }
+         
+         if (*c == '}')
+         {
+            cp = rv;
+            return ((c - in) + 1);
+         }
+         else
+         {
+            return 0;
+         }
+      }
+      else
+      {
+         // \u0000
+         if (len < 6)
+         {
+            return 0;
+         }
+         
+         Codepoint rv = 0;
+         int num = 0;
+         
+         for (int i=2; i<6; ++i)
+         {
+            num = hex2int(in[i]);
+            if (num < 0)
+            {
+               return 0;
+            }
+            
+            rv = (rv << 4) | (num & 0x0F);
+         }
+         
+         cp = rv;
+         
+         return 6;
+      }
+   }
+   else if (in[1] == 'U')
+   {
+      // \U00000000
+      if (len < 10)
+      {
+         return 0;
+      }
+      
+      Codepoint rv = 0;
+      int num = 0;
+      
+      for (int i=2; i<10; ++i)
+      {
+         num = hex2int(in[i]);
+         if (num < 0)
+         {
+            return 0;
+         }
+         
+         rv = (rv << 4) | (num & 0x0F);
+      }
+      
+      cp = rv;
+      
+      return 10;
+   }
+   else
+   {
+      return 0;
+   }
+}
+
 bool IsBigEndian()
 {
    // If the machine the code was compiled on is big endian

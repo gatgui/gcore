@@ -80,6 +80,18 @@ namespace gcore
    GCORE_API extern const Codepoint InvalidCodepoint;
    GCORE_API bool IsValidCodepoint(Codepoint cp);
    
+   enum ASCIICodepointFormat
+   {
+      ACF_16, // 16 bits: \u0000
+      ACF_32, // 32 bits: \U00000000
+      ACF_VARIABLE // \u{000}
+   };
+   
+   // Return 0 on error or the number of characters written to out
+   GCORE_API size_t CodepointToASCII(Codepoint cp, ASCIICodepointFormat fmt, char *out, size_t outlen);
+   // Return 0 on error or the number of characters read from in
+   GCORE_API size_t ASCIIToCodepoint(const char *in, Codepoint &cp);
+   
    // Encode a single Codepoint to utf-8
    //   Return number of bytes required to encode the given Codepoint
    //     output will be placed in out whose maximum size is specified by outlen

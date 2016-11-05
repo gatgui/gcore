@@ -94,7 +94,7 @@ prjs = [
 env = excons.MakeBaseEnv()
 
 # Generate cpp files from cython
-if "gcorepy" in BUILD_TARGETS:
+if "gcorepy" in BUILD_TARGETS or "all" in BUILD_TARGETS:
    if excons.GetArgument("cython-gen", 1, int):
       python.CythonGenerate(env, "src/py/_gcore.pyx", incdirs=["include"], cpp=True)
    elif not os.path.isfile("src/py/_gcore.cpp") or not os.path.isfile("src/py/_gcore.h"):

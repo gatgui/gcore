@@ -155,8 +155,8 @@ int main(int argc, char **argv)
          if (gcore::EncodeUTF8(encoding, buffer, utf8))
          {
             str = utf8;
-            //std::cout << gcore::EncodingString(encoding) << ": " << utf8 << std::endl;
-            std::cout << gcore::EncodingString(encoding) << ": " << str << std::endl;
+            //std::cout << gcore::EncodingToString(encoding) << ": " << utf8 << std::endl;
+            std::cout << gcore::EncodingToString(encoding) << ": " << str << std::endl;
             
             std::string ascii;
             if (gcore::DecodeUTF8(utf8.c_str(), encoding, ascii))

@@ -400,7 +400,7 @@ static void InitASCIIReverseMappings()
 #ifdef _DEBUG
          if (rmapping.find(mapping[j]) != rmapping.end())
          {
-            std::cerr << "Duplicate code point in '" << EncodingString(ASCII_ISO_8859_1 + i) << "': " << std::hex << mapping[j] << std::dec << std::endl;
+            std::cerr << "Duplicate code point in '" << EncodingToString(ASCII_ISO_8859_1 + i) << "': " << std::hex << mapping[j] << std::dec << std::endl;
          }
 #endif
          rmapping[mapping[j]] = (unsigned char)(j & 0x00FF);
@@ -821,39 +821,56 @@ inline Codepoint DecodeUTF32(const Byte *bytes, size_t len, bool bigendian)
 
 // --- Public functions
 
-const char* EncodingString(Encoding e)
+const char* gsEncodingStr[MAX_ENCODING] =
 {
-   const char* sEncodingStr[MAX_ENCODING] =
+   "ascii",
+   "iso-8859-1",
+   "iso-8859-2",
+   "iso-8859-3",
+   "iso-8859-4",
+   "iso-8859-5",
+   "iso-8859-6",
+   "iso-8859-7",
+   "iso-8859-8",
+   "iso-8859-9",
+   "iso-8859-10",
+   "iso-8859-11",
+   "iso-8859-13",
+   "iso-8859-14",
+   "iso-8859-15",
+   "iso-8859-16",
+   "utf-8",
+   "ucs-2",
+   "ucs-2le",
+   "utf-16",
+   "utf-16le",
+   "ucs-4",
+   "ucs-4le",
+   "utf-32",
+   "utf-32le"
+};
+
+Encoding StringToEncoding(const char *s)
+{
+   if (s)
    {
-      "ascii",
-      "iso-8859-1",
-      "iso-8859-2",
-      "iso-8859-3",
-      "iso-8859-4",
-      "iso-8859-5",
-      "iso-8859-6",
-      "iso-8859-7",
-      "iso-8859-8",
-      "iso-8859-9",
-      "iso-8859-10",
-      "iso-8859-11",
-      "iso-8859-13",
-      "iso-8859-14",
-      "iso-8859-15",
-      "iso-8859-16",
-      "utf-8",
-      "ucs-2",
-      "ucs-2le",
-      "utf-16",
-      "utf-16le",
-      "ucs-4",
-      "ucs-4le",
-      "utf-32",
-      "utf-32le"
-   };
-   
+      String es(s);
+      es.tolower();
+      for (int i=0; i<MAX_ENCODING; ++i)
+      {
+         if (es == gsEncodingStr[i])
+         {
+            return (Encoding)i;
+         }
+      }
+   }
+   return INVALID_ENCODING;
+}
+
+const char* EncodingToString(Encoding e)
+{
    int idx = int(e);
-   return ((e < 0 || e >= MAX_ENCODING) ? 0 : sEncodingStr[idx]);
+   return ((e < 0 || e >= MAX_ENCODING) ? 0 : gsEncodingStr[idx]);
 }
 
 bool IsBigEndian()

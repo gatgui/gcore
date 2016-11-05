@@ -59,10 +59,12 @@ namespace gcore
       UTF_32,
       UTF_32BE = UTF_32,
       UTF_32LE,
-      MAX_ENCODING
+      MAX_ENCODING,
+      INVALID_ENCODING = MAX_ENCODING
    };
    
-   GCORE_API const char* EncodingString(Encoding e);
+   GCORE_API const char* EncodingToString(Encoding e);
+   GCORE_API Encoding StringToEncoding(const char *s);
    
    GCORE_API bool IsBigEndian();
    GCORE_API bool IsASCII(const char *s);

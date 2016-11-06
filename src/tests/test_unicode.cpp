@@ -54,9 +54,11 @@ int main(int argc, char **argv)
 
    // On linux/osx, the encoding for narrow string literals is that of the source file
    //               wide strings are UTF-32
-   // On windows, at least if _UNICODE is not defined, narrow string will be encoded in current codepage
-   //               wide strings are UTF-16
-   // Also, for this test to be properly compiled, cl.exe must be able to figure out the encoding
+   // On windows, narrow string will be encoded in the current codepage
+   //             wide strings are UTF-16
+   // Also, for this test to be properly compiled, cl.exe must be able to figure out the encoding of the file
+   //   in order to be able to transcode into current codepage. If it can't, current codepage encoding is
+   //   assumed...
    // => use BOM even for UTF-8
    // BOMs
    //    UTF-32be  0x00 0x00 0xFE 0xFF
@@ -155,7 +157,6 @@ int main(int argc, char **argv)
          if (gcore::EncodeUTF8(encoding, buffer, utf8))
          {
             str = utf8;
-            //std::cout << gcore::EncodingToString(encoding) << ": " << utf8 << std::endl;
             std::cout << gcore::EncodingToString(encoding) << ": " << str << std::endl;
             
             std::string ascii;
@@ -225,6 +226,36 @@ int main(int argc, char **argv)
          }
       }
    }
+   
+   n = gcore::ASCIIToCodepoint("\\u01AC9", cp0);
+   std::cout << "\\u01AC9 -> (" << n << ") 0x" << std::hex << cp0 << std::dec << std::endl;
+   
+   n = gcore::ASCIIToCodepoint("\\uA81", cp0);
+   std::cout << "\\uA81 -> (" << n << ") 0x" << std::hex << cp0 << std::dec << std::endl;
+   
+   n = gcore::ASCIIToCodepoint("\\U001F01AC9", cp0);
+   std::cout << "\\U001F01AC9 -> (" << n << ") 0x" << std::hex << cp0 << std::dec << std::endl;
+   
+   n = gcore::ASCIIToCodepoint("\\U1F0A81", cp0);
+   std::cout << "\\U1F0A81 -> (" << n << ") 0x" << std::hex << cp0 << std::dec << std::endl;
+   
+   n = gcore::ASCIIToCodepoint("\\u{0001CA}", cp0);
+   std::cout << "\\u{0001CA} -> (" << n << ") 0x" << std::hex << cp0 << std::dec << std::endl;
+   
+   n = gcore::ASCIIToCodepoint("\\u{0001FFFFF}", cp0);
+   std::cout << "\\u{0001FFFFF} -> (" << n << ") 0x" << std::hex << cp0 << std::dec << std::endl;
+   
+   n = gcore::ASCIIToCodepoint("\\u{1FFFFF000}", cp0);
+   std::cout << "\\u{1FFFFF000} -> (" << n << ") 0x" << std::hex << cp0 << std::dec << std::endl;
+   
+   const char *test = "\u0F1C - \U00000F1C";
+   std::cout << test << " ('\\u0F1C - \\U00000F1C'): ";
+   PrintBytes(std::cout, test, strlen(test), 1) << std::endl;
+   
+   n = gcore::EncodeUTF8(0xF1C, out, 16);
+   out[n] = '\0';
+   std::cout << "UTF-8 for codepoint 0xF1C: ";
+   PrintBytes(std::cout, out, n, 1) << std::endl;
    
    return 0;
 }

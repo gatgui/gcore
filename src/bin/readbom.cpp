@@ -25,16 +25,31 @@ USA.
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <gcore/argparser.h>
+#include <gcore/path.h>
 
 int main(int argc, char **argv)
 {
-   if (argc != 2)
+   gcore::FlagDesc cmdflags[] = {ACCEPTS_NOFLAG_ARGUMENTS(1)};
+   
+   gcore::ArgParser args(cmdflags, 1);
+   
+   gcore::Status stat = args.parse(argc-1, argv+1);
+   
+   if (!stat)
    {
-      std::cout << "Missing argument" << std::endl;
+      std::cerr << stat << std::endl;
       return 1;
    }
-
-   FILE *f = fopen(argv[1], "rb");
+   
+   gcore::String filename;
+   
+   args.getArgument(0, filename);
+   
+   gcore::Path path(filename);
+   
+   FILE *f = path.open("rb");
+   
    if (!f)
    {
       std::cout << "Invalid file \"" << argv[1] << "\"" << std::endl;

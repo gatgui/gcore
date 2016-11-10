@@ -391,14 +391,15 @@ String Path::fullname(char sep) const
 Date Path::lastModification() const
 {
    Date lm;
-   struct stat st;
 #ifdef _WIN32
+   struct _stat st;
    if (mFullNameW.empty())
    {
       DecodeUTF8(mFullName.c_str(), mFullNameW);
    }
    if (_wstat(mFullNameW.c_str(), &st) == 0)
 #else
+   struct stat st;
    if (mFullNameL.empty())
    {
       UTF8ToLocale(mFullName.c_str(), mFullNameL);
@@ -524,14 +525,15 @@ size_t Path::fileSize() const
 {
    if (isFile())
    {
-      struct stat fileStat;
 #ifdef _WIN32
+      struct _stat fileStat;
       if (mFullNameW.empty())
       {
          DecodeUTF8(mFullName.c_str(), mFullNameW);
       }
       if (_wstat(mFullNameW.c_str(), &fileStat) == 0)
 #else
+      struct stat fileStat;
       if (mFullNameL.empty())
       {
          UTF8ToLocale(mFullName.c_str(), mFullNameL);
@@ -745,7 +747,10 @@ FILE* Path::open(const char *mode) const
    {
       DecodeUTF8(mFullName.c_str(), mFullNameW);
    }
-   return _wfopen(mFullNameW.c_str(), mode);
+   std::wstring wmode;
+   // supposes mode and ASCII string, thus UTF-8 (should be)
+   DecodeUTF8(mode, wmode);
+   return _wfopen(mFullNameW.c_str(), wmode.c_str());
 #else
    if (mFullNameL.empty())
    {

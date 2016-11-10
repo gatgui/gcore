@@ -106,8 +106,8 @@ namespace gcore
       bool createDir(bool recursive=false) const;
       bool removeFile() const;
       FILE* open(const char *mode) const;
-      bool open(std::ifstream &inf, std::ios::openmode mode=0) const;
-      bool open(std::ofstream &outf, std::ios::openmode mode=0) const;
+      bool open(std::ifstream &inf, std::ios::openmode mode=std::ios::in) const;
+      bool open(std::ofstream &outf, std::ios::openmode mode=std::ios::out) const;
       
       // flags is a bit wise combination of constants defined in ForEachTarget enum
       void forEach(ForEachFunc cb, bool recurse=false, unsigned short flags=FE_ALL) const;

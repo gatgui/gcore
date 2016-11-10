@@ -1,6 +1,7 @@
 ﻿// -*- coding: utf-8 -*-
 #include <gcore/encoding.h>
 #include <gcore/argparser.h>
+#include <gcore/path.h>
 
 std::ostream& PrintBytes(std::ostream &os, const void *ptr, size_t len, size_t spacing=2)
 {
@@ -256,6 +257,26 @@ int main(int argc, char **argv)
    out[n] = '\0';
    std::cout << "UTF-8 for codepoint 0xF1C: ";
    PrintBytes(std::cout, out, n, 1) << std::endl;
+   
+   
+   gcore::Path path(L"testdata/問題のファイル.txt");
+   std::ifstream inf;
+   
+   if (!path.open(inf))
+   {
+      std::cout << "Cannot open file with unicode name." << std::endl;
+   }
+   else
+   {
+      gcore::String line;
+      
+      while (inf.good())
+      {
+         std::getline(inf, line);
+         gcore::UTF8ToLocale_ip(line);
+         std::cout << line << std::endl;
+      }
+   }
    
    return 0;
 }

@@ -25,20 +25,32 @@ USA.
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <gcore/argparser.h>
+#include <gcore/path.h>
 
 int main(int argc, char **argv)
 {
-   if (argc != 3)
+   gcore::FlagDesc cmdflags[] = {ACCEPTS_NOFLAG_ARGUMENTS(2)};
+   
+   gcore::ArgParser args(cmdflags, 1);
+   
+   gcore::Status stat = args.parse(argc-1, argv+1);
+   
+   if (!stat)
    {
+      std::cerr << stat << std::endl;
       std::cout << "writebom <path> utf-8|utf-16|utf-16be|utf-16le|utf-32|utf-32be|utf-32le|none" << std::endl;
       return 1;
    }
    
    unsigned char BOM[4];
    size_t bs = 0;
-   bool remove = false;
+   bool rem = false;
+   gcore::String bomstr;
+   
+   args.getArgument(1, bomstr);
 
-   if (!strcmp(argv[2], "utf-8"))
+   if (bomstr == "utf-8")
    {
       // utf-8 encoding of 0xFEFF
       BOM[0] = 0xEF;
@@ -46,21 +58,19 @@ int main(int argc, char **argv)
       BOM[2] = 0xBF;
       bs = 3;
    }
-   else if (!strcmp(argv[2], "utf-16") ||
-            !strcmp(argv[2], "utf-16be"))
+   else if (bomstr == "utf-16" || bomstr == "utf-16be")
    {
       BOM[0] = 0xFE;
       BOM[1] = 0xFF;
       bs = 2;
    }
-   else if (!strcmp(argv[2], "utf-16le"))
+   else if (bomstr == "utf-16le")
    {
       BOM[0] = 0xFF;
       BOM[1] = 0xFE;
       bs = 2;
    }
-   else if (!strcmp(argv[2], "utf-32") ||
-            !strcmp(argv[2], "utf-32be"))
+   else if (bomstr == "utf-32" || bomstr == "utf-32be")
    {
       BOM[0] = 0x00;
       BOM[1] = 0x00;
@@ -68,7 +78,7 @@ int main(int argc, char **argv)
       BOM[3] = 0xFF;
       bs = 4;
    }
-   else if (!strcmp(argv[2], "utf-32le"))
+   else if (bomstr == "utf-32le")
    {
       BOM[0] = 0xFF;
       BOM[1] = 0xFE;
@@ -76,9 +86,9 @@ int main(int argc, char **argv)
       BOM[3] = 0x00;
       bs = 4;
    }
-   else if (!strcmp(argv[2], "none"))
+   else if (bomstr == "none")
    {
-      remove = true;
+      rem = true;
    }
    else
    {
@@ -93,7 +103,14 @@ int main(int argc, char **argv)
    }
    std::cout << std::endl;
    
-   FILE *f = fopen(argv[1], "rb");
+   gcore::String filename;
+   
+   args.getArgument(0, filename);
+   
+   gcore::Path path(filename);
+   
+   FILE *f = path.open("rb");
+   
    if (!f)
    {
       std::cout << "Invalid file \"" << argv[1] << "\"" << std::endl;
@@ -147,7 +164,7 @@ int main(int argc, char **argv)
    }
    
    // Check if file has to be modified
-   if (remove)
+   if (rem)
    {
       if (cbs == 0)
       {
@@ -195,8 +212,8 @@ int main(int argc, char **argv)
    }
    else
    {
-      f = fopen(argv[1], "wb");
-      if (!remove)
+      f = path.open("wb");
+      if (!rem)
       {
          fwrite(BOM, 1, bs, f);
       }

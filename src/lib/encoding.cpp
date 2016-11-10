@@ -1705,7 +1705,7 @@ bool LocaleToWide(const char *s, std::wstring &out)
       }
    }
    
-   return false;
+   return rv;
 }
 
 bool WideToLocale(const wchar_t *ws, std::string &out)

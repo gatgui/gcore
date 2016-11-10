@@ -76,6 +76,10 @@ namespace gcore
    GCORE_API bool IsUTF8LeadingChar(char c);
    GCORE_API bool IsUTF8ContinuationChar(char c);
    
+   GCORE_API char* UTF8Next(char *s);
+   GCORE_API char* UTF8Prev(char *s);
+   GCORE_API size_t UTF8CountChars(char *s);
+   
    // --- Encode/Decode single code points to/from utf-8
    
    // Unicode code points are 32 bits but only values from 0x00000000 to 0x0010FFFF are used
@@ -120,13 +124,13 @@ namespace gcore
    GCORE_API bool DecodeUTF8(const char *s, std::wstring &out);
    GCORE_API bool DecodeUTF8(const char *s, size_t len, std::wstring &out);
    
-#ifdef _WIN32
-   GCORE_API extern const int CurrentCodepage;
-   GCORE_API extern const int UTF8Codepage;
+   GCORE_API bool LocaleToWide(const char *s, std::wstring &out);
+   GCORE_API bool WideToLocale(const wchar_t *ws, std::string &out);
    
-   GCORE_API bool ToWideString(int codepage, const char *s, std::wstring &out);
-   GCORE_API bool ToMultiByteString(const wchar_t *ws, int codepage, std::string &out);
-#endif
+   GCORE_API bool LocaleToUTF8(const char *s, std::string &out);
+   GCORE_API bool LocaleToUTF8_ip(std::string &str);
+   GCORE_API bool UTF8ToLocale(const char *s, std::string &out);
+   GCORE_API bool UTF8ToLocale_ip(std::string &str);
 }
 
 #endif

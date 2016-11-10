@@ -164,7 +164,7 @@ Status Pipe::open(const String &name)
 #else
    std::wstring wpn;
    String pipename = "\\\\.\\pipe\\" + name;
-   ToWideString(UTF8Codepage, pipename.c_str(), wpn);
+   DecodeUTF8(pipename.c_str(), wpn);
    HANDLE hdl = CreateFileW(wpn.c_str(), GENERIC_READ | GENERIC_WRITE,
                             0, NULL, OPEN_EXISTING, 0, NULL);
    if (hdl != INVALID_HANDLE_VALUE)
@@ -223,7 +223,7 @@ Status Pipe::create(const String &name)
    // Note: May want to expose in/out buffer size
    std::wstring wpn;
    String pipename = "\\\\.\\pipe\\" + name;
-   ToWideString(UTF8Codepage, pipename.c_str(), wpn);
+   DecodeUTF8(pipename.c_str(), wpn);
    HANDLE hdl = CreateNamedPipeW(wpn.c_str(), PIPE_ACCESS_DUPLEX,
                                  PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
                                  1, 4096, 4096, 0, NULL);

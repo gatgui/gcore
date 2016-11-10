@@ -78,6 +78,8 @@ Path::Path(const Path &rhs)
    , mFullName(rhs.mFullName)
 #ifdef _WIN32
    , mFullNameW(rhs.mFullNameW)
+#else
+   , mFullNameL(rhs.mFullNameL)
 #endif
 {
 }
@@ -93,6 +95,8 @@ Path& Path::operator=(const Path &rhs)
       mFullName = rhs.mFullName;
 #ifdef _WIN32
       mFullNameW = rhs.mFullNameW;
+#else
+      mFullNameL = rhs.mFullNameL;
 #endif
    }
    return *this;
@@ -132,6 +136,8 @@ Path& Path::operator=(const char *s)
    mFullName = fullname('/');
 #ifdef _WIN32
    mFullNameW.clear();
+#else
+   mFullNameL.clear();
 #endif
    return *this;
 }
@@ -165,6 +171,8 @@ Path& Path::operator=(const wchar_t *ws)
    mFullName = fullname('/');
 #ifdef _WIN32
    mFullNameW.clear();
+#else
+   mFullNameL.clear();
 #endif
    return *this;
 }
@@ -177,6 +185,8 @@ Path& Path::operator+=(const Path &rhs)
       mFullName = fullname('/');
 #ifdef _WIN32
       mFullNameW.clear();
+#else
+      mFullNameL.clear();
 #endif
    }
    return *this;
@@ -256,6 +266,8 @@ String Path::pop()
       mFullName = fullname('/');
 #ifdef _WIN32
       mFullNameW.clear();
+#else
+      mFullNameL.clear();
 #endif
    }
    return rv;
@@ -267,6 +279,8 @@ Path& Path::push(const String &s)
    mFullName = fullname('/');
 #ifdef _WIN32
    mFullNameW.clear();
+#else
+   mFullNameL.clear();
 #endif
    return *this;
 }
@@ -294,6 +308,8 @@ Path& Path::makeAbsolute()
       mFullName = fullname('/');
 #ifdef _WIN32
       mFullNameW.clear();
+#else
+      mFullNameL.clear();
 #endif
    }
    return *this;
@@ -343,6 +359,8 @@ Path& Path::normalize()
    mFullName = fullname('/');
 #ifdef _WIN32
    mFullNameW.clear();
+#else
+   mFullNameL.clear();
 #endif
    return *this;
 }
@@ -374,7 +392,19 @@ Date Path::lastModification() const
 {
    Date lm;
    struct stat st;
-   if (stat(mFullName.c_str(), &st) == 0)
+#ifdef _WIN32
+   if (mFullNameW.empty())
+   {
+      DecodeUTF8(mFullName.c_str(), mFullNameW);
+   }
+   if (_wstat(mFullNameW.c_str(), &st) == 0)
+#else
+   if (mFullNameL.empty())
+   {
+      UTF8ToLocale(mFullName.c_str(), mFullNameL);
+   }
+   if (stat(mFullNameL.c_str(), &st) == 0)
+#endif
    {
       lm.set(st.st_mtime, false);
    }
@@ -391,7 +421,7 @@ bool Path::isDir() const
    DWORD fa;
    if (mFullNameW.empty())
    {
-      ToWideString(UTF8Codepage, mFullName.c_str(), mFullNameW);
+      DecodeUTF8(mFullName.c_str(), mFullNameW);
    }
    fa = GetFileAttributesW(mFullNameW.c_str());
    if (fa != 0xFFFFFFFF)
@@ -400,7 +430,11 @@ bool Path::isDir() const
    }
 #else
    struct stat st;
-   if (stat(mFullName.c_str(), &st) == 0)
+   if (mFullNameL.empty())
+   {
+      UTF8ToLocale(mFullName.c_str(), mFullNameL);
+   }
+   if (stat(mFullNameL.c_str(), &st) == 0)
    {
       return ((st.st_mode & S_IFDIR) != 0);
    }
@@ -414,7 +448,7 @@ bool Path::isFile() const
    DWORD fa;
    if (mFullNameW.empty())
    {
-      ToWideString(UTF8Codepage, mFullName.c_str(), mFullNameW);
+      DecodeUTF8(mFullName.c_str(), mFullNameW);
    }
    fa = GetFileAttributesW(mFullNameW.c_str());
    if (fa != 0xFFFFFFFF)
@@ -423,7 +457,11 @@ bool Path::isFile() const
    }
 #else
    struct stat st;
-   if (stat(mFullName.c_str(), &st) == 0)
+   if (mFullNameL.empty())
+   {
+      UTF8ToLocale(mFullName.c_str(), mFullNameL);
+   }
+   if (stat(mFullNameL.c_str(), &st) == 0)
    {
       return ((st.st_mode & S_IFREG) != 0);
    }
@@ -437,7 +475,7 @@ bool Path::exists() const
    DWORD fa;
    if (mFullNameW.empty())
    {
-      ToWideString(UTF8Codepage, mFullName.c_str(), mFullNameW);
+      DecodeUTF8(mFullName.c_str(), mFullNameW);
    }
    fa = GetFileAttributesW(mFullNameW.c_str());
    if (fa != 0xFFFFFFFF)
@@ -446,7 +484,11 @@ bool Path::exists() const
    }
 #else
    struct stat st;
-   if (stat(mFullName.c_str(), &st) == 0)
+   if (mFullNameL.empty())
+   {
+      UTF8ToLocale(mFullName.c_str(), mFullNameL);
+   }
+   if (stat(mFullNameL.c_str(), &st) == 0)
    {
       return true;
    }
@@ -483,7 +525,19 @@ size_t Path::fileSize() const
    if (isFile())
    {
       struct stat fileStat;
-      if (stat(mFullName.c_str(), &fileStat) == 0)
+#ifdef _WIN32
+      if (mFullNameW.empty())
+      {
+         DecodeUTF8(mFullName.c_str(), mFullNameW);
+      }
+      if (_wstat(mFullNameW.c_str(), &fileStat) == 0)
+#else
+      if (mFullNameL.empty())
+      {
+         UTF8ToLocale(mFullName.c_str(), mFullNameL);
+      }
+      if (stat(mFullNameL.c_str(), &fileStat) == 0)
+#endif
       {
          return fileStat.st_size;
       }
@@ -513,11 +567,15 @@ bool Path::createDir(bool recursive) const
 #ifdef _WIN32
    if (mFullNameW.empty())
    {
-      ToWideString(UTF8Codepage, mFullName.c_str(), mFullNameW);
+      DecodeUTF8(mFullName.c_str(), mFullNameW);
    }
    return (CreateDirectoryW(mFullNameW.c_str(), NULL) == TRUE);
 #else
-   return (mkdir(mFullName.c_str(), S_IRWXU) == 0);
+   if (mFullNameL.empty())
+   {
+      UTF8ToLocale(mFullName.c_str(), mFullNameL);
+   }
+   return (mkdir(mFullNameL.c_str(), S_IRWXU) == 0);
 #endif
 }
 
@@ -525,7 +583,19 @@ bool Path::removeFile() const
 {
    if (isFile())
    {
-      return (remove(mFullName.c_str()) == 0);
+#ifdef _WIN32
+      if (mFullNameW.empty())
+      {
+         DecodeUTF8(mFullName.c_str(), mFullNameW);
+      }
+      return (_wremove(mFullNameW.c_str()) == 0);
+#else
+      if (mFullNameL.empty())
+      {
+         UTF8ToLocale(mFullName.c_str(), mFullNameL);
+      }
+      return (remove(mFullNameL.c_str()) == 0);
+#endif
    }
    return false;
 }
@@ -565,14 +635,14 @@ void Path::forEach(ForEachFunc callback, bool recurse, unsigned short flags) con
       }
    }
    std::wstring wfffs;
-   ToWideString(UTF8Codepage, fffs.c_str(), wfffs);
+   DecodeUTF8(fffs.c_str(), wfffs);
    hFile = FindFirstFileW(wfffs.c_str(), &fd);
    if (hFile != INVALID_HANDLE_VALUE)
    {
       String fname;
       do
       {
-         ToMultiByteString(fd.cFileName, UTF8Codepage, fname);
+         EncodeUTF8(fd.cFileName, fname);
          if (fname == "." ||  fname == "..")
          {
             continue;
@@ -606,21 +676,24 @@ void Path::forEach(ForEachFunc callback, bool recurse, unsigned short flags) con
    }
 #else
    DIR *d;
+   String ldir;
    if (mFullName.length() == 0)
    {
       Path cwd = CurrentDir();
-      d = opendir(cwd.fullname('/').c_str());
+      UTF8ToLocale(cwd.fullname('/').c_str(), ldir);
    }
    else
    {
-      d = opendir(mFullName.c_str());
+      UTF8ToLocale(mFullName.c_str(), ldir);
    }
+   d = opendir(ldir.c_str());
    if (d)
    {
       struct dirent *de;
       while ((de = readdir(d)) != 0)
       {
-         String fname = de->d_name;
+         String fname;
+         LocaleToUTF8(de->d_name, fname);
          if (fname == "." || fname == "..")
          {
             continue;
@@ -665,35 +738,82 @@ size_t Path::listDir(PathList &l, bool recurse, unsigned short flags) const
    return l.size();
 }
 
-Path Path::CurrentDir()
+FILE* Path::open(const char *mode) const
 {
 #ifdef _WIN32
-   DWORD cwdLen = GetCurrentDirectoryW(0, NULL);
-   wchar_t *cwd = (wchar_t*)malloc(cwdLen * sizeof(wchar_t));
-   GetCurrentDirectoryW(cwdLen, cwd);
-#else
-   size_t bufLen = 1024;
-   char *buf = (char*)malloc(bufLen * sizeof(char));
-   char *cwd = getcwd(buf, bufLen);
-   while (cwd == NULL)
+   if (mFullNameW.empty())
    {
-      if (errno == ERANGE)
+      DecodeUTF8(mFullName.c_str(), mFullNameW);
+   }
+   return _wfopen(mFullNameW.c_str(), mode);
+#else
+   if (mFullNameL.empty())
+   {
+      UTF8ToLocale(mFullName.c_str(), mFullNameL);
+   }
+   return fopen(mFullNameL.c_str(), mode);
+#endif
+}
+
+bool Path::open(std::ifstream &inf, std::ios::openmode mode) const
+{
+#ifdef _WIN32
+   if (mFullNameW.empty())
+   {
+      DecodeUTF8(mFullName.c_str(), mFullNameW);
+   }
+   inf.open(mFullNameW.c_str(), std::ios::in | mode);
+#else
+   if (mFullNameL.empty())
+   {
+      UTF8ToLocale(mFullName.c_str(), mFullNameL);
+   }
+   inf.open(mFullNameL.c_str(), std::ios::in | mode);
+#endif
+   return inf.is_open();
+}
+
+bool Path::open(std::ofstream &outf, std::ios::openmode mode) const
+{
+#ifdef _WIN32
+   if (mFullNameW.empty())
+   {
+      DecodeUTF8(mFullName.c_str(), mFullNameW);
+   }
+   outf.open(mFullNameW.c_str(), std::ios::out | mode);
+#else
+   if (mFullNameL.empty())
+   {
+      UTF8ToLocale(mFullName.c_str(), mFullNameL);
+   }
+   outf.open(mFullNameL.c_str(), std::ios::out | mode);
+#endif
+   return outf.is_open();
+}
+
+Path Path::CurrentDir()
+{
+   Path rv(".");
+#ifdef _WIN32
+   DWORD cwdLen = GetCurrentDirectoryW(0, NULL);
+   wchar_t *cwd = (wchar_t*) malloc(cwdLen * sizeof(wchar_t));
+   if (GetCurrentDirectoryW(cwdLen, cwd))
+   {
+      rv = cwd;
+   }
+   free(cwd);
+#else
+   char *cwd = getcwd(NULL, 0);
+   if (cwd != NULL)
+   {
+      std::string ucwd;
+      if (LocaleToUTF8(cwd, ucwd))
       {
-         free(buf);
-         bufLen *= 2;
-         buf = (char*)malloc(bufLen * sizeof(char));
-         cwd = getcwd(buf, bufLen);
+         rv = ucwd;
       }
-      else
-      {
-         buf[0] = '\0';
-         cwd = buf;
-         break;
-      }
+      free(cwd);
    }
 #endif
-   Path rv = Path(cwd);
-   free(cwd);
    return rv;
 }
 

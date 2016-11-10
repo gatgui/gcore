@@ -72,7 +72,7 @@ String Env::Hostname()
    // or should that be ComputerNameDnsHostname?
    if (GetComputerNameExW(ComputerNamePhysicalDnsHostname, &buffer[0], &sz))
    {
-      ToMultiByteString(&buffer[0], UTF8Codepage, rv);
+      EncodeUTF8(&buffer[0], rv);
    }
    else
    {
@@ -81,7 +81,7 @@ String Env::Hostname()
          buffer.resize(sz, 0);
          if (GetComputerNameExW(ComputerNamePhysicalDnsHostname, &buffer[0], &sz))
          {
-            ToMultiByteString(&buffer[0], UTF8Codepage, rv);
+            EncodeUTF8(&buffer[0], rv);
          }
       }
    }
@@ -231,20 +231,24 @@ String Env::get(const String &k) const
 {
    String rv;
 #ifndef _WIN32
-   char *v = getenv(k.c_str());
-   if (v != NULL)
+   String lk;
+   if (UTF8ToLocale(k.c_str(), lk))
    {
-      rv = v;
+      char *v = getenv(lk.c_str());
+      if (v != NULL)
+      {
+         LocaleToUTF8(v, rv);
+      }
    }
 #else
    std::wstring wk, wv;
-   ToWideString(UTF8Codepage, k.c_str(), wk);
+   DecodeUTF8(k.c_str(), wk);
    DWORD sz = GetEnvironmentVariableW(wk.c_str(), NULL, 0);
    if (sz > 0)
    {
       wv.resize(sz - 1);
       GetEnvironmentVariableW(wk.c_str(), (wchar_t*) wv.data(), sz);
-      ToMultiByteString(wv.c_str(), UTF8Codepage, rv);
+      EncodeUTF8(wv.c_str(), rv);
    }
 #endif
    return rv;
@@ -252,12 +256,21 @@ String Env::get(const String &k) const
 
 void Env::set(const String &k, const String &v, bool overwrite)
 {
-#ifndef _WIN32  
-   setenv(k.c_str(), v.c_str(), (overwrite ? 1 : 0));
+#ifndef _WIN32
+   // convert k from utf-8 to current locale?
+   std::string lk, lv;
+   if (UTF8ToLocale(k.c_str(), lk) && UTF8ToLocale(v.c_str(), lv))
+   {
+      setenv(lk.c_str(), lv.c_str(), (overwrite ? 1 : 0));
+   }
+   else
+   {
+      Log::PrintWarning("[gcore] Env::set: Cannot set key \"%s\". (Invalid characters for locale)", k.c_str());
+   }
 #else
    std::wstring wk, wv;
-   ToWideString(UTF8Codepage, k.c_str(), wk);
-   ToWideString(UTF8Codepage, v.c_str(), wv);
+   DecodeUTF8(k.c_str(), wk);
+   DecodeUTF8(v.c_str(), wv);
    if (overwrite || GetEnvironmentVariableW(wk.c_str(), NULL, 0) == 0)
    {
       SetEnvironmentVariableW(wk.c_str(), wv.c_str());
@@ -285,8 +298,15 @@ size_t Env::asDict(StringDict &d) const
          {
             String key, val;
             key.insert(0, curvar, klen);
-            val.insert(0, es+1, vlen);
-            d[key] = val;
+            val.insert(0, es + 1, vlen);
+            if (LocaleToUTF8_ip(key) && LocaleToUTF8_ip(val))
+            {
+               d[key] = val;
+            }
+            else
+            {
+               Log::PrintWarning("[gcore] Env::asDict: Ignore env string \"%s\". (Bad locale)", curvar);
+            }
          }
          else
          {
@@ -306,29 +326,32 @@ size_t Env::asDict(StringDict &d) const
    
    while (*curenv)
    {
-      ToMultiByteString(curenv, UTF8Codepage, keyval);
-      size_t pos = keyval.find('=');
-      
-      if (pos != std::string::npos)
+      if (EncodeUTF8(curenv, keyval))
       {
-         if (pos == 0)
-         { 
-            if (mVerbose)
-            {
-               Log::PrintInfo("[gcore] Env::asDict: Ignore env string \"%s\"", keyval.c_str());
-            }
-         }
-         else
+         size_t pos = keyval.find('=');
+         
+         if (pos != std::string::npos)
          {
-            key = keyval.substr(0, pos);
-            val = keyval.substr(pos+1);
-            
-            if (key.length() > 0)
+            if (pos == 0)
+            { 
+               if (mVerbose)
+               {
+                  Log::PrintInfo("[gcore] Env::asDict: Ignore env string \"%s\"", keyval.c_str());
+               }
+            }
+            else
             {
-               d[key] = val;
+               key = keyval.substr(0, pos);
+               val = keyval.substr(pos+1);
+               
+               if (key.length() > 0)
+               {
+                  d[key] = val;
+               }
             }
          }
       }
+      
       curenv += wcslen(curenv) + 1;
    }
    FreeEnvironmentStringsW(allenv);

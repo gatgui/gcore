@@ -25,6 +25,8 @@ USA.
 #include <gcore/hashmap.h>
 #ifdef _WIN32
 #include <gcore/platform.h>
+#else
+#include <locale.h>
 #endif
 
 #define C0_NUL 0x0000 // (^@) [\0] null
@@ -1200,6 +1202,48 @@ bool IsUTF8ContinuationChar(char c)
    return ((c & 0xC0) == 0x80);
 }
 
+char* UTF8Next(char *s)
+{
+   if (!s)
+   {
+      return NULL;
+   }
+   else
+   {
+      char *n = ++s;
+      while (IsUTF8ContinuationChar(*n)) ++n;
+      return n;
+   }
+}
+
+char* UTF8Prev(char *s)
+{
+   if (!s)
+   {
+      return NULL;
+   }
+   else
+   {
+      char *n = --s;
+      while (IsUTF8ContinuationChar(*n)) --n;
+      return n;
+   }
+}
+
+size_t UTF8CountChars(char *s)
+{
+   size_t count = 0;
+   if (s)
+   {
+      char *c = s;
+      while (*c != '\0')
+      {
+         count += (IsUTF8LeadingChar(*c) || IsUTF8SingleChar(*c) ? 1 : 0);
+      }
+   }
+   return count;
+}
+
 size_t EncodeUTF8(Codepoint cp, char *out, size_t outlen)
 {
    return EncodeUTF8(cp, (Byte*)out, outlen, 0);
@@ -1635,59 +1679,170 @@ bool DecodeUTF8(const char *s, size_t len, std::wstring &out)
 
 #ifdef _WIN32
 
-const int CurrentCodepage = CP_ACP;
-const int UTF8Codepage = CP_UTF8;
+struct Locale
+{
+   bool isUTF8;
+   
+   Locale()
+   {
+      isUTF8 = (GetACP() == CP_UTF8);
+   }
+};
 
-bool ToWideString(int codepage, const char *s, std::wstring &out)
+bool LocaleToWide(const char *s, std::wstring &out)
 {
    bool rv = false;
    
    if (s)
    {
       int slen = int(strlen(s));
-      int wslen = MultiByteToWideChar(codepage, 0, s, slen, NULL, 0);
-      wchar_t *ws = new wchar_t[wslen + 1];
-      if (MultiByteToWideChar(codepage, 0, s, slen, ws, wslen + 1) != 0)
+      int wslen = MultiByteToWideChar(CP_ACP, 0, s, slen, NULL, 0);
+      out.resize(wslen);
+      rv = (MultiByteToWideChar(CP_ACP, 0, s, slen, (wchar_t*) out.c_str(), wslen + 1) != 0);
+      if (!rv)
       {
-         out = ws;
-         rv = true;
+         out.clear();
       }
-      delete[] ws;
-   }
-   
-   if (!rv)
-   {
-      out.clear();
    }
    
    return false;
 }
 
-bool ToMultiByteString(const wchar_t *ws, int codepage, std::string &out)
+bool WideToLocale(const wchar_t *ws, std::string &out)
 {
    bool rv = false;
    
    if (ws)
    {
       int wslen = int(wcslen(ws));
-      int slen = WideCharToMultiByte(codepage, 0, ws, wslen, NULL, 0, NULL, NULL);
-      char *s = new char[slen + 1];
-      if (WideCharToMultiByte(codepage, 0, ws, wslen, s, slen + 1, NULL, NULL) != 0)
+      int slen = WideCharToMultiByte(CP_ACP, 0, ws, wslen, NULL, 0, NULL, NULL);
+      out.resize(slen);
+      rv = (WideCharToMultiByte(CP_ACP, 0, ws, wslen, (char*) out.c_str(), slen + 1, NULL, NULL) != 0);
+      if (!rv)
       {
-         out = s;
-         rv = true;
+         out.clear();
       }
-      delete[] s;
-   }
-   
-   if (!rv)
-   {
-      out.clear();
    }
    
    return rv;
 }
 
+#else
+
+struct Locale
+{
+   bool isUTF8;
+   
+   Locale()
+   {
+      isUTF8 = false;
+      char *locale = setlocale(LC_CTYPE, "");
+      if (locale)
+      {
+         char *encoding = strchr(locale, '.');
+         if (encoding)
+         {
+            ++encoding;
+            isUTF8 = (!strcasecmp(encoding, "utf8") || !strcasecmp(encoding, "utf-8"));
+         }
+      }
+   }
+};
+
+bool LocaleToWide(const char *s, std::wstring &out)
+{
+   if (s)
+   {
+      size_t len = mbstowcs(NULL, s, 0);
+      if (len == size_t(-1))
+      {
+         return false;
+      }
+      else
+      {
+         out.resize(len);
+         mbstowcs((wchar_t*) out.c_str(), s, len);
+         return true;
+      }
+   }
+   return false;
+}
+
+bool WideToLocale(const wchar_t *ws, std::string &out)
+{
+   if (ws)
+   {
+      size_t len = wcstombs(NULL, ws, 0);
+      if (len == size_t(-1))
+      {
+         return false;
+      }
+      else
+      {
+         out.resize(len);
+         wcstombs((char*) out.c_str(), ws, len);
+         return true;
+      }
+   }
+   return false;
+}
+
 #endif
+
+static Locale gsLocale;
+
+bool LocaleToUTF8(const char *s, std::string &out)
+{
+   if (gsLocale.isUTF8)
+   {
+      out = s;
+      return true;
+   }
+   else
+   {
+      std::wstring ws;
+      return (LocaleToWide(s, ws) && EncodeUTF8(ws.c_str(), out));
+   }
+}
+
+bool LocaleToUTF8_ip(std::string &str)
+{
+   if (gsLocale.isUTF8)
+   {
+      return true;
+   }
+   else
+   {
+      std::wstring ws;
+      return (LocaleToWide(str.c_str(), ws) && EncodeUTF8(ws.c_str(), str));
+   }
+}
+
+bool UTF8ToLocale(const char *s, std::string &out)
+{
+   if (gsLocale.isUTF8)
+   {
+      out = s;
+      return true;
+   }
+   else
+   {
+      std::wstring ws;
+      return (DecodeUTF8(s, ws) && WideToLocale(ws.c_str(), out));
+   }
+}
+
+bool UTF8ToLocale_ip(std::string &str)
+{
+   if (gsLocale.isUTF8)
+   {
+      return true;
+   }
+   else
+   {
+      std::wstring ws;
+      return (DecodeUTF8(str.c_str(), ws) && WideToLocale(ws.c_str(), str));
+   }
+}
 
 }

@@ -662,7 +662,7 @@ Status Process::run()
    
    // Don't try to inheritHandles when using .bat files
    std::wstring wcmd;
-   ToWideString(UTF8Codepage, mCmdLine.c_str(), wcmd);
+   DecodeUTF8(mCmdLine.c_str(), wcmd);
    if (CreateProcessW(NULL, (wchar_t*)wcmd.c_str(), NULL, NULL,
                       (isBat ? FALSE : TRUE), 0, 0, NULL, &sinfo, &pinfo))
    {

@@ -98,8 +98,10 @@ void Status::set(bool success, int errcode)
       if (buffer)
       {
          String tmp;
-         ToMultiByteString(buffer, UTF8Codepage, tmp);
-         mMsg += tmp;
+         if (EncodeUTF8(buffer, tmp))
+         {
+            mMsg += tmp;
+         }
          LocalFree(buffer);
       }
 #else

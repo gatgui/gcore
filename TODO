@@ -33,6 +33,9 @@ Unicode
    - XML support
       - at read time, if encoding is not specified assumes utf-8
       - also check for BOM (UTF-x)
+   x Support locales on unix
+   - Use locale on unix in all standard lib calls
+   - Use Path wherever filesystem interaction is needed for unicode file name support
    
    Notes on current implementation:
       - All C narrow string (char*) are assumed to be utf-8 encoded but for the specific encoding/decoding

@@ -284,14 +284,7 @@ static bool GetUTF8String(const char *s, String &out)
    
    if (!IsUTF8(s))
    {
-#ifdef _WIN32
-      std::wstring wstr;
-      ToWideString(CurrentCodepage, s, wstr);
-      ToMultiByteString(wstr.c_str(), UTF8Codepage, out);
-      return true;
-#else
-      return false;
-#endif
+      return LocaleToUTF8(s, out);
    }
    else
    {

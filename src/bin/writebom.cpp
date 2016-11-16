@@ -27,6 +27,7 @@ USA.
 #include <iostream>
 #include <gcore/argparser.h>
 #include <gcore/path.h>
+#include <gcore/unicode.h>
 
 int main(int argc, char **argv)
 {
@@ -39,69 +40,36 @@ int main(int argc, char **argv)
    if (!stat)
    {
       std::cerr << stat << std::endl;
-      std::cout << "writebom <path> utf-8|utf-16|utf-16be|utf-16le|utf-32|utf-32be|utf-32le|none" << std::endl;
+      std::cout << "writebom <path> utf-8|utf-16|utf-16le|utf-32|utf-32le|none" << std::endl;
       return 1;
    }
    
-   unsigned char BOM[4];
-   size_t bs = 0;
    bool rem = false;
    gcore::String bomstr;
    
    args.getArgument(1, bomstr);
-
-   if (bomstr == "utf-8")
-   {
-      // utf-8 encoding of 0xFEFF
-      BOM[0] = 0xEF;
-      BOM[1] = 0xBB;
-      BOM[2] = 0xBF;
-      bs = 3;
-   }
-   else if (bomstr == "utf-16" || bomstr == "utf-16be")
-   {
-      BOM[0] = 0xFE;
-      BOM[1] = 0xFF;
-      bs = 2;
-   }
-   else if (bomstr == "utf-16le")
-   {
-      BOM[0] = 0xFF;
-      BOM[1] = 0xFE;
-      bs = 2;
-   }
-   else if (bomstr == "utf-32" || bomstr == "utf-32be")
-   {
-      BOM[0] = 0x00;
-      BOM[1] = 0x00;
-      BOM[2] = 0xFE;
-      BOM[3] = 0xFF;
-      bs = 4;
-   }
-   else if (bomstr == "utf-32le")
-   {
-      BOM[0] = 0xFF;
-      BOM[1] = 0xFE;
-      BOM[2] = 0x00;
-      BOM[3] = 0x00;
-      bs = 4;
-   }
-   else if (bomstr == "none")
-   {
-      rem = true;
-   }
-   else
-   {
-      std::cout << "Invalid BOM \"" << argv[2] << "\"" << std::endl;
-      return 1;
-   }
    
-   std::cout << "Target BOM: ";
-   for (size_t i=0; i<bs; ++i)
+   gcore::Encoding bom = gcore::StringToEncoding(bomstr.c_str());
+   
+   switch (bom)
    {
-      std::cout << std::hex << (unsigned short)BOM[i] << std::dec << " ";
+   case gcore::UTF_8:
+   case gcore::UTF_16BE:
+   case gcore::UTF_16LE:
+   case gcore::UTF_32BE:
+   case gcore::UTF_32LE:
+      break;
+   default:
+      if (bomstr == "none")
+      {
+         rem = true;
+      }
+      else
+      {
+         std::cout << "Invalid BOM \"" << argv[2] << "\"" << std::endl;
+         return 1;
+      }
    }
-   std::cout << std::endl;
    
    gcore::String filename;
    
@@ -117,56 +85,16 @@ int main(int argc, char **argv)
       return 1;
    }
    
-   unsigned char curBOM[4];
-   size_t cbs = 0;
-   size_t n = fread(curBOM, 1, 4, f);
+   gcore::Encoding cbom = gcore::ReadBOM(f);
+   size_t cbs = gcore::BOMSize(cbom);
+   const char *cbomstr = gcore::EncodingToString(cbom);
    
-   std::cout << "File first " << n << " byte(s): ";
-   for (size_t i=0; i<n; ++i)
-   {
-      std::cout << std::hex << (unsigned short)curBOM[i] << std::dec << " ";
-   }
-   std::cout << std::endl;
-   
-   if (n >= 2)
-   {
-      if (curBOM[0] == 0xFF && curBOM[1] == 0xFE)
-      {
-         if (n == 4 && curBOM[2] == 0 && curBOM[3] == 0)
-         {
-            std::cout << "Current BOM: utf-32le" << std::endl;
-            cbs = 4;
-         }
-         else
-         {
-            std::cout << "Current BOM: utf-16le" << std::endl;
-            cbs = 2;
-         }
-      }
-      else if (curBOM[0] == 0xFE && curBOM[1] == 0xFF)
-      {
-         std::cout << "Current BOM: utf-16(be)" << std::endl;
-         cbs = 2;
-      }
-      else if (n >= 3)
-      {
-         if (curBOM[0] == 0xEF && curBOM[1] == 0xBB && curBOM[2] == 0xBF)
-         {
-            std::cout << "Current BOM: utf-8" << std::endl;
-            cbs = 3;
-         }
-         else if (n == 4 && curBOM[0] == 0 && curBOM[1] == 0 && curBOM[2] == 0xFE && curBOM[3] == 0xFF)
-         {
-            std::cout << "Current BOM: utf-32(be)" << std::endl;
-            cbs = 4;
-         }
-      }
-   }
+   std::cout << "Current BOM: " << (cbomstr ? cbomstr : "unknown") << std::endl;
    
    // Check if file has to be modified
    if (rem)
    {
-      if (cbs == 0)
+      if (cbom == gcore::INVALID_ENCODING)
       {
          std::cout << "No BOM to remove" << std::endl;
          fclose(f);
@@ -175,25 +103,11 @@ int main(int argc, char **argv)
    }
    else
    {
-      if (cbs == bs)
+      if (cbom == bom)
       {
-         bool changed = false;
-         
-         for (size_t i=0; i<bs; ++i)
-         {
-            if (curBOM[i] != BOM[i])
-            {
-               changed = true;
-               break;
-            }
-         }
-         
-         if (!changed)
-         {
-            std::cout << "BOM already set to " << argv[2] << std::endl;
-            fclose(f);
-            return 0;
-         }
+         std::cout << "BOM already set to " << argv[2] << std::endl;
+         fclose(f);
+         return 0;
       }
    }
    
@@ -202,7 +116,7 @@ int main(int argc, char **argv)
    size_t fs = size_t(ftell(f));
    unsigned char *content = (unsigned char*) malloc(fs);
    fseek(f, 0, SEEK_SET);
-   n = fread(content, 1, fs, f);
+   size_t n = fread(content, 1, fs, f);
    fclose(f);
    
    if (n != fs)
@@ -213,9 +127,14 @@ int main(int argc, char **argv)
    else
    {
       f = path.open("wb");
+      if (cbs > 0)
+      {
+         std::cout << "Remove BOM" << std::endl;
+      }
       if (!rem)
       {
-         fwrite(BOM, 1, bs, f);
+         std::cout << "Write BOM: " << bomstr << std::endl;
+         gcore::WriteBOM(f, bom);
       }
       fwrite(content + cbs, 1, fs - cbs, f);
       fclose(f);

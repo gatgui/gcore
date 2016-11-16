@@ -24,7 +24,7 @@ USA.
 #include <gcore/path.h>
 #include <gcore/platform.h>
 #include <gcore/dirmap.h>
-#include <gcore/encoding.h>
+#include <gcore/unicode.h>
 
 namespace gcore
 {

@@ -22,7 +22,7 @@ USA.
 */
 
 #include <gcore/argparser.h>
-#include <gcore/encoding.h>
+#include <gcore/unicode.h>
 
 namespace gcore
 {

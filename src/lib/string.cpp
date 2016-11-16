@@ -24,7 +24,7 @@ USA.
 #include <gcore/string.h>
 #include <gcore/platform.h>
 #include <gcore/rex.h>
-#include <gcore/encoding.h>
+#include <gcore/unicode.h>
 
 namespace gcore
 {

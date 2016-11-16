@@ -1,5 +1,5 @@
 ﻿// -*- coding: utf-8 -*-
-#include <gcore/encoding.h>
+#include <gcore/unicode.h>
 #include <gcore/argparser.h>
 #include <gcore/path.h>
 

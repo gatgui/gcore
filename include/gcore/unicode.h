@@ -21,8 +21,8 @@ USA.
 
 */
 
-#ifndef __gcore_encoding_h_
-#define __gcore_encoding_h_
+#ifndef __gcore_unicode_h_
+#define __gcore_unicode_h_
 
 #include <gcore/config.h>
 
@@ -66,18 +66,69 @@ namespace gcore
    GCORE_API const char* EncodingToString(Encoding e);
    GCORE_API Encoding StringToEncoding(const char *s);
    
+   GCORE_API Encoding ReadBOM(FILE *f);
+   GCORE_API Encoding ReadBOM(std::istream &is);
+   GCORE_API Encoding ReadBOM(const char *filepath);
+   GCORE_API Encoding ReadBOM(const wchar_t *filepath);
+   
+   GCORE_API size_t WriteBOM(FILE *f, Encoding e);
+   GCORE_API size_t WriteBOM(std::ostream &os, Encoding e);
+   
+   inline size_t BOMSize(Encoding e)
+   {
+      switch (e)
+      {
+      case UTF_8:
+         return 3;
+      case UTF_16BE:
+      case UTF_16LE:
+         return 2;
+      case UTF_32BE:
+      case UTF_32LE:
+         return 4;
+      default:
+         return 0;
+      }
+   }
+   
    // ---
    
    GCORE_API bool IsBigEndian();
    GCORE_API bool IsASCII(const char *s);
    GCORE_API bool IsUTF8(const char *s);
    
-   GCORE_API bool IsUTF8SingleChar(char c);
-   GCORE_API bool IsUTF8LeadingChar(char c);
-   GCORE_API bool IsUTF8ContinuationChar(char c);
+   inline bool IsUTF8SingleChar(char c)
+   {
+      // ASCII bytes starts with 0xxxxxxx
+      return ((c & 0x80) == 0x00);
+   }
    
-   GCORE_API char* UTF8Next(char *s);
-   GCORE_API char* UTF8Prev(char *s);
+   inline bool IsUTF8LeadingChar(char c)
+   {
+      // Leading multi bytes starts with 11xxxxxx
+      return ((c & 0xC0) == 0xC0);
+   }
+   
+   inline bool IsUTF8ContinuationChar(char c)
+   {
+      // Continuation bytes starts with 10xxxxxx
+      return ((c & 0xC0) == 0x80);
+   }
+   
+   inline char* UTF8Next(char *s)
+   {
+      char *n = s + 1;
+      while (IsUTF8ContinuationChar(*n)) ++n;
+      return n;
+   }
+   
+   inline char* UTF8Prev(char *s)
+   {
+      char *n = s - 1;
+      while (IsUTF8ContinuationChar(*n)) --n;
+      return n;
+   }
+   
    GCORE_API size_t UTF8CountChars(char *s);
    
    // --- Encode/Decode single code points to/from utf-8
@@ -86,7 +137,11 @@ namespace gcore
    typedef unsigned int Codepoint;
    
    GCORE_API extern const Codepoint InvalidCodepoint;
-   GCORE_API bool IsValidCodepoint(Codepoint cp);
+   
+   inline bool IsValidCodepoint(Codepoint cp)
+   {
+      return (cp < 0x0000D800 || (0x0000DFFF < cp && cp <= 0x0010FFFF));
+   }
    
    enum ASCIICodepointFormat
    {

@@ -23,7 +23,7 @@ USA.
 
 #include <gcore/status.h>
 #include <gcore/platform.h>
-#include <gcore/encoding.h>
+#include <gcore/unicode.h>
 
 namespace gcore
 {

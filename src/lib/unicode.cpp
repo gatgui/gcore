@@ -21,8 +21,9 @@ USA.
 
 */
 
-#include <gcore/encoding.h>
+#include <gcore/unicode.h>
 #include <gcore/hashmap.h>
+#include <gcore/path.h>
 #ifdef _WIN32
 #include <gcore/platform.h>
 #else
@@ -850,10 +851,161 @@ const char* EncodingToString(Encoding e)
    return ((e < 0 || e >= MAX_ENCODING) ? 0 : gsEncodingStr[idx]);
 }
 
-bool IsValidCodepoint(Codepoint cp)
+static Encoding ReadBOM(unsigned char *BOM, size_t n)
 {
-   return (cp <= UTF8ByteRange[3][1] && (cp < 0xD800 || 0xDFFF < cp));
+   if (n >= 2)
+   {
+      if (BOM[0] == 0xFF && BOM[1] == 0xFE)
+      {
+         if (n == 4 && BOM[2] == 0 && BOM[3] == 0)
+         {
+            return UTF_32LE;
+         }
+         else
+         {
+            return UTF_16LE;
+         }
+      }
+      else if (BOM[0] == 0xFE && BOM[1] == 0xFF)
+      {
+         return UTF_16BE;
+      }
+      else if (n >= 3)
+      {
+         if (BOM[0] == 0xEF && BOM[1] == 0xBB && BOM[2] == 0xBF)
+         {
+            return UTF_8;
+         }
+         else if (n == 4 && BOM[0] == 0 && BOM[1] == 0 && BOM[2] == 0xFE && BOM[3] == 0xFF)
+         {
+            return UTF_32BE;
+         }
+      }
+   }
+   
+   return INVALID_ENCODING;
 }
+
+Encoding ReadBOM(FILE *f)
+{
+   Encoding rv = INVALID_ENCODING;
+   
+   if (f)
+   {
+      unsigned char BOM[4];
+      size_t n = fread(BOM, 1, 4, f);
+      rv = ReadBOM(BOM, n);
+   }
+   
+   return rv;
+}
+
+Encoding ReadBOM(std::istream &is)
+{
+   Encoding rv = INVALID_ENCODING;
+   if (is.good())
+   {
+      unsigned char BOM[4];
+      size_t n = is.readsome((char*)BOM, 4);
+      rv = ReadBOM(BOM, n);
+   }
+   return rv;
+}
+
+Encoding ReadBOM(const char *filepath)
+{
+   Encoding rv = INVALID_ENCODING;
+   if (filepath)
+   {
+      Path p(filepath);
+      FILE *f = p.open("rb");
+      if (f)
+      {
+         rv = ReadBOM(f);
+         fclose(f);
+      }
+   }
+   return rv;
+}
+
+Encoding ReadBOM(const wchar_t *filepath)
+{
+   Encoding rv = INVALID_ENCODING;
+   if (filepath)
+   {
+      Path p(filepath);
+      std::ifstream is;
+      if (p.open(is, std::ios::in|std::ios::binary))
+      {
+         rv = ReadBOM(is);
+      }
+   }
+   return rv;
+}
+
+
+static size_t WriteBOM(Encoding e, unsigned char *BOM)
+{
+   switch (e)
+   {
+   case UTF_8:
+      // utf-8 encoding of 0xFEFF
+      BOM[0] = 0xEF;
+      BOM[1] = 0xBB;
+      BOM[2] = 0xBF;
+      return 3;
+   case UTF_16BE:
+      BOM[0] = 0xFE;
+      BOM[1] = 0xFF;
+      return 2;
+   case UTF_16LE:
+      BOM[0] = 0xFF;
+      BOM[1] = 0xFE;
+      return 2;
+   case UTF_32BE:
+      BOM[0] = 0x00;
+      BOM[1] = 0x00;
+      BOM[2] = 0xFE;
+      BOM[3] = 0xFF;
+      return 4;
+   case UTF_32LE:
+      BOM[0] = 0xFF;
+      BOM[1] = 0xFE;
+      BOM[2] = 0x00;
+      BOM[3] = 0x00;
+      return 4;
+   default:
+      return 0;
+   }
+   
+}
+
+size_t WriteBOM(FILE *f, Encoding e)
+{
+   unsigned char BOM[4];
+   size_t bs = WriteBOM(e, BOM);
+   if (bs > 0)
+   {
+      fwrite(BOM, 1, bs, f);
+   }
+   return bs;
+}
+
+size_t WriteBOM(std::ostream &os, Encoding e)
+{
+   unsigned char BOM[4];
+   size_t bs = WriteBOM(e, BOM);
+   if (bs > 0)
+   {
+      os.write((char*)BOM, bs);
+   }
+   return bs;
+}
+
+// bool IsValidCodepoint(Codepoint cp)
+// {
+//    return (cp <= UTF8ByteRange[3][1] && (cp < 0xD800 || 0xDFFF < cp));
+// }
 
 inline int hex2int(char c)
 {
@@ -1184,51 +1336,51 @@ bool IsUTF8(const char *s)
    return true;
 }
 
-bool IsUTF8SingleChar(char c)
-{
-   // ASCII bytes starts with         0xxxxxxx
-   return ((c & 0x80) == 0x00);
-}
+// bool IsUTF8SingleChar(char c)
+// {
+//    // ASCII bytes starts with         0xxxxxxx
+//    return ((c & 0x80) == 0x00);
+// }
 
-bool IsUTF8LeadingChar(char c)
-{
-   // Leading multi bytes starts with 11xxxxxx
-   return ((c & 0xC0) == 0xC0);
-}
+// bool IsUTF8LeadingChar(char c)
+// {
+//    // Leading multi bytes starts with 11xxxxxx
+//    return ((c & 0xC0) == 0xC0);
+// }
 
-bool IsUTF8ContinuationChar(char c)
-{
-   // Continuation bytes starts with  10xxxxxx
-   return ((c & 0xC0) == 0x80);
-}
+// bool IsUTF8ContinuationChar(char c)
+// {
+//    // Continuation bytes starts with  10xxxxxx
+//    return ((c & 0xC0) == 0x80);
+// }
 
-char* UTF8Next(char *s)
-{
-   if (!s)
-   {
-      return NULL;
-   }
-   else
-   {
-      char *n = ++s;
-      while (IsUTF8ContinuationChar(*n)) ++n;
-      return n;
-   }
-}
+// char* UTF8Next(char *s)
+// {
+//    if (!s)
+//    {
+//       return NULL;
+//    }
+//    else
+//    {
+//       char *n = ++s;
+//       while (IsUTF8ContinuationChar(*n)) ++n;
+//       return n;
+//    }
+// }
 
-char* UTF8Prev(char *s)
-{
-   if (!s)
-   {
-      return NULL;
-   }
-   else
-   {
-      char *n = --s;
-      while (IsUTF8ContinuationChar(*n)) --n;
-      return n;
-   }
-}
+// char* UTF8Prev(char *s)
+// {
+//    if (!s)
+//    {
+//       return NULL;
+//    }
+//    else
+//    {
+//       char *n = --s;
+//       while (IsUTF8ContinuationChar(*n)) --n;
+//       return n;
+//    }
+// }
 
 size_t UTF8CountChars(char *s)
 {

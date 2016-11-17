@@ -105,14 +105,17 @@ cdef extern from "<gcore/path.h>" namespace "gcore":
       Path& normalize()
       
       String basename()
-      String dirname(char) # char sep=DIR_SEP
-      String fullname(char) # char sep=DIR_SEP
+      String dirname(char) # char sep='/'
+      String fullname(char) # char sep='/'
       String extension()
       bint checkExtension(String&)
+      bint setExtension(String&)
       size_t fileSize()
       
-      bint createDir(bint) # bool recursive=false
-      bint removeFile()
+      Status createDir(bint) # bool recursive
+      
+      Status copy(Path&, bint, bint, bint) # Path &to, bool recursive, bool createMissingDirs, bool overwrite
+      Status remove(bint) # bool recursive
       
       String pop()
       Path& push(String&)

@@ -29,6 +29,7 @@ USA.
 #include <gcore/list.h>
 #include <gcore/platform.h>
 #include <gcore/date.h>
+#include <gcore/status.h>
 
 namespace gcore
 {
@@ -90,21 +91,29 @@ namespace gcore
       String basename() const;
       String dirname(char sep='/') const;
       String fullname(char sep='/') const;
-      
-      bool isDir() const;
-      bool isFile() const;
-      
-      bool exists() const;
-      
-      Date lastModification() const;
-      
       // file extension without .
       String extension() const;
       bool checkExtension(const String &ext) const;
-      size_t fileSize() const;
+      bool setExtension(const String &ext);
       
-      bool createDir(bool recursive=false) const;
-      bool removeFile() const;
+      bool exists() const;
+      bool isDir() const;
+      bool isFile() const;
+      
+      size_t fileSize() const;
+      Date lastModification() const;
+      
+      Status createDir(bool recursive) const;
+      
+      // For files:
+      //   - if 'to' doesn't exist a file of that name will be created
+      //   - if 'to' exists and is a directory, a file with the same basename as this will be created in 'to'
+      //   - 'recursive' doesn't have any effect
+      Status copy(const Path &to, bool recursive, bool createMissingDirs, bool overwrite) const;
+      Status remove(bool recursive);
+      
+      //Status copyStats(const Path &to) const;
+      
       FILE* open(const char *mode) const;
       bool open(std::ifstream &inf, std::ios::openmode mode=std::ios::in) const;
       bool open(std::ofstream &outf, std::ios::openmode mode=std::ios::out) const;
@@ -118,6 +127,16 @@ namespace gcore
       
    protected:
       
+      void _updateFullName();
+      
+      Status _removeFile() const;
+      Status _removeDir(bool recursive) const;
+      
+      Status _copyFile(const Path &to, bool createMissingDirs, bool overwrite) const;
+      Status _copyDir(const Path &to, bool recursive, bool createMissingDirs, bool overwrite) const;
+      
+   protected:
+   
       StringList mPaths;
       String mFullName;
 #ifdef _WIN32
@@ -135,6 +154,38 @@ namespace gcore
    inline int Path::depth() const
    {
       return int(mPaths.size());
+   }
+   
+   inline Status Path::copy(const Path &to, bool recursive, bool createMissingDirs, bool overwrite) const
+   {
+      if (isDir())
+      {
+         return _copyDir(to, recursive, createMissingDirs, overwrite);
+      }
+      else if (isFile())
+      {
+         return _copyFile(to, createMissingDirs, overwrite);
+      }
+      else
+      {
+         return Status(false, "gcore::Path::copy: Invalid path '%s'.", mFullName.c_str());
+      }
+   }
+   
+   inline Status Path::remove(bool recursive)
+   {
+      if (isDir())
+      {
+         return _removeDir(recursive);
+      }
+      else if (isFile())
+      {
+         return _removeFile();
+      }
+      else
+      {
+         return Status(false, "gcore::Path::remove: Invalid path '%s'.", mFullName.c_str());
+      }
    }
    
    inline Path operator+(const Path &p0, const Path &p1)

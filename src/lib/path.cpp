@@ -615,5 +615,286 @@ Path Path::CurrentDir()
    return rv;
 }
 
+// ---
+
+size_t MemoryMappedFile::PageSize()
+{
+#ifdef _WIN32
+   // TODO
+   return 0;
+#else
+   // return size_t(getpagesize());
+   // return sysconf(_SC_PAGE_SIZE);
+   return sysconf(_SC_PAGESIZE);
+#endif
+}
+
+MemoryMappedFile::MemoryMappedFile()
+   : mFlags(0)
+   , mOffset(0)
+   , mSize(0)
+   , mMapSize(0)
+   , mPtr(0)
+#ifdef _WIN32
+#else
+   , mFD(-1)
+#endif
+{
+}
+
+MemoryMappedFile::MemoryMappedFile(const Path &path, unsigned char flags, size_t offset, size_t size)
+   : mFlags(0)
+   , mOffset(0)
+   , mSize(0)
+   , mMapSize(0)
+   , mPtr(0)
+#ifdef _WIN32
+#else
+   , mFD(-1)
+#endif
+{
+   open(path, flags, offset, size);
+}
+
+MemoryMappedFile::~MemoryMappedFile()
+{
+   close();
+}
+
+size_t MemoryMappedFile::size() const
+{
+   return mSize;
+}
+
+size_t MemoryMappedFile::fileOffset() const
+{
+   return mOffset;
+}
+
+size_t MemoryMappedFile::mappedSize() const
+{
+   return mMapSize;
+}
+
+void* MemoryMappedFile::data()
+{
+   return mPtr;
+}
+
+const void* MemoryMappedFile::data() const
+{
+   return mPtr;
+}
+
+bool MemoryMappedFile::valid() const
+{
+   return (mPtr != 0);
+}
+
+Status MemoryMappedFile::open(const Path &path, unsigned char flags, size_t offset, size_t size)
+{
+   close();
+   
+   if (!path.isFile())
+   {
+      return Status(false, "gcore::MemoryMappedFile::open: Invalid file path.");
+   }
+   
+#ifdef _WIN32
+   
+   // TODO
+
+#else
+   
+   int oflags = 0;
+   
+   if ((flags & READ) != 0)
+   {
+      if ((flags & WRITE) != 0)
+      {
+         oflags = oflags | O_RDWR;
+      }
+      else
+      {
+         oflags = oflags | O_RDONLY;
+      }
+   }
+   else if ((flags & WRITE) != 0)
+   {
+      oflags = oflags | O_WRONLY;
+   }
+   
+   if (oflags == 0)
+   {
+      // fallback to readonly
+      flags = flags | READ;
+      oflags = oflags | O_RDONLY;
+   }
+   
+   // other oflags ?
+   //   O_APPEND
+   //   O_CREAT
+   //   O_TRUNC
+   
+   int fd = ::open(path.fullname('/').c_str(), oflags);
+   
+   if (fd == -1)
+   {
+      return Status(false, std_errno(), "gcore::MemoryMappedFile::open");
+   }
+   
+   mFD = fd;
+   mPath = path;
+   mFlags = flags;
+   
+#endif
+   
+   return reopen(offset, size);
+}
+
+Status MemoryMappedFile::reopen(size_t offset, size_t size)
+{
+   if (!mPath.isFile())
+   {
+      return Status(false, "gcore::MemoryMappedFile::reopen: Invalid file path.");
+   }
+   
+   if (mPtr)
+   {
+#ifdef _WIN32
+      // TODO
+#else
+      if (munmap(mPtr, mSize) != 0)
+      {
+         return Status(false, std_errno(), "gcore::MemoryMappedFile::reopen");
+      }
+#endif
+      
+      mPtr = 0;
+      mOffset = 0;
+      mSize = 0;
+      mMapSize = 0;
+   }
+   
+   size_t ps = PageSize();
+   size_t fs = mPath.fileSize();
+   
+   if (size == 0)
+   {
+      size = fs;
+   }
+   
+   offset = ps * ((offset / ps) + (offset % ps ? 1 : 0));
+   size = ps * ((size / ps) + (size % ps ? 1 : 0));
+   
+   if (offset > fs)
+   {
+      return Status(false, "gcore::MemoryMappedFile::reopen: Offset beyond file end.");
+   }
+   
+#ifdef _WIN32
+   
+   // TODO
+   
+#else
+   
+   int prot = 0;
+   int flags = MAP_FILE;
+   
+   if ((mFlags & READ) != 0)
+   {
+      prot = prot | PROT_READ;
+   }
+   if ((mFlags & WRITE) != 0)
+   {
+      prot = prot | PROT_WRITE;
+   }
+   if ((mFlags & SHARED) != 0)
+   {
+      flags = flags | MAP_SHARED;
+   }
+   else
+   {
+      flags = flags | MAP_PRIVATE;
+   }
+   
+   mPtr = mmap(NULL, size, prot, flags, mFD, offset);
+   
+   if (mPtr == (void*)-1)
+   {
+      mPtr = 0;
+      return Status(false, std_errno(), "gcore::MemoryMappedFile::reopen");
+   }
+   else
+   {
+      mOffset = offset;
+      mMapSize = size;
+      
+      if (offset + size > fs)
+      {
+         mSize = fs - offset;
+      }
+      else
+      {
+         mSize = mMapSize;
+      }
+   }
+   
+#endif
+   
+   return Status(true);
+}
+
+Status MemoryMappedFile::sync(bool block)
+{
+   if (mPtr && (mFlags & SHARED) != 0)
+   {
+#ifdef _WIN32
+      return Status(false, "gcore::MemoryMappedFile::sync: Not implmented");
+#else
+      // Other flags? MS_INVALIDATE
+      if (msync(mPtr, mMapSize, (block ? MS_SYNC : MS_ASYNC)) != 0)
+      {
+         return Status(false, std_errno(), "gcore::MemoryMappedFile::sync");
+      }
+#endif
+   }
+   return Status(true);
+}
+
+void MemoryMappedFile::close()
+{
+   sync(true);
+   
+   if (mPtr)
+   {
+#ifdef _WIN32
+      // TODO
+#else
+      munmap(mPtr, mMapSize);
+#endif
+   }
+   
+#ifdef _WIN32
+   // TODO
+#else
+   if (mFD != -1)
+   {
+      ::close(mFD);
+   }
+#endif
+   
+   mPtr = 0;
+   mSize = 0;
+   mOffset = 0;
+   mMapSize = 0;
+   mPath = "";
+   mFlags = 0;
+#ifdef _WIN32
+   // TODO
+#else
+   mFD = -1;
+#endif
+}
 
 } // gcore

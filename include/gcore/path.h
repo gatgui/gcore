@@ -29,9 +29,12 @@ USA.
 #include <gcore/list.h>
 #include <gcore/platform.h>
 #include <gcore/date.h>
+#include <gcore/status.h>
 
 namespace gcore
 {
+   class GCORE_API MemoryMappedFile;
+   
    class GCORE_API Path
    {
    public:
@@ -116,6 +119,66 @@ namespace gcore
       StringList mPaths;
       String mFullName;
    };
+   
+   class GCORE_API MemoryMappedFile
+   {
+   public:
+      
+      static size_t PageSize();
+      
+      enum Flags
+      {
+         READ = 0x01,
+         WRITE = 0x02,
+         SHARED = 0x04
+      };
+      
+   public:
+      
+      MemoryMappedFile();
+      MemoryMappedFile(const Path &path, unsigned char flags, size_t offset=0, size_t size=0);
+      ~MemoryMappedFile();
+      
+      // actual offset in file (multiple of PageSize)
+      size_t fileOffset() const;
+      // mapped memory size (multiple of PageSize)
+      size_t mappedSize() const;
+      // usefull data size
+      size_t size() const;
+      // mapped data
+      void* data();
+      const void* data() const;
+      
+      bool valid() const;
+      
+      Status open(const Path &path, unsigned char flags, size_t offset=0, size_t size=0);
+      Status reopen(size_t offset, size_t size);
+      Status sync(bool block); // for shared memory mapped file
+      void close();
+      
+      // lock/unlock
+      
+   private:
+      
+      MemoryMappedFile(const MemoryMappedFile &rhs);
+      MemoryMappedFile& operator=(const MemoryMappedFile &rhs);
+   
+   private:
+      
+      Path mPath;
+      unsigned char mFlags;
+      size_t mOffset;
+      size_t mSize;
+      size_t mMapSize;
+      void *mPtr;
+#ifdef _WIN32
+      // windows specifics here
+#else
+      int mFD;
+#endif
+   };
+   
+   // ---
    
    inline bool Path::operator!=(const Path &rhs) const
    {

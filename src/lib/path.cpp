@@ -119,13 +119,11 @@ Path& Path::operator=(const char *s)
       mPaths[i].strip();
       if (mPaths[i].length() == 0)
       {
-//#ifndef _WIN32
          if (i == 0)
          {
             ++i;
             continue;
          }
-//#endif
          mPaths.erase(mPaths.begin()+i);
       }
       else
@@ -149,13 +147,11 @@ Path& Path::operator=(const wchar_t *ws)
       mPaths[i].strip();
       if (mPaths[i].length() == 0)
       {
-//#ifndef _WIN32
          if (i == 0)
          {
             ++i;
             continue;
          }
-//#endif
          mPaths.erase(mPaths.begin()+i);
       }
       else
@@ -248,6 +244,21 @@ void Path::_updateFullName()
    mFullNameW.clear();
 #else
    mFullNameL.clear();
+#endif
+}
+
+void Path::_updateInternals() const
+{
+#ifdef _WIN32
+   if (mFullNameW.empty())
+   {
+      DecodeUTF8(mFullName.c_str(), mFullNameW);
+   }
+#else
+   if (mFullNameL.empty())
+   {
+      UTF8ToLocale(mFullName.c_str(), mFullNameL);
+   }
 #endif
 }
 
@@ -366,19 +377,12 @@ String Path::fullname(char sep) const
 Date Path::lastModification() const
 {
    Date lm;
+   _updateInternals();
 #ifdef _WIN32
    struct __stat64 st;
-   if (mFullNameW.empty())
-   {
-      DecodeUTF8(mFullName.c_str(), mFullNameW);
-   }
    if (_wstat64(mFullNameW.c_str(), &st) == 0)
 #else
    struct stat st;
-   if (mFullNameL.empty())
-   {
-      UTF8ToLocale(mFullName.c_str(), mFullNameL);
-   }
    if (stat(mFullNameL.c_str(), &st) == 0)
 #endif
    {
@@ -393,12 +397,9 @@ Date Path::lastModification() const
 
 bool Path::isDir() const
 {
+   _updateInternals();
 #ifdef _WIN32
    DWORD fa;
-   if (mFullNameW.empty())
-   {
-      DecodeUTF8(mFullName.c_str(), mFullNameW);
-   }
    fa = GetFileAttributesW(mFullNameW.c_str());
    if (fa != 0xFFFFFFFF)
    {
@@ -406,10 +407,6 @@ bool Path::isDir() const
    }
 #else
    struct stat st;
-   if (mFullNameL.empty())
-   {
-      UTF8ToLocale(mFullName.c_str(), mFullNameL);
-   }
    if (stat(mFullNameL.c_str(), &st) == 0)
    {
       return ((st.st_mode & S_IFDIR) != 0);
@@ -420,12 +417,9 @@ bool Path::isDir() const
 
 bool Path::isFile() const
 {
+   _updateInternals();
 #ifdef _WIN32
    DWORD fa;
-   if (mFullNameW.empty())
-   {
-      DecodeUTF8(mFullName.c_str(), mFullNameW);
-   }
    fa = GetFileAttributesW(mFullNameW.c_str());
    if (fa != 0xFFFFFFFF)
    {
@@ -433,10 +427,6 @@ bool Path::isFile() const
    }
 #else
    struct stat st;
-   if (mFullNameL.empty())
-   {
-      UTF8ToLocale(mFullName.c_str(), mFullNameL);
-   }
    if (stat(mFullNameL.c_str(), &st) == 0)
    {
       return ((st.st_mode & S_IFREG) != 0);
@@ -447,12 +437,9 @@ bool Path::isFile() const
 
 bool Path::exists() const
 {
+   _updateInternals();
 #ifdef _WIN32
    DWORD fa;
-   if (mFullNameW.empty())
-   {
-      DecodeUTF8(mFullName.c_str(), mFullNameW);
-   }
    fa = GetFileAttributesW(mFullNameW.c_str());
    if (fa != 0xFFFFFFFF)
    {
@@ -460,10 +447,6 @@ bool Path::exists() const
    }
 #else
    struct stat st;
-   if (mFullNameL.empty())
-   {
-      UTF8ToLocale(mFullName.c_str(), mFullNameL);
-   }
    if (stat(mFullNameL.c_str(), &st) == 0)
    {
       return true;
@@ -539,19 +522,12 @@ size_t Path::fileSize() const
 {
    if (isFile())
    {
+      _updateInternals();
 #ifdef _WIN32
       struct __stat64 fileStat;
-      if (mFullNameW.empty())
-      {
-         DecodeUTF8(mFullName.c_str(), mFullNameW);
-      }
       if (_wstat64(mFullNameW.c_str(), &fileStat) == 0)
 #else
       struct stat fileStat;
-      if (mFullNameL.empty())
-      {
-         UTF8ToLocale(mFullName.c_str(), mFullNameL);
-      }
       if (stat(mFullNameL.c_str(), &fileStat) == 0)
 #endif
       {
@@ -581,17 +557,10 @@ Status Path::createDir(bool recursive) const
          return stat;
       }
    }
+   _updateInternals();
 #ifdef _WIN32
-   if (mFullNameW.empty())
-   {
-      DecodeUTF8(mFullName.c_str(), mFullNameW);
-   }
    if (CreateDirectoryW(mFullNameW.c_str(), NULL) == TRUE)
 #else
-   if (mFullNameL.empty())
-   {
-      UTF8ToLocale(mFullName.c_str(), mFullNameL);
-   }
    if (mkdir(mFullNameL.c_str(), S_IRWXU) == 0)
 #endif
    {
@@ -609,17 +578,10 @@ Status Path::_removeDir(bool recursive) const
    {
       if (!recursive)
       {
+         _updateInternals();
 #ifdef _WIN32
-         if (mFullNameW.empty())
-         {
-            DecodeUTF8(mFullName.c_str(), mFullNameW);
-         }
          if (RemoveDirectoryW(mFullNameW.c_str()) == TRUE)
 #else
-         if (mFullNameL.empty())
-         {
-            UTF8ToLocale(mFullName.c_str(), mFullNameL);
-         }
          if (rmdir(mFullNameL.c_str()) == 0)
 #endif
          {
@@ -735,17 +697,10 @@ Status Path::_removeFile() const
 {
    if (isFile())
    {
+      _updateInternals();
 #ifdef _WIN32
-      if (mFullNameW.empty())
-      {
-         DecodeUTF8(mFullName.c_str(), mFullNameW);
-      }
       if (DeleteFileW(mFullNameW.c_str()) == TRUE)
 #else
-      if (mFullNameL.empty())
-      {
-         UTF8ToLocale(mFullName.c_str(), mFullNameL);
-      }
       if (::remove(mFullNameL.c_str()) == 0)
 #endif
       {
@@ -999,37 +954,23 @@ size_t Path::listDir(PathList &l, bool recurse, unsigned short flags) const
 
 FILE* Path::open(const char *mode) const
 {
+   _updateInternals();
 #ifdef _WIN32
-   if (mFullNameW.empty())
-   {
-      DecodeUTF8(mFullName.c_str(), mFullNameW);
-   }
    std::wstring wmode;
    // supposes mode and ASCII string, thus UTF-8 (should be)
    DecodeUTF8(mode, wmode);
    return _wfopen(mFullNameW.c_str(), wmode.c_str());
 #else
-   if (mFullNameL.empty())
-   {
-      UTF8ToLocale(mFullName.c_str(), mFullNameL);
-   }
    return fopen(mFullNameL.c_str(), mode);
 #endif
 }
 
 bool Path::open(std::ifstream &inf, std::ios::openmode mode) const
 {
+   _updateInternals();
 #ifdef _WIN32
-   if (mFullNameW.empty())
-   {
-      DecodeUTF8(mFullName.c_str(), mFullNameW);
-   }
    inf.open(mFullNameW.c_str(), std::ios::in | mode);
 #else
-   if (mFullNameL.empty())
-   {
-      UTF8ToLocale(mFullName.c_str(), mFullNameL);
-   }
    inf.open(mFullNameL.c_str(), std::ios::in | mode);
 #endif
    return inf.is_open();
@@ -1037,17 +978,10 @@ bool Path::open(std::ifstream &inf, std::ios::openmode mode) const
 
 bool Path::open(std::ofstream &outf, std::ios::openmode mode) const
 {
+   _updateInternals();
 #ifdef _WIN32
-   if (mFullNameW.empty())
-   {
-      DecodeUTF8(mFullName.c_str(), mFullNameW);
-   }
    outf.open(mFullNameW.c_str(), std::ios::out | mode);
 #else
-   if (mFullNameL.empty())
-   {
-      UTF8ToLocale(mFullName.c_str(), mFullNameL);
-   }
    outf.open(mFullNameL.c_str(), std::ios::out | mode);
 #endif
    return outf.is_open();

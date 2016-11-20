@@ -128,6 +128,7 @@ namespace gcore
    protected:
       
       void _updateFullName();
+      void _updateInternals() const;
       
       Status _removeFile() const;
       Status _removeDir(bool recursive) const;

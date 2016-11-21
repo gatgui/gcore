@@ -796,11 +796,11 @@ Status MMap::remap(size_t offset, size_t size)
    {
       if (size == 0)
       {
-         return Status(false, "gcore::MMap::open: 'size' argument cannot be zero when file is empty.");
+         return Status(false, "gcore::MMap::remap: 'size' argument cannot be zero when file is empty.");
       }
       if (offset > fs)
       {
-         return Status(false, "gcore::MMap::open: 'offset' argument pointing after file end.");
+         return Status(false, "gcore::MMap::remap: 'offset' argument pointing after file end.");
       }
    }
    

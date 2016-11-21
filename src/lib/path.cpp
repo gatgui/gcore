@@ -620,11 +620,13 @@ Path Path::CurrentDir()
 size_t MemoryMappedFile::PageSize()
 {
 #ifdef _WIN32
-   // TODO
-   return 0;
+   SYSTEM_INFO si;
+   ZeroMemory(&si, sizeof(si));
+   GetSystemInfo(&si);
+   return size_t(si.dwAllocationGranularity);
 #else
-   // return size_t(getpagesize());
-   // return sysconf(_SC_PAGE_SIZE);
+   //return size_t(getpagesize());
+   //return sysconf(_SC_PAGE_SIZE);
    return sysconf(_SC_PAGESIZE);
 #endif
 }
@@ -636,6 +638,8 @@ MemoryMappedFile::MemoryMappedFile()
    , mMapSize(0)
    , mPtr(0)
 #ifdef _WIN32
+   , mFD(INVALID_HANDLE_VALUE)
+   , mMH(INVALID_HANDLE_VALUE)
 #else
    , mFD(-1)
 #endif
@@ -649,6 +653,8 @@ MemoryMappedFile::MemoryMappedFile(const Path &path, unsigned char flags, size_t
    , mMapSize(0)
    , mPtr(0)
 #ifdef _WIN32
+   , mFD(INVALID_HANDLE_VALUE)
+   , mMH(INVALID_HANDLE_VALUE)
 #else
    , mFD(-1)
 #endif
@@ -700,10 +706,56 @@ Status MemoryMappedFile::open(const Path &path, unsigned char flags, size_t offs
       return Status(false, "gcore::MemoryMappedFile::open: Invalid file path.");
    }
    
+   if (size == 0)
+   {
+      if ((flags & WRITE) == 0 && path.fileSize() == 0)
+      {
+         return Status(false, "gcore::MemoryMappedFile::open: 'size' argument cannot be zero when file is empty.");
+      }
+   }
+   
 #ifdef _WIN32
    
-   // TODO
+   DWORD access = 0;
+   DWORD sharemode = 0;
+   
+   if ((flags & READ) != 0)
+   {
+      access = access | GENERIC_READ;
+      if ((flags & SHARED) != 0)
+      {
+         sharemode = sharemode | FILE_SHARE_READ;
+      }
+   }
+   if ((flags & WRITE) != 0)
+   {
+      access = access | GENERIC_WRITE;
+      if ((flags & SHARED) != 0)
+      {
+         sharemode = sharemode | FILE_SHARE_WRITE;
+      }
+   }
+   
+   if (access == 0)
+   {
+      access = GENERIC_READ;
+      if ((flags & SHARED) != 0)
+      {
+         sharemode = sharemode | FILE_SHARE_READ;
+      }
+   }
+   
+   HANDLE fd = CreateFile(path.fullname('/').c_str(), access, sharemode, NULL, OPEN_EXISTING, 0, NULL);
+   
+   if (fd == INVALID_HANDLE_VALUE)
+   {
+      return Status(false, std_errno(), "gcore::MemoryMappedFile::open");
+   }
 
+   mFD = fd;
+   mPath = path;
+   mFlags = flags;
+   
 #else
    
    int oflags = 0;
@@ -726,15 +778,9 @@ Status MemoryMappedFile::open(const Path &path, unsigned char flags, size_t offs
    
    if (oflags == 0)
    {
-      // fallback to readonly
       flags = flags | READ;
       oflags = oflags | O_RDONLY;
    }
-   
-   // other oflags ?
-   //   O_APPEND
-   //   O_CREAT
-   //   O_TRUNC
    
    int fd = ::open(path.fullname('/').c_str(), oflags);
    
@@ -762,13 +808,13 @@ Status MemoryMappedFile::reopen(size_t offset, size_t size)
    if (mPtr)
    {
 #ifdef _WIN32
-      // TODO
+      if (!UnmapViewOfFile(mPtr))
 #else
       if (munmap(mPtr, mSize) != 0)
+#endif
       {
          return Status(false, std_errno(), "gcore::MemoryMappedFile::reopen");
       }
-#endif
       
       mPtr = 0;
       mOffset = 0;
@@ -787,6 +833,9 @@ Status MemoryMappedFile::reopen(size_t offset, size_t size)
    offset = ps * ((offset / ps) + (offset % ps ? 1 : 0));
    size = ps * ((size / ps) + (size % ps ? 1 : 0));
    
+   // keep internal offset to match given one,
+   // round lower
+   
    if (offset > fs)
    {
       return Status(false, "gcore::MemoryMappedFile::reopen: Offset beyond file end.");
@@ -794,7 +843,43 @@ Status MemoryMappedFile::reopen(size_t offset, size_t size)
    
 #ifdef _WIN32
    
-   // TODO
+   if (mMH == INVALID_HANDLE_VALUE || size > mMapSize)
+   {
+      DWORD prot = ((mFlags & WRITE) != 0) ? PAGE_READWRITE : PAGE_READONLY;
+      DWORD hsz = DWORD((size & 0xFFFFFFFF00000000) >> 32);
+      DWORD lsz = DWORD(size & 0x00000000FFFFFFFF);
+      
+      if (mMH != INVALID_HANDLE_VALUE)
+      {
+         CloseHandle(mMH);
+         mMH = INVALID_HANDLE_VALUE;
+      }
+      
+      std::cout << "Create file mapping (hi: " << hsz << ", lo: " << lsz << ")" << std::endl;
+      HANDLE mh = CreateFileMapping(mFD, NULL, prot, hsz, lsz, NULL);
+      
+      if (mh == NULL) //INVALID_HANDLE_VALUE)
+      {
+         return Status(false, std_errno(), "gcore::MemoryMappedFile::open");
+      }
+      else
+      {
+         mMH = mh;
+      }
+   }
+   
+   DWORD prot = ((mFlags & WRITE) != 0) ? FILE_MAP_ALL_ACCESS : FILE_MAP_READ;
+   DWORD hoff = DWORD((offset & 0xFFFFFFFF00000000) >> 32);
+   DWORD loff = DWORD(offset & 0x00000000FFFFFFFF);
+   
+   std::cout << "Map view" << std::endl;
+   mPtr = MapViewOfFile(mMH, prot, hoff, loff, size);
+   
+   if (mPtr == NULL)
+   {
+      mPtr = 0;
+      return Status(false, std_errno(), "gcore::MemoryMappedFile::reopen");
+   }
    
 #else
    
@@ -825,22 +910,21 @@ Status MemoryMappedFile::reopen(size_t offset, size_t size)
       mPtr = 0;
       return Status(false, std_errno(), "gcore::MemoryMappedFile::reopen");
    }
-   else
-   {
-      mOffset = offset;
-      mMapSize = size;
-      
-      if (offset + size > fs)
-      {
-         mSize = fs - offset;
-      }
-      else
-      {
-         mSize = mMapSize;
-      }
-   }
    
 #endif
+   
+   mOffset = offset;
+   mMapSize = size;
+   
+   // on read-only mode, adjust mSize to actual file size
+   if ((mFlags & WRITE) == 0 && offset + size > fs)
+   {
+      mSize = fs - offset;
+   }
+   else
+   {
+      mSize = mMapSize;
+   }
    
    return Status(true);
 }
@@ -850,12 +934,22 @@ Status MemoryMappedFile::sync(bool block)
    if (mPtr && (mFlags & SHARED) != 0)
    {
 #ifdef _WIN32
-      return Status(false, "gcore::MemoryMappedFile::sync: Not implmented");
+      if (!FlushViewOfFile(mPtr, mMapSize))
 #else
       // Other flags? MS_INVALIDATE
       if (msync(mPtr, mMapSize, (block ? MS_SYNC : MS_ASYNC)) != 0)
+#endif
       {
          return Status(false, std_errno(), "gcore::MemoryMappedFile::sync");
+      }
+#ifdef _WIN32
+      if (block)
+      {
+         // FlushViewOfFile is non-blocking
+         if (!FlushFileBuffers(mFD))
+         {
+            return Status(false, std_errno(), "gcore::MemoryMappedFile::sync");
+         }
       }
 #endif
    }
@@ -869,14 +963,21 @@ void MemoryMappedFile::close()
    if (mPtr)
    {
 #ifdef _WIN32
-      // TODO
+      UnmapViewOfFile(mPtr);
 #else
       munmap(mPtr, mMapSize);
 #endif
    }
    
 #ifdef _WIN32
-   // TODO
+   if (mMH != INVALID_HANDLE_VALUE)
+   {
+      CloseHandle(mMH);
+   }
+   if (mFD != INVALID_HANDLE_VALUE)
+   {
+      CloseHandle(mFD);
+   }
 #else
    if (mFD != -1)
    {
@@ -891,7 +992,8 @@ void MemoryMappedFile::close()
    mPath = "";
    mFlags = 0;
 #ifdef _WIN32
-   // TODO
+   mFD = INVALID_HANDLE_VALUE;
+   mMH = INVALID_HANDLE_VALUE;
 #else
    mFD = -1;
 #endif

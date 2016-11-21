@@ -172,7 +172,8 @@ namespace gcore
       size_t mMapSize;
       void *mPtr;
 #ifdef _WIN32
-      // windows specifics here
+      HANDLE mFD;
+      HANDLE mMH;
 #else
       int mFD;
 #endif

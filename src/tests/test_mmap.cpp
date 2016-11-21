@@ -49,6 +49,8 @@ int main(int argc, char **argv)
       return 1;
    }
    
+   std::cout << "Page size: " << gcore::MemoryMappedFile::PageSize() << std::endl;
+   
    gcore::MemoryMappedFile mmf;
    
    std::cout << "Map file to memory" << std::endl;

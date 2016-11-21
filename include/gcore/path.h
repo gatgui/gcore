@@ -33,8 +33,6 @@ USA.
 
 namespace gcore
 {
-   class GCORE_API MemoryMappedFile;
-   
    class GCORE_API Path
    {
    public:
@@ -120,7 +118,7 @@ namespace gcore
       String mFullName;
    };
    
-   class GCORE_API MemoryMappedFile
+   class GCORE_API MMap
    {
    public:
       
@@ -128,34 +126,37 @@ namespace gcore
       
       enum Flags
       {
-         READ = 0x01,
-         WRITE = 0x02,
-         SHARED = 0x04
+         READ_ONLY = 0x01,
+         RANDOM_ACCESS = 0x02,
+         SEQUENTIAL_ACCESS = 0x04
       };
       
    public:
       
-      MemoryMappedFile();
-      MemoryMappedFile(const Path &path, unsigned char flags, size_t offset=0, size_t size=0);
-      ~MemoryMappedFile();
-      
-      size_t size() const;
-      void* data();
-      const void* data() const;
+      MMap();
+      MMap(const Path &path, unsigned char flags=READ_ONLY, size_t offset=0, size_t size=0);
+      ~MMap();
       
       bool valid() const;
-      
-      Status open(const Path &path, unsigned char flags, size_t offset=0, size_t size=0);
-      Status reopen(size_t offset, size_t size);
-      Status sync(bool block); // for shared memory mapped file
+      Status open(const Path &path, unsigned char flags=READ_ONLY, size_t offset=0, size_t size=0);
+      Status remap(size_t offset, size_t size);
+      Status sync(bool block);
+      // lock/unlock
       void close();
       
-      // lock/unlock
+      size_t size() const;
+      unsigned char* data();
+      const unsigned char* data() const;
+      inline unsigned char at(size_t i) const { return data()[i]; }
+      inline unsigned char& at(size_t i) { return data()[i]; }
+      
+      inline unsigned char operator[](size_t i) const { return data()[i]; }
+      inline unsigned char& operator[](size_t i) { return data()[i]; }
       
    private:
       
-      MemoryMappedFile(const MemoryMappedFile &rhs);
-      MemoryMappedFile& operator=(const MemoryMappedFile &rhs);
+      MMap(const MMap &rhs);
+      MMap& operator=(const MMap &rhs);
    
    private:
       
@@ -165,7 +166,7 @@ namespace gcore
       size_t mSize;
       size_t mMapOffset;
       size_t mMapSize;
-      void *mPtr;
+      unsigned char *mPtr;
 #ifdef _WIN32
       HANDLE mFD;
       HANDLE mMH;

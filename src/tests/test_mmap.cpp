@@ -49,13 +49,13 @@ int main(int argc, char **argv)
       return 1;
    }
    
-   std::cout << "Page size: " << gcore::MemoryMappedFile::PageSize() << std::endl;
+   std::cout << "Page size: " << gcore::MMap::PageSize() << std::endl;
    
-   gcore::MemoryMappedFile mmf;
+   gcore::MMap mmf;
    
    std::cout << "Map file to memory" << std::endl;
    
-   stat = mmf.open(path, gcore::MemoryMappedFile::READ, 20);
+   stat = mmf.open(path, gcore::MMap::READ_ONLY, 20);
    if (!stat)
    {
       std::cerr << stat << std::endl;
@@ -64,10 +64,9 @@ int main(int argc, char **argv)
    
    std::cout << "Open successfully: size = " << mmf.size() << " [file size = " << path.fileSize() << "]" << std::endl;
    
-   unsigned char *bytes = (unsigned char*) mmf.data();
    for (size_t i=0; i<mmf.size(); ++i)
    {
-      std::cout << bytes[i];
+      std::cout << mmf[i];
    }
    
    std::cout << std::endl;

@@ -635,6 +635,7 @@ MemoryMappedFile::MemoryMappedFile()
    : mFlags(0)
    , mOffset(0)
    , mSize(0)
+   , mMapOffset(0)
    , mMapSize(0)
    , mPtr(0)
 #ifdef _WIN32
@@ -650,6 +651,7 @@ MemoryMappedFile::MemoryMappedFile(const Path &path, unsigned char flags, size_t
    : mFlags(0)
    , mOffset(0)
    , mSize(0)
+   , mMapOffset(0)
    , mMapSize(0)
    , mPtr(0)
 #ifdef _WIN32
@@ -669,27 +671,17 @@ MemoryMappedFile::~MemoryMappedFile()
 
 size_t MemoryMappedFile::size() const
 {
-   return mSize;
-}
-
-size_t MemoryMappedFile::fileOffset() const
-{
-   return mOffset;
-}
-
-size_t MemoryMappedFile::mappedSize() const
-{
-   return mMapSize;
+   return ((mFlags & WRITE) == 0 ? mSize : mMapSize);
 }
 
 void* MemoryMappedFile::data()
 {
-   return mPtr;
+   return (void*) (((unsigned char*)mPtr) + (mOffset - mMapOffset));
 }
 
 const void* MemoryMappedFile::data() const
 {
-   return mPtr;
+   return (const void*) (((const unsigned char*)mPtr) + (mOffset - mMapOffset));
 }
 
 bool MemoryMappedFile::valid() const
@@ -738,6 +730,7 @@ Status MemoryMappedFile::open(const Path &path, unsigned char flags, size_t offs
    
    if (access == 0)
    {
+      // fallback to read only
       access = GENERIC_READ;
       if ((flags & SHARED) != 0)
       {
@@ -778,6 +771,7 @@ Status MemoryMappedFile::open(const Path &path, unsigned char flags, size_t offs
    
    if (oflags == 0)
    {
+      // fallback to read only
       flags = flags | READ;
       oflags = oflags | O_RDONLY;
    }
@@ -810,7 +804,7 @@ Status MemoryMappedFile::reopen(size_t offset, size_t size)
 #ifdef _WIN32
       if (!UnmapViewOfFile(mPtr))
 #else
-      if (munmap(mPtr, mSize) != 0)
+      if (munmap(mPtr, mMapSize) != 0)
 #endif
       {
          return Status(false, std_errno(), "gcore::MemoryMappedFile::reopen");
@@ -819,6 +813,7 @@ Status MemoryMappedFile::reopen(size_t offset, size_t size)
       mPtr = 0;
       mOffset = 0;
       mSize = 0;
+      mMapOffset = 0;
       mMapSize = 0;
    }
    
@@ -830,24 +825,34 @@ Status MemoryMappedFile::reopen(size_t offset, size_t size)
       size = fs;
    }
    
-   offset = ps * ((offset / ps) + (offset % ps ? 1 : 0));
-   size = ps * ((size / ps) + (size % ps ? 1 : 0));
-   
-   // keep internal offset to match given one,
-   // round lower
-   
-   if (offset > fs)
+   if ((mFlags & WRITE) == 0)
    {
-      return Status(false, "gcore::MemoryMappedFile::reopen: Offset beyond file end.");
+      if (size == 0)
+      {
+         return Status(false, "gcore::MemoryMappedFile::open: 'size' argument cannot be zero when file is empty.");
+      }
+      if (offset > fs)
+      {
+         return Status(false, "gcore::MemoryMappedFile::open: 'offset' argument pointing after file end.");
+      }
    }
+   
+   // round down offset
+   size_t moffset = ps * (offset / ps);
+   
+   // add remaining bytes to required size
+   size_t msize = size + (offset % ps);
+   
+   // round up size
+   msize = ps * ((msize / ps) + (msize % ps ? 1 : 0));
    
 #ifdef _WIN32
    
-   if (mMH == INVALID_HANDLE_VALUE || size > mMapSize)
+   if (mMH == INVALID_HANDLE_VALUE || msize > mMapSize)
    {
       DWORD prot = ((mFlags & WRITE) != 0) ? PAGE_READWRITE : PAGE_READONLY;
-      DWORD hsz = DWORD((size & 0xFFFFFFFF00000000) >> 32);
-      DWORD lsz = DWORD(size & 0x00000000FFFFFFFF);
+      DWORD hsz = DWORD((msize & 0xFFFFFFFF00000000) >> 32);
+      DWORD lsz = DWORD(msize & 0x00000000FFFFFFFF);
       
       if (mMH != INVALID_HANDLE_VALUE)
       {
@@ -869,11 +874,11 @@ Status MemoryMappedFile::reopen(size_t offset, size_t size)
    }
    
    DWORD prot = ((mFlags & WRITE) != 0) ? FILE_MAP_ALL_ACCESS : FILE_MAP_READ;
-   DWORD hoff = DWORD((offset & 0xFFFFFFFF00000000) >> 32);
-   DWORD loff = DWORD(offset & 0x00000000FFFFFFFF);
+   DWORD hoff = DWORD((moffset & 0xFFFFFFFF00000000) >> 32);
+   DWORD loff = DWORD(moffset & 0x00000000FFFFFFFF);
    
    std::cout << "Map view" << std::endl;
-   mPtr = MapViewOfFile(mMH, prot, hoff, loff, size);
+   mPtr = MapViewOfFile(mMH, prot, hoff, loff, msize);
    
    if (mPtr == NULL)
    {
@@ -903,7 +908,7 @@ Status MemoryMappedFile::reopen(size_t offset, size_t size)
       flags = flags | MAP_PRIVATE;
    }
    
-   mPtr = mmap(NULL, size, prot, flags, mFD, offset);
+   mPtr = mmap(NULL, msize, prot, flags, mFD, moffset);
    
    if (mPtr == (void*)-1)
    {
@@ -913,18 +918,25 @@ Status MemoryMappedFile::reopen(size_t offset, size_t size)
    
 #endif
    
-   mOffset = offset;
-   mMapSize = size;
+   mMapOffset = moffset;
+   mMapSize = msize;
    
-   // on read-only mode, adjust mSize to actual file size
-   if ((mFlags & WRITE) == 0 && offset + size > fs)
+   mOffset = offset;
+   mSize = size;
+   
+   // In read-only mode, adjust mSize to actual file size
+   if ((mFlags & WRITE) == 0)
    {
-      mSize = fs - offset;
+      if ((mOffset + mSize) > fs)
+      {
+         mSize = fs - mOffset;
+      }
    }
-   else
-   {
-      mSize = mMapSize;
-   }
+   
+#ifdef _DEBUG
+   std::cout << "Required: offset=" << mOffset << ", size=" << mSize << std::endl;
+   std::cout << "Mapped: offset=" << mMapOffset << ", size=" << mMapSize << std::endl;
+#endif
    
    return Status(true);
 }
@@ -988,6 +1000,7 @@ void MemoryMappedFile::close()
    mPtr = 0;
    mSize = 0;
    mOffset = 0;
+   mMapOffset = 0;
    mMapSize = 0;
    mPath = "";
    mFlags = 0;

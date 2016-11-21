@@ -139,13 +139,7 @@ namespace gcore
       MemoryMappedFile(const Path &path, unsigned char flags, size_t offset=0, size_t size=0);
       ~MemoryMappedFile();
       
-      // actual offset in file (multiple of PageSize)
-      size_t fileOffset() const;
-      // mapped memory size (multiple of PageSize)
-      size_t mappedSize() const;
-      // usefull data size
       size_t size() const;
-      // mapped data
       void* data();
       const void* data() const;
       
@@ -169,6 +163,7 @@ namespace gcore
       unsigned char mFlags;
       size_t mOffset;
       size_t mSize;
+      size_t mMapOffset;
       size_t mMapSize;
       void *mPtr;
 #ifdef _WIN32

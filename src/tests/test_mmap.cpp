@@ -55,14 +55,14 @@ int main(int argc, char **argv)
    
    std::cout << "Map file to memory" << std::endl;
    
-   stat = mmf.open(path, gcore::MemoryMappedFile::READ);
+   stat = mmf.open(path, gcore::MemoryMappedFile::READ, 20);
    if (!stat)
    {
       std::cerr << stat << std::endl;
       return 1;
    }
    
-   std::cout << "Open successfully: size = " << mmf.size() << " [file size = " << path.fileSize() << ", map size: " << mmf.mappedSize() << "]" << std::endl;
+   std::cout << "Open successfully: size = " << mmf.size() << " [file size = " << path.fileSize() << "]" << std::endl;
    
    unsigned char *bytes = (unsigned char*) mmf.data();
    for (size_t i=0; i<mmf.size(); ++i)

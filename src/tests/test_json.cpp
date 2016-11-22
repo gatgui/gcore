@@ -269,8 +269,8 @@ int main(int argc, char **argv)
       
       // Stream parsing
       
-      std::ifstream ifs(path);
-      if (ifs.is_open())
+      std::ifstream ifs;
+      if (path.open(ifs))
       {
          std::streampos lastPos = ifs.tellg();
          size_t count = 0;

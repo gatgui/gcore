@@ -965,6 +965,17 @@ Status Value::Parse(const char *path, Value::ParserCallbacks &callbacks)
    }
 }
 
+Status Value::Parse(std::istream &is, ParserCallbacks &callbacks)
+{
+   json::Value val;
+   
+   Status rv = val.read(is, true, &callbacks);
+   
+   val.reset();
+   
+   return rv;
+}
+
 struct ParserStackItem
 {
    Value::ParserState state;
@@ -1008,8 +1019,14 @@ static Status Failed(Value *value, size_t line, size_t col, const char *fmt, ...
 Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb)
 {
    static const char *sSpaces = " \t\r\n";
+   static const char *sNumberChars = "0123456789.eE+-";
    
    reset();
+   
+   if (!in.good())
+   {
+      return Status(false, "Invalid input stream.");
+   }
    
    String remain, tmp;
    size_t p0, p1, lineno = 0, coloff = 0;
@@ -1020,12 +1037,15 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
    String key = "";
    bool readSep = true;
    bool hasSep = false;
+   std::streampos orgPos = in.tellg();
+   std::streampos lastReadPos = orgPos;
    
    while (in.good())
    {
       if (remain.length() == 0)
       {
          // Note: getline discards the trailing '\n'
+         lastReadPos = in.tellg();
          std::getline(in, remain);
          #ifdef _DEBUG
          std::cout << "Parse| Read line '" << remain << "'" << std::endl;
@@ -1050,6 +1070,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
          {
             if (remain[p0] != '{')
             {
+               in.seekg(orgPos, in.beg);
                return Failed(this, lineno, coloff+p0, "Expect object at top level");
             }
             else
@@ -1089,6 +1110,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
             {
                if (stack.size() == 0)
                {
+                  in.seekg(orgPos, in.beg);
                   return Failed(this, lineno, coloff+p0, "Invalid parser state (read object)");
                }
                
@@ -1096,6 +1118,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                {
                   if (remain[p0] == ',')
                   {
+                     in.seekg(orgPos, in.beg);
                      return Failed(this, lineno, coloff+p0, "Unexpected ,");
                   }
                   
@@ -1105,6 +1128,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                {
                   if (remain[p0] != ',' && remain[p0] != '}')
                   {
+                     in.seekg(orgPos, in.beg);
                      return Failed(this, lineno, coloff+p0, "Expected , or }");
                   }
                   
@@ -1132,11 +1156,13 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
          {
             if (hasSep)
             {
+               in.seekg(orgPos, in.beg);
                return Failed(this, lineno, coloff+p0, "Unexpected , before }");
             }
             
             if (stack.size() == 0)
             {
+               in.seekg(orgPos, in.beg);
                return Failed(this, lineno, coloff+p0, "Un-matched }");
             }
             
@@ -1155,16 +1181,14 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                }
                else
                {
-                  remain = remain.substr(p0 + 1);
-                  
-                  if (remain.strip().length() > 0)
-                  {
-                     return Failed(this, lineno, coloff+p0, "Unexpected characters after top level object's end");
-                  }
-                  else
-                  {
-                     return Status(true);
-                  }
+                  // Reset stream position just after p0
+                  // - p0 is relative to begining or 'remain'
+                  // - coloff is the 1-based column number of the begining of 'remain'
+                  //   => coloff + p0 - 1 is the offset in last read line which starts at 'lastReadPos'
+                  // Next character position in stream is thus:
+                  //   lastReadPos + (coloff - 1) + p0 + 1
+                  in.seekg(lastReadPos + std::streamoff(coloff + p0));
+                  return Status(true);
                }
             }
             else
@@ -1174,6 +1198,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                
                if (state != ReadObject && state != ReadArray)
                {
+                  in.seekg(orgPos, in.beg);
                   return Failed(this, lineno, coloff+p0, "Parent value must be either an object or an array");
                }
             }
@@ -1193,6 +1218,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
          }
          else
          {
+            in.seekg(orgPos, in.beg);
             return Failed(this, lineno, coloff+p0, "Expect string value");
          }
          
@@ -1211,6 +1237,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
             {
                if (stack.size() == 0)
                {
+                  in.seekg(orgPos, in.beg);
                   return Failed(this, lineno, coloff+p0, "Invalid parser state (read array)");
                }
                
@@ -1218,6 +1245,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                {
                   if (remain[p0] == ',')
                   {
+                     in.seekg(orgPos, in.beg);
                      return Failed(this, lineno, coloff+p0, "Unexpected ,");
                   }
                   
@@ -1227,6 +1255,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                {
                   if (remain[p0] != ',' && remain[p0] != ']')
                   {
+                     in.seekg(orgPos, in.beg);
                      return Failed(this, lineno, coloff+p0, "Expected , or ]");
                   }
                   
@@ -1254,11 +1283,13 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
          {
             if (hasSep)
             {
+               in.seekg(orgPos, in.beg);
                return Failed(this, lineno, coloff+p0, "Unexpected , before ]");
             }
             
             if (stack.size() == 0)
             {
+               in.seekg(orgPos, in.beg);
                return Failed(this, lineno, coloff+p0, "Un-matched ]");
             }
             
@@ -1266,6 +1297,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
             
             if (stack.size() == 0)
             {
+               in.seekg(orgPos, in.beg);
                return Failed(this, lineno, coloff+p0, "Orphan array value");
             }
             else
@@ -1280,6 +1312,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                
                if (state != ReadObject && state != ReadArray)
                {
+                  in.seekg(orgPos, in.beg);
                   return Failed(this, lineno, coloff+p0, "Parent value must be either an object or an array");
                }
                
@@ -1364,11 +1397,13 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                          (str[p1 + 4] < '0' || str[p1 + 4] > '9') || 
                          (str[p1 + 5] < '0' || str[p1 + 5] > '9'))
                      {
+                        in.seekg(orgPos, in.beg);
                         return Failed(this, lineno, coloff+p1, "Expected 4 digits after \\u escape character");
                      }
                      p0 = p1 + 6;
                      break;
                   default:
+                     in.seekg(orgPos, in.beg);
                      return Failed(this, lineno, coloff+p1, "Unsupported escape character: \\%c", str[p1 + 1]);
                   }
                   
@@ -1377,6 +1412,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                else
                {
                   // trailing '\'
+                  in.seekg(orgPos, in.beg);
                   return Failed(this, lineno, coloff+p1, "Incomplete escape character");
                }
             }
@@ -1398,6 +1434,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                
                if (p1 == String::npos || remain[p1] != ':')
                {
+                  in.seekg(orgPos, in.beg);
                   return Failed(this, lineno, coloff+p1, "Expected : after string value");
                }
                
@@ -1409,6 +1446,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
             {
                if (stack.size() == 0)
                {
+                  in.seekg(orgPos, in.beg);
                   return Failed(this, lineno, coloff, "Orphan string");
                }
                
@@ -1427,6 +1465,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                   {
                      if (key.length() == 0)
                      {
+                        in.seekg(orgPos, in.beg);
                         return Failed(this, lineno, coloff, "Undefined or empty object member name");
                      }
                      (*(psi.value))[key] = str;
@@ -1439,6 +1478,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                   }
                   else
                   {
+                     in.seekg(orgPos, in.beg);
                      return Failed(this, lineno, coloff, "Parent value must be either an object or an array");
                   }
                }
@@ -1465,6 +1505,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
          {
             if (stack.size() == 0)
             {
+               in.seekg(orgPos, in.beg);
                return Failed(this, lineno, coloff+p0, "Orphan value");
             }
             
@@ -1474,11 +1515,13 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
             {
                if (key.length() == 0)
                {
+                  in.seekg(orgPos, in.beg);
                   return Failed(this, lineno, coloff+p0, "Undefined or empty object member name");
                }
             }
             else if (psi.state != ReadArray)
             {
+               in.seekg(orgPos, in.beg);
                return Failed(this, lineno, coloff+p0, "Parent value must be either an object or an array");
             }
             
@@ -1594,7 +1637,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                      // must be a number
                      String numstr;
                      
-                     p1 = remain.find_first_of(sSpaces, p0);
+                     p1 = remain.find_first_not_of(sNumberChars, p0);
                      
                      if (p1 == String::npos)
                      {
@@ -1613,6 +1656,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                      
                      if (sscanf(numstr.c_str(), "%lf", &val) != 1)
                      {
+                        in.seekg(orgPos, in.beg);
                         return Failed(this, lineno, coloff, "Expected number value");
                      }
                      
@@ -1641,19 +1685,33 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
          std::cout << "Parse|End (remain = '" << remain << "')" << std::endl;
          #endif
          
-         p0 = remain.find_first_not_of(sSpaces);
+         // p0 = remain.find_first_not_of(sSpaces);
+         // if (p0 != String::npos)
+         // {
+         //    in.seekg(orgPos, in.beg);
+         //    return Failed(this, lineno, coloff+p0, "Content after top level object");
+         // }
          
-         if (p0 != String::npos)
-         {
-            return Failed(this, lineno, coloff+p0, "Content after top level object");
-         }
+         remain = "";
          
       default:
          break;
       }
    }
    
-   return Status(true);
+   if (stack.size() != 0)
+   {
+      // in.good() is necessarily false
+      // need to clear error state before restoring stream position
+      in.clear();
+      in.seekg(orgPos, in.beg);
+      reset();
+      return Status(false, "Incomplete JSON stream");
+   }
+   else
+   {
+      return Status(true);
+   }
 }
 
 } // json

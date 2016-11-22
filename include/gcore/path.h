@@ -29,6 +29,7 @@ USA.
 #include <gcore/list.h>
 #include <gcore/platform.h>
 #include <gcore/date.h>
+#include <gcore/status.h>
 
 namespace gcore
 {
@@ -116,6 +117,65 @@ namespace gcore
       StringList mPaths;
       String mFullName;
    };
+   
+   class GCORE_API MMap
+   {
+   public:
+      
+      static size_t PageSize();
+      
+      enum Flags
+      {
+         READ_ONLY = 0x01,
+         RANDOM_ACCESS = 0x02,
+         SEQUENTIAL_ACCESS = 0x04
+      };
+      
+   public:
+      
+      MMap();
+      MMap(const Path &path, unsigned char flags=READ_ONLY, size_t offset=0, size_t size=0);
+      ~MMap();
+      
+      bool valid() const;
+      Status open(const Path &path, unsigned char flags=READ_ONLY, size_t offset=0, size_t size=0);
+      Status remap(size_t offset, size_t size);
+      Status sync(bool block);
+      // lock/unlock
+      void close();
+      
+      size_t size() const;
+      unsigned char* data();
+      const unsigned char* data() const;
+      inline unsigned char at(size_t i) const { return data()[i]; }
+      inline unsigned char& at(size_t i) { return data()[i]; }
+      
+      inline unsigned char operator[](size_t i) const { return data()[i]; }
+      inline unsigned char& operator[](size_t i) { return data()[i]; }
+      
+   private:
+      
+      MMap(const MMap &rhs);
+      MMap& operator=(const MMap &rhs);
+   
+   private:
+      
+      Path mPath;
+      unsigned char mFlags;
+      size_t mOffset;
+      size_t mSize;
+      size_t mMapOffset;
+      size_t mMapSize;
+      unsigned char *mPtr;
+#ifdef _WIN32
+      HANDLE mFD;
+      HANDLE mMH;
+#else
+      int mFD;
+#endif
+   };
+   
+   // ---
    
    inline bool Path::operator!=(const Path &rhs) const
    {

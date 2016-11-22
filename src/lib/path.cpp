@@ -615,5 +615,381 @@ Path Path::CurrentDir()
    return rv;
 }
 
+// ---
+
+size_t MMap::PageSize()
+{
+#ifdef _WIN32
+   SYSTEM_INFO si;
+   ZeroMemory(&si, sizeof(si));
+   GetSystemInfo(&si);
+   return size_t(si.dwAllocationGranularity);
+#else
+   return sysconf(_SC_PAGESIZE);
+#endif
+}
+
+MMap::MMap()
+   : mFlags(0)
+   , mOffset(0)
+   , mSize(0)
+   , mMapOffset(0)
+   , mMapSize(0)
+   , mPtr(0)
+#ifdef _WIN32
+   , mFD(INVALID_HANDLE_VALUE)
+   , mMH(NULL)
+#else
+   , mFD(-1)
+#endif
+{
+}
+
+MMap::MMap(const Path &path, unsigned char flags, size_t offset, size_t size)
+   : mFlags(0)
+   , mOffset(0)
+   , mSize(0)
+   , mMapOffset(0)
+   , mMapSize(0)
+   , mPtr(0)
+#ifdef _WIN32
+   , mFD(INVALID_HANDLE_VALUE)
+   , mMH(NULL)
+#else
+   , mFD(-1)
+#endif
+{
+   open(path, flags, offset, size);
+}
+
+MMap::~MMap()
+{
+   close();
+}
+
+size_t MMap::size() const
+{
+   return ((mFlags & READ_ONLY) != 0 ? mSize : mMapSize);
+}
+
+unsigned char* MMap::data()
+{
+   return mPtr + (mOffset - mMapOffset);
+}
+
+const unsigned char* MMap::data() const
+{
+   return mPtr + (mOffset - mMapOffset);
+}
+
+bool MMap::valid() const
+{
+   return (mPtr != 0);
+}
+
+Status MMap::open(const Path &path, unsigned char flags, size_t offset, size_t size)
+{
+   close();
+   
+   if (!path.isFile())
+   {
+      return Status(false, "gcore::MMap::open: Invalid file path.");
+   }
+   
+   if (size == 0)
+   {
+      if ((flags & READ_ONLY) != 0 && path.fileSize() == 0)
+      {
+         return Status(false, "gcore::MMap::open: 'size' argument cannot be zero when file is empty.");
+      }
+   }
+   
+#ifdef _WIN32
+   
+   DWORD access = GENERIC_READ;
+   DWORD sharemode = FILE_SHARE_READ;
+   DWORD hint = FILE_ATTRIBUTE_NORMAL;
+   
+   if ((flags & READ_ONLY) == 0)
+   {
+      access = access | GENERIC_WRITE;
+      sharemode = sharemode | FILE_SHARE_WRITE;
+   }
+   
+   if ((flags & RANDOM_ACCESS) != 0)
+   {
+      if ((flags & SEQUENTIAL_ACCESS) == 0)
+      {
+         hint = FILE_FLAG_RANDOM_ACCESS;
+      }
+   }
+   else if ((flags & SEQUENTIAL_ACCESS) != 0)
+   {
+      hint = FILE_FLAG_SEQUENTIAL_SCAN;
+   }
+   
+   HANDLE fd = CreateFile(path.fullname('/').c_str(), access, sharemode, NULL, OPEN_EXISTING, hint, NULL);
+   
+   if (fd == INVALID_HANDLE_VALUE)
+   {
+      return Status(false, std_errno(), "gcore::MMap::open");
+   }
+
+   mFD = fd;
+   mPath = path;
+   mFlags = flags;
+   
+#else
+   
+   int oflags = ((flags & READ_ONLY) == 0 ? O_RDONLY : O_RDWR);
+   
+   int fd = ::open(path.fullname('/').c_str(), oflags);
+   
+   if (fd == -1)
+   {
+      return Status(false, std_errno(), "gcore::MMap::open");
+   }
+   
+   mFD = fd;
+   mPath = path;
+   mFlags = flags;
+   
+#endif
+   
+   return remap(offset, size);
+}
+
+Status MMap::remap(size_t offset, size_t size)
+{
+   if (!mPath.isFile())
+   {
+      return Status(false, "gcore::MMap::remap: Invalid file path.");
+   }
+   
+   if (mPtr)
+   {
+#ifdef _WIN32
+      if (!UnmapViewOfFile(mPtr))
+#else
+      if (munmap(mPtr, mMapSize) != 0)
+#endif
+      {
+         return Status(false, std_errno(), "gcore::MMap::remap");
+      }
+      
+      mPtr = 0;
+      mOffset = 0;
+      mSize = 0;
+      mMapOffset = 0;
+      mMapSize = 0;
+   }
+   
+   size_t ps = PageSize();
+   size_t fs = mPath.fileSize();
+   
+   if (size == 0)
+   {
+      size = fs;
+   }
+   
+   if ((mFlags & READ_ONLY) != 0)
+   {
+      // if (size == 0 && fs == 0)
+      if (size == 0)
+      {
+         return Status(false, "gcore::MMap::remap: 'size' argument cannot be zero when file is empty.");
+      }
+      if (offset > fs)
+      {
+         return Status(false, "gcore::MMap::remap: 'offset' argument pointing after file end.");
+      }
+   }
+   
+   // round down offset
+   size_t moffset = ps * (offset / ps);
+   
+   // add remaining bytes to required size
+   //size_t msize = (size == 0 ? fs : size) + (offset % ps);
+   size_t msize = size + (offset % ps);
+   
+   // round up size to page size
+   msize = ps * ((msize / ps) + (msize % ps ? 1 : 0));
+   
+#ifdef _WIN32
+   
+   // On windows, in readonly mode, msize must not go beyond file size
+   if ((mFlags & READ_ONLY) != 0)
+   {
+      if (msize > fs)
+      {
+         msize = fs;
+      }
+   }
+   
+   if (mMH == NULL || msize > mMapSize)
+   {
+      DWORD prot = ((mFlags & READ_ONLY) != 0 ? PAGE_READONLY : PAGE_READWRITE);
+      DWORD hsz = DWORD(msize >> 32);
+      DWORD lsz = DWORD(msize & 0xFFFFFFFF);
+      
+      if (mMH != NULL)
+      {
+         CloseHandle(mMH);
+         mMH = NULL;
+      }
+      
+      HANDLE mh = CreateFileMapping(mFD, NULL, prot, hsz, lsz, NULL);
+      
+      if (mh == NULL)
+      {
+         return Status(false, std_errno(), "gcore::MMap::open");
+      }
+      else
+      {
+         mMH = mh;
+      }
+   }
+   
+   DWORD prot = ((mFlags & READ_ONLY) != 0 ? FILE_MAP_READ : FILE_MAP_ALL_ACCESS);
+   DWORD hoff = DWORD(moffset >> 32);
+   DWORD loff = DWORD(moffset & 0xFFFFFFFF);
+   
+   mPtr = (unsigned char*) MapViewOfFile(mMH, prot, hoff, loff, msize);
+   
+   if (mPtr == NULL)
+   {
+      mPtr = 0;
+      return Status(false, std_errno(), "gcore::MMap::remap");
+   }
+   
+#else
+   
+   int prot = PROT_READ;
+   int flags = MAP_FILE | MAP_SHARED;
+   
+   if ((mFlags & READ_ONLY) == 0)
+   {
+      prot = prot | PROT_WRITE;
+   }
+   
+   mPtr = (unsigned char*) mmap(NULL, msize, prot, flags, mFD, moffset);
+   
+   if ((void*)mPtr == MAP_FAILED)
+   {
+      mPtr = 0;
+      return Status(false, std_errno(), "gcore::MMap::remap");
+   }
+   
+   int hint = MADV_NORMAL;
+   
+   if ((mFlags & RANDOM_ACCESS) != 0)
+   {
+      if ((mFlags & SEQUENTIAL_ACCESS) == 0)
+      {
+         hint = MADV_RANDOM;
+      }
+   }
+   else if ((mFlags & SEQUENTIAL_ACCESS) != 0)
+   {
+      hint = MADV_SEQUENTIAL;
+   }
+   
+   madvise(mPtr, msize, hint);
+   
+#endif
+   
+   mMapOffset = moffset;
+   mMapSize = msize;
+   
+   mOffset = offset;
+   mSize = size;
+   
+   // In read-only mode, adjust mSize to actual file size
+   if ((mFlags & READ_ONLY) != 0)
+   {
+      if ((mOffset + mSize) > fs)
+      {
+         mSize = fs - mOffset;
+      }
+   }
+   
+#ifdef _DEBUG
+   std::cout << "Required: offset=" << mOffset << ", size=" << mSize << std::endl;
+   std::cout << "Mapped: offset=" << mMapOffset << ", size=" << mMapSize << std::endl;
+#endif
+   
+   return Status(true);
+}
+
+Status MMap::sync(bool block)
+{
+   if (mPtr)
+   {
+#ifdef _WIN32
+      if (!FlushViewOfFile(mPtr, mMapSize))
+#else
+      // Other flags? MS_INVALIDATE
+      if (msync(mPtr, mMapSize, (block ? MS_SYNC : MS_ASYNC)) != 0)
+#endif
+      {
+         return Status(false, std_errno(), "gcore::MMap::sync");
+      }
+#ifdef _WIN32
+      if (block)
+      {
+         // FlushViewOfFile is non-blocking
+         if (!FlushFileBuffers(mFD))
+         {
+            return Status(false, std_errno(), "gcore::MMap::sync");
+         }
+      }
+#endif
+   }
+   return Status(true);
+}
+
+void MMap::close()
+{
+   sync(true);
+   
+   if (mPtr)
+   {
+#ifdef _WIN32
+      UnmapViewOfFile(mPtr);
+#else
+      munmap(mPtr, mMapSize);
+#endif
+   }
+   
+#ifdef _WIN32
+   if (mMH != NULL)
+   {
+      CloseHandle(mMH);
+   }
+   if (mFD != INVALID_HANDLE_VALUE)
+   {
+      CloseHandle(mFD);
+   }
+#else
+   if (mFD != -1)
+   {
+      ::close(mFD);
+   }
+#endif
+   
+   mPtr = 0;
+   mSize = 0;
+   mOffset = 0;
+   mMapOffset = 0;
+   mMapSize = 0;
+   mPath = "";
+   mFlags = 0;
+#ifdef _WIN32
+   mFD = INVALID_HANDLE_VALUE;
+   mMH = NULL;
+#else
+   mFD = -1;
+#endif
+}
 
 } // gcore

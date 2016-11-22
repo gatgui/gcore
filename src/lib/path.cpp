@@ -794,6 +794,7 @@ Status MMap::remap(size_t offset, size_t size)
    
    if ((mFlags & READ_ONLY) != 0)
    {
+      // if (size == 0 && fs == 0)
       if (size == 0)
       {
          return Status(false, "gcore::MMap::remap: 'size' argument cannot be zero when file is empty.");
@@ -808,12 +809,22 @@ Status MMap::remap(size_t offset, size_t size)
    size_t moffset = ps * (offset / ps);
    
    // add remaining bytes to required size
+   //size_t msize = (size == 0 ? fs : size) + (offset % ps);
    size_t msize = size + (offset % ps);
    
-   // round up size
+   // round up size to page size
    msize = ps * ((msize / ps) + (msize % ps ? 1 : 0));
    
 #ifdef _WIN32
+   
+   // On windows, in readonly mode, msize must not go beyond file size
+   if ((mFlags & READ_ONLY) != 0)
+   {
+      if (msize > fs)
+      {
+         msize = fs;
+      }
+   }
    
    if (mMH == NULL || msize > mMapSize)
    {
@@ -827,7 +838,6 @@ Status MMap::remap(size_t offset, size_t size)
          mMH = NULL;
       }
       
-      std::cout << "Create file mapping (hi: " << hsz << ", lo: " << lsz << ")" << std::endl;
       HANDLE mh = CreateFileMapping(mFD, NULL, prot, hsz, lsz, NULL);
       
       if (mh == NULL)
@@ -844,7 +854,6 @@ Status MMap::remap(size_t offset, size_t size)
    DWORD hoff = DWORD(moffset >> 32);
    DWORD loff = DWORD(moffset & 0xFFFFFFFF);
    
-   std::cout << "Map view" << std::endl;
    mPtr = (unsigned char*) MapViewOfFile(mMH, prot, hoff, loff, msize);
    
    if (mPtr == NULL)

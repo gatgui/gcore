@@ -125,6 +125,12 @@ namespace gcore
       String pop();
       Path& push(const String &s);
       
+#ifdef _WIN32
+      const std::wstring& internalName() const;
+#else
+      const std::string& internalName() const;
+#endif
+      
    protected:
       
       void _updateFullName();
@@ -247,6 +253,20 @@ namespace gcore
          return Status(false, "gcore::Path::remove: Invalid path '%s'.", mFullName.c_str());
       }
    }
+   
+#ifdef _WIN32
+   inline const std::wstring& Path::internalName() const
+   {
+      _updateInternals();
+      return mFullNameW;
+   }
+#else
+   inline const std::string& Path::internalName() const
+   {
+      _updateInternals();
+      return mFullNameL;
+   }
+#endif
    
    inline Path operator+(const Path &p0, const Path &p1)
    {

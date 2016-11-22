@@ -1126,7 +1126,7 @@ Status MMap::open(const Path &path, unsigned char flags, size_t offset, size_t s
       hint = FILE_FLAG_SEQUENTIAL_SCAN;
    }
    
-   HANDLE fd = CreateFile(path.fullname('/').c_str(), access, sharemode, NULL, OPEN_EXISTING, hint, NULL);
+   HANDLE fd = CreateFileW(path.internalName().c_str(), access, sharemode, NULL, OPEN_EXISTING, hint, NULL);
    
    if (fd == INVALID_HANDLE_VALUE)
    {
@@ -1141,7 +1141,7 @@ Status MMap::open(const Path &path, unsigned char flags, size_t offset, size_t s
    
    int oflags = ((flags & READ_ONLY) == 0 ? O_RDONLY : O_RDWR);
    
-   int fd = ::open(path.fullname('/').c_str(), oflags);
+   int fd = ::open(path.internalName().c_str(), oflags);
    
    if (fd == -1)
    {

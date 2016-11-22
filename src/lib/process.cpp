@@ -24,7 +24,7 @@ USA.
 #include <gcore/process.h>
 #include <gcore/platform.h>
 #include <gcore/env.h>
-#include <gcore/encoding.h>
+#include <gcore/unicode.h>
 
 //------------------------------------------------------------------------------
 

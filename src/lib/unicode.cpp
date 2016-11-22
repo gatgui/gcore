@@ -396,7 +396,7 @@ static void InitASCIIReverseMappings()
 #ifdef _DEBUG
          if (rmapping.find(mapping[j]) != rmapping.end())
          {
-            std::cerr << "Duplicate code point in '" << EncodingToString(ASCII_ISO_8859_1 + i) << "': " << std::hex << mapping[j] << std::dec << std::endl;
+            std::cerr << "Duplicate code point in '" << EncodingToString(Encoding(ASCII_ISO_8859_1 + i)) << "': " << std::hex << mapping[j] << std::dec << std::endl;
          }
 #endif
          rmapping[mapping[j]] = (unsigned char)(j & 0x00FF);

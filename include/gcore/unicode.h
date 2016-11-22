@@ -122,9 +122,23 @@ namespace gcore
       return n;
    }
    
+   inline const char* UTF8Next(const char *s)
+   {
+      const char *n = s + 1;
+      while (IsUTF8ContinuationChar(*n)) ++n;
+      return n;
+   }
+   
    inline char* UTF8Prev(char *s)
    {
       char *n = s - 1;
+      while (IsUTF8ContinuationChar(*n)) --n;
+      return n;
+   }
+   
+   inline const char* UTF8Prev(const char *s)
+   {
+      const char *n = s - 1;
       while (IsUTF8ContinuationChar(*n)) --n;
       return n;
    }

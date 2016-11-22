@@ -61,6 +61,7 @@ typedef int socklen_t;
 # include <sys/stat.h>
 # include <sys/socket.h>
 # include <sys/select.h>
+# include <sys/mman.h>
 # include <netinet/in.h>
 # include <arpa/inet.h>
 # include <netdb.h>

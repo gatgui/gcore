@@ -154,7 +154,9 @@ bool Instruction::preStep(const char *&cur, MatchInfo &info) const
 {
    if (info.flags & Rex::Reverse)
    {
-      if (--cur < info.beg)
+      //if (--cur < info.beg)
+      cur = UTF8Prev(cur);
+      if (cur < info.beg)
       {
          return false;
       }
@@ -171,22 +173,13 @@ bool Instruction::preStep(const char *&cur, MatchInfo &info) const
 
 const char* Instruction::postStep(const char *cur, MatchInfo &info) const
 {
-   // if (consume ^ reverse) ++input;
-   //Instruction *remain = 0;
-   
    if (!(info.flags & Rex::Reverse))
    {
-      ++cur;
-      //remain = mPrev;
+      //++cur;
+      cur = UTF8Next(cur);
    }
-   //else
-   //{
-   //  remain = mNext;
-   //}
-   //return (remain ? remain->match(cur, info) : cur);
    
    return (info.once ? cur : matchRemain(cur, info));
-   //return matchRemain(cur, info);
 }
 
 const char* Instruction::matchRemain(const char *cur, MatchInfo &info) const
@@ -340,6 +333,84 @@ const char* Single::match(const char *cur, MatchInfo &info) const
 void Single::toStream(std::ostream &os, const String &indent) const
 {
    os << indent << "Single \'" << mChar << "\'" << std::endl;
+   Instruction::toStream(os, indent);
+}
+
+// ---
+
+UnicodeSingle::UnicodeSingle(Codepoint c)
+   : Instruction()
+   , mCode(c)
+   , mUpperChar('\0')
+   , mLowerChar('\0')
+{
+   size_t n = EncodeUTF8(mCode, mConv, 16);
+   
+   if (n == 1)
+   {
+      int diff = 'A' - 'a';
+      
+      if (CHAR_IS(mConv[0], LOWER_CHAR))
+      {
+         mLowerChar = mConv[0];
+         mUpperChar = (char)(mLowerChar + diff);
+      }
+      else if (CHAR_IS(mConv[0], UPPER_CHAR))
+      {
+         mUpperChar = mConv[0];
+         mLowerChar = (char)(mUpperChar - diff);
+      }
+   }
+}
+
+UnicodeSingle::~UnicodeSingle()
+{
+}
+
+Instruction* UnicodeSingle::clone() const
+{
+   return new UnicodeSingle(mCode);
+}
+
+const char* UnicodeSingle::match(const char *cur, MatchInfo &info) const
+{
+#ifdef _DEBUG_REX
+   Log::PrintDebug("[gcore] rex/UnicodeSingle::match: Match single character \'%c\' with \"%s\"... ", mChar, cur);
+#endif
+   
+   register bool matched;
+   
+   if (preStep(cur, info))
+   {
+      if ((info.flags & Rex::NoCase) != 0 && IsUTF8SingleChar(*cur) && mLowerChar != '\0')
+      {
+         matched = (*cur == mLowerChar || *cur == mUpperChar);
+      }
+      else
+      {
+         matched = (DecodeUTF8(cur, cur - info.end) == mCode);
+      }
+      
+      if (matched)
+      {
+#ifdef _DEBUG_REX
+         Log::PrintDebug("[gcore] rex/UnicodeSingle::match: Succeeded");
+#endif
+         return postStep(cur, info);
+      }
+   }
+   
+#ifdef _DEBUG_REX
+   Log::PrintDebug("[gcore] rex/UnicodeSingle::match: Failed");
+#endif
+   return 0;
+}
+
+void UnicodeSingle::toStream(std::ostream &os, const String &indent) const
+{
+   size_t n = CodepointToASCII(mCode, ACF_VARIABLE, mConv, 16);
+   mConv[n] = '\0';
+   os << indent << "UnicodeSingle " << mConv << std::endl;
    Instruction::toStream(os, indent);
 }
 
@@ -762,6 +833,94 @@ const char* CharRange::match(const char *cur, MatchInfo &info) const
    }
 #ifdef _DEBUG_REX
    Log::PrintDebug("[gcore] rex/CharRange::match: Failed");
+#endif
+   return 0;
+}
+
+// ---
+
+UnicodeCharRange::UnicodeCharRange(Codepoint from, Codepoint to)
+   : Instruction()
+   , mFrom(from)
+   , mTo(to)
+{
+}
+
+UnicodeCharRange::~UnicodeCharRange()
+{
+}
+
+Instruction* UnicodeCharRange::clone() const
+{
+   return new UnicodeCharRange(mFrom, mTo);
+}
+
+void UnicodeCharRange::toStream(std::ostream &os, const String &indent) const
+{
+   size_t n = 0;
+   
+   n = CodepointToASCII(mFrom, ACF_VARIABLE, mConv, 16);
+   mConv[n] = '\0';
+   
+   os << indent << "UnicodeCharRange " << mConv << "-";
+   
+   n = CodepointToASCII(mFrom, ACF_VARIABLE, mConv, 16);
+   mConv[n] = '\0';
+   
+   os << mConv << std::endl;
+   
+   Instruction::toStream(os, indent);
+}
+
+const char* UnicodeCharRange::match(const char *cur, MatchInfo &info) const
+{
+#ifdef _DEBUG_REX
+   Log::PrintDebug("[gcore] rex/UnicodeCharRange::match: Match character in range [%x, %x]...", mFrom, mTo);
+#endif
+   register char cc;
+   register int casediff = 0;
+   register bool matched = false;
+   
+   if (preStep(cur, info))
+   {
+      if ((info.flags & Rex::NoCase) != 0 && IsUTF8SingleChar(*cur))
+      {
+         // ASCII character [0-127]
+         casediff = 'A' - 'a';
+         Codepoint ccp = mFrom;
+         while (ccp <= mTo)
+         {
+            if (ccp >= 128)
+            {
+               break;
+            }
+            cc = (char) ccp;
+            if ((*cur == cc) ||
+                  (CHAR_IS(cc, LOWER_CHAR) && (*cur == cc+casediff)) ||
+                  (CHAR_IS(cc, UPPER_CHAR) && (*cur == cc-casediff)))
+            {
+               matched = true;
+               break;
+            }
+            ++ccp;
+         }
+      }
+      else
+      {
+         Codepoint c = DecodeUTF8(cur, cur - info.end);
+         matched = (mFrom <= c && c <= mTo);
+      }
+      
+      if (matched)
+      {
+#ifdef _DEBUG_REX
+         Log::PrintDebug("[gcore] rex/UnicodeCharRange::match: Succeeded");
+#endif
+         return postStep(cur, info);
+      }
+   }
+#ifdef _DEBUG_REX
+   Log::PrintDebug("[gcore] rex/UnicodeCharRange::match: Failed");
 #endif
    return 0;
 }

@@ -167,6 +167,7 @@ namespace gcore
    // Return 0 on error or the number of characters written to out
    GCORE_API size_t CodepointToASCII(Codepoint cp, ASCIICodepointFormat fmt, char *out, size_t outlen);
    // Return 0 on error or the number of characters read from in
+   GCORE_API size_t ASCIIToCodepoint(ASCIICodepointFormat fmt, const char *in, Codepoint &cp);
    GCORE_API size_t ASCIIToCodepoint(const char *in, Codepoint &cp);
    
    // Encode a single Codepoint to utf-8

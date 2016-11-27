@@ -199,11 +199,15 @@ bool Rex::valid() const
 void Rex::set(const String &exp)
 {
    ParseInfo info;
-   info.numGroups = 0;
    
    mExp = exp;
    
-   const char *pc = mExp.c_str();
+   info.numGroups = 0;
+   info.beg = mExp.c_str();
+   info.len = mExp.length();
+   info.end = info.beg + info.len;
+   
+   const char *pc = info.beg;
    
    mCode = ParseExpression(&pc, info);
    

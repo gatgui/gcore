@@ -344,21 +344,20 @@ UnicodeSingle::UnicodeSingle(Codepoint c)
    , mUpperChar('\0')
    , mLowerChar('\0')
 {
-   size_t n = EncodeUTF8(mCode, mConv, 16);
-   
-   if (n == 1)
+   if (c < 128)
    {
       int diff = 'A' - 'a';
+      char ch = (char) c;
       
-      if (CHAR_IS(mConv[0], LOWER_CHAR))
+      if (CHAR_IS(ch, LOWER_CHAR))
       {
-         mLowerChar = mConv[0];
-         mUpperChar = (char)(mLowerChar + diff);
+         mLowerChar = ch;
+         mUpperChar = (char)(ch + diff);
       }
-      else if (CHAR_IS(mConv[0], UPPER_CHAR))
+      else if (CHAR_IS(ch, UPPER_CHAR))
       {
-         mUpperChar = mConv[0];
-         mLowerChar = (char)(mUpperChar - diff);
+         mUpperChar = ch;
+         mLowerChar = (char)(ch - diff);
       }
    }
 }
@@ -375,7 +374,7 @@ Instruction* UnicodeSingle::clone() const
 const char* UnicodeSingle::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-   Log::PrintDebug("[gcore] rex/UnicodeSingle::match: Match single character \'%c\' with \"%s\"... ", mChar, cur);
+   Log::PrintDebug("[gcore] rex/UnicodeSingle::match: Match single character %x with \"%s\"... ", mCode, cur);
 #endif
    
    register bool matched;
@@ -408,9 +407,10 @@ const char* UnicodeSingle::match(const char *cur, MatchInfo &info) const
 
 void UnicodeSingle::toStream(std::ostream &os, const String &indent) const
 {
-   size_t n = CodepointToASCII(mCode, ACF_VARIABLE, mConv, 16);
-   mConv[n] = '\0';
-   os << indent << "UnicodeSingle " << mConv << std::endl;
+   char tmp[16];
+   size_t n = CodepointToASCII(mCode, ACF_VARIABLE, tmp, 16);
+   tmp[n] = '\0';
+   os << indent << "UnicodeSingle " << tmp << std::endl;
    Instruction::toStream(os, indent);
 }
 
@@ -857,17 +857,18 @@ Instruction* UnicodeCharRange::clone() const
 
 void UnicodeCharRange::toStream(std::ostream &os, const String &indent) const
 {
+   char tmp[16];
    size_t n = 0;
    
-   n = CodepointToASCII(mFrom, ACF_VARIABLE, mConv, 16);
-   mConv[n] = '\0';
+   n = CodepointToASCII(mFrom, ACF_VARIABLE, tmp, 16);
+   tmp[n] = '\0';
    
-   os << indent << "UnicodeCharRange " << mConv << "-";
+   os << indent << "UnicodeCharRange " << tmp << "-";
    
-   n = CodepointToASCII(mFrom, ACF_VARIABLE, mConv, 16);
-   mConv[n] = '\0';
+   n = CodepointToASCII(mFrom, ACF_VARIABLE, tmp, 16);
+   tmp[n] = '\0';
    
-   os << mConv << std::endl;
+   os << tmp << std::endl;
    
    Instruction::toStream(os, indent);
 }
@@ -877,9 +878,10 @@ const char* UnicodeCharRange::match(const char *cur, MatchInfo &info) const
 #ifdef _DEBUG_REX
    Log::PrintDebug("[gcore] rex/UnicodeCharRange::match: Match character in range [%x, %x]...", mFrom, mTo);
 #endif
-   register char cc;
+   register Codepoint c = InvalidCodepoint;
    register int casediff = 0;
    register bool matched = false;
+   register char cc = '\0';
    
    if (preStep(cur, info))
    {
@@ -887,27 +889,27 @@ const char* UnicodeCharRange::match(const char *cur, MatchInfo &info) const
       {
          // ASCII character [0-127]
          casediff = 'A' - 'a';
-         Codepoint ccp = mFrom;
-         while (ccp <= mTo)
+         c = mFrom;
+         while (c <= mTo)
          {
-            if (ccp >= 128)
+            if (c >= 128)
             {
                break;
             }
-            cc = (char) ccp;
+            cc = (char) c;
             if ((*cur == cc) ||
-                  (CHAR_IS(cc, LOWER_CHAR) && (*cur == cc+casediff)) ||
-                  (CHAR_IS(cc, UPPER_CHAR) && (*cur == cc-casediff)))
+                (CHAR_IS(cc, LOWER_CHAR) && (*cur == cc + casediff)) ||
+                (CHAR_IS(cc, UPPER_CHAR) && (*cur == cc - casediff)))
             {
                matched = true;
                break;
             }
-            ++ccp;
+            ++c;
          }
       }
       else
       {
-         Codepoint c = DecodeUTF8(cur, cur - info.end);
+         c = DecodeUTF8(cur, cur - info.end);
          matched = (mFrom <= c && c <= mTo);
       }
       

@@ -127,7 +127,6 @@ namespace gcore
       Codepoint mCode;
       char mUpperChar;
       char mLowerChar;
-      mutable char mConv[16];
    };
 
    class Any : public Instruction
@@ -278,7 +277,6 @@ namespace gcore
       
       Codepoint mFrom;
       Codepoint mTo;
-      mutable char mConv[16];
    };
 
    class CharClass : public Instruction

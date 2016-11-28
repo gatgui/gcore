@@ -71,6 +71,8 @@ namespace gcore {
    
       bool hasGroup(size_t i) const;
       bool hasNamedGroup(const String &n) const;
+      
+      void clear();
    
    protected:
    

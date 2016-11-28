@@ -20,10 +20,9 @@ Unicode
        Var : \u\{[0-9a-fA-F]+\}
    o Export more of internal API
    - Regular expression support
-      - add support for \u[0-9a-fA-F]{4}, \U[0-9a-fA-F]{8} and \u\{[0-9a-fA-F]+\} notation
-      - support codepoint matching instruction (merge with character)
-      - assumes utf-8 encoding for expressions
-      - add wchar_t variants where sensible
+      o add support for \u[0-9a-fA-F]{4}, \U[0-9a-fA-F]{8} and \u\{[0-9a-fA-F]+\} notation
+      o support codepoint matching instruction
+      - add some unicode tests
    - JSON support
       x add encoding parameter to read/write/parse methods
       o add support for \u[0-9a-fA-F]{4} notation
@@ -40,5 +39,6 @@ Unicode
       - All C narrow string (char*) are assumed to be utf-8 encoded but for the specific encoding/decoding
         functions found in 'unicode.h'
       - Dirmap mapping file assumed utf-8 encoding
+      - Regular expression expects UTF-8 inputs for both the expression itself and the string to match
       - XML parser assumes utf-8 encoding regardless of 'encoding' attribute in 'xml' tag (to be fixed eventually)
       - JSON parser assumes utf-8 encoding

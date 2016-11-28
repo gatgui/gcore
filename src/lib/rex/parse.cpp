@@ -541,7 +541,7 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
 }
 
 // Characters ::= { character }*
-Instruction* ParseCharacters(const char **ppc, ParseInfo &)
+Instruction* ParseCharacters(const char **ppc, ParseInfo &info)
 {
    Instruction *i = 0;
    const char *pc = *ppc;
@@ -555,66 +555,109 @@ Instruction* ParseCharacters(const char **ppc, ParseInfo &)
          switch (*pc)
          {
          // Predefined character class
-         case 's': i = new Space(false); break;
-         case 'S': i = new Space(true); break;
-         case 'w': i = new Word(false); break;
-         case 'W': i = new Word(true); break;
-         case 'l': i = new Letter(false); break;
-         case 'L': i = new Letter(true); break;
-         case 'u': i = new UpperLetter(); break;
-         case 'U': i = new LowerLetter(); break;
-         case 'd': i = new Digit(false); break;
-         case 'D': i = new Digit(true); break;
-         case 'h': i = new Hexa(false); break;
-         case 'H': i = new Hexa(true); break;
+         case 's': i = new Space(false); ++pc; break;
+         case 'S': i = new Space(true); ++pc; break;
+         case 'w': i = new Word(false); ++pc; break;
+         case 'W': i = new Word(true); ++pc; break;
+         case 'l': i = new Letter(false); ++pc; break;
+         case 'L': i = new Letter(true); ++pc; break;
+         case 'u':
+            {
+               // allow \uXXXX and \u{XXX} for unicode code points
+               Codepoint cp = InvalidCodepoint;
+               size_t inc = 0;
+               if (*(pc + 1) == '{')
+               {
+                  // parse from '\'
+                  inc = ASCIIToCodepoint(ACF_VARIABLE, pc - 1, cp);
+               }
+               else
+               {
+                  // parse from '\'
+                  inc = ASCIIToCodepoint(ACF_16, pc - 1, cp);
+               }
+               if (inc == 0)
+               {
+                  i = new UpperLetter();
+                  ++pc;
+               }
+               else if (IsValidCodepoint(cp))
+               {
+                  i = new UnicodeSingle(cp);
+                  // -1 to take into account that pc is pointing at 'u' not '\'
+                  pc += inc - 1;
+               }
+            }
+            break;
+         case 'U':
+            {
+               // allow \UXXXXXXXX for unicode code points
+               Codepoint cp = InvalidCodepoint;
+               size_t inc = ASCIIToCodepoint(ACF_32, pc - 1, cp);
+               if (inc == 0)
+               {
+                  i = new LowerLetter();
+                  ++pc;
+               }
+               else if (IsValidCodepoint(cp))
+               {
+                  i = new UnicodeSingle(cp);
+                  pc += inc - 1;
+               }
+            }
+            break;
+         case 'd': i = new Digit(false); ++pc; break;
+         case 'D': i = new Digit(true); ++pc; break;
+         case 'h': i = new Hexa(false); ++pc; break;
+         case 'H': i = new Hexa(true); ++pc; break;
          // Escape sequence
          // i have a doubt on those ones in fact
-         case 't': i = new Single('\t'); break;
-         case 'v': i = new Single('\v'); break;
-         case 'n': i = new Single('\n'); break;
-         case 'r': i = new Single('\r'); break;
-         case 'f': i = new Single('\f'); break;
+         case 't': i = new Single('\t'); ++pc; break;
+         case 'v': i = new Single('\v'); ++pc; break;
+         case 'n': i = new Single('\n'); ++pc; break;
+         case 'r': i = new Single('\r'); ++pc; break;
+         case 'f': i = new Single('\f'); ++pc; break;
          // This one is annoying as it gets caught before checking zerowidth assertion
-         //case 'b': i = new Single('\b'); break;
-         case 'a': i = new Single('\a'); break;
-         //case 'e': i = new Single('\e'); break;
+         //case 'b': i = new Single('\b'); ++pc; break;
+         case 'a': i = new Single('\a'); ++pc; break;
+         //case 'e': i = new Single('\e'); ++pc; break;
          // Control char
          case 'c': //control char: \cD
             ++pc;
             switch (*pc)
             {
-            case '@': i = new Single('\x00'); break; // '\0'
-            case 'A': i = new Single('\x01'); break;
-            case 'B': i = new Single('\x02'); break;
-            case 'C': i = new Single('\x03'); break;
-            case 'D': i = new Single('\x04'); break;
-            case 'E': i = new Single('\x05'); break;
-            case 'F': i = new Single('\x06'); break;
-            case 'G': i = new Single('\x07'); break; // '\a'
-            case 'H': i = new Single('\x08'); break; // '\b'
-            case 'I': i = new Single('\x09'); break; // '\t'
-            case 'J': i = new Single('\x0A'); break; // '\n'
-            case 'K': i = new Single('\x0B'); break; // '\v'
-            case 'L': i = new Single('\x0C'); break; // '\f'
-            case 'M': i = new Single('\x0D'); break; // '\r'
-            case 'N': i = new Single('\x0E'); break;
-            case 'O': i = new Single('\x0F'); break;
-            case 'P': i = new Single('\x10'); break;
-            case 'Q': i = new Single('\x11'); break;
-            case 'R': i = new Single('\x12'); break;
-            case 'S': i = new Single('\x13'); break;
-            case 'T': i = new Single('\x14'); break;
-            case 'U': i = new Single('\x15'); break;
-            case 'V': i = new Single('\x16'); break;
-            case 'W': i = new Single('\x17'); break;
-            case 'X': i = new Single('\x18'); break;
-            case 'Y': i = new Single('\x19'); break;
-            case 'Z': i = new Single('\x1A'); break;
-            case '[': i = new Single('\x1B'); break;
-            case '\\': i = new Single('\x1C'); break;
-            case ']': i = new Single('\x1D'); break;
-            case '^': i = new Single('\x1E'); break;
-            case '_': i = new Single('\x1F');
+            case '@': i = new Single('\x00'); ++pc; break; // '\0'
+            case 'A': i = new Single('\x01'); ++pc; break;
+            case 'B': i = new Single('\x02'); ++pc; break;
+            case 'C': i = new Single('\x03'); ++pc; break;
+            case 'D': i = new Single('\x04'); ++pc; break;
+            case 'E': i = new Single('\x05'); ++pc; break;
+            case 'F': i = new Single('\x06'); ++pc; break;
+            case 'G': i = new Single('\x07'); ++pc; break; // '\a'
+            case 'H': i = new Single('\x08'); ++pc; break; // '\b'
+            case 'I': i = new Single('\x09'); ++pc; break; // '\t'
+            case 'J': i = new Single('\x0A'); ++pc; break; // '\n'
+            case 'K': i = new Single('\x0B'); ++pc; break; // '\v'
+            case 'L': i = new Single('\x0C'); ++pc; break; // '\f'
+            case 'M': i = new Single('\x0D'); ++pc; break; // '\r'
+            case 'N': i = new Single('\x0E'); ++pc; break;
+            case 'O': i = new Single('\x0F'); ++pc; break;
+            case 'P': i = new Single('\x10'); ++pc; break;
+            case 'Q': i = new Single('\x11'); ++pc; break;
+            case 'R': i = new Single('\x12'); ++pc; break;
+            case 'S': i = new Single('\x13'); ++pc; break;
+            case 'T': i = new Single('\x14'); ++pc; break;
+            case 'U': i = new Single('\x15'); ++pc; break;
+            case 'V': i = new Single('\x16'); ++pc; break;
+            case 'W': i = new Single('\x17'); ++pc; break;
+            case 'X': i = new Single('\x18'); ++pc; break;
+            case 'Y': i = new Single('\x19'); ++pc; break;
+            case 'Z': i = new Single('\x1A'); ++pc; break;
+            case '[': i = new Single('\x1B'); ++pc; break;
+            case '\\': i = new Single('\x1C'); ++pc; break;
+            case ']': i = new Single('\x1D'); ++pc; break;
+            case '^': i = new Single('\x1E'); ++pc; break;
+            case '_': i = new Single('\x1F'); ++pc;
             default:  break;
             }
             break;
@@ -646,6 +689,7 @@ Instruction* ParseCharacters(const char **ppc, ParseInfo &)
          case '9':
             v = *pc - '0';
             i = new Backsubst(v);
+            ++pc;
             break;
          // special char
          case '\\':
@@ -663,6 +707,7 @@ Instruction* ParseCharacters(const char **ppc, ParseInfo &)
          case '$':
          case '|':
             i = new Single(*pc);
+            ++pc;
          default:
             // Not recognized !! [no zero width assertion for example]
             break;
@@ -674,15 +719,23 @@ Instruction* ParseCharacters(const char **ppc, ParseInfo &)
       }
       else
       {
-         i = new Single(*pc);
+         if (!IsUTF8SingleChar(*pc))
+         {
+            i = new UnicodeSingle(DecodeUTF8(pc, info.end - pc));
+            pc = UTF8Next(pc);
+         }
+         else
+         {
+            i = new Single(*pc);
+            ++pc;
+         }
       }
-      ++pc;
+      
    }
    else if (*pc == '.')
    {
       i = new Any();
       ++pc;
-
    }
    else if (pc == *ppc)
    {
@@ -695,7 +748,7 @@ Instruction* ParseCharacters(const char **ppc, ParseInfo &)
 }
 
 // Range ::= { character | character "-" character }+
-Instruction* ParseRange(const char **ppc, bool inv, ParseInfo &)
+Instruction* ParseRange(const char **ppc, bool inv, ParseInfo &info)
 {
    Instruction *first = 0;
    Instruction *last = 0;
@@ -726,25 +779,26 @@ Instruction* ParseRange(const char **ppc, bool inv, ParseInfo &)
    }
    // - can also be juste before the ] char (situation dealt in the switch)
    
-   bool hasPrev = false; // prev character was an escape sequence
+   Codepoint prevcp = InvalidCodepoint;
    
    while (*pc != ']' && *pc != '\0')
    {
       i = 0;
+      
       switch (*pc)
       {
       case '-':
          {
-            unsigned char fc, lc;
-            
-            if (*(pc+1) == ']')
+            // look-ahead
+            if (*(pc + 1) == ']')
             {
                i = new Single('-');
-               break;
+               ++pc;
             }
-            
-            if (hasPrev)
+            else if (IsValidCodepoint(prevcp))
             {
+               // prev can be: octal, hexa, char or unicode
+               
                // we already have created a Single instruction for previous character
                // delete it, and replace by the new CharRange
                Instruction *p = last->prev();
@@ -760,141 +814,252 @@ Instruction* ParseRange(const char **ppc, bool inv, ParseInfo &)
                   first = last = 0;
                }
                
-               fc = *(pc-1);
-               ++pc;
+               Codepoint cp = InvalidCodepoint;
                
+               ++pc;
                switch (*pc)
                {
                case ']':
+                  // case handled above with look-ahead
+                  // if we reach here, there's obviously a logic error somewhere
                case '\0':
+                  // unterminated range
+                  break;
                case '\\':
+                  // allow unicode character, hexa and octal
+                  ++pc;
+                  switch (*pc)
+                  {
+                  case 'u':
+                  case 'U':
+                     {
+                        size_t n = ASCIIToCodepoint(pc, cp);
+                        if (n > 0 && IsValidCodepoint(cp))
+                        {
+                           pc += n;
+                        }
+                     }
+                     break;
+                  case 'x':
+                     ++pc;
+                     if (ReadHexadecimal(&pc, v))
+                     {
+                        cp = Codepoint(v);
+                     }
+                     break;
+                  case '0':
+                  case '1':
+                  case '2':
+                  case '3':
+                  case '4':
+                  case '5':
+                  case '6':
+                  case '7':
+                  case '8':
+                  case '9':
+                     if (ReadOctal(&pc, v))
+                     {
+                        cp = Codepoint(v);
+                     }
+                  default:
+                     break;
+                  }
                   break;
                default:
-                  lc = *pc;
-                  i = new CharRange(fc, lc);
+                  cp = DecodeUTF8(pc, info.end - pc);
+                  pc = UTF8Next(pc);
                   break;
                }
-               hasPrev = false;
+               
+               if (IsValidCodepoint(cp))
+               {
+                  if (cp < 128 && prevcp < 128)
+                  {
+                     i = new CharRange((char)prevcp, (char)cp);
+                  }
+                  else
+                  {
+                     i = new UnicodeCharRange(prevcp, cp);
+                  }
+               }
+               
+               prevcp = InvalidCodepoint;
+            }
+            else
+            {
+               // no instruction created -> will error out of the switch
             }
          }
          break;
       case '\\':
+         ++pc;
+         prevcp = InvalidCodepoint;
+         switch (*pc)
          {
+         // Predefined character class
+         case 's': i = new Space(false); ++pc; break;
+         case 'S': i = new Space(true); ++pc; break;
+         case 'w': i = new Word(false); ++pc; break;
+         case 'W': i = new Word(true); ++pc; break;
+         case 'l': i = new Letter(false); ++pc; break;
+         case 'L': i = new Letter(true); ++pc; break;
+         case 'u':
+            {
+               Codepoint cp = InvalidCodepoint;
+               size_t inc = 0;
+               // look-ahead
+               if (*(pc + 1) == '{')
+               {
+                  inc = ASCIIToCodepoint(ACF_VARIABLE, pc-1, cp);
+               }
+               else
+               {
+                  inc = ASCIIToCodepoint(ACF_16, pc-1, cp);
+               }
+               if (inc == 0)
+               {
+                  i = new UpperLetter();
+                  ++pc;
+               }
+               else if (IsValidCodepoint(cp))
+               {
+                  i = new UnicodeSingle(cp);
+                  pc += inc - 1;
+                  prevcp = cp;
+               }
+            }
+            break;
+         case 'U':
+            {
+               Codepoint cp = InvalidCodepoint;
+               size_t inc = ASCIIToCodepoint(ACF_32, pc-1, cp);
+               if (inc == 0)
+               {
+                  i = new LowerLetter();
+                  ++pc;
+               }
+               else if (IsValidCodepoint(cp))
+               {
+                  i = new UnicodeSingle(cp);
+                  pc += inc - 1;
+                  prevcp = cp;
+               }
+            }
+            break;
+         case 'd': i = new Digit(false); ++pc; break;
+         case 'D': i = new Digit(true); ++pc; break;
+         case 'h': i = new Hexa(false); ++pc; break;
+         case 'H': i = new Hexa(true); ++pc; break;
+         // Escape sequence
+         case 't': i = new Single('\t'); ++pc; break;
+         case 'v': i = new Single('\v'); ++pc; break;
+         case 'n': i = new Single('\n'); ++pc; break;
+         case 'r': i = new Single('\r'); ++pc; break;
+         case 'f': i = new Single('\f'); ++pc; break;
+         case 'b': i = new Single('\b'); ++pc; break;
+         case 'a': i = new Single('\a'); ++pc; break;
+         //case 'e': i = new Single('\e'); ++pc; break;
+         case '\\': i = new Single('\\'); ++pc; break;
+         // Control char
+         case 'c': //control char: \cD
             ++pc;
             switch (*pc)
             {
-            // Predefined character class
-            case 's': i = new Space(false); break;
-            case 'S': i = new Space(true); break;
-            case 'w': i = new Word(false); break;
-            case 'W': i = new Word(true); break;
-            case 'l': i = new Letter(false); break;
-            case 'L': i = new Letter(true); break;
-            case 'u': i = new UpperLetter(); break;
-            case 'U': i = new LowerLetter(); break;
-            case 'd': i = new Digit(false); break;
-            case 'D': i = new Digit(true); break;
-            case 'h': i = new Hexa(false); break;
-            case 'H': i = new Hexa(true); break;
-            // Escape sequence
-            case 't': i = new Single('\t'); break;
-            case 'v': i = new Single('\v'); break;
-            case 'n': i = new Single('\n'); break;
-            case 'r': i = new Single('\r'); break;
-            case 'f': i = new Single('\f'); break;
-            case 'b': i = new Single('\b'); break;
-            case 'a': i = new Single('\a'); break;
-            //case 'e': i = new Single('\e'); break;
-            case '\\': i = new Single('\\'); break;
-            // Control char
-            case 'c': //control char: \cD
-               ++pc;
-               switch (*pc)
-               {
-               case '@': i = new Single('\x00'); break;
-               case 'A': i = new Single('\x01'); break;
-               case 'B': i = new Single('\x02'); break;
-               case 'C': i = new Single('\x03'); break;
-               case 'D': i = new Single('\x04'); break;
-               case 'E': i = new Single('\x05'); break;
-               case 'F': i = new Single('\x06'); break;
-               case 'G': i = new Single('\x07'); break; // '\a'
-               case 'H': i = new Single('\x08'); break; // '\b'
-               case 'I': i = new Single('\x09'); break; // '\t'
-               case 'J': i = new Single('\x0A'); break; // '\n'
-               case 'K': i = new Single('\x0B'); break; // '\v'
-               case 'L': i = new Single('\x0C'); break; // '\f'
-               case 'M': i = new Single('\x0D'); break; // '\r'
-               case 'N': i = new Single('\x0E'); break;
-               case 'O': i = new Single('\x0F'); break;
-               case 'P': i = new Single('\x10'); break;
-               case 'Q': i = new Single('\x11'); break;
-               case 'R': i = new Single('\x12'); break;
-               case 'S': i = new Single('\x13'); break;
-               case 'T': i = new Single('\x14'); break;
-               case 'U': i = new Single('\x15'); break;
-               case 'V': i = new Single('\x16'); break;
-               case 'W': i = new Single('\x17'); break;
-               case 'X': i = new Single('\x18'); break;
-               case 'Y': i = new Single('\x19'); break;
-               case 'Z': i = new Single('\x1A'); break;
-               case '[': i = new Single('\x1B'); break;
-               case '\\': i = new Single('\x1C'); break;
-               case ']': i = new Single('\x1D'); break;
-               case '^': i = new Single('\x1E'); break;
-               case '_': i = new Single('\x1F');
-               default: break;
-               }
-               break;
-            // Hexa character
-            case 'x':
-               ++pc;
-               if (ReadHexadecimal(&pc, v))
-               {
-                  i = new Single(v);
-               }
-               break;
-            // Octal character [no back-substitute in char class]
-            case '0':
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
-               ++pc;
-               if (ReadOctal(&pc, v))
-               {
-                  i = new Single(v);
-               }
-               break;
-            case ']':
-            case '^':
-            case '-':
-            case '*':
-            case '+':
-            case '?':
-            case '{':
-            case '}':
-            case '(':
-            case ')':
-            case '$':
-            case '[':
-               i = new Single(*pc);
-               ++pc;
-            default:
-               // Not recognized !! [no zero width assertion for example]
-               break;
+            case '@': i = new Single('\x00'); ++pc; break;
+            case 'A': i = new Single('\x01'); ++pc; break;
+            case 'B': i = new Single('\x02'); ++pc; break;
+            case 'C': i = new Single('\x03'); ++pc; break;
+            case 'D': i = new Single('\x04'); ++pc; break;
+            case 'E': i = new Single('\x05'); ++pc; break;
+            case 'F': i = new Single('\x06'); ++pc; break;
+            case 'G': i = new Single('\x07'); ++pc; break; // '\a'
+            case 'H': i = new Single('\x08'); ++pc; break; // '\b'
+            case 'I': i = new Single('\x09'); ++pc; break; // '\t'
+            case 'J': i = new Single('\x0A'); ++pc; break; // '\n'
+            case 'K': i = new Single('\x0B'); ++pc; break; // '\v'
+            case 'L': i = new Single('\x0C'); ++pc; break; // '\f'
+            case 'M': i = new Single('\x0D'); ++pc; break; // '\r'
+            case 'N': i = new Single('\x0E'); ++pc; break;
+            case 'O': i = new Single('\x0F'); ++pc; break;
+            case 'P': i = new Single('\x10'); ++pc; break;
+            case 'Q': i = new Single('\x11'); ++pc; break;
+            case 'R': i = new Single('\x12'); ++pc; break;
+            case 'S': i = new Single('\x13'); ++pc; break;
+            case 'T': i = new Single('\x14'); ++pc; break;
+            case 'U': i = new Single('\x15'); ++pc; break;
+            case 'V': i = new Single('\x16'); ++pc; break;
+            case 'W': i = new Single('\x17'); ++pc; break;
+            case 'X': i = new Single('\x18'); ++pc; break;
+            case 'Y': i = new Single('\x19'); ++pc; break;
+            case 'Z': i = new Single('\x1A'); ++pc; break;
+            case '[': i = new Single('\x1B'); ++pc; break;
+            case '\\': i = new Single('\x1C'); ++pc; break;
+            case ']': i = new Single('\x1D'); ++pc; break;
+            case '^': i = new Single('\x1E'); ++pc; break;
+            case '_': i = new Single('\x1F'); ++pc;
+            default: break;
             }
-            hasPrev = false;
+            break;
+         // Hexa character
+         case 'x':
+            ++pc;
+            // Note: ReadHexadecimal increments pc
+            if (ReadHexadecimal(&pc, v))
+            {
+               i = new Single(v);
+               prevcp = Codepoint(v);
+            }
+            break;
+         // Octal character [no back-substitute in char class]
+         case '0':
+         case '1':
+         case '2':
+         case '3':
+         case '4':
+         case '5':
+         case '6':
+         case '7':
+         case '8':
+         case '9':
+            if (ReadOctal(&pc, v))
+            {
+               i = new Single(v);
+               prevcp = Codepoint(v);
+            }
+            break;
+         case ']':
+         case '^':
+         case '-':
+         case '*':
+         case '+':
+         case '?':
+         case '{':
+         case '}':
+         case '(':
+         case ')':
+         case '$':
+         case '[':
+            i = new Single(*pc);
+            ++pc;
+         default:
+            // Not recognized !! [no zero width assertion for example]
+            break;
          }
          break;
       default:
-         i = new Single(*pc);
-         hasPrev = true;
+         // could be utf8
+         if (IsUTF8SingleChar(*pc))
+         {
+            i = new Single(*pc);
+            prevcp = Codepoint(*pc);
+            ++pc;
+         }
+         else
+         {
+            prevcp = DecodeUTF8(pc, info.end - pc);
+            i = new UnicodeSingle(prevcp);
+            pc = UTF8Next(pc);
+         }
          break;
       }
       
@@ -920,8 +1085,6 @@ Instruction* ParseRange(const char **ppc, bool inv, ParseInfo &)
       {
          first = last = i;
       }
-      
-      ++pc;
    }
    
    if (first)

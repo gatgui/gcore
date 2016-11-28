@@ -376,25 +376,38 @@ int main(int argc, char **argv)
    if (doTest("Condition 0", tests)) suite.addTest(new RexTest("Condition 0", RAW("(?:(?P<refunix>\$)|(?P<refwin>%))([a-zA-Z_][a-zA-Z0-9_]+)(?(refwin)(?P=refwin))"), "/usr/autodesk/maya$MAYA_VER/bin", true, 4, results38));
    if (doTest("Condition 1", tests)) suite.addTest(new RexTest("Condition 1", RAW("(?:(?P<refunix>\$)|(?P<refwin>%))([a-zA-Z_][a-zA-Z0-9_]+)(?(refwin)(?P=refwin))"), "/usr/autodesk/maya%MAYA_VER%/bin", true, 4, results39));
    if (doTest("Condition 2", tests)) suite.addTest(new RexTest("Condition 2", RAW("(?:(?P<refunix>\$)|(?P<refwin>%))([a-zA-Z_][a-zA-Z0-9_]+)(?(refwin)(?P=refwin))"), "/usr/autodesk/maya%MAYA_VER/bin", false, 0));
-      
+   
    suite.execute(true);
    
-   std::cout << std::endl << "Named group substitution: " << std::endl;
+   if (doTest("Named Subst 0", tests))
+   {
+      std::cout << std::endl << "Named Subst 0" << std::endl;
+      
+      String s = "shape123";
+      std::cout << s << " -> ";
+      s.subst("(?P<name>[a-zA-Z][a-zA-Z_-]*)\\d+", "\\g<name>");
+      std::cout << s << " (expected: \"shape\")" << std::endl;
+   }
    
-   String s = "shape123";
-   std::cout << s << " -> ";
-   s.subst("(?P<name>[a-zA-Z][a-zA-Z_-]*)\\d+", "\\g<name>");
-   std::cout << s << " (expected: \"shape\")" << std::endl;
+   if (doTest("Named Subst 1", tests))
+   {
+      std::cout << std::endl << "Named Subst 1" << std::endl;
+      
+      String s = "anotherShape";
+      std::cout << s << " -> ";
+      s.subst("(?P<name>[a-zA-Z][a-zA-Z_-]*)\\d+", "\\g<name>");
+      std::cout << s << " (expected: \"anotherShape\")" << std::endl;
+   }
    
-   s = "anotherShape";
-   std::cout << s << " -> ";
-   s.subst("(?P<name>[a-zA-Z][a-zA-Z_-]*)\\d+", "\\g<name>");
-   std::cout << s << " (expected: \"anotherShape\")" << std::endl;
-   
-   s = "aThirdShape3";
-   std::cout << s << " -> ";
-   s.subst("(?P<name>[a-zA-Z][a-zA-Z_-]*)\\d+", "\\g<dummy>");
-   std::cout << s << " (expected: \"\\g<dummy>\")" << std::endl;
+   if (doTest("Named Subst 2", tests))
+   {
+      std::cout << std::endl << "Named Subst 2" << std::endl;
+      
+      String s = "aThirdShape3";
+      std::cout << s << " -> ";
+      s.subst("(?P<name>[a-zA-Z][a-zA-Z_-]*)\\d+", "\\g<dummy>");
+      std::cout << s << " (expected: \"\\g<dummy>\")" << std::endl;
+   }
    
    return 0;
 }

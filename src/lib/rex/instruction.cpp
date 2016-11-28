@@ -126,6 +126,10 @@ void Instruction::setNext(Instruction *inst)
    mNext = inst;
    if (mNext)
    {
+      if (mGroup)
+      {
+         mNext->setGroup(mGroup);
+      }
       mNext->setPrev(this);
    }
 }
@@ -185,7 +189,7 @@ const char* Instruction::postStep(const char *cur, MatchInfo &info) const
 const char* Instruction::matchRemain(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-   Log::PrintDebug("[gcore] rex/Instruction::matchRemain: (%s) \"%s\"", typeid(*this).name().c_str(), cur);
+   Log::PrintDebug("[gcore] rex/Instruction::matchRemain: (%s) \"%s\"", typeid(*this).name(), cur);
 #endif
    
    register bool failed = false;
@@ -581,7 +585,7 @@ const char* LowerLetter::match(const char *cur, MatchInfo &info) const
       }
    }
 #ifdef _DEBUG_REX
-   Log::PrintDebug("[gcore] rex/LowerLetter::match: Failed")
+   Log::PrintDebug("[gcore] rex/LowerLetter::match: Failed");
 #endif
    return 0;
 }
@@ -1497,7 +1501,7 @@ void Group::open(const char *cur, MatchInfo &info) const
 const char* Group::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-   Log::PrintDebug("[gcore] rex/Group::match");
+   Log::PrintDebug("[gcore] rex/Group::match [%d, '%s']", mIndex, mName.c_str());
 #endif
    
    //register unsigned short flags = mFlags;
@@ -1548,15 +1552,16 @@ const char* Group::match(const char *cur, MatchInfo &info) const
    }
    
 #ifdef _DEBUG_REX
-   Log::SetIndentLevel(Log::GetIndentLevel()+1);
+   Log::SetIndentLevel(Log::IndentLevel()+1);
    Log::PrintDebug("group: %d", mIndex);
+   Log::PrintDebug("name: '%s'", mName.c_str());
    Log::PrintDebug("invert: %d", mInvert);
    Log::PrintDebug("zerowidth: %d", mZeroWidth);
    Log::PrintDebug("reverse: %d", ((mFlags & Rex::Reverse) == 1));
    Log::PrintDebug("nocase: %d", mNoCase);
    Log::PrintDebug("multiline: %d", mMultiline);
-   Log::PrintDebug("dotmatchnewline: %d", mDotNewLine);
-   Log::SetIndentLevel(Log::GetIndentLevel()-1);
+   Log::PrintDebug("dotmatchnewline: %d", mDotNewline);
+   Log::SetIndentLevel(Log::IndentLevel()-1);
 #endif
    
    if (mFirst)
@@ -1607,7 +1612,7 @@ const char* Group::match(const char *cur, MatchInfo &info) const
          if (end(failed, rv, info))
          {
 #ifdef _DEBUG_REX
-            Log::PrintDebug("[gcore] rex/Group::match: Succeeded");
+            Log::PrintDebug("[gcore] rex/Group::match: Succeeded (match remain)");
 #endif
             return matchRemain(rv, info);
          }
@@ -1619,7 +1624,7 @@ const char* Group::match(const char *cur, MatchInfo &info) const
       else
       {
 #ifdef _DEBUG_REX
-         Log::PrintDebug("[gcore] rex/Group::match: %d", (rv == 0 ? "Failed" : "Succeeded"));
+         Log::PrintDebug("[gcore] rex/Group::match: %s", (rv == 0 ? "Failed" : "Succeeded"));
 #endif
          return rv;
       }
@@ -1677,7 +1682,7 @@ void Backsubst::toStream(std::ostream &os, const String &indent) const
 const char* Backsubst::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-   Log::PrintDebug("[gcore] rex/Backsubst::match: Match backsubstitution %d...", mIndex);
+   Log::PrintDebug("[gcore] rex/Backsubst::match: Match backsubstitution %d/'%s'...", mIndex, mName.c_str());
 #endif
    
    size_t index = 0;

@@ -60,6 +60,7 @@ RexMatch& RexMatch::operator=(const RexMatch &rhs)
    if (this != &rhs)
    {
       mStr = rhs.mStr;
+      mRange = rhs.mRange;
       mGroups = rhs.mGroups;
       mNamedGroups = rhs.mNamedGroups;
    }
@@ -224,7 +225,17 @@ const String Rex::get() const
    return mExp;
 }
 
-bool Rex::search(const String &s, RexMatch &m, unsigned short flags, size_t offset, size_t len) const
+bool Rex::search(const String &s, RexMatch &m, unsigned short flags) const
+{
+   return search(s, 0, s.length(), m, flags);
+}
+
+bool Rex::search(const String &s, size_t offset, RexMatch &m, unsigned short flags) const
+{
+   return search(s, offset, s.length(), m, flags);
+}
+
+bool Rex::search(const String &s, size_t offset, size_t len, RexMatch &m, unsigned short flags) const
 {
    if (!mCode)
    {
@@ -305,13 +316,35 @@ bool Rex::search(const String &s, RexMatch &m, unsigned short flags, size_t offs
    return false;
 }
 
-bool Rex::search(const String &s, unsigned short flags, size_t offset, size_t len) const
+bool Rex::search(const String &s, unsigned short flags) const
 {
    RexMatch m;
-   return search(s, m, flags, offset, len);
+   return search(s, 0, s.length(), m, flags);
 }
 
-bool Rex::match(const String &s, RexMatch &m, unsigned short flags, size_t offset, size_t len) const
+bool Rex::search(const String &s, size_t offset, unsigned short flags) const
+{
+   RexMatch m;
+   return search(s, offset, s.length(), m, flags);
+}
+
+bool Rex::search(const String &s, size_t offset, size_t len, unsigned short flags) const
+{
+   RexMatch m;
+   return search(s, offset, len, m, flags);
+}
+
+bool Rex::match(const String &s, RexMatch &m, unsigned short flags) const
+{
+   return match(s, 0, s.length(), m, flags);
+}
+
+bool Rex::match(const String &s, size_t offset, RexMatch &m, unsigned short flags) const
+{
+   return match(s, offset, s.length(), m, flags);
+}
+
+bool Rex::match(const String &s, size_t offset, size_t len, RexMatch &m, unsigned short flags) const
 {
    if (!mCode)
    {
@@ -372,10 +405,22 @@ bool Rex::match(const String &s, RexMatch &m, unsigned short flags, size_t offse
    }
 }
 
-bool Rex::match(const String &s, unsigned short flags, size_t offset, size_t len) const
+bool Rex::match(const String &s, unsigned short flags) const
 {
    RexMatch m;
-   return match(s, m, flags, offset, len);
+   return match(s, 0, s.length(), m, flags);
+}
+
+bool Rex::match(const String &s, size_t offset, unsigned short flags) const
+{
+   RexMatch m;
+   return match(s, offset, s.length(), m, flags);
+}
+
+bool Rex::match(const String &s, size_t offset, size_t len, unsigned short flags) const
+{
+   RexMatch m;
+   return match(s, offset, len, m, flags);
 }
 
 String Rex::substitute(const RexMatch &m, const String &in) const

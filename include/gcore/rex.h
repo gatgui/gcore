@@ -108,12 +108,22 @@ namespace gcore {
    
       void set(const String &exp);
       const String get() const;
+      
+      bool search(const String &s, RexMatch &m, unsigned short flags=0) const;
+      bool search(const String &s, size_t offset, RexMatch &m, unsigned short flags=0) const;
+      bool search(const String &s, size_t offset, size_t len, RexMatch &m, unsigned short flags=0) const;
+      
+      bool search(const String &s, unsigned short flags=0) const;
+      bool search(const String &s, size_t offset, unsigned short flags=0) const;
+      bool search(const String &s, size_t offset, size_t len, unsigned short flags=0) const;
    
-      bool search(const String &s, RexMatch &m, unsigned short flags=0, size_t offset=0, size_t len=size_t(-1)) const;
-      bool search(const String &s, unsigned short execflags=0, size_t offset=0, size_t len=size_t(-1)) const;
-   
-      bool match(const String &s, RexMatch &m, unsigned short flags=0, size_t offset=0, size_t len=size_t(-1)) const;
-      bool match(const String &s, unsigned short execflags=0, size_t offset=0, size_t len=size_t(-1)) const;
+      bool match(const String &s, RexMatch &m, unsigned short flags=0) const;
+      bool match(const String &s, size_t offset, RexMatch &m, unsigned short flags=0) const;
+      bool match(const String &s, size_t offset, size_t len, RexMatch &m, unsigned short flags=0) const;
+      
+      bool match(const String &s, unsigned short flags=0) const;
+      bool match(const String &s, size_t offset, unsigned short flags=0) const;
+      bool match(const String &s, size_t offset, size_t len, unsigned short flags=0) const;
       
       String substitute(const RexMatch &m, const String &in) const;
       String substitute(const String &in, const String &by, int maxCount=-1) const;

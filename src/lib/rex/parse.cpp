@@ -469,7 +469,7 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
          
 #ifdef _DEBUG_REX
          Log::PrintDebug("[gcore] rex/ParseAtom: Create group");
-         Log::SetIndentLevel(Log::GetIndentLevel()+1);
+         Log::SetIndentLevel(Log::IndentLevel()+1);
          Log::PrintDebug("index: %d", gidx);
          Log::PrintDebug("invert: %d", invert);
          Log::PrintDebug("consume: %d", consume);
@@ -483,12 +483,12 @@ Instruction* ParseAtom(const char **ppc, ParseInfo &info)
          {
             std::ostringstream oss;
             
-            Log::SetIndentLevel(Log::GetIndentLevel()+1)
+            Log::SetIndentLevel(Log::IndentLevel()+1);
             i->toStream(oss);
             Log::PrintDebug(oss.str().c_str());
-            Log::SetIndentLevel(Log::GetIndentLevel()-1)
+            Log::SetIndentLevel(Log::IndentLevel()-1);
          }
-         Log::SetIndentLevel(Log::GetIndentLevel()-1);
+         Log::SetIndentLevel(Log::IndentLevel()-1);
 #endif
          
          i = new Group(gidx, i, !consume, invert, flags, nc, ml, dnl, name);

@@ -286,16 +286,16 @@ bool Rex::search(const String &s, RexMatch &m, unsigned short flags, size_t offs
          m.mGroups[0].second = m.mRange.second;
          m.mStr = s;
 #ifdef _DEBUG_REX
-         Log::SetIndentLevel(Log::GetIndentLevel()+1);
+         Log::SetIndentLevel(Log::IndentLevel()+1);
          Log::PrintDebug("Matched string: \"%s\"", m.mStr.c_str());
          Log::PrintDebug("Matched range: [%d, %d]", m.mRange.first, m.mRange.second);
          for (size_t i=0; i<m.mGroups.size(); ++i)
          {
-            Log::PrintDebug("Matched group %d: [%d, %d] \"%s\"", i, m.mGroups[i].first, m.mGroups[i]/second, m.group(i).c_str());
+            Log::PrintDebug("Matched group %d: [%d, %d] \"%s\"", i, m.mGroups[i].first, m.mGroups[i].second, m.group(i).c_str());
          }
          Log::PrintDebug("Pre: \"%s\"", m.pre().c_str());
          Log::PrintDebug("Post: \"%s\"", m.post().c_str());
-         Log::SetIndentLevel(Log::GetIndentLevel()-1);
+         Log::SetIndentLevel(Log::IndentLevel()-1);
 #endif
          return true;
       }

@@ -84,7 +84,7 @@ namespace gcore
       
       bool preStep(const char *&cur, MatchInfo &info) const;
       const char* postStep(const char *cur, MatchInfo &info) const;
-      virtual const char* matchRemain(const char *cur, MatchInfo &info) const;
+      const char* matchRemain(const char *cur, MatchInfo &info) const;
       
    protected:
       

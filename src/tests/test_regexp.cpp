@@ -54,7 +54,7 @@ int main(int, char**)
    
    gcore::String str = "   Time -> 10:23  ";
    
-   if (re1.search(str, md, 0, 3, str.length()-3))
+   if (re1.search(str, 3, str.length()-3, md))
    {
       fprintf(stderr, "\"%s",             md.pre().c_str() );
       fprintf(stderr, "<<%s>>",           md.group(0).c_str()  );

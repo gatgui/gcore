@@ -869,7 +869,7 @@ void UnicodeCharRange::toStream(std::ostream &os, const String &indent) const
    
    os << indent << "UnicodeCharRange " << tmp << "-";
    
-   n = CodepointToASCII(mFrom, ACF_VARIABLE, tmp, 16);
+   n = CodepointToASCII(mTo, ACF_VARIABLE, tmp, 16);
    tmp[n] = '\0';
    
    os << tmp << std::endl;

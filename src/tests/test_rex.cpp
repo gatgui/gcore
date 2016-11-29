@@ -430,6 +430,13 @@ int main(int argc, char **argv)
    if (doTest("Named Subst 1", tests)) suite.addTest(new SubstTest("Named Subst 1", "anotherShape", "(?P<name>[a-zA-Z][a-zA-Z_-]*)\\d+", "\\g<name>", "anotherShape"));
    if (doTest("Named Subst 2", tests)) suite.addTest(new SubstTest("Named Subst 2", "aThirdShape3", "(?P<name>[a-zA-Z][a-zA-Z_-]*)\\d+", "\\g<dummy>", "\\g<dummy>"));
    
+   const char *results40[] = {"明日は", "明日"};
+   
+   if (doTest("Unicode 0", tests)) suite.addTest(new MatchTest("Unicode 0", "(明日|明後日)(?:が|は)", "明日は雨がふる", true, 2, results40));
+   if (doTest("Unicode 1", tests)) suite.addTest(new MatchTest("Unicode 1", "(\\u660E\\u65E5|\\u{660E}\\u{5F8C}\\u{65E5})(?:\\U0000304C|\\U0000306F)", "明日は雨がふる", true, 2, results40));
+   if (doTest("Unicode 2", tests)) suite.addTest(new MatchTest("Unicode 2", "[あ-ん]", "昨日は", true, 0));
+   if (doTest("Unicode 0", tests)) suite.addTest(new MatchTest("Unicode 3", "(明日|明後日)(?:が|は)", "明日に来る", false));
+   
    suite.execute(verbose);
    
    return 0;

@@ -25,6 +25,7 @@ USA.
 #define __gcore_rex_instruction_h_
 
 #include <gcore/string.h>
+#include <gcore/unicode.h>
 
 namespace gcore
 {
@@ -83,7 +84,7 @@ namespace gcore
       
       bool preStep(const char *&cur, MatchInfo &info) const;
       const char* postStep(const char *cur, MatchInfo &info) const;
-      virtual const char* matchRemain(const char *cur, MatchInfo &info) const;
+      const char* matchRemain(const char *cur, MatchInfo &info) const;
       
    protected:
       
@@ -106,6 +107,24 @@ namespace gcore
    protected:
       
       char mChar;
+      char mUpperChar;
+      char mLowerChar;
+   };
+
+   class UnicodeSingle : public Instruction
+   {
+   public:
+      
+      UnicodeSingle(Codepoint c);
+      virtual ~UnicodeSingle();
+      
+      virtual Instruction* clone() const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+   
+   protected:
+      
+      Codepoint mCode;
       char mUpperChar;
       char mLowerChar;
    };
@@ -241,6 +260,23 @@ namespace gcore
       
       char mFrom;
       char mTo;
+   };
+
+   class UnicodeCharRange : public Instruction
+   {
+   public:
+      
+      UnicodeCharRange(Codepoint from, Codepoint to);
+      virtual ~UnicodeCharRange();
+      
+      virtual Instruction* clone() const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      
+   protected:
+      
+      Codepoint mFrom;
+      Codepoint mTo;
    };
 
    class CharClass : public Instruction

@@ -1121,7 +1121,7 @@ size_t CodepointToASCII(Codepoint cp, ASCIICodepointFormat fmt, char *out, size_
    }
 }
 
-size_t ASCIIToCodepoint(const char *in, Codepoint &cp)
+static size_t _ASCIIToCodepoint(int fmt, const char *in, Codepoint &cp)
 {
    cp = InvalidCodepoint;
    
@@ -1143,8 +1143,16 @@ size_t ASCIIToCodepoint(const char *in, Codepoint &cp)
    
    if (in[1] == 'u')
    {
+      if (fmt == ACF_32)
+      {
+         return 0;
+      }
       if (in[2] == '{')
       {
+         if (fmt == ACF_16)
+         {
+            return 0;
+         }
          const char *c = in + 3;
          Codepoint rv = 0;
          int num = 0;
@@ -1185,6 +1193,10 @@ size_t ASCIIToCodepoint(const char *in, Codepoint &cp)
       }
       else
       {
+         if (fmt == ACF_VARIABLE)
+         {
+            return 0;
+         }
          // \u0000
          if (len < 6)
          {
@@ -1212,6 +1224,11 @@ size_t ASCIIToCodepoint(const char *in, Codepoint &cp)
    }
    else if (in[1] == 'U')
    {
+      if (fmt == ACF_16 || fmt == ACF_VARIABLE)
+      {
+         return 0;
+      }
+      
       // \U00000000
       if (len < 10)
       {
@@ -1240,6 +1257,16 @@ size_t ASCIIToCodepoint(const char *in, Codepoint &cp)
    {
       return 0;
    }
+}
+
+size_t ASCIIToCodepoint(ASCIICodepointFormat fmt, const char *in, Codepoint &cp)
+{
+   return _ASCIIToCodepoint(int(fmt), in, cp);
+}
+
+size_t ASCIIToCodepoint(const char *in, Codepoint &cp)
+{
+   return _ASCIIToCodepoint(-1, in, cp);
 }
 
 bool IsBigEndian()

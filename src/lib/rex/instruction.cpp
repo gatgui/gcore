@@ -126,6 +126,10 @@ void Instruction::setNext(Instruction *inst)
    mNext = inst;
    if (mNext)
    {
+      if (mGroup)
+      {
+         mNext->setGroup(mGroup);
+      }
       mNext->setPrev(this);
    }
 }
@@ -154,7 +158,9 @@ bool Instruction::preStep(const char *&cur, MatchInfo &info) const
 {
    if (info.flags & Rex::Reverse)
    {
-      if (--cur < info.beg)
+      //if (--cur < info.beg)
+      cur = UTF8Prev(cur);
+      if (cur < info.beg)
       {
          return false;
       }
@@ -171,28 +177,19 @@ bool Instruction::preStep(const char *&cur, MatchInfo &info) const
 
 const char* Instruction::postStep(const char *cur, MatchInfo &info) const
 {
-   // if (consume ^ reverse) ++input;
-   //Instruction *remain = 0;
-   
    if (!(info.flags & Rex::Reverse))
    {
-      ++cur;
-      //remain = mPrev;
+      //++cur;
+      cur = UTF8Next(cur);
    }
-   //else
-   //{
-   //  remain = mNext;
-   //}
-   //return (remain ? remain->match(cur, info) : cur);
    
    return (info.once ? cur : matchRemain(cur, info));
-   //return matchRemain(cur, info);
 }
 
 const char* Instruction::matchRemain(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-   Log::PrintDebug("[gcore] rex/Instruction::matchRemain: (%s) \"%s\"", typeid(*this).name().c_str(), cur);
+   Log::PrintDebug("[gcore] rex/Instruction::matchRemain: (%s) \"%s\"", typeid(*this).name(), cur);
 #endif
    
    register bool failed = false;
@@ -340,6 +337,84 @@ const char* Single::match(const char *cur, MatchInfo &info) const
 void Single::toStream(std::ostream &os, const String &indent) const
 {
    os << indent << "Single \'" << mChar << "\'" << std::endl;
+   Instruction::toStream(os, indent);
+}
+
+// ---
+
+UnicodeSingle::UnicodeSingle(Codepoint c)
+   : Instruction()
+   , mCode(c)
+   , mUpperChar('\0')
+   , mLowerChar('\0')
+{
+   if (c < 128)
+   {
+      int diff = 'A' - 'a';
+      char ch = (char) c;
+      
+      if (CHAR_IS(ch, LOWER_CHAR))
+      {
+         mLowerChar = ch;
+         mUpperChar = (char)(ch + diff);
+      }
+      else if (CHAR_IS(ch, UPPER_CHAR))
+      {
+         mUpperChar = ch;
+         mLowerChar = (char)(ch - diff);
+      }
+   }
+}
+
+UnicodeSingle::~UnicodeSingle()
+{
+}
+
+Instruction* UnicodeSingle::clone() const
+{
+   return new UnicodeSingle(mCode);
+}
+
+const char* UnicodeSingle::match(const char *cur, MatchInfo &info) const
+{
+#ifdef _DEBUG_REX
+   Log::PrintDebug("[gcore] rex/UnicodeSingle::match: Match single character %x with \"%s\"... ", mCode, cur);
+#endif
+   
+   register bool matched;
+   
+   if (preStep(cur, info))
+   {
+      if ((info.flags & Rex::NoCase) != 0 && IsUTF8SingleChar(*cur) && mLowerChar != '\0')
+      {
+         matched = (*cur == mLowerChar || *cur == mUpperChar);
+      }
+      else
+      {
+         matched = (DecodeUTF8(cur, cur - info.end) == mCode);
+      }
+      
+      if (matched)
+      {
+#ifdef _DEBUG_REX
+         Log::PrintDebug("[gcore] rex/UnicodeSingle::match: Succeeded");
+#endif
+         return postStep(cur, info);
+      }
+   }
+   
+#ifdef _DEBUG_REX
+   Log::PrintDebug("[gcore] rex/UnicodeSingle::match: Failed");
+#endif
+   return 0;
+}
+
+void UnicodeSingle::toStream(std::ostream &os, const String &indent) const
+{
+   char tmp[16];
+   size_t n = CodepointToASCII(mCode, ACF_VARIABLE, tmp, 16);
+   tmp[n] = '\0';
+   os << indent << "UnicodeSingle " << tmp << std::endl;
    Instruction::toStream(os, indent);
 }
 
@@ -510,7 +585,7 @@ const char* LowerLetter::match(const char *cur, MatchInfo &info) const
       }
    }
 #ifdef _DEBUG_REX
-   Log::PrintDebug("[gcore] rex/LowerLetter::match: Failed")
+   Log::PrintDebug("[gcore] rex/LowerLetter::match: Failed");
 #endif
    return 0;
 }
@@ -762,6 +837,96 @@ const char* CharRange::match(const char *cur, MatchInfo &info) const
    }
 #ifdef _DEBUG_REX
    Log::PrintDebug("[gcore] rex/CharRange::match: Failed");
+#endif
+   return 0;
+}
+
+// ---
+
+UnicodeCharRange::UnicodeCharRange(Codepoint from, Codepoint to)
+   : Instruction()
+   , mFrom(from)
+   , mTo(to)
+{
+}
+
+UnicodeCharRange::~UnicodeCharRange()
+{
+}
+
+Instruction* UnicodeCharRange::clone() const
+{
+   return new UnicodeCharRange(mFrom, mTo);
+}
+
+void UnicodeCharRange::toStream(std::ostream &os, const String &indent) const
+{
+   char tmp[16];
+   size_t n = 0;
+   
+   n = CodepointToASCII(mFrom, ACF_VARIABLE, tmp, 16);
+   tmp[n] = '\0';
+   
+   os << indent << "UnicodeCharRange " << tmp << "-";
+   
+   n = CodepointToASCII(mTo, ACF_VARIABLE, tmp, 16);
+   tmp[n] = '\0';
+   
+   os << tmp << std::endl;
+   
+   Instruction::toStream(os, indent);
+}
+
+const char* UnicodeCharRange::match(const char *cur, MatchInfo &info) const
+{
+#ifdef _DEBUG_REX
+   Log::PrintDebug("[gcore] rex/UnicodeCharRange::match: Match character in range [%x, %x]...", mFrom, mTo);
+#endif
+   register Codepoint c = InvalidCodepoint;
+   register int casediff = 0;
+   register bool matched = false;
+   register char cc = '\0';
+   
+   if (preStep(cur, info))
+   {
+      if ((info.flags & Rex::NoCase) != 0 && IsUTF8SingleChar(*cur))
+      {
+         // ASCII character [0-127]
+         casediff = 'A' - 'a';
+         c = mFrom;
+         while (c <= mTo)
+         {
+            if (c >= 128)
+            {
+               break;
+            }
+            cc = (char) c;
+            if ((*cur == cc) ||
+                (CHAR_IS(cc, LOWER_CHAR) && (*cur == cc + casediff)) ||
+                (CHAR_IS(cc, UPPER_CHAR) && (*cur == cc - casediff)))
+            {
+               matched = true;
+               break;
+            }
+            ++c;
+         }
+      }
+      else
+      {
+         c = DecodeUTF8(cur, cur - info.end);
+         matched = (mFrom <= c && c <= mTo);
+      }
+      
+      if (matched)
+      {
+#ifdef _DEBUG_REX
+         Log::PrintDebug("[gcore] rex/UnicodeCharRange::match: Succeeded");
+#endif
+         return postStep(cur, info);
+      }
+   }
+#ifdef _DEBUG_REX
+   Log::PrintDebug("[gcore] rex/UnicodeCharRange::match: Failed");
 #endif
    return 0;
 }
@@ -1336,7 +1501,7 @@ void Group::open(const char *cur, MatchInfo &info) const
 const char* Group::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-   Log::PrintDebug("[gcore] rex/Group::match");
+   Log::PrintDebug("[gcore] rex/Group::match [%d, '%s']", mIndex, mName.c_str());
 #endif
    
    //register unsigned short flags = mFlags;
@@ -1387,15 +1552,16 @@ const char* Group::match(const char *cur, MatchInfo &info) const
    }
    
 #ifdef _DEBUG_REX
-   Log::SetIndentLevel(Log::GetIndentLevel()+1);
+   Log::SetIndentLevel(Log::IndentLevel()+1);
    Log::PrintDebug("group: %d", mIndex);
+   Log::PrintDebug("name: '%s'", mName.c_str());
    Log::PrintDebug("invert: %d", mInvert);
    Log::PrintDebug("zerowidth: %d", mZeroWidth);
    Log::PrintDebug("reverse: %d", ((mFlags & Rex::Reverse) == 1));
    Log::PrintDebug("nocase: %d", mNoCase);
    Log::PrintDebug("multiline: %d", mMultiline);
-   Log::PrintDebug("dotmatchnewline: %d", mDotNewLine);
-   Log::SetIndentLevel(Log::GetIndentLevel()-1);
+   Log::PrintDebug("dotmatchnewline: %d", mDotNewline);
+   Log::SetIndentLevel(Log::IndentLevel()-1);
 #endif
    
    if (mFirst)
@@ -1446,7 +1612,7 @@ const char* Group::match(const char *cur, MatchInfo &info) const
          if (end(failed, rv, info))
          {
 #ifdef _DEBUG_REX
-            Log::PrintDebug("[gcore] rex/Group::match: Succeeded");
+            Log::PrintDebug("[gcore] rex/Group::match: Succeeded (match remain)");
 #endif
             return matchRemain(rv, info);
          }
@@ -1458,7 +1624,7 @@ const char* Group::match(const char *cur, MatchInfo &info) const
       else
       {
 #ifdef _DEBUG_REX
-         Log::PrintDebug("[gcore] rex/Group::match: %d", (rv == 0 ? "Failed" : "Succeeded"));
+         Log::PrintDebug("[gcore] rex/Group::match: %s", (rv == 0 ? "Failed" : "Succeeded"));
 #endif
          return rv;
       }
@@ -1516,7 +1682,7 @@ void Backsubst::toStream(std::ostream &os, const String &indent) const
 const char* Backsubst::match(const char *cur, MatchInfo &info) const
 {
 #ifdef _DEBUG_REX
-   Log::PrintDebug("[gcore] rex/Backsubst::match: Match backsubstitution %d...", mIndex);
+   Log::PrintDebug("[gcore] rex/Backsubst::match: Match backsubstitution %d/'%s'...", mIndex, mName.c_str());
 #endif
    
    size_t index = 0;

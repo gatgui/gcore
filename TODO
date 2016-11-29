@@ -22,7 +22,7 @@ Unicode
    - Regular expression support
       o add support for \u[0-9a-fA-F]{4}, \U[0-9a-fA-F]{8} and \u\{[0-9a-fA-F]+\} notation
       o support codepoint matching instruction
-      - add some unicode tests
+      o add some unicode tests
    - JSON support
       x add encoding parameter to read/write/parse methods
       o add support for \u[0-9a-fA-F]{4} notation

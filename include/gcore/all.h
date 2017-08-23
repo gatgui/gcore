@@ -55,6 +55,7 @@ USA.
 #include <gcore/time.h>
 #include <gcore/status.h>
 #include <gcore/net.h>
+#include <gcore/unicode.h>
 
 #endif 
 

@@ -23,6 +23,7 @@ USA.
 
 #include <gcore/pipe.h>
 #include <gcore/platform.h>
+#include <gcore/unicode.h>
 
 namespace gcore
 {
@@ -161,9 +162,11 @@ Status Pipe::open(const String &name)
       return Status(true);
    }
 #else
+   std::wstring wpn;
    String pipename = "\\\\.\\pipe\\" + name;
-   HANDLE hdl = CreateFile(pipename.c_str(), GENERIC_READ | GENERIC_WRITE,
-                                       0, NULL, OPEN_EXISTING, 0, NULL);
+   DecodeUTF8(pipename.c_str(), wpn);
+   HANDLE hdl = CreateFileW(wpn.c_str(), GENERIC_READ | GENERIC_WRITE,
+                            0, NULL, OPEN_EXISTING, 0, NULL);
    if (hdl != INVALID_HANDLE_VALUE)
    {
       mName = name;
@@ -218,10 +221,12 @@ Status Pipe::create(const String &name)
    }
 #else
    // Note: May want to expose in/out buffer size
+   std::wstring wpn;
    String pipename = "\\\\.\\pipe\\" + name;
-   HANDLE hdl = CreateNamedPipe(pipename.c_str(), PIPE_ACCESS_DUPLEX,
-                                              PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
-                                              1, 4096, 4096, 0, NULL);
+   DecodeUTF8(pipename.c_str(), wpn);
+   HANDLE hdl = CreateNamedPipeW(wpn.c_str(), PIPE_ACCESS_DUPLEX,
+                                 PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
+                                 1, 4096, 4096, 0, NULL);
    if (hdl != INVALID_HANDLE_VALUE)
    {
       mOwn = true;
@@ -294,7 +299,7 @@ void Pipe::closeWrite()
    }
 }
 
-int Pipe::read(char *buffer, int size, Status *status) const
+int Pipe::read(void *buffer, int size, Status *status) const
 {
    if (!buffer)
    {
@@ -312,7 +317,8 @@ int Pipe::read(char *buffer, int size, Status *status) const
       }
       if (size > 0)
       {
-         buffer[0] = '\0';
+         //buffer[0] = '\0';
+         ((unsigned char*)buffer)[0] = 0;
       }
       return 0;
    }
@@ -343,7 +349,8 @@ int Pipe::read(char *buffer, int size, Status *status) const
          {
             status->set(false, std_errno(), "gcore::Pipe::read");
          }
-         buffer[0] = '\0';
+         //buffer[0] = '\0';
+         *((unsigned char*)buffer) = 0;
          return 0;
       }
       else
@@ -352,7 +359,8 @@ int Pipe::read(char *buffer, int size, Status *status) const
          {
             status->set(true);
          }
-         buffer[bytesRead] = '\0';
+         //buffer[bytesRead] = '\0';
+         ((unsigned char*)buffer)[bytesRead] = 0;
          return bytesRead;
       }
 #else
@@ -369,7 +377,8 @@ int Pipe::read(char *buffer, int size, Status *status) const
             {
                status->set(false, std_errno(), "gcore::Pipe::read");
             }
-            buffer[0] = '\0';
+            //buffer[0] = '\0';
+            ((unsigned char*)buffer)[0] = 0;
             return 0;
          }
       }
@@ -411,7 +420,8 @@ int Pipe::read(char *buffer, int size, Status *status) const
          {
             status->set(true);
          }
-         buffer[bytesRead] = '\0';
+         //buffer[bytesRead] = '\0';
+         ((unsigned char*)buffer)[bytesRead] = 0;
          return bytesRead;
       }
       else
@@ -420,7 +430,8 @@ int Pipe::read(char *buffer, int size, Status *status) const
          {
             status->set(false, std_errno(), "gcore::Pipe::read");
          }
-         buffer[0] = '\0';
+         //buffer[0] = '\0';
+         ((unsigned char*)buffer)[0] = 0;
          return 0;
       }
 #endif
@@ -429,11 +440,12 @@ int Pipe::read(char *buffer, int size, Status *status) const
    {
       status->set(false, "gcore::Pipe::read: Pipe is closed for reading.");
    }
-   buffer[0] = '\0';
+   //buffer[0] = '\0';
+   ((unsigned char*)buffer)[0] = 0;
    return 0;
 }
 
-int Pipe::write(const char *buffer, int size, Status *status) const
+int Pipe::write(const void *buffer, int size, Status *status) const
 {
    if (canWrite())
    {

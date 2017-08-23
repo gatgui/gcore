@@ -31,6 +31,7 @@ USA.
 # ifndef _WIN32_WINNT
 #   define _WIN32_WINNT WINVER
 # endif
+# define NOMINMAX
 //# define _WIN32_WINNT 0x0500
 # include <windows.h>
 # include <winsock2.h>
@@ -60,6 +61,7 @@ typedef int socklen_t;
 # include <sys/stat.h>
 # include <sys/socket.h>
 # include <sys/select.h>
+# include <sys/mman.h>
 # include <netinet/in.h>
 # include <arpa/inet.h>
 # include <netdb.h>

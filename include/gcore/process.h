@@ -71,8 +71,6 @@ namespace gcore
    public:
    
       Process();
-      Process(const char *cmdline, Options *options=0, Status *status=0);
-      Process(int argc, const char **argv, Options *options=0, Status *status=0);
       Process(const String &cmdline, Options *options=0, Status *status=0);
       Process(const StringList &args, Options *options=0, Status *status=0);
       ~Process();
@@ -106,9 +104,6 @@ namespace gcore
 
       // Running process 
       
-      Status run(const char *cmdline);
-      Status run(int argc, const char **args);
-      Status run(int argc, ...);
       Status run(const String &cmdline);
       Status run(const StringList &args);
 
@@ -129,11 +124,11 @@ namespace gcore
 
       // Returns -1 on error, read/written bytes otherwise
       bool canReadOut() const;
-      int readOut(char *buffer, int size, Status *status=0) const;
+      int readOut(void *buffer, int size, Status *status=0) const;
       bool canReadErr() const;
-      int readErr(char *buffer, int size, Status *status=0) const;
+      int readErr(void *buffer, int size, Status *status=0) const;
       bool canWriteIn() const;
-      int write(const char *buffer, int size, Status *status=0) const;
+      int write(const void *buffer, int size, Status *status=0) const;
       int write(const String &str, Status *status=0) const;
 
       PipeID readOutID() const;

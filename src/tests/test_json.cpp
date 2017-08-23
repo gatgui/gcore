@@ -23,6 +23,7 @@ USA.
 
 #include <gcore/json.h>
 #include <gcore/plist.h>
+#include <gcore/argparser.h>
 
 using namespace gcore;
 
@@ -54,7 +55,7 @@ public:
       ++mDepth;
    }
    
-   void objectKey(const char *name)
+   void objectKey(const String &name)
    {
       std::cout << (mIndent * mDepth) << "Object key: '" << name << "'" << std::endl;
    }
@@ -87,7 +88,7 @@ public:
       std::cout << (mIndent * mDepth) << "Number scalar: " << v << std::endl;
    }
    
-   void stringScalar(const char *v)
+   void stringScalar(const String &v)
    {
       std::cout << (mIndent * mDepth) << "String scalar: " << v << std::endl;
    }
@@ -97,7 +98,7 @@ public:
       std::cout << (mIndent * mDepth) << "Null scalar" << std::endl;
    }
    
-   Status parse(const char *path)
+   Status parse(const Path &path)
    {
       mDepth = 0;
       return json::Value::Parse(path, mCallbacks);
@@ -156,10 +157,10 @@ int main(int argc, char **argv)
    v.insert(0, obj3);
    v.erase(3);
    
-   for (json::ArrayConstIterator ait=v.abegin(); ait!=v.aend(); ++ait)
+   for (json::ArrayConstIterator ait=v.arrayBegin(); ait!=v.arrayEnd(); ++ait)
    {
-      std::cout << "[" << (ait - v.abegin()) << "]" << std::endl;
-      for (json::ObjectConstIterator oit=ait->obegin(); oit!=ait->oend(); ++oit)
+      std::cout << "[" << (ait - v.arrayBegin()) << "]" << std::endl;
+      for (json::ObjectConstIterator oit=ait->objectBegin(); oit!=ait->objectEnd(); ++oit)
       {
          std::cout << "  " << oit->first << ": " << oit->second << std::endl;
       }
@@ -198,13 +199,21 @@ int main(int argc, char **argv)
       }
    }
    
-   if (argc > 1)
+   FlagDesc flags[] = {ACCEPTS_NOFLAG_ARGUMENTS(-1)};
+   ArgParser args(flags, 1);
+   
+   args.parse(argc-1, argv+1);
+   
+   if (args.argumentCount() > 0)
    {
-      const char *path = argv[1];
+      String arg;
+      args.getArgument(0, arg);
+      
+      Path path(arg);
       
       // Single object parsing
       
-      std::cout << "Read '" << path << "'..." << std::endl;
+      std::cout << "Read '" << arg << "'..." << std::endl;
       
       json::Value top;
       
@@ -217,6 +226,25 @@ int main(int argc, char **argv)
          
          top.write(std::cout);
          std::cout << std::endl;
+         
+         std::cout << "[ASCII]" << std::endl;
+         top.write(std::cout, true);
+         std::cout << std::endl;
+         
+         Path ascii("ascii.json");
+         top.write(ascii, true);
+         json::Value atop;
+         stat = atop.read(ascii);
+         if (!stat)
+         {
+            std::cerr << "Cannot read ASCII json: " << stat << std::endl;
+         }
+         else
+         {
+            std::cout << "[ASCII -> UTF-8]" << std::endl;
+            atop.write(std::cout, false);
+            std::cout << std::endl;
+         }
          
          PropertyList pl;
          if (top.toPropertyList(pl))
@@ -241,8 +269,8 @@ int main(int argc, char **argv)
       
       // Stream parsing
       
-      std::ifstream ifs(path);
-      if (ifs.is_open())
+      std::ifstream ifs;
+      if (path.open(ifs))
       {
          std::streampos lastPos = ifs.tellg();
          size_t count = 0;

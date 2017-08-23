@@ -22,6 +22,7 @@ USA.
 */
 
 #include <gcore/argparser.h>
+#include <gcore/unicode.h>
 
 namespace gcore
 {
@@ -273,6 +274,25 @@ bool ArgParser::isFlagSet(const String &name) const
    return (mFlagsMap.find(name) != mFlagsMap.end());
 }
 
+static bool GetUTF8String(const char *s, String &out)
+{
+   if (!s)
+   {
+      out = "";
+      return true;
+   }
+   
+   if (!IsUTF8(s))
+   {
+      return LocaleToUTF8(s, out);
+   }
+   else
+   {
+      out = s;
+      return true;
+   }
+}
+
 Status ArgParser::parse(int argc, char **argv)
 {
    reset();
@@ -288,6 +308,7 @@ Status ArgParser::parse(int argc, char **argv)
    int cdata = -1;
    int cvalues = -1;
    char flag[64];
+   String arg;
 
    while (carg < argc)
    {
@@ -364,8 +385,16 @@ Status ArgParser::parse(int argc, char **argv)
       {
          if (cvalues != -1 && valcount != cflag->arity)
          {
-            valcount++;
-            mDatas[cdata][cvalues].push(String(argv[carg]));
+            if (!GetUTF8String(argv[carg], arg))
+            {
+               return Status(false, "Unsupported command line argument encoding. (Arg %d: %s)", carg, argv[carg]);
+            }
+            else
+            {
+               valcount++;
+               mDatas[cdata][cvalues].push(arg);
+            }
+            
          }
          else
          {
@@ -377,7 +406,14 @@ Status ArgParser::parse(int argc, char **argv)
             {
                if (mNoFlagCount == -1 || (int)(mArgs.size()) < mNoFlagCount)
                {
-                  mArgs.push(String(argv[carg]));
+                  if (!GetUTF8String(argv[carg], arg))
+                  {
+                     return Status(false, "Unsupported command line argument encoding. (Arg %d: %s)", carg, argv[carg]);
+                  }
+                  else
+                  {
+                     mArgs.push(arg);
+                  }
                }
                else
                {

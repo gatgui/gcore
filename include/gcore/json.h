@@ -27,6 +27,7 @@ USA.
 #include <gcore/string.h>
 #include <gcore/functor.h>
 #include <gcore/status.h>
+#include <gcore/path.h>
 
 namespace gcore
 {
@@ -100,6 +101,7 @@ namespace gcore
          Value(double num);
          Value(String *str);  // steals ownership
          Value(const char *str);
+         Value(const wchar_t *wstr);
          Value(const String &str);
          Value(Object *obj);  // steals ownership
          Value(const Object &obj);
@@ -126,6 +128,7 @@ namespace gcore
          Value& operator=(double num);
          Value& operator=(String *str);  // steals ownership
          Value& operator=(const char *str);
+         Value& operator=(const wchar_t *wstr);
          Value& operator=(const String &str);
          Value& operator=(Object *obj);  // steals ownership
          Value& operator=(const Object &obj);
@@ -151,10 +154,10 @@ namespace gcore
          void clear();
          
          // ArrayType only
-         iterator<Array> abegin();
-         const_iterator<Array> abegin() const;
-         iterator<Array> aend();
-         const_iterator<Array> aend() const;
+         iterator<Array> arrayBegin();
+         const_iterator<Array> arrayBegin() const;
+         iterator<Array> arrayEnd();
+         const_iterator<Array> arrayEnd() const;
          
          bool insert(size_t pos, const Value &value);
          bool erase(size_t pos, size_t cnt=1);
@@ -163,14 +166,16 @@ namespace gcore
          Value& operator[](size_t idx);
          
          // ObjectType only
-         iterator<Object> obegin();
-         const_iterator<Object> obegin() const;
-         iterator<Object> oend();
-         const_iterator<Object> oend() const;
+         iterator<Object> objectBegin();
+         const_iterator<Object> objectBegin() const;
+         iterator<Object> objectEnd();
+         const_iterator<Object> objectEnd() const;
          iterator<Object> find(const String &name);
          const_iterator<Object> find(const String &name) const;
          iterator<Object> find(const char *name);
          const_iterator<Object> find(const char *name) const;
+         iterator<Object> find(const wchar_t *name);
+         const_iterator<Object> find(const wchar_t *name) const;
          
          bool insert(const String &key, const Value &value);
          bool erase(const String &key);
@@ -179,14 +184,16 @@ namespace gcore
          Value& operator[](const String &name);
          const Value& operator[](const char *name) const;
          Value& operator[](const char *name);
+         const Value& operator[](const wchar_t *name) const;
+         Value& operator[](const wchar_t *name);
          
          // ---
          
-         Status read(const char *path);
+         Status read(const Path &path);
          Status read(std::istream &is);
           
-         Status write(const char *path) const;
-         void write(std::ostream &os, const String indent="", bool skipFirstIndent=false) const;
+         Status write(const Path &path, bool asciiOnly=false) const;
+         void write(std::ostream &os, bool asciiOnly=false, const String indent="", bool skipFirstIndent=false) const;
          
          bool toPropertyList(gcore::PropertyList &pl) const;
          
@@ -206,17 +213,17 @@ namespace gcore
          struct ParserCallbacks
          {
             gcore::Functor0 objectBegin;
-            gcore::Functor1<const char*> objectKey;
+            gcore::Functor1<const String&> objectKey;
             gcore::Functor0 objectEnd;
             gcore::Functor0 arrayBegin;
             gcore::Functor0 arrayEnd;
             gcore::Functor1<bool> booleanScalar;
             gcore::Functor1<double> numberScalar;
-            gcore::Functor1<const char*> stringScalar;
+            gcore::Functor1<const String&> stringScalar;
             gcore::Functor0 nullScalar;
          };
          
-         static Status Parse(const char *path, ParserCallbacks &callbacks);
+         static Status Parse(const Path &path, ParserCallbacks &callbacks);
          static Status Parse(std::istream &is, ParserCallbacks &callbacks);
       
       private:

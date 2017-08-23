@@ -80,11 +80,11 @@ ctypedef public class Env [object PyEnv, type PyEnvType]:
    
    @classmethod
    def Username(klass):
-      return gcore.GetUser().c_str()
+      return gcore.Username().c_str()
    
    @classmethod
    def Hostname(klass):
-      return gcore.GetHost().c_str()
+      return gcore.Hostname().c_str()
    
    @classmethod
    def IsSet(klass, char* key):

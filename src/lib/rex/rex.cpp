@@ -60,10 +60,20 @@ RexMatch& RexMatch::operator=(const RexMatch &rhs)
    if (this != &rhs)
    {
       mStr = rhs.mStr;
+      mRange = rhs.mRange;
       mGroups = rhs.mGroups;
       mNamedGroups = rhs.mNamedGroups;
    }
    return *this;
+}
+
+void RexMatch::clear()
+{
+   mStr = "";
+   mRange.first = -1;
+   mRange.second = -1;
+   mGroups.clear();
+   mNamedGroups.clear();
 }
 
 bool RexMatch::hasGroup(size_t i) const
@@ -150,12 +160,12 @@ Rex::Rex()
 {
 }
 
-Rex::Rex(const String &exp)
+Rex::Rex(const String &s)
    : mValid(false)
    , mCode(0)
    , mNumGroups(0)
 {
-   set(exp);
+   set(s);
 }
 
 Rex::Rex(const Rex &rhs)
@@ -196,12 +206,12 @@ bool Rex::valid() const
    return mValid;
 }
 
-void Rex::set(const String &exp)
+void Rex::set(const String &s)
 {
    ParseInfo info;
    info.numGroups = 0;
    
-   mExp = exp;
+   mExp = s;
    
    const char *pc = mExp.c_str();
    
@@ -215,34 +225,35 @@ const String Rex::get() const
    return mExp;
 }
 
-bool Rex::search(const String &s, RexMatch &m, unsigned short flags, size_t offset, size_t len) const
+bool Rex::search(const String &s, RexMatch &m, unsigned short flags) const
+{
+   return search(s, 0, s.length(), m, flags);
+}
+
+bool Rex::search(const String &s, size_t offset, RexMatch &m, unsigned short flags) const
+{
+   return search(s, offset, s.length(), m, flags);
+}
+
+bool Rex::search(const String &s, size_t offset, size_t len, RexMatch &m, unsigned short flags) const
 {
    if (!mCode)
    {
       return false;
    }
    
-   if (len == size_t(-1))
-   {
-      len = s.length();
-   }
+   size_t slen = s.length();
    
-   if (offset >= s.length())
+   if (offset >= slen)
    {
       return false;
    }
    
-   if (offset+len > s.length())
+   if (len > (slen - offset))
    {
-      return false;
+      len = slen - offset;
    }
    
-   //MatchInfo info(s.c_str()+offset, s.c_str()+offset+len, flags, mNumGroups+1);
-   //const char *cur = info.beg;
-   
-   //MatchInfo info(s.c_str(), s.c_str()+s.length(), flags, mNumGroups+1);
-   
-   //const char *beg = info.beg + offset;
    const char *beg = s.c_str() + offset;
    const char *end = beg + len;
    const char *cur = beg;
@@ -259,14 +270,14 @@ bool Rex::search(const String &s, RexMatch &m, unsigned short flags, size_t offs
       }
    }
    
-   //while (cur < info.end)
-   //while (cur < end)
+   m.clear();
+   
    do
    {
 #ifdef _DEBUG_REX
       Log::PrintDebug("[gcore] Rex::search: Try match with \"%s\"", cur);
 #endif
-      MatchInfo info(s.c_str(), s.c_str()+s.length(), flags, mNumGroups+1);
+      MatchInfo info(s.c_str(), s.c_str()+slen, flags, mNumGroups+1);
       const char *rv = code->match(cur, info);
       if (rv != 0)
       {
@@ -286,57 +297,73 @@ bool Rex::search(const String &s, RexMatch &m, unsigned short flags, size_t offs
          m.mGroups[0].second = m.mRange.second;
          m.mStr = s;
 #ifdef _DEBUG_REX
-         Log::SetIndentLevel(Log::GetIndentLevel()+1);
+         Log::SetIndentLevel(Log::IndentLevel()+1);
          Log::PrintDebug("Matched string: \"%s\"", m.mStr.c_str());
          Log::PrintDebug("Matched range: [%d, %d]", m.mRange.first, m.mRange.second);
          for (size_t i=0; i<m.mGroups.size(); ++i)
          {
-            Log::PrintDebug("Matched group %d: [%d, %d] \"%s\"", i, m.mGroups[i].first, m.mGroups[i]/second, m.group(i).c_str());
+            Log::PrintDebug("Matched group %d: [%d, %d] \"%s\"", i, m.mGroups[i].first, m.mGroups[i].second, m.group(i).c_str());
          }
          Log::PrintDebug("Pre: \"%s\"", m.pre().c_str());
          Log::PrintDebug("Post: \"%s\"", m.post().c_str());
-         Log::SetIndentLevel(Log::GetIndentLevel()-1);
+         Log::SetIndentLevel(Log::IndentLevel()-1);
 #endif
          return true;
       }
-      //++cur;
       cur += step;
-   } while (cur >= beg && cur < end);
+   } while (beg <= cur && cur < end);
    
    return false;
 }
 
-bool Rex::search(const String &s, unsigned short flags, size_t offset, size_t len) const
+bool Rex::search(const String &s, unsigned short flags) const
 {
    RexMatch m;
-   return search(s, m, flags, offset, len);
+   return search(s, 0, s.length(), m, flags);
 }
 
-bool Rex::match(const String &s, RexMatch &m, unsigned short flags, size_t offset, size_t len) const
+bool Rex::search(const String &s, size_t offset, unsigned short flags) const
+{
+   RexMatch m;
+   return search(s, offset, s.length(), m, flags);
+}
+
+bool Rex::search(const String &s, size_t offset, size_t len, unsigned short flags) const
+{
+   RexMatch m;
+   return search(s, offset, len, m, flags);
+}
+
+bool Rex::match(const String &s, RexMatch &m, unsigned short flags) const
+{
+   return match(s, 0, s.length(), m, flags);
+}
+
+bool Rex::match(const String &s, size_t offset, RexMatch &m, unsigned short flags) const
+{
+   return match(s, offset, s.length(), m, flags);
+}
+
+bool Rex::match(const String &s, size_t offset, size_t len, RexMatch &m, unsigned short flags) const
 {
    if (!mCode)
    {
       return false;
    }
    
-   if (len == size_t(-1))
-   {
-      len = s.length();
-   }
+   size_t slen = s.length();
    
-   if (offset >= s.length())
+   if (offset >= slen)
    {
       return false;
    }
    
-   if (offset+len > s.length())
+   if (len > (slen - offset))
    {
-      return false;
+      len = slen - offset;
    }
    
-   //MatchInfo info(s.c_str()+offset, s.c_str()+offset+len, flags, mNumGroups+1);
-   //const char *cur = info.beg;
-   MatchInfo info(s.c_str(), s.c_str()+s.length(), flags, mNumGroups+1);
+   MatchInfo info(s.c_str(), s.c_str()+slen, flags, mNumGroups+1);
    
    const char *cur = info.beg + offset;
    Instruction *code = mCode;
@@ -349,6 +376,8 @@ bool Rex::match(const String &s, RexMatch &m, unsigned short flags, size_t offse
          code = code->next();
       }
    }
+   
+   m.clear();
    
    const char *rv = mCode->match(cur, info);
    if (rv != 0)
@@ -376,10 +405,22 @@ bool Rex::match(const String &s, RexMatch &m, unsigned short flags, size_t offse
    }
 }
 
-bool Rex::match(const String &s, unsigned short flags, size_t offset, size_t len) const
+bool Rex::match(const String &s, unsigned short flags) const
 {
    RexMatch m;
-   return match(s, m, flags, offset, len);
+   return match(s, 0, s.length(), m, flags);
+}
+
+bool Rex::match(const String &s, size_t offset, unsigned short flags) const
+{
+   RexMatch m;
+   return match(s, offset, s.length(), m, flags);
+}
+
+bool Rex::match(const String &s, size_t offset, size_t len, unsigned short flags) const
+{
+   RexMatch m;
+   return match(s, offset, len, m, flags);
 }
 
 String Rex::substitute(const RexMatch &m, const String &in) const

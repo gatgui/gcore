@@ -139,9 +139,7 @@ public:
            bool expectedResult,
            size_t ngroups=0,
            const char **expectedGroups=0,
-           unsigned short flags=0,
-           size_t offset=0,
-           size_t len=size_t(-1))
+           unsigned short flags=0)
       : UnitTest(name)
       , mExp(exp)
       , mStr(str)
@@ -149,8 +147,6 @@ public:
       , mGroups(expectedGroups)
       , mNumGroups(ngroups)
       , mFlags(flags)
-      , mOffset(offset)
-      , mLength(len)
    {
    }
    
@@ -179,7 +175,7 @@ public:
          std::cout << "Code: " << std::endl << mExp << std::endl;
       }
       
-      bool rv =  mExp.search(mStr, match, mFlags, mOffset, mLength);
+      bool rv =  mExp.search(mStr, match, mFlags);
       
       if (rv != mExpectedResult)
       {
@@ -217,8 +213,6 @@ protected:
    const char ** mGroups;
    size_t mNumGroups;
    unsigned short mFlags;
-   size_t mOffset;
-   size_t mLength;
 };
 
 // ---
@@ -231,11 +225,19 @@ inline bool doTest(const String &n, const std::set<String> &list)
 int main(int argc, char **argv)
 {
    TestSuite suite;
+   bool verbose = false;
    
    std::set<String> tests;
    for (int i=1; i<argc; ++i)
    {
-      tests.insert(argv[i]);
+      if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose"))
+      {
+         verbose = true;
+      }
+      else
+      {
+         tests.insert(argv[i]);
+      }
    }
    
    const char *results0[] = {"hello"};
@@ -376,25 +378,38 @@ int main(int argc, char **argv)
    if (doTest("Condition 0", tests)) suite.addTest(new RexTest("Condition 0", RAW("(?:(?P<refunix>\$)|(?P<refwin>%))([a-zA-Z_][a-zA-Z0-9_]+)(?(refwin)(?P=refwin))"), "/usr/autodesk/maya$MAYA_VER/bin", true, 4, results38));
    if (doTest("Condition 1", tests)) suite.addTest(new RexTest("Condition 1", RAW("(?:(?P<refunix>\$)|(?P<refwin>%))([a-zA-Z_][a-zA-Z0-9_]+)(?(refwin)(?P=refwin))"), "/usr/autodesk/maya%MAYA_VER%/bin", true, 4, results39));
    if (doTest("Condition 2", tests)) suite.addTest(new RexTest("Condition 2", RAW("(?:(?P<refunix>\$)|(?P<refwin>%))([a-zA-Z_][a-zA-Z0-9_]+)(?(refwin)(?P=refwin))"), "/usr/autodesk/maya%MAYA_VER/bin", false, 0));
+   
+   suite.execute(verbose);
+   
+   if (doTest("Named Subst 0", tests))
+   {
+      std::cout << std::endl << "Named Subst 0" << std::endl;
       
-   suite.execute(true);
+      String s = "shape123";
+      std::cout << s << " -> ";
+      s.subst("(?P<name>[a-zA-Z][a-zA-Z_-]*)\\d+", "\\g<name>");
+      std::cout << s << " (expected: \"shape\")" << std::endl;
+   }
    
-   std::cout << std::endl << "Named group substitution: " << std::endl;
+   if (doTest("Named Subst 1", tests))
+   {
+      std::cout << std::endl << "Named Subst 1" << std::endl;
+      
+      String s = "anotherShape";
+      std::cout << s << " -> ";
+      s.subst("(?P<name>[a-zA-Z][a-zA-Z_-]*)\\d+", "\\g<name>");
+      std::cout << s << " (expected: \"anotherShape\")" << std::endl;
+   }
    
-   String s = "shape123";
-   std::cout << s << " -> ";
-   s.subst("(?P<name>[a-zA-Z][a-zA-Z_-]*)\\d+", "\\g<name>");
-   std::cout << s << " (expected: \"shape\")" << std::endl;
-   
-   s = "anotherShape";
-   std::cout << s << " -> ";
-   s.subst("(?P<name>[a-zA-Z][a-zA-Z_-]*)\\d+", "\\g<name>");
-   std::cout << s << " (expected: \"anotherShape\")" << std::endl;
-   
-   s = "aThirdShape3";
-   std::cout << s << " -> ";
-   s.subst("(?P<name>[a-zA-Z][a-zA-Z_-]*)\\d+", "\\g<dummy>");
-   std::cout << s << " (expected: \"\\g<dummy>\")" << std::endl;
+   if (doTest("Named Subst 2", tests))
+   {
+      std::cout << std::endl << "Named Subst 2" << std::endl;
+      
+      String s = "aThirdShape3";
+      std::cout << s << " -> ";
+      s.subst("(?P<name>[a-zA-Z][a-zA-Z_-]*)\\d+", "\\g<dummy>");
+      std::cout << s << " (expected: \"\\g<dummy>\")" << std::endl;
+   }
    
    return 0;
 }

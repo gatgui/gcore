@@ -39,27 +39,50 @@ namespace gcore
 namespace base64
 {
 
-static const char* gsEncTable = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-static char* gsDecTable = NULL;
-
-class _Base64Init
+class Tables
 {
 public:
-   _Base64Init()
+   enum Role
    {
-      gsDecTable = new char[256];
-      for (int i=0; i<64; ++i)
+      Encoding = 0,
+      Decoding
+   };
+
+   ~Tables()
+   {
+      delete[] mDecTable;
+   }
+
+   static const char* Get(Role role)
+   {
+      static Tables sTheTables;
+
+      switch (role)
       {
-         gsDecTable[int(gsEncTable[i])] = char(i);
+      case Encoding:
+         return sTheTables.mEncTable;
+      case Decoding:
+         return sTheTables.mDecTable;
+      default:
+         return NULL;
       }
    }
-   ~_Base64Init()
-   {
-      delete[] gsDecTable;
-   }
-};
 
-static _Base64Init _b64init;
+private:
+   Tables()
+      : mEncTable("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/")
+      , mDecTable(0)
+   {
+      mDecTable = new char[256];
+      for (int i=0; i<64; ++i)
+      {
+         mDecTable[int(mEncTable[i])] = char(i);
+      }
+   }
+
+   const char *mEncTable;
+   char *mDecTable;
+};
 
 // ---
 
@@ -105,30 +128,31 @@ static bool _Encode(const void *data, size_t len, char *&out, size_t &outlen)
    unsigned long tmp;
    size_t outp = 0;
    size_t p = 0;
+   const char *encTable = Tables::Get(Tables::Encoding);
    
    while ((len - p) >= 3)
    {
       tmp = (bytes[p] << 16) | (bytes[p+1] << 8) | bytes[p+2];
-      out[outp++] = gsEncTable[(tmp & MASK0) >> SHIFT0];
-      out[outp++] = gsEncTable[(tmp & MASK1) >> SHIFT1];
-      out[outp++] = gsEncTable[(tmp & MASK2) >> SHIFT2];
-      out[outp++] = gsEncTable[(tmp & MASK3) >> SHIFT3];
+      out[outp++] = encTable[(tmp & MASK0) >> SHIFT0];
+      out[outp++] = encTable[(tmp & MASK1) >> SHIFT1];
+      out[outp++] = encTable[(tmp & MASK2) >> SHIFT2];
+      out[outp++] = encTable[(tmp & MASK3) >> SHIFT3];
       p += 3;
    }
    
    if ((len - p) == 2)
    {
       tmp = (bytes[p] << 16) | (bytes[p+1] << 8);
-      out[outp++] = gsEncTable[(tmp & MASK0) >> SHIFT0];
-      out[outp++] = gsEncTable[(tmp & MASK1) >> SHIFT1];
-      out[outp++] = gsEncTable[(tmp & MASK2) >> SHIFT2];
+      out[outp++] = encTable[(tmp & MASK0) >> SHIFT0];
+      out[outp++] = encTable[(tmp & MASK1) >> SHIFT1];
+      out[outp++] = encTable[(tmp & MASK2) >> SHIFT2];
       out[outp++] = '=';
    }
    else if ((len - p) == 1)
    {
       tmp = (bytes[p] << 16);
-      out[outp++] = gsEncTable[(tmp & MASK0) >> SHIFT0];
-      out[outp++] = gsEncTable[(tmp & MASK1) >> SHIFT1];
+      out[outp++] = encTable[(tmp & MASK0) >> SHIFT0];
+      out[outp++] = encTable[(tmp & MASK1) >> SHIFT1];
       out[outp++] = '=';
       out[outp++] = '=';
    }
@@ -255,6 +279,7 @@ static bool _Decode(const char *in, size_t len, void* &out, size_t &outlen)
    size_t p = 0;
    size_t outp = 0;
    unsigned char *bytes = (unsigned char*) out;
+   const char *decTable = Tables::Get(Tables::Decoding);
    
    while ((len - p) > 0)
    {
@@ -266,7 +291,7 @@ static bool _Decode(const char *in, size_t len, void* &out, size_t &outlen)
          char c = in[p+i];
          if (c != '=')
          {
-            tmp |= (gsDecTable[int(c)] << o);
+            tmp |= (decTable[int(c)] << o);
          }
          else
          {

@@ -251,6 +251,7 @@ cdef extern from "<gcore/env.h>" namespace "gcore":
       String get(String&)
       void set(String&, String&, bint)
       void set(map[String,String]&, bint)
+      void unset(String&)
       
       size_t asDict(map[String,String]&)
    
@@ -262,6 +263,7 @@ cdef extern from "<gcore/env.h>" namespace "gcore::Env":
    String Get(String&)
    void Set(String&, String&, bint)
    void Set(map[String,String]&, bint)
+   void Unset(String&)
    bint IsSet(String&)
    size_t ListPaths(String&, List[Path]&)
    

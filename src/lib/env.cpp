@@ -92,6 +92,11 @@ void Env::Set(const StringDict &d, bool ow)
    Env().set(d, ow);
 }
 
+void Env::Unset(const String &k)
+{
+   Env().unset(k);
+}
+
 bool Env::IsSet(const String &k)
 {
    return Env().isSet(k);
@@ -221,14 +226,37 @@ String Env::get(const String &k) const
 
 void Env::set(const String &k, const String &v, bool overwrite)
 {
-#ifndef _WIN32  
-   setenv(k.c_str(), v.c_str(), (overwrite ? 1 : 0));
-#else
-   String dummy;
-   if (overwrite || GetEnvironmentVariableA(k.c_str(), NULL, 0) == 0)
+   if (v.length() == 0)
    {
-      SetEnvironmentVariableA(k.c_str(), v.c_str());
+#ifndef _WIN32
+      if (overwrite && getenv(k.c_str()) != NULL)
+#else
+      if (overwrite && GetEnvironmentVariableA(k.c_str(), NULL, 0) != 0)
+#endif
+      {
+         unset(k);
+      }
+      return;
    }
+   else
+   {
+#ifndef _WIN32
+      setenv(k.c_str(), v.c_str(), (overwrite ? 1 : 0));
+#else
+      if (overwrite || GetEnvironmentVariableA(k.c_str(), NULL, 0) == 0)
+      {
+         SetEnvironmentVariableA(k.c_str(), v.c_str());
+      }
+#endif
+   }
+}
+
+void Env::unset(const String &k)
+{
+#ifndef _WIN32  
+   unsetenv(k.c_str());
+#else
+   SetEnvironmentVariableA(k.c_str(), NULL);
 #endif
 }
 

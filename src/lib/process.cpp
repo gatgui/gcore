@@ -162,6 +162,58 @@ void Process::SetDefaultOptions(Process::Options &opts)
    opts.env.clear();
 }
 
+bool Process::EnquoteString(const String &in, String &out)
+{
+   static String sBS("\\");
+
+   size_t il = in.length();
+
+   if (il == 0 || in.find_first_of(" \t") != String::npos)
+   {
+      String bsbuf;
+
+      out = "\"";
+
+      for (size_t i=0; i<il; ++i)
+      {
+         char c = in[i];
+
+         if (c == '\\')
+         {
+            bsbuf.push_back(c);
+         }
+         else if (c == '\"')
+         {
+            out += (sBS * (bsbuf.length() * 2)) + "\\\"";
+            bsbuf = "";
+         }
+         else
+         {
+            if (bsbuf.length() > 0)
+            {
+               out += bsbuf;
+               bsbuf = "";
+            }
+            out.push_back(c);
+         }
+      }
+
+      if (bsbuf.length() > 0)
+      {
+         out += bsbuf * 2;
+      }
+
+      out += "\"";
+
+      return true;
+   }
+   else
+   {
+      out = in;
+      return false;
+   }
+}
+
 Process::Process()
    : mPID(INVALID_PID)
    , mStdArgs(0)
@@ -441,6 +493,8 @@ bool Process::showConsole() const
    return mOpts.showConsole;
 }
 
+
+
 Status Process::run()
 {
    if (isRunning())
@@ -458,7 +512,8 @@ Status Process::run()
    // m_args[0] must contain program path
 
    // Build command line
-   size_t i = 0;
+   size_t i = 0, n = mArgs.size();
+   String arg;
    
 #ifdef _WIN32
    // on windows, we need to fully specify extension for non .exe files
@@ -468,9 +523,10 @@ Status Process::run()
 
    mCmdLine = mArgs[i++];
 
-   while (i < mArgs.size())
+   while (i < n)
    {
-      mCmdLine += " " + mArgs[i++];
+      EnquoteString(mArgs[i++], arg);
+      mCmdLine += " " + arg;
    }
    
 #ifndef _WIN32

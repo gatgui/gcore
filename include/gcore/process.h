@@ -67,6 +67,7 @@ namespace gcore
       };
       
       static void SetDefaultOptions(Options &opts);
+      static bool EnquoteString(const String &in, String &out);
       
    public:
    

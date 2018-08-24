@@ -8,8 +8,10 @@ from excons.tools import threads
 from excons.tools import dl
 from excons.tools import python
 
-cython = excons.GetArgument("with-cython", "cython")
-cython_gen = excons.GetArgument("cython-gen", 1, int)
+excons.InitGlobals()
+
+
+tst = excons.GetArgument("test", "")
 static = excons.GetArgument("static", 0, int)
 debugrex = excons.GetArgument("debug-rex", 0, int)
 plat = str(Platform())
@@ -26,11 +28,6 @@ if not static:
    if not plat in ["win32", "darwin"]:
       liblibs = ["rt"]
 
-def SilentCythonWarnings(env):
-   if plat == "darwin":
-      env.Append(CPPFLAGS=" -Wno-unused-function -Wno-unneeded-internal-declaration")
-   elif plat != "win32":
-      env.Append(CPPFLAGS=" -Wno-strict-aliasing")
 
 def RequireGcore(env):
    # Don't need to set CPPPATH, headers are now installed in output directory
@@ -74,7 +71,7 @@ prjs = [
       "bldprefix" : python.Version(),
       "srcs"      : ["src/py/_gcore.cpp", "src/py/log.cpp", "src/py/pathenumerator.cpp"],
       "deps"      : ["gcore"],
-      "custom"    : [RequireGcore, python.SoftRequire, SilentCythonWarnings],
+      "custom"    : [RequireGcore, python.SoftRequire, python.SilentCythonWarnings],
       "install"   : {python.ModulePrefix(): ["src/py/gcore.py", "src/py/tests"]}
    },
    {  "name"    : "testmodule",
@@ -93,31 +90,10 @@ prjs = [
 env = excons.MakeBaseEnv()
 
 # Setup cython
-cython_include_re = re.compile(r"^include\s+([\"'])(\S+)\1", re.MULTILINE)
-
-def scan_cython_includes(node, env, path):
-   if hasattr(node, "get_text_contents"):
-      lst = [m[1] for m in cython_include_re.findall(node.get_text_contents())]
-      return lst
-   elif hasattr(node, "get_contents"):
-      lst = [m[1] for m in cython_include_re.findall(str(node.get_contents()))]
-      return lst
-   else:
-      return []
-
-cython_scanner = Scanner(function=scan_cython_includes, skeys=".pyx")
-
-env.Append(SCANNERS=cython_scanner)
+python.RequireCython(env)
+python.CythonGenerate(env, "src/py/_gcore.pyx", h="src/py/_gcore.h", c="src/py/_gcore.cpp", incdirs=["include"], cpp=True)
 
 # Declare targets
 excons.DeclareTargets(env, prjs)
-
-# Generate cpp files from cython
-if cython_gen:
-   cygen = env.Command(["src/py/_gcore.cpp", "src/py/_gcore.h"], "src/py/_gcore.pyx", "%s -I include --cplus --embed-positions -o $TARGET $SOURCE" % cython)
-elif not os.path.isfile("src/py/_gcore.cpp") or not os.path.isfile("src/py/_gcore.h"):
-   if "gcorepy" in COMMAND_LINE_TARGETS:
-      print("Cannot build gcore python module: cython sources not generated")
-      sys.exit(1)
 
 Default(["gcore"])

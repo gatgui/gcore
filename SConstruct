@@ -7,6 +7,9 @@ from excons.tools import threads
 from excons.tools import dl
 from excons.tools import python
 
+
+excons.InitGlobals()
+
 static = excons.GetArgument("static", 0, int)
 debugrex = excons.GetArgument("debug-rex", 0, int)
 plat = str(Platform())
@@ -23,11 +26,6 @@ if not static:
    if not plat in ["win32", "darwin"]:
       liblibs = ["rt"]
 
-def SilentCythonWarnings(env):
-   if plat == "darwin":
-      env.Append(CPPFLAGS=" -Wno-unused-function -Wno-unneeded-internal-declaration")
-   elif plat != "win32":
-      env.Append(CPPFLAGS=" -Wno-strict-aliasing")
 
 def RequireGcore(env):
    # Don't need to set CPPPATH, headers are now installed in output directory
@@ -71,7 +69,7 @@ prjs = [
       "bldprefix" : python.Version(),
       "srcs"      : ["src/py/_gcore.cpp", "src/py/log.cpp", "src/py/pathenumerator.cpp"],
       "deps"      : ["gcore"],
-      "custom"    : [RequireGcore, python.SoftRequire, python.RequireCython, SilentCythonWarnings],
+      "custom"    : [RequireGcore, python.SoftRequire, python.SilentCythonWarnings],
       "install"   : {python.ModulePrefix(): ["src/py/gcore.py", "src/py/tests"]}
    },
    {  "name"   : "gcore_utils",
@@ -95,13 +93,17 @@ prjs = [
 
 env = excons.MakeBaseEnv()
 
-# Generate cpp files from cython
-if "gcorepy" in BUILD_TARGETS or "all" in BUILD_TARGETS:
-   if excons.GetArgument("cython-gen", 1, int):
-      python.CythonGenerate(env, "src/py/_gcore.pyx", incdirs=["include"], cpp=True)
-   elif not os.path.isfile("src/py/_gcore.cpp") or not os.path.isfile("src/py/_gcore.h"):
-      print("Cannot build gcore python module: cython sources not generated")
-      sys.exit(1)
+# Setup cython
+buildpy = ("gcorepy" in BUILD_TARGETS or "all" in BUILD_TARGETS)
+if buildpy and python.RequireCython(env):
+  if excons.GetArgument("cython-gen", 1, int):
+    python.CythonGenerate(env, "src/py/_gcore.pyx", incdirs=["include"], cpp=True)
+  elif not os.path.isfile("src/py/_gcore.cpp") or not os.path.isfile("src/py/_gcore.h"):
+    print("Cannot build gcore python module: cython sources not generated")
+    sys.exit(1)
+else:
+  # Remove gcorepy target
+  prjs = filter(lambda x: x.get("name", "") != "_gcore", prjs)
 
 # Declare targets
 excons.DeclareTargets(env, prjs)

@@ -67,6 +67,9 @@ ctypedef public class Env [object PyEnv, type PyEnvType]:
       else:
          self._cobj.set(gcore.String(<char*?>args[0]), gcore.String(<char*?>args[1]), <bint?>args[2])
    
+   def unset(self, char* key):
+      self._cobj.unset(gcore.String(key))
+
    def asDict(self):
       cdef map[gcore.String, gcore.String] cd
       cdef map[gcore.String, gcore.String].iterator it
@@ -105,6 +108,10 @@ ctypedef public class Env [object PyEnv, type PyEnvType]:
          gcore.Set(cd, <bint?>args[1])
       else:
          gcore.Set(gcore.String(<char*?>args[0]), gcore.String(<char*?>args[1]), <bint?>args[2])
+   
+   @classmethod
+   def Unset(klass, char* key):
+      gcore.Unset(gcore.String(key))
    
    @classmethod
    def ListPath(klass, char* key):

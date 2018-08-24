@@ -117,6 +117,11 @@ void Env::Set(const StringDict &d, bool ow)
    Env().set(d, ow);
 }
 
+void Env::Unset(const String &k)
+{
+   Env().unset(k);
+}
+
 bool Env::IsSet(const String &k)
 {
    return Env().isSet(k);
@@ -257,24 +262,63 @@ String Env::get(const String &k) const
 void Env::set(const String &k, const String &v, bool overwrite)
 {
 #ifndef _WIN32
-   // convert k from utf-8 to current locale?
-   std::string lk, lv;
-   if (UTF8ToLocale(k.c_str(), lk) && UTF8ToLocale(v.c_str(), lv))
+   std::string lk;
+   if (!UTF8ToLocale(k.c_str(), lk))
    {
-      setenv(lk.c_str(), lv.c_str(), (overwrite ? 1 : 0));
+      Log::PrintWarning("[gcore] Env::set: Cannot set key \"%s\". (Invalid characters in key for current locale)", k.c_str());
+      return;
+   }
+   if (v.length() == 0)
+   {
+      if (overwrite && getenv(lk.c_str()) != NULL)
+      {
+         unsetenv(lk.c_str());
+      }
    }
    else
    {
-      Log::PrintWarning("[gcore] Env::set: Cannot set key \"%s\". (Invalid characters for locale)", k.c_str());
+      std::string lv;
+      if (UTF8ToLocale(v.c_str(), lv))
+      {
+         setenv(lk.c_str(), lv.c_str(), (overwrite ? 1 : 0));
+      }
+      else
+      {
+         Log::PrintWarning("[gcore] Env::set: Cannot set key \"%s\". (Invalid characters in value for current locale)", k.c_str());
+      }
    }
 #else
-   std::wstring wk, wv;
+   std::wstring wk;
    DecodeUTF8(k.c_str(), wk);
-   DecodeUTF8(v.c_str(), wv);
-   if (overwrite || GetEnvironmentVariableW(wk.c_str(), NULL, 0) == 0)
+   if (v.length() == 0)
    {
-      SetEnvironmentVariableW(wk.c_str(), wv.c_str());
+      if (overwrite && GetEnvironmentVariableW(wk.c_str(), NULL, 0) != 0)
+      {
+         SetEnvironmentVariableW(wk.c_str(), NULL);
+      }
    }
+   else
+   {
+      std::wstring wv;
+      DecodeUTF8(v.c_str(), wv);
+      if (overwrite || GetEnvironmentVariableW(wk.c_str(), NULL, 0) == 0)
+      {
+         SetEnvironmentVariableW(wk.c_str(), wv.c_str());
+      }
+   }
+#endif
+}
+
+void Env::unset(const String &k)
+{
+#ifndef _WIN32  
+   std::string lk;
+   UTF8ToLocale(k.c_str(), lk);
+   unsetenv(lk.c_str());
+#else
+   std::wstring wk;
+   DecodeUTF8(wk);
+   SetEnvironmentVariableW(wk.c_str(), NULL);
 #endif
 }
 

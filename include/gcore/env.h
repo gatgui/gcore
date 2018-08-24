@@ -41,6 +41,7 @@ namespace gcore
       static String Hostname();
       static String Get(const String &k);
       static void Set(const String &k, const String &v, bool overwrite);
+      static void Unset(const String &k);
       static void Set(const StringDict &d, bool overwrite);
       static bool IsSet(const String &k);
       static void ForEachInPath(const String &e, ForEachInPathFunc callback);
@@ -59,6 +60,7 @@ namespace gcore
       String get(const String &key) const;
       void set(const String &key, const String &val, bool overwrite);
       void set(const StringDict &d, bool overwrite);
+      void unset(const String &key);
       
       size_t asDict(StringDict &d) const;
       

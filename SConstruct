@@ -90,8 +90,11 @@ prjs = [
 env = excons.MakeBaseEnv()
 
 # Setup cython
-python.RequireCython(env)
-python.CythonGenerate(env, "src/py/_gcore.pyx", h="src/py/_gcore.h", c="src/py/_gcore.cpp", incdirs=["include"], cpp=True)
+if python.RequireCython(env):
+  python.CythonGenerate(env, "src/py/_gcore.pyx", h="src/py/_gcore.h", c="src/py/_gcore.cpp", incdirs=["include"], cpp=True)
+else:
+  # Remove gcorepy target
+  prjs = filter(lambda x: x.get("name", "") != "_gcore", prjs)
 
 # Declare targets
 excons.DeclareTargets(env, prjs)

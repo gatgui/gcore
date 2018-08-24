@@ -317,7 +317,7 @@ void Env::unset(const String &k)
    unsetenv(lk.c_str());
 #else
    std::wstring wk;
-   DecodeUTF8(wk);
+   DecodeUTF8(k.c_str(), wk);
    SetEnvironmentVariableW(wk.c_str(), NULL);
 #endif
 }

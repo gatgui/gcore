@@ -94,23 +94,26 @@ prjs = [
 env = excons.MakeBaseEnv()
 
 # Setup cython
-buildpy = ("gcorepy" in BUILD_TARGETS or "all" in BUILD_TARGETS)
-if buildpy and python.RequireCython(env):
-  if excons.GetArgument("cython-gen", 1, int):
-    python.CythonGenerate(env, "src/py/_gcore.pyx", incdirs=["include"], cpp=True)
-  elif not os.path.isfile("src/py/_gcore.cpp") or not os.path.isfile("src/py/_gcore.h"):
-    print("Cannot build gcore python module: cython sources not generated")
-    sys.exit(1)
+buildpy = ("gcorepy" in BUILD_TARGETS or "all" in BUILD_TARGETS) 
+if buildpy and python.RequireCython(env): 
+  if excons.GetArgument("cython-gen", 1, int): 
+    python.CythonGenerate(env, "src/py/_gcore.pyx", incdirs=["include"], cpp=True) 
+  elif not os.path.isfile("src/py/_gcore.cpp") or not os.path.isfile("src/py/_gcore.h"): 
+    print("Cannot build gcore python module: cython sources not generated") 
+    sys.exit(1) 
 else:
   # Remove gcorepy target
+  buildpy = False
   prjs = filter(lambda x: x.get("name", "") != "_gcore", prjs)
 
 # Declare targets
 excons.DeclareTargets(env, prjs)
 
 Alias("all", "gcore")
-Alias("all", "gcorepy")
 Alias("all", "gcore_utils")
+Alias("all", "testmodule")
 Alias("all", "gcore_tests")
+if buildpy:
+  Alias("all", "gcorepy")
 
 Default(["gcore"])

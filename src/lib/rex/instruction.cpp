@@ -66,6 +66,15 @@ MatchInfo::MatchInfo(const MatchInfo &rhs)
    
 }
 
+MatchInfo::~MatchInfo()
+{
+   gmatch.clear();
+   fstack.clear();
+   cstack.clear();
+   gclosed.clear();
+   gnames.clear();
+}
+
 MatchInfo& MatchInfo::operator=(const MatchInfo &rhs)
 {
    if (this != &rhs)

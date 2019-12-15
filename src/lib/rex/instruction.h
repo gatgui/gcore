@@ -30,12 +30,13 @@ USA.
 namespace gcore
 {
 
-   struct MatchInfo
+   class MatchInfo
    {
+   public:
       const char *beg;
       const char *end;
       unsigned short flags;
-      std::vector<std::pair<int, int> > gmatch;
+      List<std::pair<int, int> > gmatch;
       std::vector<unsigned short> fstack;
       std::vector<const char*> cstack;
       bool once;
@@ -45,6 +46,7 @@ namespace gcore
       MatchInfo();
       MatchInfo(const char *b, const char *e, unsigned short flags, size_t ngroups);
       MatchInfo(const MatchInfo &rhs);
+      ~MatchInfo();
       
       MatchInfo& operator=(const MatchInfo &rhs);
    };

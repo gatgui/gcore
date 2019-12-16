@@ -61,7 +61,6 @@ namespace gcore {
       String group(size_t i) const;
       String group(const std::string &n) const;
     
-      // offset in matched string (group(0))
       size_t offset(size_t i) const;
   
       size_t length(size_t i) const;

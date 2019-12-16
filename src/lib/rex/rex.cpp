@@ -121,7 +121,7 @@ size_t RexMatch::offset(size_t i) const
   {
     return 0;
   }
-  return mGroups[i].first - mRange.first;
+  return mGroups[i].first;
 }
 
 size_t RexMatch::length(size_t i) const
@@ -130,7 +130,7 @@ size_t RexMatch::length(size_t i) const
   {
     return 0;
   }
-  return (mGroups[i].second - mGroups[i].first + 1);
+  return (mGroups[i].second - mGroups[i].first);
 }
 
 size_t RexMatch::numGroups() const

@@ -35,12 +35,14 @@ namespace gcore {
       
       static StringDict msWin2Nix;
       static StringDict msNix2Win;
-      
+      static String _Map(const String &path, StringDict *lookup);
+
     public:
       
-      static void AddMapping(const String &wpath, const String &npath);
-      static void RemoveMapping(const String &wpath, const String &npath);
+      static void AddMapping(const String &from, const String &to);
+      static void RemoveMapping(const String &from, const String &to);
       static void ReadMappingsFromFile(const Path &mapfile);
+      static void WriteMappingsToFile(const Path &mapfile);
       static String Map(const String &path);
   };
   

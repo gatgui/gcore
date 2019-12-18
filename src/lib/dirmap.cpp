@@ -39,37 +39,152 @@ static bool IsWindowsPath(const String &p)
    return wpe.match(p);
 }
 
+static String _Map(const String &path, StringDict *forcelookup)
+{
+   String outpath(path);
+   StringDict *lookupmap = forcelookup;
+
+   bool winpath = IsWindowsPath(path);
+
+   if (!forcelookup)
+   {
+#ifdef _WIN32
+      // std::cerr << "Map: Use gsNix2Win" << std::endl;
+      if (!winpath)
+      {
+         outpath = _Map(path, &gsWin2Nix);
+         winpath = IsWindowsPath(outpath);
+      }
+      lookupmap = &gsNix2Win;
+#else
+      // std::cerr << "Map: Use gsWin2Nix" << std::endl;
+      if (winpath)
+      {
+         outpath = _Map(path, &gsNix2Win);
+         winpath = IsWindowsPath(outpath);
+      }
+      lookupmap = &gsWin2Nix;
+#endif
+   }
+
+   String lookuppath(outpath);
+   if (winpath)
+   {
+      lookuppath.tolower().replace('\\', '/');
+   }
+
+   String bestpath;
+
+   StringDict::iterator it = lookupmap->begin();
+   while (it != lookupmap->end())
+   {
+      // std::cerr << "Map: Check against '" << it->first << "'..." << std::endl;
+      if (lookuppath.startswith(it->first))
+      {
+         // std::cerr << "Map: Matched" << std::endl;
+         if (it->first.length() > bestpath.length())
+         {
+            // std::cerr << "Map: Longest Match" << std::endl;
+            bestpath = it->first;
+         }
+      }
+      ++it;
+   }
+
+   if (bestpath.length() > 0)
+   {
+      lookuppath = (*lookupmap)[bestpath];
+      lookuppath += outpath.substr(bestpath.length());
+#ifndef _WIN32
+      lookuppath.replace('\\', '/');
+#endif
+      return lookuppath;
+   }
+   else
+   {
+      return outpath;
+   }
+}
+
 // ---
 
-void AddMapping(const String &wpath, const String &npath)
+void AddMapping(const String &from, const String &to)
 {
-   if (wpath.length() == 0 && npath.length() == 0)
+   if (from.length() == 0 && to.length() == 0)
    {
       return;
    }
-   
-   String wpath2(wpath);
-   
-   wpath2.tolower().replace('\\', '/');
-   
-   gsNix2Win[npath] = wpath2;
-   gsWin2Nix[wpath2] = npath;
+  
+   if (IsWindowsPath(from))
+   {
+      String from2(from);
+      from2.tolower().replace('\\', '/');
+      if (IsWindowsPath(to))
+      {
+         // remap win -> win
+         gsNix2Win[from2] = to;
+         // std::cerr << "Add (win/win) '" << from2 << "' -> '" << to << "' to gsNix2Win" << std::endl;
+      }
+      else
+      {
+         gsWin2Nix[from2] = to;
+         gsNix2Win[to] = from;
+         // std::cerr << "Add '" << from2 << "' -> '" << to << "' to gsWin2Nix" << std::endl;
+         // std::cerr << "Add '" << to << "' -> '" << from << "' to gsNix2Win" << std::endl;
+      }
+   }
+   else
+   {
+      if (!IsWindowsPath(to))
+      {
+         // remap nix -> nix
+         gsWin2Nix[from] = to;
+         // std::cerr << "Add (nix/nix)'" << from << "' -> '" << to << "' to gsWin2Nix" << std::endl;
+      }
+      else
+      {
+         String to2(to);
+         to2.tolower().replace('\\', '/');
+         gsWin2Nix[to2] = from;
+         gsNix2Win[from] = to;
+         // std::cerr << "Add '" << to2 << "' -> '" << from << "' to gsWin2Nix" << std::endl;
+         // std::cerr << "Add '" << from << "' -> '" << to << "' to gsNix2Win" << std::endl;
+      }
+   }
 }
 
-void RemoveMapping(const String &wpath, const String &npath)
+void RemoveMapping(const String &from, const String &to)
 {
    StringDict::iterator it;
-   
-   String wpath2(wpath);
-   wpath2.tolower().replace('\\', '/');
-   
-   it = gsWin2Nix.find(wpath2);
+
+   String from2(from);
+   String to2(to);
+
+   if (IsWindowsPath(from))
+   {
+      from2.tolower().replace('\\', '/');
+   }
+   it = gsWin2Nix.find(from2);
    if (it != gsWin2Nix.end())
    {
       gsWin2Nix.erase(it);
    }
-   
-   it = gsNix2Win.find(npath);
+   it = gsNix2Win.find(from2);
+   if (it != gsNix2Win.end())
+   {
+      gsNix2Win.erase(it);
+   }
+
+   if (IsWindowsPath(to))
+   {
+      to2.tolower().replace('\\', '/');
+   }
+   it = gsWin2Nix.find(to2);
+   if (it != gsWin2Nix.end())
+   {
+      gsWin2Nix.erase(it);
+   }
+   it = gsNix2Win.find(to2);
    if (it != gsNix2Win.end())
    {
       gsNix2Win.erase(it);
@@ -78,60 +193,42 @@ void RemoveMapping(const String &wpath, const String &npath)
 
 String Map(const String &path)
 {
-   String lookuppath(path);
-   StringDict *lookupmap;
-   
-   lookuppath.replace('\\', '/');
-   
-#ifdef _WIN32
-   
-   if (!IsWindowsPath(path))
-   {
-      lookupmap = &gsNix2Win;
-   }
-   else
-   {
-      return path;
-   }
-   
-#else
+   return _Map(path, 0);
+}
 
-   if (IsWindowsPath(path))
+void WriteMappingsToFile(const Path &mapfile)
+{
+   std::ofstream os(mapfile.fullname().c_str());
+
+   StringDict::iterator it, it2;
+  
+   for (it = gsNix2Win.begin(); it != gsNix2Win.end(); ++it)
    {
-      lookuppath.tolower();
-      lookupmap = &gsWin2Nix;
-   }
-   else
-   {
-      return path;
+      os << it->first << " = " << it->second << std::endl;
    }
 
-#endif
-   
-   String bestpath;
-   
-   StringDict::iterator it = lookupmap->begin();
-   while (it != lookupmap->end())
+   for (it = gsWin2Nix.begin(); it != gsWin2Nix.end(); ++it)
    {
-      if (lookuppath.startswith(it->first))
+      if (!IsWindowsPath(it->first) && !IsWindowsPath(it->second))
       {
-         if (it->first.length() > bestpath.length())
-         {
-            bestpath = it->first;
-         }
+         // nix -> nix
+         os << it->first << " = " << it->second << std::endl;
       }
-      ++it;
-   }
-   
-   if (bestpath.length() > 0)
-   {
-      lookuppath = (*lookupmap)[bestpath];
-      lookuppath += path.substr(bestpath.length());
-      return lookuppath;
-   }
-   else
-   {
-      return path;
+      else
+      {
+         // win -> nix
+         it2 = gsNix2Win.find(it->second);
+         if (it2 != gsNix2Win.end())
+         {
+            String tmp(it2->second);
+            tmp.tolower().replace('\\', '/');
+            if (tmp == it->first)
+            {
+               continue;
+            }
+         }
+         os << it->first << " = " << it->second << std::endl;
+      }
    }
 }
 
@@ -140,38 +237,23 @@ void ReadMappingsFromFile(const Path &mapfile)
    if (mapfile.isFile())
    {
       std::ifstream is(mapfile.fullname().c_str());
-      
+
       String line;
       StringList parts;
-      
+
       std::getline(is, line);
-      
+
       while (is.good())
       {
          if (line.split('=', parts) == 2)
          {
-            parts[0].strip();
-            parts[1].strip();
-            
-            bool wp0 = IsWindowsPath(parts[0]);
-            bool wp1 = IsWindowsPath(parts[1]);
-            
-            if (wp0 == wp1)
-            {
-               continue;
-            }
-            
-            if (wp0)
-            {
-               AddMapping(parts[0], parts[1]);
-            }
-            else
-            {
-               AddMapping(parts[1], parts[0]);
-            }
-            
+           
+           parts[0].strip();
+           parts[1].strip();
+           
+           AddMapping(parts[0], parts[1]);
          }
-         
+
          std::getline(is, line);
       }
    }

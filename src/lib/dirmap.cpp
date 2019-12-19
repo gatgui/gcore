@@ -89,11 +89,11 @@ void Dirmap::RemoveMapping(const String &from, const String &to) {
   if (IsWindowsPath(to)) {
     to2.tolower().replace('\\', '/');
   }
-  it = msWin2Nix.find(from2);
+  it = msWin2Nix.find(to2);
   if (it != msWin2Nix.end()) {
     msWin2Nix.erase(it);
   }
-  it = msNix2Win.find(from2);
+  it = msNix2Win.find(to2);
   if (it != msNix2Win.end()) {
     msNix2Win.erase(it);
   }

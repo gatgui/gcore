@@ -30,6 +30,7 @@ int main(int argc, char **argv) {
     gcore::Dirmap::AddMapping("z:/work", "/Work");
     gcore::Dirmap::AddMapping("/mnt/export/ifs/marza", "/Users"); // only works on linux
     gcore::Dirmap::AddMapping("C:/Users/Shared/marza", "Z:/home"); // only works on windows
+    gcore::Dirmap::WriteMappingsToFile("./dirmap.cfg");
   } else {
     gcore::Dirmap::ReadMappingsFromFile(gcore::Path(argv[1]));
   }

@@ -31,8 +31,9 @@ namespace gcore
 {
    namespace dirmap
    {
-      GCORE_API void AddMapping(const String &wpath, const String &npath);
-      GCORE_API void RemoveMapping(const String &wpath, const String &npath);
+      GCORE_API void AddMapping(const String &from, const String &to);
+      GCORE_API void RemoveMapping(const String &from, const String &to);
+      GCORE_API void WriteMappingsToFile(const Path &mapfile);
       GCORE_API void ReadMappingsFromFile(const Path &mapfile);
       GCORE_API String Map(const String &path);
    }

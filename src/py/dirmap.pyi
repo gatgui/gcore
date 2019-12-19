@@ -22,14 +22,18 @@ cimport gcore
 class dirmap(object):
    def __init__(self):
       object.__init__(self)
+
+   @staticmethod
+   def AddMapping(char* frompath, char* topath):
+      gcore.AddMapping(gcore.String(frompath), gcore.String(topath))
    
    @staticmethod
-   def AddMapping(char* wpath, char* npath):
-      gcore.AddMapping(gcore.String(wpath), gcore.String(npath))
+   def RemoveMapping(char* frompath, char* topath):
+      gcore.RemoveMapping(gcore.String(frompath), gcore.String(topath))
    
    @staticmethod
-   def RemoveMapping(char* wpath, char* npath):
-      gcore.RemoveMapping(gcore.String(wpath), gcore.String(npath))
+   def WriteMappingsToFile(char *path):
+      gcore.WriteMappingsToFile(gcore.Path(path))
    
    @staticmethod
    def ReadMappingsFromFile(char* path):

@@ -29,28 +29,34 @@ int main(int argc, char **argv)
    {
       gcore::dirmap::AddMapping("z:/home", "/Users");
       gcore::dirmap::AddMapping("z:/work", "/Work");
+      gcore::dirmap::AddMapping("/mnt/export/ifs/marza", "/Users"); // only works on linux
+      gcore::dirmap::AddMapping("C:/Users/Shared/marza", "Z:/home"); // only works on windows
+      gcore::dirmap::WriteMappingsToFile("./dirmap.cfg");
    }
    else
    {
       gcore::dirmap::ReadMappingsFromFile(gcore::Path(argv[1]));
    }
-   
+
    gcore::String path0 = "/Users/gatgui/dev/temp";
    gcore::String path1 = "/Work/projectA/data/";
    gcore::String path2 = "z:\\home\\gatgui/.preferences";
    gcore::String path3 = "z:/WORK/ProjectA/scenes\\";
-   
+   gcore::String path4 = "/mnt/export/ifs/marza/home/me/hello.txt";
+   gcore::String path5 = "C:/Users/Shared/marza/home/me/goodbye.txt";
+
    std::cout << path0 << " -> " << gcore::dirmap::Map(path0) << std::endl;
    std::cout << path1 << " -> " << gcore::dirmap::Map(path1) << std::endl;
    std::cout << path2 << " -> " << gcore::dirmap::Map(path2) << std::endl;
    std::cout << path3 << " -> " << gcore::dirmap::Map(path3) << std::endl;
-   
-   
+   std::cout << path4 << " -> " << gcore::dirmap::Map(path4) << std::endl;
+   std::cout << path5 << " -> " << gcore::dirmap::Map(path5) << std::endl;
+
    gcore::Path npath("/Users/gatgui/music");
    std::cout << npath.fullname() << std::endl;
-   
+
    gcore::Path wpath("z:\\home\\GatGui/Music");
    std::cout << wpath.fullname() << std::endl;
-   
+
    return 0;
 }

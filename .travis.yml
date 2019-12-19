@@ -20,6 +20,8 @@ install:
       brew update;
       brew install python;
       brew install scons;
+    else
+      pip install --user scons
     fi
   - pip install --user cython
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then

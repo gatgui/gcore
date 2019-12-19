@@ -16,6 +16,8 @@ before_install:
   - if [ `uname -s` = "Darwin" ]; then
       brew update;
       brew install scons;
+    else
+      pip install --user scons;
     fi
 
 script:

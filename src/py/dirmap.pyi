@@ -5,13 +5,17 @@ class Dirmap(object):
       object.__init__(self)
    
    @classmethod
-   def AddMapping(klass, char* wpath, char* npath):
-      gcore.AddMapping(gcore.String(wpath), gcore.String(npath))
+   def AddMapping(klass, char* frompath, char* topath):
+      gcore.AddMapping(gcore.String(frompath), gcore.String(topath))
    
    @classmethod
-   def RemoveMapping(klass, char* wpath, char* npath):
-      gcore.RemoveMapping(gcore.String(wpath), gcore.String(npath))
+   def RemoveMapping(klass, char* frompath, char* topath):
+      gcore.RemoveMapping(gcore.String(frompath), gcore.String(topath))
    
+   @classmethod
+   def WriteMappingsToFile(klass, char *path):
+      gcore.WriteMappingsToFile(gcore.Path(path))
+
    @classmethod
    def ReadMappingsFromFile(klass, char* path):
       gcore.ReadMappingsFromFile(gcore.Path(path))

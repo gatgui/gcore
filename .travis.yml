@@ -17,7 +17,7 @@ before_install:
       brew update;
       brew install scons;
     else
-      pip install --user scons
+      pip install --user scons;
     fi
 
 script:

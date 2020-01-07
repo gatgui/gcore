@@ -197,8 +197,8 @@ void Rex::set(const String &exp)
   const char *pc = mExp.c_str();
   
   mCode = ParseExpression(&pc, info);
-  
-  mNumGroups = info.numGroups;
+  mValid = (mCode != 0);
+  mNumGroups = (mValid ? info.numGroups : 0);
 }
 
 const String Rex::get() const

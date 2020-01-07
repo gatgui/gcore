@@ -7,13 +7,13 @@ static void PyLogOutputFunc(const char *msg)
 {
    if (gPyLogFunc == NULL)
    {
-      throw std::runtime_error("mzenv.Log: Null output callback");
+      throw std::runtime_error("gcore.Log: Null output callback");
    }
    PyObject *rv = PyObject_CallFunction(gPyLogFunc, (char*)"s", msg);
    if (rv == NULL)
    {
       PyErr_Clear();
-      throw std::runtime_error("mzenv.Log: callback failed");
+      throw std::runtime_error("gcore.Log: callback failed");
    }
    Py_DECREF(rv);
 }
@@ -22,12 +22,12 @@ void PyLog_SetOutputFunc(PyObject *outputFunc)
 {
    if (outputFunc == NULL)
    {
-      throw std::runtime_error("mzenv.Log.SetOutputFunc: Null object passed");
+      throw std::runtime_error("gcore.Log.SetOutputFunc: Null object passed");
    }
    
    if (PyCallable_Check(outputFunc) == 0)
    {
-      throw std::runtime_error("mzenv.Log.SetOutputFunc: Object is not callable");
+      throw std::runtime_error("gcore.Log.SetOutputFunc: Object is not callable");
    }
    
    if (gPyLogFunc != NULL)

@@ -1711,7 +1711,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                }
                else
                {
-                  if (!strncmp(remain.c_str(), "null", 4))
+                  if (!strncmp(remain.c_str() + p0, "null", 4))
                   {
                      if (cb && cb->nullScalar)
                      {
@@ -1720,7 +1720,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                      remain = remain.substr(p0 + 4);
                      coloff += p0 + 4;
                   }
-                  else if (!strncmp(remain.c_str(), "true", 4))
+                  else if (!strncmp(remain.c_str() + p0, "true", 4))
                   {
                      if (cb && cb->booleanScalar)
                      {
@@ -1733,7 +1733,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                      remain = remain.substr(p0 + 4);
                      coloff += p0 + 4;
                   }
-                  else if (!strncmp(remain.c_str(), "false", 5))
+                  else if (!strncmp(remain.c_str() + p0, "false", 5))
                   {
                      if (cb && cb->booleanScalar)
                      {

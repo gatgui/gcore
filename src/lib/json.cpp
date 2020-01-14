@@ -1619,7 +1619,7 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
                }
                else
                {
-                  if (!strncmp(remain.c_str(), "null", 4))
+                  if (!strncmp(remain.c_str() + p0, "null", 4))
                   {
                      if (cb && cb->nullScalar)
                      {
@@ -1628,7 +1628,7 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
                      remain = remain.substr(p0 + 4);
                      coloff += p0 + 4;
                   }
-                  else if (!strncmp(remain.c_str(), "true", 4))
+                  else if (!strncmp(remain.c_str() + p0, "true", 4))
                   {
                      if (cb && cb->booleanScalar)
                      {
@@ -1641,7 +1641,7 @@ void gcore::json::Value::read(std::istream &in, bool consumeAll, gcore::json::Va
                      remain = remain.substr(p0 + 4);
                      coloff += p0 + 4;
                   }
-                  else if (!strncmp(remain.c_str(), "false", 5))
+                  else if (!strncmp(remain.c_str() + p0, "false", 5))
                   {
                      if (cb && cb->booleanScalar)
                      {

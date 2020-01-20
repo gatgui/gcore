@@ -11,10 +11,13 @@ from excons.tools import python
 excons.InitGlobals()
 
 static = excons.GetArgument("static", 0, int)
+debugext = excons.GetArgument("debug-extra", 0, int)
 debugrex = excons.GetArgument("debug-rex", 0, int)
 plat = str(Platform())
 
 libdefs = ["GCORE_STATIC"] if static else ["GCORE_EXPORTS"]
+if debugext:
+   libdefs.append("GCORE_DEBUG")
 if debugrex:
    libdefs.append("_DEBUG_REX")
 if plat == "win32":

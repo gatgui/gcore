@@ -1052,7 +1052,7 @@ bool XMLDoc::read(std::istream &is)
                String tag = pending.substr(0, len);
 
                XMLElement *elem = new XMLElement(tag);
-#ifdef _DEBUG
+#ifdef GCORE_DEBUG
                std::cout << "Open tag \"" << tag << "\" [level = " << taglevel << "]" << std::endl;
 #endif
 
@@ -1209,7 +1209,7 @@ bool XMLDoc::read(std::istream &is)
                }
 
                taglevel -= 1;
-#ifdef _DEBUG
+#ifdef GCORE_DEBUG
                std::cout << "Close tag \"" << cur->tag() << "\" [level = " << taglevel << "]" << std::endl;
 #endif
                cur = cur->parent();

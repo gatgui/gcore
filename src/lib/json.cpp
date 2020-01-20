@@ -1047,7 +1047,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
          // Note: getline discards the trailing '\n'
          lastReadPos = in.tellg();
          std::getline(in, remain);
-         #ifdef _DEBUG
+         #ifdef GCORE_DEBUG
          std::cout << "Parse| Read line '" << remain << "'" << std::endl;
          #endif
          ++lineno;
@@ -1057,7 +1057,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
       switch (state)
       {
       case Begin:
-         #ifdef _DEBUG
+         #ifdef GCORE_DEBUG
          std::cout << "Parse|Begin" << std::endl;
          #endif
          p0 = remain.find_first_not_of(sSpaces);
@@ -1098,7 +1098,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
          break;
       
       case ReadObject:
-         #ifdef _DEBUG
+         #ifdef GCORE_DEBUG
          std::cout << "Parse|ReadObject (remain = '" << remain << "')" << std::endl;
          #endif
          
@@ -1225,7 +1225,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
          break;
       
       case ReadArray:
-         #ifdef _DEBUG
+         #ifdef GCORE_DEBUG
          std::cout << "Parse|ReadArray (remain = '" << remain << "')" << std::endl;
          #endif
          
@@ -1331,7 +1331,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
       
       case ReadObjectKey:
       case ReadString:
-         #ifdef _DEBUG
+         #ifdef GCORE_DEBUG
          std::cout << "Parse|" << (state == ReadString ? "ReadString" : "ReadObjectKey") << " (remain = '" << remain << "')" << std::endl;
          #endif
          
@@ -1419,7 +1419,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
             
             if (state == ReadObjectKey)
             {
-               #ifdef _DEBUG
+               #ifdef GCORE_DEBUG
                std::cout << "Parse|ReadObjectKey -> " << str << std::endl;
                #endif
                
@@ -1491,7 +1491,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
          break;
       
       case ReadValue:
-         #ifdef _DEBUG
+         #ifdef GCORE_DEBUG
          std::cout << "Parse|ReadValue (remain = '" << remain << "')" << std::endl;
          #endif
          
@@ -1681,7 +1681,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
          break;
       
       case End:
-         #ifdef _DEBUG
+         #ifdef GCORE_DEBUG
          std::cout << "Parse|End (remain = '" << remain << "')" << std::endl;
          #endif
          

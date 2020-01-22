@@ -1552,11 +1552,15 @@ static Status SetTypedProperty(plist::Dictionary *dict,
 
 size_t PropertyList::size(const String &p, Status *status) const
 {
-   const plist::Value *val = GetProperty(mTop, p);
+   const plist::Value *val = GetProperty(mTop, p, status);
    const plist::Dictionary *dict = 0;
    const plist::Array *array = 0;
    
-   if (val->checkType(dict))
+   if (!val)
+   {
+      return 0;
+   }
+   else if (val->checkType(dict))
    {
       if (status)
       {
@@ -1586,10 +1590,15 @@ size_t PropertyList::size(const String &p, Status *status) const
 
 size_t PropertyList::getKeys(const String &p, StringList &kl, Status *status) const
 {
-   const plist::Value *val = GetProperty(mTop, p);
+   const plist::Value *val = GetProperty(mTop, p, status);
    const plist::Dictionary *dict=0;
    
-   if (!val->checkType(dict))
+   if (!val)
+   {
+      kl.clear();
+      return 0;
+   }
+   else if (!val->checkType(dict))
    {
       if (status)
       {
@@ -1612,11 +1621,16 @@ size_t PropertyList::getKeys(const String &p, StringList &kl, Status *status) co
 
 Status PropertyList::clear(const String &p)
 {
-   plist::Value *val = GetProperty(mTop, p);
+   Status status;
+   plist::Value *val = GetProperty(mTop, p, &status);
    plist::Dictionary *dict = 0;
    plist::Array *array = 0;
    
-   if (val->checkType(dict))
+   if (!status)
+   {
+      return status;
+   }
+   else if (val->checkType(dict))
    {
       dict->clear();
       return Status(true);

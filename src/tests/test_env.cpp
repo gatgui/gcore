@@ -32,8 +32,8 @@ bool PathCallback(const gcore::Path &path)
 
 int main(int, char**)
 {
-   gcore::StringDict all;
-   gcore::StringDict::iterator it;
+   gcore::Env::Dict all;
+   gcore::Env::Dict::iterator it;
    
    gcore::Env env;
    

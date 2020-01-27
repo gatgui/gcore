@@ -35,6 +35,20 @@ namespace gcore
    {
    public:
       
+      class KeyCompare
+      {
+      public:
+         inline bool operator()(const gcore::String &s1, const gcore::String &s2) const
+         {
+#ifdef _WIN32
+            return (s1.casecompare(s2) < 0);
+#else
+            return s1 < s2;
+#endif
+         }
+      };
+      typedef std::map<String, String, KeyCompare> Dict;
+      
       typedef Functor1wR<bool, const Path&> ForEachInPathFunc;
       
       static String Username();
@@ -42,7 +56,7 @@ namespace gcore
       static String Get(const String &k);
       static void Set(const String &k, const String &v, bool overwrite);
       static void Unset(const String &k);
-      static void Set(const StringDict &d, bool overwrite);
+      static void Set(const Dict &d, bool overwrite);
       static bool IsSet(const String &k);
       static void ForEachInPath(const String &e, ForEachInPathFunc callback);
       static size_t ListPaths(const String &e, PathList &l);
@@ -59,14 +73,14 @@ namespace gcore
       bool isSet(const String &key) const;
       String get(const String &key) const;
       void set(const String &key, const String &val, bool overwrite);
-      void set(const StringDict &d, bool overwrite);
+      void set(const Dict &d, bool overwrite);
       void unset(const String &key);
       
-      size_t asDict(StringDict &d) const;
+      size_t asDict(Dict &d) const;
       
    protected:
       
-      List<StringDict> mEnvStack;
+      List<Dict> mEnvStack;
       bool mVerbose;
    };
 }

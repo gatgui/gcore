@@ -243,6 +243,11 @@ cdef extern from "<gcore/dirmap.h>" namespace "gcore::dirmap":
    String Map(String&, bint)
    
 
+cdef extern from "<gcore/env.h>" namespace "gcore::Env":
+   cdef cppclass KeyCompare:
+      bint operator()(String&, String&)
+   
+
 cdef extern from "<gcore/env.h>" namespace "gcore":
    
    cdef cppclass Env:
@@ -254,10 +259,10 @@ cdef extern from "<gcore/env.h>" namespace "gcore":
       bint isSet(String&)
       String get(String&)
       void set(String&, String&, bint)
-      void set(map[String,String]&, bint)
+      void set(map[String,String,KeyCompare]&, bint)
       void unset(String&)
       
-      size_t asDict(map[String,String]&)
+      size_t asDict(map[String,String,KeyCompare]&)
    
 
 cdef extern from "<gcore/env.h>" namespace "gcore::Env":
@@ -266,7 +271,7 @@ cdef extern from "<gcore/env.h>" namespace "gcore::Env":
    String Hostname()
    String Get(String&)
    void Set(String&, String&, bint)
-   void Set(map[String,String]&, bint)
+   void Set(map[String,String,KeyCompare]&, bint)
    void Unset(String&)
    bint IsSet(String&)
    size_t ListPaths(String&, List[Path]&)

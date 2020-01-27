@@ -22,11 +22,67 @@ from libcpp.map cimport map
 from cython.operator cimport dereference as deref
 from cython.operator cimport preincrement as pinc
 
- 
+
+# Note: 'super' not used on purpose
+class EnvDict(dict):
+   class Key(str):
+      def __init__(self, key):
+         str.__init__(self, key)
+         self._lstr = key.lower()
+
+      def __hash__(self):
+         return hash(self._lstr)
+
+      def __rhs(self, other):
+         return (other._lstr if isinstance(other, type(self)) else other.lower())
+
+      def __eq__(self, other):
+         return self._lstr == self.__rhs(other)
+
+      def __ne__(self, other):
+         return self._lstr == self.__rhs(other)
+
+      def __gt__(self, other):
+         return self._lstr > self.__rhs(other)
+
+      def __lt__(self, other):
+         return self._lstr < self.__rhs(other)
+
+      def __ge__(self, other):
+         return self._lstr >= self.__rhs(other)
+
+      def __le__(self, other):
+         return self._lstr <= self.__rhs(other)
+
+   def __init__(self, *args, **kwargs):
+      dict.__init__(self)
+      if len(args) > 0:
+         if len(args) == 1:
+            if isinstance(args[0], dict):
+               for key, val in args[0].iteritems():
+                  self[key] = val
+            else:
+               for key, val in args[0]:
+                  self[key] = val
+         else:
+            raise Exception("Expect a mapping or in iterable as argument")
+      for key, val in kwargs.iteritems():
+         self[key] = val
+
+   def __contains__(self, key):
+      return dict.__contains__(self, self.Key(key))
+
+   def __setitem__(self, key, value):
+      dict.__setitem__(self, self.Key(key), value)
+
+   def __getitem__(self, key):
+      return dict.__getitem__(self, self.Key(key))
+
+
 ctypedef public class Env [object PyEnv, type PyEnvType]:
    cdef gcore.Env *_cobj
    cdef bint _own
-   
+
    def __cinit__(self, *args, **kwargs):
       self._cobj = NULL
       self._own = False
@@ -57,13 +113,11 @@ ctypedef public class Env [object PyEnv, type PyEnvType]:
       return self._cobj.get(gcore.String(key)).c_str()
    
    def set(self, *args):
-      cdef map[gcore.String, gcore.String] cd
       if len(args) < 2 or len(args) > 3:
          raise Exception("_gcore.Env.set takes 2 to 3 arguments")
       elif len(args) == 2:
          for k, v in args[0].iteritems():
-            cd[gcore.String(<char*?>k)] = gcore.String(<char*?>v)
-         self._cobj.set(cd, <bint?>args[1])
+            self._cobj.set(gcore.String(<char*?>k), gcore.String(<char*?>v), <bint?>args[1])
       else:
          self._cobj.set(gcore.String(<char*?>args[0]), gcore.String(<char*?>args[1]), <bint?>args[2])
    
@@ -71,10 +125,10 @@ ctypedef public class Env [object PyEnv, type PyEnvType]:
       self._cobj.unset(gcore.String(key))
 
    def asDict(self):
-      cdef map[gcore.String, gcore.String] cd
-      cdef map[gcore.String, gcore.String].iterator it
+      cdef map[gcore.String, gcore.String, gcore.KeyCompare] cd
+      cdef map[gcore.String, gcore.String, gcore.KeyCompare].iterator it
       self._cobj.asDict(cd)
-      rv = {}
+      rv = EnvDict()
       it = cd.begin()
       while it != cd.end():
          rv[deref(it).first.c_str()] = deref(it).second.c_str()
@@ -99,13 +153,11 @@ ctypedef public class Env [object PyEnv, type PyEnvType]:
    
    @classmethod
    def Set(klass, *args):
-      cdef map[gcore.String, gcore.String] cd
       if len(args) < 2 or len(args) > 3:
          raise Exception("_gcore.Env.Set takes 2 to 3 arguments")
       elif len(args) == 2:
          for k, v in args[0].iteritems():
-            cd[gcore.String(<char*?>k)] = gcore.String(<char*?>v)
-         gcore.Set(cd, <bint?>args[1])
+            gcore.Set(gcore.String(<char*?>k), gcore.String(<char*?>v), <bint?>args[1])
       else:
          gcore.Set(gcore.String(<char*?>args[0]), gcore.String(<char*?>args[1]), <bint?>args[2])
    

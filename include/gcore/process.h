@@ -25,6 +25,7 @@ USA.
 #define __gcore_process_h_
 
 #include <gcore/pipe.h>
+#include <gcore/env.h>
 
 namespace gcore
 {
@@ -63,7 +64,7 @@ namespace gcore
          bool redirectIn;
          bool showConsole;
          bool keepAlive;
-         StringDict env;
+         Env::Dict env;
       };
       
       static void SetDefaultOptions(Options &opts);

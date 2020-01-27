@@ -87,7 +87,7 @@ void Env::Set(const String &k, const String &v, bool ow)
    Env().set(k, v, ow);
 }
 
-void Env::Set(const StringDict &d, bool ow)
+void Env::Set(const Env::Dict &d, bool ow)
 {
    Env().set(d, ow);
 }
@@ -157,7 +157,7 @@ Env::~Env()
 
 void Env::push()
 {
-   StringDict d;
+   Env::Dict d;
    mEnvStack.push(d);
    asDict(mEnvStack.back());
 }
@@ -167,15 +167,15 @@ void Env::pop()
    if (mEnvStack.size() > 0)
    {
       // get current environment
-      StringDict cur;
+      Env::Dict cur;
       asDict(cur);
       
       // get last pushed environment and restore it
-      StringDict &last = mEnvStack.back();
+      Env::Dict &last = mEnvStack.back();
       set(last, true);
       
       // reset any keys that where not in pushed environment
-      StringDict::iterator it = cur.begin();
+      Env::Dict::iterator it = cur.begin();
       while (it != cur.end())
       {
          if (last.find(it->first) == last.end())
@@ -189,9 +189,9 @@ void Env::pop()
    }
 }
 
-void Env::set(const StringDict &d, bool overwrite)
+void Env::set(const Env::Dict &d, bool overwrite)
 {
-   StringDict::const_iterator it = d.begin();
+   Env::Dict::const_iterator it = d.begin();
    while (it != d.end())
    {
       set(it->first, it->second, overwrite);
@@ -260,7 +260,7 @@ void Env::unset(const String &k)
 #endif
 }
 
-size_t Env::asDict(StringDict &d) const
+size_t Env::asDict(Env::Dict &d) const
 {
    d.clear();
 #ifndef _WIN32

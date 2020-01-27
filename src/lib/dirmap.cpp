@@ -32,6 +32,10 @@ namespace dirmap
 
 static StringDict gsNix2Win;
 static StringDict gsWin2Nix;
+static StringDict gsNixNix;
+//static StringDict gsRevNixNix;
+static StringDict gsWinWin;
+//static StringDict gsRevWinWin;
 
 static bool IsWindowsPath(const String &p)
 {
@@ -39,31 +43,45 @@ static bool IsWindowsPath(const String &p)
    return wpe.match(p);
 }
 
-static String _Map(const String &path, StringDict *forcelookup)
+static String _Map(const String &path, bool reverseLookup, StringDict *forcelookup)
 {
    String outpath(path);
    StringDict *lookupmap = forcelookup;
 
    bool winpath = IsWindowsPath(path);
+   // gsNix2Win also tracks windows -> windows path conversion
+   // gsWin2Nix also tracks unix -> unix path conversion
 
    if (!forcelookup)
    {
 #ifdef _WIN32
       // std::cerr << "Map: Use gsNix2Win" << std::endl;
-      if (!winpath)
+      if (!reverseLookup)
       {
-         outpath = _Map(path, &gsWin2Nix);
-         winpath = IsWindowsPath(outpath);
+         // We want to map from unix path to windows path
+         outpath = _Map(path, false, winpath ? &gsWinWin : &gsNixNix);
+         lookupmap = &gsNix2Win;
       }
-      lookupmap = &gsNix2Win;
+      else
+      {
+         // We want to map from windows path to unix path
+         outpath = _Map(path, false, winpath ? &gsWinWin : &gsNixNix);
+         lookupmap = &gsWin2Nix;
+      }
 #else
       // std::cerr << "Map: Use gsWin2Nix" << std::endl;
-      if (winpath)
+      if (!reverseLookup)
       {
-         outpath = _Map(path, &gsNix2Win);
-         winpath = IsWindowsPath(outpath);
+         // We want to map from windows path to unix path
+         outpath = _Map(path, false, winpath ? &gsWinWin : &gsNixNix);
+         lookupmap = &gsWin2Nix;
       }
-      lookupmap = &gsWin2Nix;
+      else
+      {
+         // We want to map from unix path to windows path
+         outpath = _Map(path, false, winpath ? &gsWinWin : &gsNixNix);
+         lookupmap = &gsNix2Win;
+      }
 #endif
    }
 
@@ -93,17 +111,11 @@ static String _Map(const String &path, StringDict *forcelookup)
 
    if (bestpath.length() > 0)
    {
-      lookuppath = (*lookupmap)[bestpath];
-      lookuppath += outpath.substr(bestpath.length());
-#ifndef _WIN32
-      lookuppath.replace('\\', '/');
-#endif
-      return lookuppath;
+      outpath = (*lookupmap)[bestpath] + outpath.substr(bestpath.length());
    }
-   else
-   {
-      return outpath;
-   }
+
+   outpath.replace('\\', '/');
+   return outpath;
 }
 
 // ---
@@ -122,7 +134,8 @@ void AddMapping(const String &from, const String &to)
       if (IsWindowsPath(to))
       {
          // remap win -> win
-         gsNix2Win[from2] = to;
+         //gsNix2Win[from2] = to;
+         gsWinWin[from2] = to;
          // std::cerr << "Add (win/win) '" << from2 << "' -> '" << to << "' to gsNix2Win" << std::endl;
       }
       else
@@ -138,7 +151,8 @@ void AddMapping(const String &from, const String &to)
       if (!IsWindowsPath(to))
       {
          // remap nix -> nix
-         gsWin2Nix[from] = to;
+         //gsWin2Nix[from] = to;
+         gsNixNix[from] = to;
          // std::cerr << "Add (nix/nix)'" << from << "' -> '" << to << "' to gsWin2Nix" << std::endl;
       }
       else
@@ -160,40 +174,68 @@ void RemoveMapping(const String &from, const String &to)
    String from2(from);
    String to2(to);
 
-   if (IsWindowsPath(from))
+   bool fwin = IsWindowsPath(from);
+   bool twin = IsWindowsPath(to);
+
+   if (fwin)
    {
       from2.tolower().replace('\\', '/');
+      if (twin)
+      {
+         // windows -> windows
+         it = gsWinWin.find(from2);
+         if (it != gsWinWin.end()) // should check that it->second == to
+         {
+            gsWinWin.erase(it);
+         }
+      }
+      else
+      {
+         // windows -> unix
+         it = gsWin2Nix.find(from2);
+         if (it != gsWin2Nix.end())
+         {
+            gsWin2Nix.erase(it);
+         }
+         it = gsNix2Win.find(to);
+         if (it != gsNix2Win.end())
+         {
+            gsNix2Win.erase(it);
+         }
+      }
    }
-   it = gsWin2Nix.find(from2);
-   if (it != gsWin2Nix.end())
+   else
    {
-      gsWin2Nix.erase(it);
-   }
-   it = gsNix2Win.find(from2);
-   if (it != gsNix2Win.end())
-   {
-      gsNix2Win.erase(it);
-   }
-
-   if (IsWindowsPath(to))
-   {
-      to2.tolower().replace('\\', '/');
-   }
-   it = gsWin2Nix.find(to2);
-   if (it != gsWin2Nix.end())
-   {
-      gsWin2Nix.erase(it);
-   }
-   it = gsNix2Win.find(to2);
-   if (it != gsNix2Win.end())
-   {
-      gsNix2Win.erase(it);
+      if (twin)
+      {
+         // unix -> windows
+         to2.tolower().replace('\\', '/');
+         it = gsNix2Win.find(from);
+         if (it != gsNix2Win.end())
+         {
+            gsNix2Win.erase(it);
+         }
+         it = gsWin2Nix.find(to2);
+         if (it != gsWin2Nix.end())
+         {
+            gsWin2Nix.erase(it);
+         }
+      }
+      else
+      {
+         // unix -> unix
+         it = gsNixNix.find(from);
+         if (it != gsNixNix.end())
+         {
+            gsNixNix.erase(it);
+         }
+      }
    }
 }
 
-String Map(const String &path)
+String Map(const String &path, bool reverseLookup)
 {
-   return _Map(path, 0);
+   return _Map(path, reverseLookup, 0);
 }
 
 void WriteMappingsToFile(const Path &mapfile)
@@ -201,34 +243,21 @@ void WriteMappingsToFile(const Path &mapfile)
    std::ofstream os(mapfile.fullname().c_str());
 
    StringDict::iterator it, it2;
-  
+   
    for (it = gsNix2Win.begin(); it != gsNix2Win.end(); ++it)
    {
       os << it->first << " = " << it->second << std::endl;
    }
+   // don't need to process gsWin2Nix
 
-   for (it = gsWin2Nix.begin(); it != gsWin2Nix.end(); ++it)
+   for (it = gsNixNix.begin(); it != gsNixNix.end(); ++it)
    {
-      if (!IsWindowsPath(it->first) && !IsWindowsPath(it->second))
-      {
-         // nix -> nix
-         os << it->first << " = " << it->second << std::endl;
-      }
-      else
-      {
-         // win -> nix
-         it2 = gsNix2Win.find(it->second);
-         if (it2 != gsNix2Win.end())
-         {
-            String tmp(it2->second);
-            tmp.tolower().replace('\\', '/');
-            if (tmp == it->first)
-            {
-               continue;
-            }
-         }
-         os << it->first << " = " << it->second << std::endl;
-      }
+      os << it->first << " = " << it->second << std::endl;
+   }
+
+   for (it = gsWinWin.begin(); it != gsWinWin.end(); ++it)
+   {
+      os << it->first << " = " << it->second << std::endl;
    }
 }
 

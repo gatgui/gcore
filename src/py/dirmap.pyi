@@ -40,6 +40,6 @@ class dirmap(object):
       gcore.ReadMappingsFromFile(gcore.Path(path))
    
    @staticmethod
-   def Map(char* path):
-      return gcore.Map(gcore.String(path)).c_str()
+   def Map(char* path, reverseLookup=False):
+      return gcore.Map(gcore.String(path), reverseLookup).c_str()
 

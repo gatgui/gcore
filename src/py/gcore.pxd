@@ -240,7 +240,7 @@ cdef extern from "<gcore/dirmap.h>" namespace "gcore::dirmap":
    void RemoveMapping(String&, String&)
    void WriteMappingsToFile(Path&)
    void ReadMappingsFromFile(Path&)
-   String Map(String&)
+   String Map(String&, bint)
    
 
 cdef extern from "<gcore/env.h>" namespace "gcore":

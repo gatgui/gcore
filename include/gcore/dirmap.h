@@ -35,7 +35,7 @@ namespace gcore
       GCORE_API void RemoveMapping(const String &from, const String &to);
       GCORE_API void WriteMappingsToFile(const Path &mapfile);
       GCORE_API void ReadMappingsFromFile(const Path &mapfile);
-      GCORE_API String Map(const String &path);
+      GCORE_API String Map(const String &path, bool reverseLookup=false);
    }
 }
 

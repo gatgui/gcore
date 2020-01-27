@@ -29,8 +29,8 @@ int main(int argc, char **argv)
    {
       gcore::dirmap::AddMapping("z:/home", "/Users");
       gcore::dirmap::AddMapping("z:/work", "/Work");
-      gcore::dirmap::AddMapping("/mnt/export/ifs/marza", "/Users"); // only works on linux
-      gcore::dirmap::AddMapping("C:/Users/Shared/marza", "Z:/home"); // only works on windows
+      gcore::dirmap::AddMapping("/mnt/export/ifs/marza/home", "/Users"); // only works on linux
+      gcore::dirmap::AddMapping("C:/Users/Shared/marza/home", "Z:/home"); // only works on windows
       gcore::dirmap::WriteMappingsToFile("./dirmap.cfg");
    }
    else
@@ -52,11 +52,21 @@ int main(int argc, char **argv)
    std::cout << path4 << " -> " << gcore::dirmap::Map(path4) << std::endl;
    std::cout << path5 << " -> " << gcore::dirmap::Map(path5) << std::endl;
 
+   std::cout << "--- REVERSED ---" << std::endl;
+
+   std::cout << path0 << " -> " << gcore::dirmap::Map(path0, true) << std::endl;
+   std::cout << path1 << " -> " << gcore::dirmap::Map(path1, true) << std::endl;
+   std::cout << path2 << " -> " << gcore::dirmap::Map(path2, true) << std::endl;
+   std::cout << path3 << " -> " << gcore::dirmap::Map(path3, true) << std::endl;
+   std::cout << path4 << " -> " << gcore::dirmap::Map(path4, true) << std::endl;
+   std::cout << path5 << " -> " << gcore::dirmap::Map(path5, true) << std::endl;
+
    gcore::Path npath("/Users/gatgui/music");
    std::cout << npath.fullname() << std::endl;
 
    gcore::Path wpath("z:\\home\\GatGui/Music");
    std::cout << wpath.fullname() << std::endl;
+
 
    return 0;
 }

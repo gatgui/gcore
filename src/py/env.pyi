@@ -113,11 +113,20 @@ ctypedef public class Env [object PyEnv, type PyEnvType]:
       return self._cobj.get(gcore.String(key)).c_str()
    
    def set(self, *args):
+      cdef map[gcore.String, gcore.String, gcore.KeyCompare] cd
       if len(args) < 2 or len(args) > 3:
          raise Exception("_gcore.Env.set takes 2 to 3 arguments")
       elif len(args) == 2:
+         if not isinstance(args[0], dict):
+            raise Exception("_gcore.Env.set expects a dict")
+         if not isinstance(args[0], EnvDict):
+            ed = EnvDict(args[0].items())
+            if len(ed) != len(args[0]):
+               dk = set(args[0].keys()).difference(ed.keys())
+               raise Exception("_gcore.Env.set dict argument has duplicate environment keys for %s" % ", ".join(dk))
          for k, v in args[0].iteritems():
-            self._cobj.set(gcore.String(<char*?>k), gcore.String(<char*?>v), <bint?>args[1])
+            cd[gcore.String(<char*?>k)] = gcore.String(<char*?>v)
+         self._cobj.set(cd, <bint?>args[1])
       else:
          self._cobj.set(gcore.String(<char*?>args[0]), gcore.String(<char*?>args[1]), <bint?>args[2])
    
@@ -153,11 +162,20 @@ ctypedef public class Env [object PyEnv, type PyEnvType]:
    
    @classmethod
    def Set(klass, *args):
+      cdef map[gcore.String, gcore.String, gcore.KeyCompare] cd
       if len(args) < 2 or len(args) > 3:
          raise Exception("_gcore.Env.Set takes 2 to 3 arguments")
       elif len(args) == 2:
+         if not isinstance(args[0], dict):
+            raise Exception("_gcore.Env.Set expects a dict")
+         if not isinstance(args[0], EnvDict):
+            ed = EnvDict(args[0].items())
+            if len(ed) != len(args[0]):
+               dk = set(args[0].keys()).difference(ed.keys())
+               raise Exception("_gcore.Env.Set dict argument has duplicate environment keys for %s" % ", ".join(dk))
          for k, v in args[0].iteritems():
-            gcore.Set(gcore.String(<char*?>k), gcore.String(<char*?>v), <bint?>args[1])
+            cd[gcore.String(<char*?>k)] = gcore.String(<char*?>v)
+         gcore.Set(cd, <bint?>args[1])
       else:
          gcore.Set(gcore.String(<char*?>args[0]), gcore.String(<char*?>args[1]), <bint?>args[2])
    

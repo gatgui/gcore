@@ -72,6 +72,7 @@ cdef extern from "<gcore/string.h>" namespace "gcore":
       String(char*)
       String(String &)
       char* c_str()
+      String& assign "operator=" (String&)
    
    cdef cppclass StringList:
       StringList()
@@ -80,6 +81,14 @@ cdef extern from "<gcore/string.h>" namespace "gcore":
       String& at(int)
       List[String].iterator begin()
       List[String].iterator end()
+   
+
+cdef extern from "<gcore/unicode.h>" namespace "gcore":
+   
+   bint UTF8ToLocale(char*, String&)
+   bint UTF8ToLocale_ip(String&)
+   bint LocaleToUTF8(char*, String&)
+   bint LocaleToUTF8_ip(String&)
    
 
 cdef extern from "<gcore/path.h>" namespace "gcore":

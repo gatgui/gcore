@@ -106,14 +106,22 @@ ctypedef public class Env [object PyEnv, type PyEnvType]:
    def pop(self):
       self._cobj.pop()
    
-   def isSet(self, char* key):
-      return self._cobj.isSet(gcore.String(key))
+   def isSet(self, key):
+      cdef gcore.String _key
+      _to_cstring(key, _key)
+      return self._cobj.isSet(_key)
    
-   def get(self, char* key):
-      return self._cobj.get(gcore.String(key)).c_str()
+   def get(self, key):
+      cdef gcore.String _key
+      cdef gcore.String _val
+      _to_cstring(key, _key)
+      _val = self._cobj.get(_key)
+      return _to_pystring(_val, asUnicode=False)
    
    def set(self, *args):
       cdef map[gcore.String, gcore.String, gcore.KeyCompare] cd
+      cdef gcore.String _key
+      cdef gcore.String _val
       if len(args) < 2 or len(args) > 3:
          raise Exception("_gcore.Env.set takes 2 to 3 arguments")
       elif len(args) == 2:
@@ -125,22 +133,32 @@ ctypedef public class Env [object PyEnv, type PyEnvType]:
                dk = set(args[0].keys()).difference(ed.keys())
                raise Exception("_gcore.Env.set dict argument has duplicate environment keys for %s" % ", ".join(dk))
          for k, v in args[0].iteritems():
-            cd[gcore.String(<char*?>k)] = gcore.String(<char*?>v)
+            _to_cstring(k, _key)
+            _to_cstring(v, _val)
+            cd[_key] = _val
          self._cobj.set(cd, <bint?>args[1])
       else:
-         self._cobj.set(gcore.String(<char*?>args[0]), gcore.String(<char*?>args[1]), <bint?>args[2])
+         _to_cstring(args[0], _key)
+         _to_cstring(args[1], _val)
+         self._cobj.set(_key, _val, <bint?>args[2])
    
-   def unset(self, char* key):
-      self._cobj.unset(gcore.String(key))
+   def unset(self, key):
+      cdef gcore.String _key
+      _to_cstring(key, _key)
+      self._cobj.unset(_key)
 
    def asDict(self):
+      cdef gcore.String _key
+      cdef gcore.String _val
       cdef map[gcore.String, gcore.String, gcore.KeyCompare] cd
       cdef map[gcore.String, gcore.String, gcore.KeyCompare].iterator it
       self._cobj.asDict(cd)
       rv = EnvDict()
       it = cd.begin()
       while it != cd.end():
-         rv[deref(it).first.c_str()] = deref(it).second.c_str()
+         _key = deref(it).first
+         _val = deref(it).second
+         rv[_to_pystring(_key, asUnicode=False)] = _to_pystring(_val, asUnicode=False)
          pinc(it)
       return rv
    
@@ -153,15 +171,23 @@ ctypedef public class Env [object PyEnv, type PyEnvType]:
       return gcore.Hostname().c_str()
    
    @classmethod
-   def IsSet(klass, char* key):
-      return gcore.IsSet(gcore.String(key))
+   def IsSet(klass, key):
+      cdef gcore.String _key
+      _to_cstring(key, _key)
+      return gcore.IsSet(_key)
    
    @classmethod
-   def Get(klass, char* key):
-      return gcore.Get(gcore.String(key)).c_str()
+   def Get(klass, key):
+      cdef gcore.String _key
+      cdef gcore.String _val
+      _to_cstring(key, _key)
+      _val = gcore.Get(_key)
+      return _to_pystring(_val, asUnicode=False)
    
    @classmethod
    def Set(klass, *args):
+      cdef gcore.String _key
+      cdef gcore.String _val
       cdef map[gcore.String, gcore.String, gcore.KeyCompare] cd
       if len(args) < 2 or len(args) > 3:
          raise Exception("_gcore.Env.Set takes 2 to 3 arguments")
@@ -174,33 +200,34 @@ ctypedef public class Env [object PyEnv, type PyEnvType]:
                dk = set(args[0].keys()).difference(ed.keys())
                raise Exception("_gcore.Env.Set dict argument has duplicate environment keys for %s" % ", ".join(dk))
          for k, v in args[0].iteritems():
-            cd[gcore.String(<char*?>k)] = gcore.String(<char*?>v)
+            _to_cstring(k, _key)
+            _to_cstring(v, _val)
+            cd[_key] = _val
          gcore.Set(cd, <bint?>args[1])
       else:
-         gcore.Set(gcore.String(<char*?>args[0]), gcore.String(<char*?>args[1]), <bint?>args[2])
+         _to_cstring(args[0], _key)
+         _to_cstring(args[1], _val)
+         gcore.Set(_key, _val, <bint?>args[2])
    
    @classmethod
-   def Unset(klass, char* key):
-      gcore.Unset(gcore.String(key))
+   def Unset(klass, key):
+      cdef gcore.String _key
+      _to_cstring(key, _key)
+      gcore.Unset(_key)
    
    @classmethod
-   def ListPath(klass, char* key):
+   def ListPath(klass, key):
+      cdef gcore.String _key
+      cdef gcore.String _val
       cdef gcore.List[gcore.Path] pl
       cdef gcore.List[gcore.Path].iterator it
-      gcore.ListPaths(gcore.String(key), pl)
+      _to_cstring(key, _key)
+      gcore.ListPaths(_key, pl)
       rv = []
       it = pl.begin()
       while it != pl.end():
-         rv.append(deref(it).fullname('/').c_str())
+         _val = deref(it).fullname('/')
+         rv.append(_to_pystring(_val, asUnicode=True))
          pinc(it)
       return rv
    
-
-# cdef SetEnvPtr(Env py, gcore.Env* c, own):
-#    if py._cobj != NULL:
-#       if py._cobj == c:
-#          return
-#       if py._own:
-#          del py._cobj
-#    py._cobj = c
-#    py._own = own

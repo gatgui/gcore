@@ -2024,4 +2024,112 @@ bool UTF8ToLocale_ip(std::string &str)
    }
 }
 
+void EncodeNonPrintableChars(const char *s, std::string &out)
+{
+   if (!s)
+   {
+      return;
+   }
+   
+   const char *c = s;
+   size_t l = strlen(s);
+   size_t i = 0;
+   
+   // 1 unprintable byte -> 4 bytes "\xHH"
+   out.clear();
+   out.reserve(l * 4);
+   
+   while (*c != '\0')
+   {
+      if (!isprint(*c))
+      {
+         unsigned int n1 = ((unsigned int)*c & 0xF0) >> 4;
+         unsigned int n0 = ((unsigned int)*c & 0x0F);
+         out.push_back('\\');
+         out.push_back('x');
+         out.push_back(char(n1 < 10 ? '0' + n1 : 'a' + (n1 - 10)));
+         out.push_back(char(n0 < 10 ? '0' + n0 : 'a' + (n0 - 10)));
+      }
+      else
+      {
+         out.push_back(*c);
+      }
+      ++c;
+      ++i;
+   }
+}
+
+void DecodeNonPrintableChars(const char *s, std::string &out)
+{
+   if (!s)
+   {
+      return;
+   }
+   
+   const char *c = s;
+   size_t l = strlen(s);
+   std::cerr << "strlen('" << s << "') = " << l << std::endl;
+   size_t i = 0;
+   
+   // 1 unprintable byte -> 4 bytes "\xHH"
+   out.clear();
+   out.reserve(l);
+
+   while (*c != '\0')
+   {
+      bool asis = true;
+      if ((i + 3) < l && c[0] == '\\' && c[1] == 'x')
+      {
+         unsigned int n1;
+         if (c[2] >= '0' && c[2] <= '9')
+         {
+            n1 = (unsigned int)(c[2] - '0');
+            asis = false;
+         }
+         else if (c[2] >= 'a' && c[2] <= 'f')
+         {
+            n1 = 10 + (unsigned int)(c[2] - 'a');
+            asis = false;
+         }
+         else if (c[2] >= 'A' && c[2] <= 'F')
+         {
+            n1 = 10 + (unsigned int)(c[2] - 'A');
+            asis = false;
+         }
+         if (!asis)
+         {
+            unsigned int n0;
+            if (c[3] >= '0' && c[3] <= '9')
+            {
+               n0 = (unsigned int)(c[3] - '0');
+               asis = false;
+            }
+            else if (c[3] >= 'a' && c[3] <= 'f')
+            {
+               n0 = 10 + (unsigned int)(c[3] - 'a');
+               asis = false;
+            }
+            else if (c[3] >= 'A' && c[3] <= 'F')
+            {
+               n0 = 10 + (unsigned int)(c[3] - 'A');
+               asis = false;
+            }
+            if (!asis)
+            {
+               char _c = char(n1 << 4 | n0);
+               out.push_back(_c);
+               c += 4;
+               i += 4;
+            }
+         }
+      }
+      if (asis)
+      {
+         out.push_back(*c);
+         ++c;
+         ++i;
+      }
+   }
+}
+
 }

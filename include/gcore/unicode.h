@@ -201,6 +201,9 @@ namespace gcore
    GCORE_API bool LocaleToUTF8_ip(std::string &str);
    GCORE_API bool UTF8ToLocale(const char *s, std::string &out);
    GCORE_API bool UTF8ToLocale_ip(std::string &str);
+
+   GCORE_API void EncodeNonPrintableChars(const char *s, std::string &out);
+   GCORE_API void DecodeNonPrintableChars(const char *s, std::string &out);
 }
 
 #endif

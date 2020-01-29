@@ -278,6 +278,20 @@ int main(int argc, char **argv)
       }
    }
    
+   
+   gcore::String nps(L"感じ"); // u'\u611f\u3058'
+   gcore::String ps;
+   gcore::String nps2;
+   gcore::EncodeNonPrintableChars(nps.c_str(), ps);
+   gcore::DecodeNonPrintableChars(ps.c_str(), nps2);
+   std::cout << nps << " -> " << ps << " -> " << nps2 << " (round strip success? " << (nps == nps2) << ")" << std::endl;
+   
+   nps = "hello world!";
+   gcore::EncodeNonPrintableChars(nps.c_str(), ps);
+   gcore::DecodeNonPrintableChars(ps.c_str(), nps2);
+   std::cout << nps << " -> " << ps << " -> " << nps2 << " (round strip success? " << (nps == nps2) << ")" << std::endl;
+   
+   
    return 0;
 }
 

@@ -92,7 +92,7 @@ prjs = [
 env = excons.MakeBaseEnv()
 
 # Setup cython
-buildpy = ("gcorepy" in BUILD_TARGETS or "all" in BUILD_TARGETS) 
+buildpy = ("gcorepy" in BUILD_TARGETS or "_gcore" in BUILD_TARGETS or "all" in BUILD_TARGETS) 
 if buildpy and python.RequireCython(env): 
   if excons.GetArgument("cython-gen", 1, int): 
     python.CythonGenerate(env, "src/py/_gcore.pyx", incdirs=["include"], cpp=True) 

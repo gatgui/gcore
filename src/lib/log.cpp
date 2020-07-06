@@ -158,14 +158,25 @@ static void PrintStdout(const char *msg)
    fprintf(stdout, "%s", msg);
 }
 
+static void GrowBuffer(char* &buffer, size_t &curSize, size_t wantedSize)
+{
+   if (wantedSize > curSize)
+   {
+      curSize = wantedSize;
+      buffer = (char*) realloc((void*)buffer, curSize);
+   }
+}
+
 namespace gcore
 {
 
 Log Log::msSharedLog;
-char Log::msBuffer[2048];
+char* Log::msBuffer = 0;
+size_t Log::msBufferSize = 0;
 
 Log& Log::Get()
 {
+   GrowBuffer(msBuffer, msBufferSize, 2048);
    return msSharedLog;
 }
 
@@ -189,8 +200,30 @@ void Log::PrintError(const char *fmt, ...)
    va_list args;
    
    va_start(args, fmt);
-   vsnprintf(msBuffer, 2048, fmt, args);
+
+#ifdef _WIN32
+   // On windows
+   // vsnprintf(buffer, size, fmt, args) returns -1 when specified size is too small for the
+   //   format string. Passing NULL and 0 for buffer and buffer size respectively will make
+   //   vsnprintf return the necessary size
+   int rsize = vsnprintf(NULL, 0, fmt, args);
    va_end(args);
+   GrowBuffer(msBuffer, msBufferSize, 2 * size_t(rsize));
+   va_start(args, fmt);
+   vsnprintf(msBuffer, msBufferSize, fmt, args);
+#else
+   int written = vsnprintf(msBuffer, msBufferSize, fmt, args);
+   va_end(args);
+   if (written >= 0 && size_t(written) > msBufferSize)
+   {
+      GrowBuffer(msBuffer, msBufferSize, 2 * size_t(written));
+      va_start(args, fmt);
+      vsnprintf(msBuffer, msBufferSize, fmt, args);
+   }
+#endif
+
+   va_end(args);
+
    msSharedLog.print(LOG_ERROR, msBuffer);
 }
 
@@ -199,8 +232,26 @@ void Log::PrintWarning(const char *fmt, ...)
    va_list args;
    
    va_start(args, fmt);
-   vsnprintf(msBuffer, 2048, fmt, args);
+
+#ifdef _WIN32
+   int rsize = vsnprintf(NULL, 0, fmt, args);
    va_end(args);
+   GrowBuffer(msBuffer, msBufferSize, 2 * size_t(rsize));
+   va_start(args, fmt);
+   vsnprintf(msBuffer, msBufferSize, fmt, args);
+#else
+   int written = vsnprintf(msBuffer, msBufferSize, fmt, args);
+   va_end(args);
+   if (written >= 0 && size_t(written) > msBufferSize)
+   {
+      GrowBuffer(msBuffer, msBufferSize, 2 * size_t(written));
+      va_start(args, fmt);
+      vsnprintf(msBuffer, msBufferSize, fmt, args);
+   }
+#endif
+
+   va_end(args);
+
    msSharedLog.print(LOG_WARNING, msBuffer);
 }
 
@@ -209,8 +260,26 @@ void Log::PrintDebug(const char *fmt, ...)
    va_list args;
    
    va_start(args, fmt);
-   vsnprintf(msBuffer, 2048, fmt, args);
+
+#ifdef _WIN32
+   int rsize = vsnprintf(NULL, 0, fmt, args);
    va_end(args);
+   GrowBuffer(msBuffer, msBufferSize, 2 * size_t(rsize));
+   va_start(args, fmt);
+   vsnprintf(msBuffer, msBufferSize, fmt, args);
+#else
+   int written = vsnprintf(msBuffer, msBufferSize, fmt, args);
+   va_end(args);
+   if (written >= 0 && size_t(written) > msBufferSize)
+   {
+      GrowBuffer(msBuffer, msBufferSize, 2 * size_t(written));
+      va_start(args, fmt);
+      vsnprintf(msBuffer, msBufferSize, fmt, args);
+   }
+#endif
+
+   va_end(args);
+
    msSharedLog.print(LOG_DEBUG, msBuffer);
 }
 
@@ -219,8 +288,26 @@ void Log::PrintInfo(const char *fmt, ...)
    va_list args;
    
    va_start(args, fmt);
-   vsnprintf(msBuffer, 2048, fmt, args);
+
+#ifdef _WIN32
+   int rsize = vsnprintf(NULL, 0, fmt, args);
    va_end(args);
+   GrowBuffer(msBuffer, msBufferSize, 2 * size_t(rsize));
+   va_start(args, fmt);
+   vsnprintf(msBuffer, msBufferSize, fmt, args);
+#else
+   int written = vsnprintf(msBuffer, msBufferSize, fmt, args);
+   va_end(args);
+   if (written >= 0 && size_t(written) > msBufferSize)
+   {
+      GrowBuffer(msBuffer, msBufferSize, 2 * size_t(written));
+      va_start(args, fmt);
+      vsnprintf(msBuffer, msBufferSize, fmt, args);
+   }
+#endif
+
+   va_end(args);
+
    msSharedLog.print(LOG_INFO, msBuffer);
 }
 
@@ -283,11 +370,14 @@ Log::Log()
    , mIndentLevel(0)
    , mIndentWidth(2)
    , mToFile(false)
+   , mBuffer(0)
+   , mBufferSize(0)
 {
 #ifdef _DEBUG
    mLevelMask |= LOG_DEBUG;
 #endif
    Bind(PrintStdout, mOutFunc);
+   GrowBuffer(mBuffer, mBufferSize, 2048);
 }
 
 Log::Log(const Path &path)
@@ -298,11 +388,14 @@ Log::Log(const Path &path)
    , mIndentWidth(2)
    , mToFile(true)
    , mFilePath(path)
+   , mBuffer(0)
+   , mBufferSize(0)
 {
 #ifdef _DEBUG
    mLevelMask |= LOG_DEBUG;
 #endif
    mOutFile.open(path.fullname().c_str(), std::ofstream::app|std::ofstream::out);
+   GrowBuffer(mBuffer, mBufferSize, 2048);
 }
 
 Log::Log(const Log &rhs)
@@ -314,11 +407,14 @@ Log::Log(const Log &rhs)
    , mIndentWidth(rhs.mIndentWidth)
    , mToFile(rhs.mToFile)
    , mFilePath(rhs.mFilePath)
+   , mBuffer(0)
+   , mBufferSize(0)
 {
    if (mToFile)
    {
       mOutFile.open(mFilePath.fullname().c_str(), std::ofstream::app|std::ofstream::out);
    }
+   GrowBuffer(mBuffer, mBufferSize, 2048);
 }
 
 Log::~Log()
@@ -326,6 +422,10 @@ Log::~Log()
    if (mToFile && mOutFile.is_open())
    {
       mOutFile.close();
+   }
+   if (mBuffer)
+   {
+      free(mBuffer);
    }
 }
 
@@ -484,8 +584,26 @@ void Log::printError(const char *fmt, ...) const
    va_list args;
    
    va_start(args, fmt);
-   vsnprintf(mBuffer, 2048, fmt, args);
+
+#ifdef _WIN32
+   int rsize = vsnprintf(NULL, 0, fmt, args);
    va_end(args);
+   GrowBuffer(mBuffer, mBufferSize, 2 * size_t(rsize));
+   va_start(args, fmt);
+   vsnprintf(mBuffer, mBufferSize, fmt, args);
+#else
+   int written = vsnprintf(mBuffer, mBufferSize, fmt, args);
+   va_end(args);
+   if (written >= 0 && size_t(written) > mBufferSize)
+   {
+      GrowBuffer(mBuffer, mBufferSize, 2 * size_t(written));
+      va_start(args, fmt);
+      vsnprintf(mBuffer, mBufferSize, fmt, args);
+   }
+#endif
+
+   va_end(args);
+
    print(LOG_ERROR, mBuffer);
 }
 
@@ -494,8 +612,26 @@ void Log::printWarning(const char *fmt, ...) const
    va_list args;
    
    va_start(args, fmt);
-   vsnprintf(mBuffer, 2048, fmt, args);
+
+#ifdef _WIN32
+   int rsize = vsnprintf(NULL, 0, fmt, args);
    va_end(args);
+   GrowBuffer(mBuffer, mBufferSize, 2 * size_t(rsize));
+   va_start(args, fmt);
+   vsnprintf(mBuffer, mBufferSize, fmt, args);
+#else
+   int written = vsnprintf(mBuffer, mBufferSize, fmt, args);
+   va_end(args);
+   if (written >= 0 && size_t(written) > mBufferSize)
+   {
+      GrowBuffer(mBuffer, mBufferSize, 2 * size_t(written));
+      va_start(args, fmt);
+      vsnprintf(mBuffer, mBufferSize, fmt, args);
+   }
+#endif
+
+   va_end(args);
+
    print(LOG_WARNING, mBuffer);
 }
 
@@ -504,8 +640,26 @@ void Log::printDebug(const char *fmt, ...) const
    va_list args;
    
    va_start(args, fmt);
-   vsnprintf(mBuffer, 2048, fmt, args);
+
+#ifdef _WIN32
+   int rsize = vsnprintf(NULL, 0, fmt, args);
    va_end(args);
+   GrowBuffer(mBuffer, mBufferSize, 2 * size_t(rsize));
+   va_start(args, fmt);
+   vsnprintf(mBuffer, mBufferSize, fmt, args);
+#else
+   int written = vsnprintf(mBuffer, mBufferSize, fmt, args);
+   va_end(args);
+   if (written >= 0 && size_t(written) > mBufferSize)
+   {
+      GrowBuffer(mBuffer, mBufferSize, 2 * size_t(written));
+      va_start(args, fmt);
+      vsnprintf(mBuffer, mBufferSize, fmt, args);
+   }
+#endif
+
+   va_end(args);
+
    print(LOG_DEBUG, mBuffer);
 }
 
@@ -514,8 +668,26 @@ void Log::printInfo(const char *fmt, ...) const
    va_list args;
    
    va_start(args, fmt);
-   vsnprintf(mBuffer, 2048, fmt, args);
+
+#ifdef _WIN32
+   int rsize = vsnprintf(NULL, 0, fmt, args);
    va_end(args);
+   GrowBuffer(mBuffer, mBufferSize, 2 * size_t(rsize));
+   va_start(args, fmt);
+   vsnprintf(mBuffer, mBufferSize, fmt, args);
+#else
+   int written = vsnprintf(mBuffer, mBufferSize, fmt, args);
+   va_end(args);
+   if (written >= 0 && size_t(written) > mBufferSize)
+   {
+      GrowBuffer(mBuffer, mBufferSize, 2 * size_t(written));
+      va_start(args, fmt);
+      vsnprintf(mBuffer, mBufferSize, fmt, args);
+   }
+#endif
+
+   va_end(args);
+
    print(LOG_INFO, mBuffer);
 }
 

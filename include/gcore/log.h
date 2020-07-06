@@ -123,10 +123,12 @@ namespace gcore
       bool mToFile;
       Path mFilePath;
       mutable std::ofstream mOutFile;
-      mutable char mBuffer[2048];
+      mutable char *mBuffer;
+      mutable size_t mBufferSize;
       
       static Log msSharedLog;
-      static char msBuffer[2048];
+      static char *msBuffer;
+      static size_t msBufferSize;
    };
 }
 

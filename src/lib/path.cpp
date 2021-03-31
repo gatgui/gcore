@@ -287,10 +287,14 @@ bool Path::isAbsolute() const
    {
       return false;
    }
+   if (mPaths[0] == "")
+   {
+      return true;
+   }
 #ifdef _WIN32
    return (mPaths[0].length() >= 2 && mPaths[0][1] == ':');
 #else
-   return (mPaths[0] == "");
+   return false;
 #endif
 }
 

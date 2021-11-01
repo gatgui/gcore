@@ -1,3 +1,27 @@
+# MIT License
+#
+# Copyright (c) 2016 Gaetan Guidet
+#
+# This file is part of gcore.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import excons
 import os
 import sys
@@ -6,6 +30,9 @@ import excons.tools
 from excons.tools import threads
 from excons.tools import dl
 from excons.tools import python
+import SCons.Script # pylint: disable=import-error
+
+# pylint: disable=bad-indentation,no-member
 
 
 excons.InitGlobals()
@@ -13,7 +40,7 @@ excons.InitGlobals()
 static = excons.GetArgument("static", 0, int)
 debugext = excons.GetArgument("debug-extra", 0, int)
 debugrex = excons.GetArgument("debug-rex", 0, int)
-plat = str(Platform())
+plat = str(SCons.Script.Platform())
 
 libdefs = ["GCORE_STATIC"] if static else ["GCORE_EXPORTS"]
 if debugext:
@@ -30,7 +57,7 @@ if not static:
       liblibs = ["rt"]
 
 
-def RequireGcore(env):
+def RequireGcore(env): # pylint: disable=redefined-outer-name
    # Don't need to set CPPPATH, headers are now installed in output directory
    # Don't need to set LIBPATH, library output directory is automatically added by excons
    env.Append(LIBS=["gcore"])
@@ -40,7 +67,7 @@ def RequireGcore(env):
      threads.Require(env)
      dl.Require(env)
 
-   p = str(Platform())
+   p = str(SCons.Script.Platform())
 
    if not p in ["win32", "darwin"]:
      env.Append(LIBS=["rt"])
@@ -48,7 +75,7 @@ def RequireGcore(env):
    if p == "win32":
      env.Append(CPPDEFINES=["_CRT_SECURE_NO_WARNINGS"])
 
-Export("RequireGcore")
+SCons.Script.Export("RequireGcore")
 
 
 prjs = [
@@ -97,7 +124,9 @@ prjs = [
 env = excons.MakeBaseEnv()
 
 # Setup cython
-buildpy = ("gcorepy" in BUILD_TARGETS or "_gcore" in BUILD_TARGETS or "all" in BUILD_TARGETS) 
+buildpy = ("gcorepy" in SCons.Script.BUILD_TARGETS or
+           "_gcore" in SCons.Script.BUILD_TARGETS or
+           "all" in SCons.Script.BUILD_TARGETS) 
 if buildpy and python.RequireCython(env): 
   if excons.GetArgument("cython-gen", 1, int): 
     python.CythonGenerate(env, "src/py/_gcore.pyx", incdirs=["include"], cpp=True) 
@@ -112,11 +141,11 @@ else:
 # Declare targets
 excons.DeclareTargets(env, prjs)
 
-Alias("all", "gcore")
-Alias("all", "gcore_utils")
-Alias("all", "testmodule")
-Alias("all", "gcore_tests")
+SCons.Script.Alias("all", "gcore")
+SCons.Script.Alias("all", "gcore_utils")
+SCons.Script.Alias("all", "testmodule")
+SCons.Script.Alias("all", "gcore_tests")
 if buildpy:
-  Alias("all", "gcorepy")
+  SCons.Script.Alias("all", "gcorepy")
 
-Default(["gcore"])
+SCons.Script.Default(["gcore"])

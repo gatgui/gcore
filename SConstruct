@@ -47,11 +47,11 @@ if not static:
   if not str(SCons.Script.Platform()) in ["win32", "darwin"]:
     liblibs = ["rt"]
 
-def SilentCythonWarnings(_):
+def SilentCythonWarnings(env): # pylint: disable=redefined-outer-name
   if str(SCons.Script.Platform()) == "darwin":
     env.Append(CPPFLAGS=" -Wno-unused-function -Wno-unneeded-internal-declaration")
 
-def RequireGcore(_):
+def RequireGcore(env): # pylint: disable=redefined-outer-name
   # Don't need to set CPPPATH, headers are now installed in output directory
   # Don't need to set LIBPATH, library output directory is automatically added by excons
   env.Append(LIBS=["gcore"])

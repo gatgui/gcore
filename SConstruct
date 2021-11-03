@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (c) 2016 Gaetan Guidet
+# Copyright (c) 2009 Gaetan Guidet
 #
 # This file is part of gcore.
 #

@@ -1,11 +1,37 @@
-import excons
-import os
+# MIT License
+#
+# Copyright (c) 2009 Gaetan Guidet
+#
+# This file is part of gcore.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import re
-import glob
+import excons
 import excons.tools
 from excons.tools import threads
 from excons.tools import dl
 from excons.tools import python
+import SCons.Script
+
+# pylint: disable=bad-indentation,unused-argument,no-member
+
 
 cython = excons.GetArgument("with-cython", "cython")
 static = excons.GetArgument("static", 0, int)
@@ -18,14 +44,14 @@ liblibs = []
 libcustom = []
 if not static:
   libcustom = [threads.Require, dl.Require]
-  if not str(Platform()) in ["win32", "darwin"]:
+  if not str(SCons.Script.Platform()) in ["win32", "darwin"]:
     liblibs = ["rt"]
 
-def SilentCythonWarnings(env):
-  if str(Platform()) == "darwin":
+def SilentCythonWarnings(_):
+  if str(SCons.Script.Platform()) == "darwin":
     env.Append(CPPFLAGS=" -Wno-unused-function -Wno-unneeded-internal-declaration")
 
-def RequireGcore(env):
+def RequireGcore(_):
   # Don't need to set CPPPATH, headers are now installed in output directory
   # Don't need to set LIBPATH, library output directory is automatically added by excons
   env.Append(LIBS=["gcore"])
@@ -35,10 +61,10 @@ def RequireGcore(env):
     threads.Require(env)
     dl.Require(env)
 
-  if not str(Platform()) in ["win32", "darwin"]:
+  if not str(SCons.Script.Platform()) in ["win32", "darwin"]:
     env.Append(LIBS=["rt"])
 
-Export("RequireGcore")
+SCons.Script.Export("RequireGcore")
 
 
 prjs = [
@@ -47,7 +73,7 @@ prjs = [
     "version"      : "0.4.0",
     "soname"       : "libgcore.so.0",
     "install_name" : "libgcore.0.dylib",
-    "srcs"         : glob.glob("src/lib/*.cpp") + glob.glob("src/lib/rex/*.cpp"),
+    "srcs"         : excons.glob("src/lib/*.cpp") + excons.glob("src/lib/rex/*.cpp"),
     "install"      : {"include": ["include/gcore", "include/half.h"]},
     "defs"         : libdefs,
     "custom"       : libcustom,
@@ -72,7 +98,7 @@ prjs = [
   },
   { "name"    : "gcore_tests",
     "type"    : "testprograms",
-    "srcs"    : glob.glob("src/tests/*.cpp"),
+    "srcs"    : excons.glob("src/tests/*.cpp"),
     "deps"    : ["gcore", "testmodule"],
     "custom"  : [RequireGcore],
   }
@@ -83,7 +109,7 @@ env = excons.MakeBaseEnv()
 # Setup cython
 cython_include_re = re.compile(r"^include\s+([\"'])(\S+)\1", re.MULTILINE)
 
-def scan_cython_includes(node, env, path):
+def scan_cython_includes(node, _, path):
    if hasattr(node, "get_text_contents"):
       lst = [m[1] for m in cython_include_re.findall(node.get_text_contents())]
       return lst
@@ -93,7 +119,7 @@ def scan_cython_includes(node, env, path):
    else:
       return []
 
-cython_scanner = Scanner(function=scan_cython_includes, skeys=".pyx")
+cython_scanner = SCons.Script.Scanner(function=scan_cython_includes, skeys=".pyx")
 
 env.Append(SCANNERS=cython_scanner)
 
@@ -104,4 +130,4 @@ excons.DeclareTargets(env, prjs)
 cygen = env.Command(["src/py/_gcore.cpp", "src/py/_gcore.h"], "src/py/_gcore.pyx", "%s -I include --cplus --embed-positions -o $TARGET $SOURCE" % cython)
 
 
-Default(["gcore"])
+SCons.Script.Default(["gcore"])

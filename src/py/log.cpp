@@ -1,3 +1,29 @@
+/*
+MIT License
+
+Copyright (c) 2010 Gaetan Guidet
+
+This file is part of gcore.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 #include "log.h"
 
 PyObject *gPyLogFunc = NULL;
@@ -7,13 +33,13 @@ static void PyLogOutputFunc(const char *msg)
 {
    if (gPyLogFunc == NULL)
    {
-      throw std::runtime_error("mzenv.Log: Null output callback");
+      throw std::runtime_error("gcore.Log: Null output callback");
    }
    PyObject *rv = PyObject_CallFunction(gPyLogFunc, (char*)"s", msg);
    if (rv == NULL)
    {
       PyErr_Clear();
-      throw std::runtime_error("mzenv.Log: callback failed");
+      throw std::runtime_error("gcore.Log: callback failed");
    }
    Py_DECREF(rv);
 }
@@ -22,12 +48,12 @@ void PyLog_SetOutputFunc(PyObject *outputFunc)
 {
    if (outputFunc == NULL)
    {
-      throw std::runtime_error("mzenv.Log.SetOutputFunc: Null object passed");
+      throw std::runtime_error("gcore.Log.SetOutputFunc: Null object passed");
    }
    
    if (PyCallable_Check(outputFunc) == 0)
    {
-      throw std::runtime_error("mzenv.Log.SetOutputFunc: Object is not callable");
+      throw std::runtime_error("gcore.Log.SetOutputFunc: Object is not callable");
    }
    
    if (gPyLogFunc != NULL)

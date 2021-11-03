@@ -6,3 +6,5 @@ excons.cache
 *.xml
 *.json
 *.bfc
+*.cfg
+.vscode

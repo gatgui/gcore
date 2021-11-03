@@ -1,24 +1,27 @@
 /*
+MIT License
 
-Copyright (C) 2010  Gaetan Guidet
+Copyright (c) 2010 Gaetan Guidet
 
 This file is part of gcore.
 
-gcore is free software; you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation; either version 2.1 of the License, or (at
-your option) any later version.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-gcore is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Lesser General Public License for more details.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-You should have received a copy of the GNU Lesser General Public
-License along with this library; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
-USA.
-
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 */
 
 #include <gcore/dirmap.h>
@@ -34,81 +37,135 @@ namespace gcore {
 StringDict Dirmap::msNix2Win;
 StringDict Dirmap::msWin2Nix;
 
-void Dirmap::AddMapping(const String &wpath, const String &npath) {
-  if (wpath.length() == 0 && npath.length() == 0) {
+void Dirmap::AddMapping(const String &from, const String &to) {
+  if (from.length() == 0 && to.length() == 0) {
     return;
   }
   
-  String wpath2(wpath);
-  
-  wpath2.tolower().replace('\\', '/');
-  
-  msNix2Win[npath] = wpath2;
-  msWin2Nix[wpath2] = npath;
+  if (IsWindowsPath(from)) {
+    String from2(from);
+    from2.tolower().replace('\\', '/');
+    if (IsWindowsPath(to)) {
+      // remap win -> win
+      msNix2Win[from2] = to;
+      // std::cerr << "Add (win/win) '" << from2 << "' -> '" << to << "' to msNix2Win" << std::endl;
+    } else {
+      msWin2Nix[from2] = to;
+      msNix2Win[to] = from;
+      // std::cerr << "Add '" << from2 << "' -> '" << to << "' to msWin2Nix" << std::endl;
+      // std::cerr << "Add '" << to << "' -> '" << from << "' to msNix2Win" << std::endl;
+    }
+  } else {
+    if (!IsWindowsPath(to)) {
+      // remap nix -> nix
+      msWin2Nix[from] = to;
+      // std::cerr << "Add (nix/nix)'" << from << "' -> '" << to << "' to msWin2Nix" << std::endl;
+    } else {
+      String to2(to);
+      to2.tolower().replace('\\', '/');
+      msWin2Nix[to2] = from;
+      msNix2Win[from] = to;
+      // std::cerr << "Add '" << to2 << "' -> '" << from << "' to msWin2Nix" << std::endl;
+      // std::cerr << "Add '" << from << "' -> '" << to << "' to msNix2Win" << std::endl;
+    }
+  }
 }
 
-void Dirmap::RemoveMapping(const String &wpath, const String &npath) {
+void Dirmap::RemoveMapping(const String &from, const String &to) {
   StringDict::iterator it;
-  
-  String wpath2(wpath);
-  wpath2.tolower().replace('\\', '/');
-  
-  it = msWin2Nix.find(wpath2);
+
+  String from2(from);
+  String to2(to);
+
+  if (IsWindowsPath(from)) {
+    from2.tolower().replace('\\', '/');
+  }
+  it = msWin2Nix.find(from2);
   if (it != msWin2Nix.end()) {
     msWin2Nix.erase(it);
   }
-  
-  it = msNix2Win.find(npath);
+  it = msNix2Win.find(from2);
+  if (it != msNix2Win.end()) {
+    msNix2Win.erase(it);
+  }
+
+  if (IsWindowsPath(to)) {
+    to2.tolower().replace('\\', '/');
+  }
+  it = msWin2Nix.find(to2);
+  if (it != msWin2Nix.end()) {
+    msWin2Nix.erase(it);
+  }
+  it = msNix2Win.find(to2);
   if (it != msNix2Win.end()) {
     msNix2Win.erase(it);
   }
 }
 
-String Dirmap::Map(const String &path) {
+String Dirmap::_Map(const String &path, StringDict *forcelookup) {
   
-  String lookuppath(path);
-  StringDict *lookupmap;
-  
-  lookuppath.replace('\\', '/');
-  
+  String outpath(path);
+  StringDict *lookupmap = forcelookup;
+
+  bool winpath = IsWindowsPath(path);
+
+  if (!forcelookup) {
+
 #ifdef _WIN32
   
-  if (!IsWindowsPath(path)) {
+    // std::cerr << "Map: Use msNix2Win" << std::endl;
+    if (!winpath) {
+      outpath = _Map(path, &msWin2Nix);
+      winpath = IsWindowsPath(outpath);
+    }
     lookupmap = &msNix2Win;
-  } else {
-    return path;
-  }
-  
+
 #else
 
-  if (IsWindowsPath(path)) {
-    lookuppath.tolower();
+    // std::cerr << "Map: Use msWin2Nix" << std::endl;
+    if (winpath) {
+      outpath = _Map(path, &msNix2Win);
+      winpath = IsWindowsPath(outpath);
+    }
     lookupmap = &msWin2Nix;
-  } else {
-    return path;
-  }
 
 #endif
-  
+  }
+
+  String lookuppath(outpath);
+  if (winpath) {
+    lookuppath.tolower().replace('\\', '/');
+  }
+
   String bestpath;
-  
+
   StringDict::iterator it = lookupmap->begin();
   while (it != lookupmap->end()) {
+    // std::cerr << "Map: Check against '" << it->first << "'..." << std::endl;
     if (lookuppath.startswith(it->first)) {
+      // std::cerr << "Map: Matched" << std::endl;
       if (it->first.length() > bestpath.length()) {
+        // std::cerr << "Map: Longest Match" << std::endl;
         bestpath = it->first;
       }
     }
     ++it;
   }
-  
+
   if (bestpath.length() > 0) {
     lookuppath = (*lookupmap)[bestpath];
-    lookuppath += path.substr(bestpath.length());
+    lookuppath += outpath.substr(bestpath.length());
+#ifndef _WIN32
+    lookuppath.replace('\\', '/');
+#endif
     return lookuppath;
   } else {
-    return path;
+    return outpath;
   }
+}
+
+String Dirmap::Map(const String &path) {
+  return _Map(path, 0);
 }
 
 void Dirmap::ReadMappingsFromFile(const Path &mapfile) {
@@ -128,19 +185,7 @@ void Dirmap::ReadMappingsFromFile(const Path &mapfile) {
         parts[0].strip();
         parts[1].strip();
         
-        bool wp0 = IsWindowsPath(parts[0]);
-        bool wp1 = IsWindowsPath(parts[1]);
-        
-        if (wp0 == wp1) {
-          continue;
-        }
-        
-        if (wp0) {
-          AddMapping(parts[0], parts[1]);
-        } else {
-          AddMapping(parts[1], parts[0]);
-        }
-        
+        AddMapping(parts[0], parts[1]);
       }
       
       std::getline(is, line);

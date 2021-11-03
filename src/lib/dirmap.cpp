@@ -168,6 +168,34 @@ String Dirmap::Map(const String &path) {
   return _Map(path, 0);
 }
 
+void Dirmap::WriteMappingsToFile(const Path &mapfile) {
+  std::ofstream os(mapfile.fullname().c_str());
+  
+  StringDict::iterator it, it2;
+  
+  for (it = msNix2Win.begin(); it != msNix2Win.end(); ++it) {
+    os << it->first << " = " << it->second << std::endl;
+  }
+  
+  for (it = msWin2Nix.begin(); it != msWin2Nix.end(); ++it) {
+    if (!IsWindowsPath(it->first) && !IsWindowsPath(it->second)) {
+      // nix -> nix
+      os << it->first << " = " << it->second << std::endl;
+    } else {
+      // win -> nix
+      it2 = msNix2Win.find(it->second);
+      if (it2 != msNix2Win.end()) {
+        String tmp(it2->second);
+        tmp.tolower().replace('\\', '/');
+        if (tmp == it->first) {
+          continue;
+        }
+      }
+      os << it->first << " = " << it->second << std::endl;
+    }
+  }
+}
+
 void Dirmap::ReadMappingsFromFile(const Path &mapfile) {
   
   if (mapfile.isFile()) {

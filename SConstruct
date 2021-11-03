@@ -70,7 +70,7 @@ SCons.Script.Export("RequireGcore")
 prjs = [
   { "name"         : "gcore",
     "type"         : "staticlib" if static else "sharedlib",
-    "version"      : "0.3.4",
+    "version"      : "0.4.0",
     "soname"       : "libgcore.so.0",
     "install_name" : "libgcore.0.dylib",
     "srcs"         : excons.glob("src/lib/*.cpp") + excons.glob("src/lib/rex/*.cpp"),

@@ -45,6 +45,7 @@ namespace gcore {
       static void AddMapping(const String &from, const String &to);
       static void RemoveMapping(const String &from, const String &to);
       static void ReadMappingsFromFile(const Path &mapfile);
+      static void WriteMappingsToFile(const Path &mapfile);
       static String Map(const String &path);
   };
   

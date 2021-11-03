@@ -38,6 +38,10 @@ class Dirmap(object):
       gcore.RemoveMapping(gcore.String(frompath), gcore.String(topath))
    
    @classmethod
+   def WriteMappingsToFile(klass, char *path):
+      gcore.WriteMappingsToFile(gcore.Path(path))
+
+   @classmethod
    def ReadMappingsFromFile(klass, char* path):
       gcore.ReadMappingsFromFile(gcore.Path(path))
    

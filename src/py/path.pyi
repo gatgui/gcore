@@ -167,14 +167,14 @@ ctypedef public class Path [object PyPath, type PyPathType]:
    
    def dirname(self, sep=None):
       if sep is None:
-         return self._cobj.dirname('/').c_str()
+         return self._cobj.dirname(b'/').c_str()
       elif not type(sep) in [str, unicode] or len(sep) != 1:
          raise Exception("_gcore.Path.dirname expects a string argument of length 1")
       return self._cobj.dirname((<char*?>sep)[0]).c_str()
    
    def fullname(self, sep=None):
       if sep is None:
-         return self._cobj.fullname('/').c_str()
+         return self._cobj.fullname(b'/').c_str()
       elif not type(sep) in [str, unicode] or len(sep) != 1:
          raise Exception("_gcore.Path.fullname expects a string argument of length 1")
       return self._cobj.fullname((<char*?>sep)[0]).c_str()

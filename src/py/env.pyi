@@ -232,7 +232,7 @@ ctypedef public class Env [object PyEnv, type PyEnvType]:
       rv = []
       it = pl.begin()
       while it != pl.end():
-         _val = deref(it).fullname('/')
+         _val = deref(it).fullname(b'/')
          rv.append(_to_pystring(_val, asUnicode=True))
          pinc(it)
       return rv

@@ -40,6 +40,9 @@ int main(int, char**)
    
    gcore::Env env;
    
+   std::cout << "Username(): " << gcore::Env::Username() << std::endl;
+   std::cout << "Hostname(): " << gcore::Env::Hostname() << std::endl;
+   
    env.asDict(all);
    it = all.begin();
    while (it != all.end())

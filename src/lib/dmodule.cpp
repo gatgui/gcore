@@ -26,6 +26,7 @@ SOFTWARE.
 
 #include <gcore/dmodule.h>
 #include <gcore/platform.h>
+#include <gcore/unicode.h>
 
 namespace gcore
 {
@@ -69,9 +70,15 @@ bool DynamicModule::_open(const String &name)
 #ifndef _WIN32
    // RTLD_LAZY / RTLD_NOW (check all exported symbols at load time)
    // RTLD_GLOBAL / RTLD_LOCAL (symbol can be access by using RTLD_DEFAULT or RTLD_NEXT handle, or only through dlopen handle)
-   _mHandle = dlopen(name.c_str(), RTLD_LAZY|RTLD_LOCAL);
+   std::string lname;
+   if (UTF8ToLocale(name.c_str(), lname))
+   {
+      _mHandle = dlopen(lname.c_str(), RTLD_LAZY|RTLD_LOCAL);
+   }
 #else   //_WIN32
-   _mHandle = LoadLibraryEx(name.c_str(), NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+   std::wstring wn;
+   DecodeUTF8(name.c_str(), wn);
+   _mHandle = LoadLibraryExW(wn.c_str(), NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
 #endif  //_WIN32
    return (_mHandle != 0);
 }

@@ -1,0 +1,212 @@
+/*
+MIT License
+
+Copyright (c) 2016 Gaetan Guidet
+
+This file is part of gcore.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+#ifndef __gcore_unicode_h_
+#define __gcore_unicode_h_
+
+#include <gcore/config.h>
+
+namespace gcore
+{
+   enum Encoding
+   {
+      ASCII = 0,
+      ASCII_ISO_8859_1,
+      ASCII_ISO_8859_2,
+      ASCII_ISO_8859_3,
+      ASCII_ISO_8859_4,
+      ASCII_ISO_8859_5,
+      ASCII_ISO_8859_6,
+      ASCII_ISO_8859_7,
+      ASCII_ISO_8859_8,
+      ASCII_ISO_8859_9,
+      ASCII_ISO_8859_10,
+      ASCII_ISO_8859_11,
+      ASCII_ISO_8859_13,
+      ASCII_ISO_8859_14,
+      ASCII_ISO_8859_15,
+      ASCII_ISO_8859_16,
+      UTF_8,
+      UCS_2,
+      UCS_2BE = UCS_2,
+      UCS_2LE,
+      UTF_16,
+      UTF_16BE = UTF_16,
+      UTF_16LE,
+      UCS_4,
+      UCS_4BE = UCS_4,
+      UCS_4LE,
+      UTF_32,
+      UTF_32BE = UTF_32,
+      UTF_32LE,
+      MAX_ENCODING,
+      INVALID_ENCODING = MAX_ENCODING
+   };
+   
+   GCORE_API const char* EncodingToString(Encoding e);
+   GCORE_API Encoding StringToEncoding(const char *s);
+   
+   GCORE_API Encoding ReadBOM(FILE *f);
+   GCORE_API Encoding ReadBOM(std::istream &is);
+   GCORE_API Encoding ReadBOM(const char *filepath);
+   GCORE_API Encoding ReadBOM(const wchar_t *filepath);
+   
+   GCORE_API size_t WriteBOM(FILE *f, Encoding e);
+   GCORE_API size_t WriteBOM(std::ostream &os, Encoding e);
+   
+   inline size_t BOMSize(Encoding e)
+   {
+      switch (e)
+      {
+      case UTF_8:
+         return 3;
+      case UTF_16BE:
+      case UTF_16LE:
+         return 2;
+      case UTF_32BE:
+      case UTF_32LE:
+         return 4;
+      default:
+         return 0;
+      }
+   }
+   
+   // ---
+   
+   GCORE_API bool IsBigEndian();
+   GCORE_API bool IsASCII(const char *s);
+   GCORE_API bool IsUTF8(const char *s);
+   
+   inline bool IsUTF8SingleChar(char c)
+   {
+      // ASCII bytes starts with 0xxxxxxx
+      return ((c & 0x80) == 0x00);
+   }
+   
+   inline bool IsUTF8LeadingChar(char c)
+   {
+      // Leading multi bytes starts with 11xxxxxx
+      return ((c & 0xC0) == 0xC0);
+   }
+   
+   inline bool IsUTF8ContinuationChar(char c)
+   {
+      // Continuation bytes starts with 10xxxxxx
+      return ((c & 0xC0) == 0x80);
+   }
+   
+   inline char* UTF8Next(char *s)
+   {
+      char *n = s + 1;
+      while (IsUTF8ContinuationChar(*n)) ++n;
+      return n;
+   }
+   
+   inline const char* UTF8Next(const char *s)
+   {
+      const char *n = s + 1;
+      while (IsUTF8ContinuationChar(*n)) ++n;
+      return n;
+   }
+   
+   inline char* UTF8Prev(char *s)
+   {
+      char *n = s - 1;
+      while (IsUTF8ContinuationChar(*n)) --n;
+      return n;
+   }
+   
+   inline const char* UTF8Prev(const char *s)
+   {
+      const char *n = s - 1;
+      while (IsUTF8ContinuationChar(*n)) --n;
+      return n;
+   }
+   
+   GCORE_API size_t UTF8CountChars(char *s);
+   
+   // --- Encode/Decode single code points to/from utf-8
+   
+   // Unicode code points are 32 bits but only values from 0x00000000 to 0x0010FFFF are used
+   typedef unsigned int Codepoint;
+   
+   GCORE_API extern const Codepoint InvalidCodepoint;
+   
+   inline bool IsValidCodepoint(Codepoint cp)
+   {
+      return (cp < 0x0000D800 || (0x0000DFFF < cp && cp <= 0x0010FFFF));
+   }
+   
+   enum ASCIICodepointFormat
+   {
+      ACF_16 = 0, // 16 bits: \u0000
+      ACF_32, // 32 bits: \U00000000
+      ACF_VARIABLE // \u{000}
+   };
+   
+   // Return 0 on error or the number of characters written to out
+   GCORE_API size_t CodepointToASCII(Codepoint cp, ASCIICodepointFormat fmt, char *out, size_t outlen);
+   // Return 0 on error or the number of characters read from in
+   GCORE_API size_t ASCIIToCodepoint(ASCIICodepointFormat fmt, const char *in, Codepoint &cp);
+   GCORE_API size_t ASCIIToCodepoint(const char *in, Codepoint &cp);
+   
+   // Encode a single Codepoint to utf-8
+   //   Return number of bytes required to encode the given Codepoint
+   //     output will be placed in out whose maximum size is specified by outlen
+   //   If any error occurs, 0 is returned
+   GCORE_API size_t EncodeUTF8(Codepoint cp, char *out, size_t outlen);
+   // Decode a single Codepoint from utf-8 string
+   //   Returns InvalidCodepoint on error
+   GCORE_API Codepoint DecodeUTF8(const char *in, size_t inlen);
+   
+   // --- Encode/Decode strings to/from utf-8
+   
+   // Encode 'e' encoded string 's' to UTF-8
+   GCORE_API bool EncodeUTF8(Encoding e, const char *s, std::string &out);
+   GCORE_API bool EncodeUTF8(Encoding e, const char *s, size_t len, std::string &out);
+   // Encode UTF-16/32 wide string to UTF-8
+   GCORE_API bool EncodeUTF8(const wchar_t *s, std::string &out);
+   GCORE_API bool EncodeUTF8(const wchar_t *s, size_t len, std::string &out);
+   // Decode UTF-8 string to 'e' encoding
+   GCORE_API bool DecodeUTF8(const char *s, Encoding e, std::string &out);
+   GCORE_API bool DecodeUTF8(const char *s, size_t len, Encoding e, std::string &out);
+   // Decode UTF-8 string to UTF-16/32
+   GCORE_API bool DecodeUTF8(const char *s, std::wstring &out);
+   GCORE_API bool DecodeUTF8(const char *s, size_t len, std::wstring &out);
+   
+   GCORE_API bool LocaleToWide(const char *s, std::wstring &out);
+   GCORE_API bool WideToLocale(const wchar_t *ws, std::string &out);
+   
+   GCORE_API bool LocaleToUTF8(const char *s, std::string &out);
+   GCORE_API bool LocaleToUTF8_ip(std::string &str);
+   GCORE_API bool UTF8ToLocale(const char *s, std::string &out);
+   GCORE_API bool UTF8ToLocale_ip(std::string &str);
+
+   GCORE_API void EncodeNonPrintableChars(const char *s, std::string &out);
+   GCORE_API void DecodeNonPrintableChars(const char *s, std::string &out);
+}
+
+#endif

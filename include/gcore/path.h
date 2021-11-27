@@ -58,6 +58,7 @@ namespace gcore
       
       Path();
       Path(const char *s);
+      Path(const wchar_t *ws);
       Path(const String &s);
       Path(const Path &rhs);
       ~Path();
@@ -65,6 +66,7 @@ namespace gcore
       Path& operator=(const Path &rhs);
       Path& operator=(const String &s);
       Path& operator=(const char *s);
+      Path& operator=(const wchar_t *ws);
       
       Path& operator+=(const Path &rhs);
       
@@ -92,21 +94,32 @@ namespace gcore
       String basename() const;
       String dirname(char sep='/') const;
       String fullname(char sep='/') const;
-      
-      bool isDir() const;
-      bool isFile() const;
-      
-      bool exists() const;
-      
-      Date lastModification() const;
-      
       // file extension without .
       String extension() const;
       bool checkExtension(const String &ext) const;
-      size_t fileSize() const;
+      bool setExtension(const String &ext);
       
-      bool createDir(bool recursive=false) const;
-      bool removeFile() const;
+      bool exists() const;
+      bool isDir() const;
+      bool isFile() const;
+      
+      size_t fileSize() const;
+      Date lastModification() const;
+      
+      Status createDir(bool recursive) const;
+      
+      // For files:
+      //   - if 'to' doesn't exist a file of that name will be created
+      //   - if 'to' exists and is a directory, a file with the same basename as this will be created in 'to'
+      //   - 'recursive' doesn't have any effect
+      Status copy(const Path &to, bool recursive, bool createMissingDirs, bool overwrite) const;
+      Status remove(bool recursive);
+      
+      //Status copyStats(const Path &to) const;
+      
+      FILE* open(const char *mode) const;
+      bool open(std::ifstream &inf, std::ios::openmode mode=std::ios::in) const;
+      bool open(std::ofstream &outf, std::ios::openmode mode=std::ios::out) const;
       
       // flags is a bit wise combination of constants defined in ForEachTarget enum
       void forEach(ForEachFunc cb, bool recurse=false, unsigned short flags=FE_ALL) const;
@@ -115,10 +128,32 @@ namespace gcore
       String pop();
       Path& push(const String &s);
       
+#ifdef _WIN32
+      const std::wstring& internalName() const;
+#else
+      const std::string& internalName() const;
+#endif
+      
    protected:
       
+      void _updateFullName();
+      void _updateInternals() const;
+      
+      Status _removeFile() const;
+      Status _removeDir(bool recursive) const;
+      
+      Status _copyFile(const Path &to, bool createMissingDirs, bool overwrite) const;
+      Status _copyDir(const Path &to, bool recursive, bool createMissingDirs, bool overwrite) const;
+      
+   protected:
+   
       StringList mPaths;
       String mFullName;
+#ifdef _WIN32
+      mutable std::wstring mFullNameW;
+#else
+      mutable std::string mFullNameL;
+#endif
    };
    
    class GCORE_API MMap
@@ -189,6 +224,52 @@ namespace gcore
    {
       return int(mPaths.size());
    }
+   
+   inline Status Path::copy(const Path &to, bool recursive, bool createMissingDirs, bool overwrite) const
+   {
+      if (isDir())
+      {
+         return _copyDir(to, recursive, createMissingDirs, overwrite);
+      }
+      else if (isFile())
+      {
+         return _copyFile(to, createMissingDirs, overwrite);
+      }
+      else
+      {
+         return Status(false, "gcore::Path::copy: Invalid path '%s'.", mFullName.c_str());
+      }
+   }
+   
+   inline Status Path::remove(bool recursive)
+   {
+      if (isDir())
+      {
+         return _removeDir(recursive);
+      }
+      else if (isFile())
+      {
+         return _removeFile();
+      }
+      else
+      {
+         return Status(false, "gcore::Path::remove: Invalid path '%s'.", mFullName.c_str());
+      }
+   }
+   
+#ifdef _WIN32
+   inline const std::wstring& Path::internalName() const
+   {
+      _updateInternals();
+      return mFullNameW;
+   }
+#else
+   inline const std::string& Path::internalName() const
+   {
+      _updateInternals();
+      return mFullNameL;
+   }
+#endif
    
    inline Path operator+(const Path &p0, const Path &p1)
    {

@@ -81,11 +81,20 @@ ctypedef public class Path [object PyPath, type PyPathType]:
    def depth(self):
       return self._cobj.depth()
    
-   def removeFile(self):
-      return self._cobj.removeFile()
+   def remove(self, recursive):
+      cdef gcore.Status stat
+      stat = self._cobj.remove(<bint?>recursive)
+      return stat.succeeded()
    
-   def createDir(self, recursive=False):
-      return self._cobj.createDir(<bint?>recursive)
+   def copy(self, to, recursive, createMissingDirs, overwrite):
+      cdef gcore.Status stat
+      stat = self._cobj.copy(deref((<Path?>to)._cobj), <bint?>recursive, <bint?>createMissingDirs, <bint?>overwrite)
+      return stat.succeeded()
+   
+   def createDir(self, recursive):
+      cdef gcore.Status stat
+      stat = self._cobj.createDir(<bint?>recursive)
+      return stat.succeeded()
    
    def isDir(self):
       return self._cobj.isDir()
@@ -175,6 +184,9 @@ ctypedef public class Path [object PyPath, type PyPathType]:
    
    def checkExtension(self, e):
       return self._cobj.checkExtension(gcore.String(<char*?>e))
+   
+   def setExtension(self, e):
+      return self._cobj.setExtension(gcore.String(<char*?>e))
    
    def lastModification(self):
       import datetime, os

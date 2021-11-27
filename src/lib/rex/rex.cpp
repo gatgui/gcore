@@ -137,7 +137,7 @@ size_t RexMatch::offset(size_t i) const
    {
       return 0;
    }
-   return mGroups[i].first;
+   return mGroups[i].first; // - mRange.first;
 }
 
 size_t RexMatch::length(size_t i) const
@@ -212,11 +212,15 @@ bool Rex::valid() const
 void Rex::set(const String &s)
 {
    ParseInfo info;
-   info.numGroups = 0;
    
    mExp = s;
    
-   const char *pc = mExp.c_str();
+   info.numGroups = 0;
+   info.beg = mExp.c_str();
+   info.len = mExp.length();
+   info.end = info.beg + info.len;
+   
+   const char *pc = info.beg;
    
    mCode = ParseExpression(&pc, info);
    mValid = (mCode != 0);

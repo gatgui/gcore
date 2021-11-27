@@ -26,6 +26,8 @@ SOFTWARE.
 #ifndef __gcore_rex_parse_h_
 #define __gcore_rex_parse_h_
 
+#include <cstdlib>
+
 namespace gcore
 {
    class Instruction;
@@ -34,6 +36,9 @@ namespace gcore
    struct ParseInfo
    {
      int numGroups;
+     const char *beg;
+     const char *end;
+     size_t len;
      // nothing else?
      // if we had named group -> group name to group index mapping
    };

@@ -36,7 +36,8 @@ namespace gcore
    class GCORE_API RexMatch;
    class GCORE_API StringList;
    
-   // as String is a subclass of std::string, we defined the operators using std::string 
+   // All narrow string are considered to be UTF-8 encoded
+   // Wide strings are considered wither UTF-16 or UTF-32 depending in wchar_t size
    
    class GCORE_API String : public std::string
    {
@@ -47,6 +48,10 @@ namespace gcore
       String(const std::string &str, size_t pos, size_t n=npos);
       String(const char *s);
       String(const char *s, size_t n);
+      String(const std::wstring &rhs);
+      String(const std::wstring &rhs, size_t pos, size_t n=npos);
+      String(const wchar_t *ws);
+      String(const wchar_t *ws, size_t n);
       String(char c);
       String(unsigned char uc);
       String(short s);
@@ -64,6 +69,8 @@ namespace gcore
       
       String& operator=(const std::string &rhs);
       String& operator=(const char *s);
+      String& operator=(const std::wstring &rhs);
+      String& operator=(const wchar_t *ws);
       String& operator=(char c);
       String& operator=(unsigned char uc);
       String& operator=(short s);

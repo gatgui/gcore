@@ -34,8 +34,8 @@ import SCons.Script # pylint: disable=import-error
 
 # pylint: disable=bad-indentation,no-member
 
-excons.InitGlobals()
 
+excons.InitGlobals()
 
 static = excons.GetArgument("static", 0, int)
 debugext = excons.GetArgument("debug-extra", 0, int)
@@ -102,6 +102,12 @@ prjs = [
       "custom"    : [RequireGcore, python.SoftRequire, python.SilentCythonWarnings],
       "install"   : {python.ModulePrefix(): ["src/py/gcore.py", "src/py/tests"]}
    },
+   {  "name"   : "gcore_utils",
+      "type"   : "testprograms",
+      "srcs"   : glob.glob("src/bin/*.cpp"),
+      "deps"   : ["gcore"],
+      "custom" : [RequireGcore]
+   },
    {  "name"    : "testmodule",
       "type"    : "dynamicmodule",
       "prefix"  : "bin",
@@ -127,7 +133,7 @@ if buildpy and python.RequireCython(env):
   elif not os.path.isfile("src/py/_gcore.cpp") or not os.path.isfile("src/py/_gcore.h"): 
     print("Cannot build gcore python module: cython sources not generated") 
     sys.exit(1) 
-else: 
+else:
   # Remove gcorepy target
   buildpy = False
   prjs = filter(lambda x: x.get("name", "") != "_gcore", prjs)
@@ -136,6 +142,7 @@ else:
 excons.DeclareTargets(env, prjs)
 
 SCons.Script.Alias("all", "gcore")
+SCons.Script.Alias("all", "gcore_utils")
 SCons.Script.Alias("all", "testmodule")
 SCons.Script.Alias("all", "gcore_tests")
 if buildpy:

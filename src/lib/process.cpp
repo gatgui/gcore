@@ -27,6 +27,7 @@ SOFTWARE.
 #include <gcore/process.h>
 #include <gcore/platform.h>
 #include <gcore/env.h>
+#include <gcore/unicode.h>
 
 //------------------------------------------------------------------------------
 
@@ -226,48 +227,6 @@ Process::Process()
    SetDefaultOptions(mOpts);
 }
 
-Process::Process(const char *cmdline, Process::Options *opts, Status *status)
-   : mPID(INVALID_PID)
-   , mStdArgs(0)
-   , mCmdLine("")
-   , mReturnCode(-1)
-{
-   if (opts)
-   {
-      mOpts = *opts;
-   }
-   else
-   {
-      SetDefaultOptions(mOpts);
-   }
-   Status stat = run(cmdline);
-   if (status)
-   {
-      *status = stat;
-   }
-}
-
-Process::Process(int argc, const char **argv, Process::Options *opts, Status *status)
-   : mPID(INVALID_PID)
-   , mStdArgs(0)
-   , mCmdLine("")
-   , mReturnCode(-1)
-{
-   if (opts)
-   {
-      mOpts = *opts;
-   }
-   else
-   {
-      SetDefaultOptions(mOpts);
-   }
-   Status stat = run(argc, argv);
-   if (status)
-   {
-      *status = stat;
-   }
-}
-
 Process::Process(const String &cmdline, Process::Options *opts, Status *status)
    : mPID(INVALID_PID)
    , mStdArgs(0)
@@ -338,7 +297,7 @@ bool Process::canReadOut() const
    return mReadOutPipe.canRead();
 }
 
-int Process::readOut(char *buffer, int size, Status *status) const
+int Process::readOut(void *buffer, int size, Status *status) const
 {
    return mReadOutPipe.read(buffer, size, status);
 }
@@ -348,7 +307,7 @@ bool Process::canReadErr() const
    return mReadErrPipe.canRead();
 }
 
-int Process::readErr(char *buffer, int size, Status *status) const
+int Process::readErr(void *buffer, int size, Status *status) const
 {
    return mReadErrPipe.read(buffer, size, status);
 }
@@ -358,7 +317,7 @@ bool Process::canWriteIn() const
    return mWritePipe.canWrite();
 }
 
-int Process::write(const char *buffer, int size, Status *status) const
+int Process::write(const void *buffer, int size, Status *status) const
 {
    return mWritePipe.write(buffer, size, status);
 }
@@ -674,7 +633,7 @@ Status Process::run()
    mPID = 0;
    
    PROCESS_INFORMATION pinfo;
-   STARTUPINFO sinfo;
+   STARTUPINFOW sinfo;
    
    ZeroMemory(&sinfo, sizeof(sinfo));
    
@@ -761,8 +720,10 @@ Status Process::run()
    }
    
    // Don't try to inheritHandles when using .bat files
-   if (CreateProcess(NULL, (char*)mCmdLine.c_str(), NULL, NULL,
-                     (isBat ? FALSE : TRUE), 0, 0, NULL, &sinfo, &pinfo))
+   std::wstring wcmd;
+   DecodeUTF8(mCmdLine.c_str(), wcmd);
+   if (CreateProcessW(NULL, (wchar_t*)wcmd.c_str(), NULL, NULL,
+                      (isBat ? FALSE : TRUE), 0, 0, NULL, &sinfo, &pinfo))
    {
       // In parent only
       
@@ -800,15 +761,17 @@ Status Process::run()
 
 }
 
-Status Process::run(const char *cmdline)
+Status Process::run(const String &cmdline)
 {
-   if (!cmdline)
+   if (cmdline.length() == 0)
    {
       return Status(false, "gcore::Process::run: Invalid command.");
    }
+   
    String tmp = cmdline;
    bool inSingleQuote = false;
    bool inDoubleQuote = false;
+   
    for (size_t i=0; i<tmp.length(); ++i)
    {
       if (tmp[i] == '\"')
@@ -855,49 +818,6 @@ Status Process::run(const char *cmdline)
    }
    
    return run();
-}
-
-Status Process::run(int argc, const char **argv)
-{
-   mArgs.clear();
-   for (int i=0; i<argc; ++i)
-   {
-      if (!argv[i])
-      {
-         return Status(false, "gcore::Process::run: Invalid argument at %d", i);
-      }
-      mArgs.push(argv[i]);
-   }
-   return run();
-}
-
-Status Process::run(int argc, ...)
-{
-   va_list va;
-   va_start(va, argc);
-   Status rv = run(argc, va);
-   va_end(va);
-   return rv;
-}
-
-Status Process::run(int argc, va_list va)
-{
-   mArgs.clear();
-   for (int i=0; i<argc; ++i)
-   {
-      const char *carg = va_arg(va, const char*);
-      if (!carg)
-      {
-         return Status(false, "gcore::Process::run: Invalid argument at %d.", i);
-      }
-      mArgs.push(carg);
-   }
-   return run();
-}
-
-Status Process::run(const String &cmdline)
-{
-   return run(cmdline.c_str());
 }
 
 Status Process::run(const StringList &args)

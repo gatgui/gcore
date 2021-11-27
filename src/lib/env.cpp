@@ -27,6 +27,7 @@ SOFTWARE.
 #include <gcore/env.h>
 #include <gcore/platform.h>
 #include <gcore/log.h>
+#include <gcore/unicode.h>
 
 namespace gcore
 {
@@ -67,17 +68,41 @@ String Env::Username()
 
 String Env::Hostname()
 {
-   char buffer[1024];
+   String rv;
 #ifdef _WIN32
+   std::vector<wchar_t> buffer(1024, 0);
    DWORD sz = 1024;
-   //ComputerNameDnsHostname?
-   GetComputerNameEx(ComputerNamePhysicalDnsHostname, buffer, &sz);
-   return buffer;
+   // or should that be ComputerNameDnsHostname?
+   if (GetComputerNameExW(ComputerNamePhysicalDnsHostname, &buffer[0], &sz))
+   {
+      EncodeUTF8(&buffer[0], rv);
+   }
+   else
+   {
+      if (GetLastError() == ERROR_MORE_DATA)
+      {
+         buffer.resize(sz, 0);
+         if (GetComputerNameExW(ComputerNamePhysicalDnsHostname, &buffer[0], &sz))
+         {
+            EncodeUTF8(&buffer[0], rv);
+         }
+      }
+   }
+   
 #else
-   gethostname(buffer, 1024);
-   buffer[1023] = '\0';
-   return buffer;
+   std::vector<char> buffer(1024, '\0');
+   int ret = gethostname(&buffer[0], buffer.size());
+   while (ret != 0 && errno == ENAMETOOLONG)
+   {
+      buffer.resize(2 * buffer.size(), '\0');
+      ret = gethostname(&buffer[0], buffer.size());
+   }
+   if (ret == 0)
+   {
+      rv = &buffer[0];
+   }
 #endif
+   return rv;
 }
 
 String Env::Get(const String &k)
@@ -111,21 +136,24 @@ void Env::ForEachInPath(const String &e, Env::ForEachInPathFunc callback)
    {
       return;
    }
-   char *envVal = getenv(e.c_str());
-   if (envVal)
+   
+   String v = Env().get(e);
+   if (v.length() == 0)
    {
-      String v = envVal;
-      StringList lst;
-      v.split(PATH_SEP, lst);
-      for (size_t i=0; i<lst.size(); ++i)
+      return;
+   }
+   
+   StringList lst;
+   v.split(PATH_SEP, lst);
+   
+   for (size_t i=0; i<lst.size(); ++i)
+   {
+      if (lst[i].length() > 0)
       {
-         if (lst[i].length() > 0)
+         gcore::Path path(lst[i]);
+         if (!callback(path))
          {
-            gcore::Path path(lst[i]);
-            if (!callback(path))
-            {
-               return;
-            }
+            return;
          }
       }
    }
@@ -211,17 +239,24 @@ String Env::get(const String &k) const
 {
    String rv;
 #ifndef _WIN32
-   char *v = getenv(k.c_str());
-   if (v != NULL)
+   String lk;
+   if (UTF8ToLocale(k.c_str(), lk))
    {
-      rv = v;
+      char *v = getenv(lk.c_str());
+      if (v != NULL)
+      {
+         LocaleToUTF8(v, rv);
+      }
    }
 #else
-   DWORD sz = GetEnvironmentVariableA(k.c_str(), NULL, 0);
+   std::wstring wk, wv;
+   DecodeUTF8(k.c_str(), wk);
+   DWORD sz = GetEnvironmentVariableW(wk.c_str(), NULL, 0);
    if (sz > 0)
    {
-      rv.resize(sz-1);
-      GetEnvironmentVariableA(k.c_str(), (char*) rv.data(), sz);
+      wv.resize(sz - 1);
+      GetEnvironmentVariableW(wk.c_str(), (wchar_t*) wv.data(), sz);
+      EncodeUTF8(wv.c_str(), rv);
    }
 #endif
    return rv;
@@ -229,46 +264,75 @@ String Env::get(const String &k) const
 
 void Env::set(const String &k, const String &v, bool overwrite)
 {
+#ifndef _WIN32
+   std::string lk;
+   if (!UTF8ToLocale(k.c_str(), lk))
+   {
+      Log::PrintWarning("[gcore] Env::set: Cannot set key \"%s\". (Invalid characters in key for current locale)", k.c_str());
+      return;
+   }
    if (v.length() == 0)
    {
-#ifndef _WIN32
-      if (overwrite && getenv(k.c_str()) != NULL)
-#else
-      if (overwrite && GetEnvironmentVariableA(k.c_str(), NULL, 0) != 0)
-#endif
+      if (overwrite && getenv(lk.c_str()) != NULL)
       {
-         unset(k);
+         unsetenv(lk.c_str());
       }
-      return;
    }
    else
    {
-#ifndef _WIN32
-      setenv(k.c_str(), v.c_str(), (overwrite ? 1 : 0));
-#else
-      if (overwrite || GetEnvironmentVariableA(k.c_str(), NULL, 0) == 0)
+      std::string lv;
+      if (UTF8ToLocale(v.c_str(), lv))
       {
-         SetEnvironmentVariableA(k.c_str(), v.c_str());
+         setenv(lk.c_str(), lv.c_str(), (overwrite ? 1 : 0));
       }
-#endif
+      else
+      {
+         Log::PrintWarning("[gcore] Env::set: Cannot set key \"%s\". (Invalid characters in value for current locale)", k.c_str());
+      }
    }
+#else
+   std::wstring wk;
+   DecodeUTF8(k.c_str(), wk);
+   if (v.length() == 0)
+   {
+      if (overwrite && GetEnvironmentVariableW(wk.c_str(), NULL, 0) != 0)
+      {
+         SetEnvironmentVariableW(wk.c_str(), NULL);
+      }
+   }
+   else
+   {
+      std::wstring wv;
+      DecodeUTF8(v.c_str(), wv);
+      if (overwrite || GetEnvironmentVariableW(wk.c_str(), NULL, 0) == 0)
+      {
+         SetEnvironmentVariableW(wk.c_str(), wv.c_str());
+      }
+   }
+#endif
 }
 
 void Env::unset(const String &k)
 {
 #ifndef _WIN32  
-   unsetenv(k.c_str());
+   std::string lk;
+   UTF8ToLocale(k.c_str(), lk);
+   unsetenv(lk.c_str());
 #else
-   SetEnvironmentVariableA(k.c_str(), NULL);
+   std::wstring wk;
+   DecodeUTF8(k.c_str(), wk);
+   SetEnvironmentVariableW(wk.c_str(), NULL);
 #endif
 }
 
 size_t Env::asDict(Env::Dict &d) const
 {
    d.clear();
+   
 #ifndef _WIN32
    int idx = 0;
    char *curvar = environ[idx];
+   
    while (curvar != 0)
    {
       char *es = strchr(curvar, '=');
@@ -276,12 +340,20 @@ size_t Env::asDict(Env::Dict &d) const
       {
          size_t klen = es - curvar;
          size_t vlen = strlen(curvar) - klen - 1;
+         
          if (klen > 0)
          {
             String key, val;
             key.insert(0, curvar, klen);
-            val.insert(0, es+1, vlen);
-            d[key] = val;
+            val.insert(0, es + 1, vlen);
+            if (LocaleToUTF8_ip(key) && LocaleToUTF8_ip(val))
+            {
+               d[key] = val;
+            }
+            else
+            {
+               Log::PrintWarning("[gcore] Env::asDict: Ignore env string \"%s\". (Bad locale)", curvar);
+            }
          }
          else
          {
@@ -295,33 +367,41 @@ size_t Env::asDict(Env::Dict &d) const
       curvar = environ[idx];
    }
 #else
-   char *curenv = GetEnvironmentStringsA();
-   char *curvar = curenv;
-   while (*curvar != '\0')
+   wchar_t *allenv = GetEnvironmentStringsW();
+   wchar_t *curenv = allenv;
+   String keyval, key, val;
+   
+   while (*curenv)
    {
-      size_t len = strlen(curvar);
-      char *es = strchr(curvar, '=');
-      if (es != 0)
+      if (EncodeUTF8(curenv, keyval))
       {
-         if (es == curvar)
-         { 
-            if (mVerbose)
-            {
-               Log::PrintInfo("[gcore] Env::asDict: Ignore env string \"%s\"", curvar);
-            }
-         }
-         else
+         size_t pos = keyval.find('=');
+         
+         if (pos != std::string::npos)
          {
-            *es = '\0';
-            if (strlen(curvar) > 0)
+            if (pos == 0)
+            { 
+               if (mVerbose)
+               {
+                  Log::PrintInfo("[gcore] Env::asDict: Ignore env string \"%s\"", keyval.c_str());
+               }
+            }
+            else
             {
-               d[curvar] = es+1;
+               key = keyval.substr(0, pos);
+               val = keyval.substr(pos+1);
+               
+               if (key.length() > 0)
+               {
+                  d[key] = val;
+               }
             }
          }
       }
-      curvar += len + 1;
+      
+      curenv += wcslen(curenv) + 1;
    }
-   FreeEnvironmentStrings(curenv);
+   FreeEnvironmentStringsW(allenv);
 #endif
    return d.size();
 }

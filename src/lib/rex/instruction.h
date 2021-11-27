@@ -28,16 +28,18 @@ SOFTWARE.
 #define __gcore_rex_instruction_h_
 
 #include <gcore/string.h>
+#include <gcore/unicode.h>
 
 namespace gcore
 {
 
-   struct MatchInfo
+   class MatchInfo
    {
+   public:
       const char *beg;
       const char *end;
       unsigned short flags;
-      std::vector<std::pair<int, int> > gmatch;
+      List<std::pair<int, int> > gmatch;
       std::vector<unsigned short> fstack;
       std::vector<const char*> cstack;
       bool once;
@@ -47,6 +49,7 @@ namespace gcore
       MatchInfo();
       MatchInfo(const char *b, const char *e, unsigned short flags, size_t ngroups);
       MatchInfo(const MatchInfo &rhs);
+      ~MatchInfo();
       
       MatchInfo& operator=(const MatchInfo &rhs);
    };
@@ -109,6 +112,24 @@ namespace gcore
    protected:
       
       char mChar;
+      char mUpperChar;
+      char mLowerChar;
+   };
+
+   class UnicodeSingle : public Instruction
+   {
+   public:
+      
+      UnicodeSingle(Codepoint c);
+      virtual ~UnicodeSingle();
+      
+      virtual Instruction* clone() const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+   
+   protected:
+      
+      Codepoint mCode;
       char mUpperChar;
       char mLowerChar;
    };
@@ -244,6 +265,23 @@ namespace gcore
       
       char mFrom;
       char mTo;
+   };
+
+   class UnicodeCharRange : public Instruction
+   {
+   public:
+      
+      UnicodeCharRange(Codepoint from, Codepoint to);
+      virtual ~UnicodeCharRange();
+      
+      virtual Instruction* clone() const;
+      virtual void toStream(std::ostream &os, const String &indent="") const;
+      virtual const char* match(const char *cur, MatchInfo &info) const;
+      
+   protected:
+      
+      Codepoint mFrom;
+      Codepoint mTo;
    };
 
    class CharClass : public Instruction

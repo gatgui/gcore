@@ -27,6 +27,7 @@ SOFTWARE.
 #include <gcore/path.h>
 #include <gcore/platform.h>
 #include <gcore/dirmap.h>
+#include <gcore/unicode.h>
 
 namespace gcore
 {
@@ -65,6 +66,11 @@ Path::Path(const char *s)
    operator=(s);
 }
 
+Path::Path(const wchar_t *ws)
+{
+   operator=(ws);
+}
+
 Path::Path(const String &s)
 {
    operator=(s);
@@ -73,6 +79,11 @@ Path::Path(const String &s)
 Path::Path(const Path &rhs)
    : mPaths(rhs.mPaths)
    , mFullName(rhs.mFullName)
+#ifdef _WIN32
+   , mFullNameW(rhs.mFullNameW)
+#else
+   , mFullNameL(rhs.mFullNameL)
+#endif
 {
 }
 
@@ -85,6 +96,11 @@ Path& Path::operator=(const Path &rhs)
    {
       mPaths = rhs.mPaths;
       mFullName = rhs.mFullName;
+#ifdef _WIN32
+      mFullNameW = rhs.mFullNameW;
+#else
+      mFullNameL = rhs.mFullNameL;
+#endif
    }
    return *this;
 }
@@ -106,13 +122,11 @@ Path& Path::operator=(const char *s)
       mPaths[i].strip();
       if (mPaths[i].length() == 0)
       {
-//#ifndef _WIN32
          if (i == 0)
          {
             ++i;
             continue;
          }
-//#endif
          mPaths.erase(mPaths.begin()+i);
       }
       else
@@ -120,7 +134,35 @@ Path& Path::operator=(const char *s)
          ++i;
       }
    }
-   mFullName = fullname('/');
+   _updateFullName();
+   return *this;
+}
+
+Path& Path::operator=(const wchar_t *ws)
+{
+   String tmp(ws);
+   //tmp = Dirmap::Map(tmp);
+   tmp.replace('\\', '/');
+   tmp.split('/', mPaths);
+   size_t i = 0;
+   while (i < mPaths.size())
+   {
+      mPaths[i].strip();
+      if (mPaths[i].length() == 0)
+      {
+         if (i == 0)
+         {
+            ++i;
+            continue;
+         }
+         mPaths.erase(mPaths.begin()+i);
+      }
+      else
+      {
+         ++i;
+      }
+   }
+   _updateFullName();
    return *this;
 }
 
@@ -129,7 +171,7 @@ Path& Path::operator+=(const Path &rhs)
    if (isDir() && !rhs.isAbsolute())
    {
       mPaths.insert(mPaths.end(), rhs.mPaths.begin(), rhs.mPaths.end());
-      mFullName = fullname('/');
+      _updateFullName();
    }
    return *this;
 }
@@ -198,6 +240,31 @@ const String& Path::operator[](int idx) const
    return _sEmpty;
 }
 
+void Path::_updateFullName()
+{
+   mFullName = fullname('/');
+#ifdef _WIN32
+   mFullNameW.clear();
+#else
+   mFullNameL.clear();
+#endif
+}
+
+void Path::_updateInternals() const
+{
+#ifdef _WIN32
+   if (mFullNameW.empty())
+   {
+      DecodeUTF8(mFullName.c_str(), mFullNameW);
+   }
+#else
+   if (mFullNameL.empty())
+   {
+      UTF8ToLocale(mFullName.c_str(), mFullNameL);
+   }
+#endif
+}
+
 String Path::pop()
 {
    String rv;
@@ -205,7 +272,7 @@ String Path::pop()
    {
       rv = mPaths.back();
       mPaths.pop_back();
-      mFullName = fullname('/');
+      _updateFullName();
    }
    return rv;
 }
@@ -213,7 +280,7 @@ String Path::pop()
 Path& Path::push(const String &s)
 {
    mPaths.push_back(s);
-   mFullName = fullname('/');
+   _updateFullName();
    return *this;
 }
 
@@ -241,7 +308,7 @@ Path& Path::makeAbsolute()
    {
       Path cwd = CurrentDir();
       mPaths.insert(mPaths.begin(), cwd.mPaths.begin(), cwd.mPaths.end());
-      mFullName = fullname('/');
+      _updateFullName();
    }
    return *this;
 }
@@ -287,7 +354,7 @@ Path& Path::normalize()
          ++i;
       }
    }
-   mFullName = fullname('/');
+   _updateFullName();
    return *this;
 }
 
@@ -317,8 +384,14 @@ String Path::fullname(char sep) const
 Date Path::lastModification() const
 {
    Date lm;
+   _updateInternals();
+#ifdef _WIN32
+   struct __stat64 st;
+   if (_wstat64(mFullNameW.c_str(), &st) == 0)
+#else
    struct stat st;
-   if (stat(mFullName.c_str(), &st) == 0)
+   if (stat(mFullNameL.c_str(), &st) == 0)
+#endif
    {
       lm.set(st.st_mtime, false);
    }
@@ -331,16 +404,17 @@ Date Path::lastModification() const
 
 bool Path::isDir() const
 {
+   _updateInternals();
 #ifdef _WIN32
    DWORD fa;
-   fa = GetFileAttributes(mFullName.c_str());
+   fa = GetFileAttributesW(mFullNameW.c_str());
    if (fa != 0xFFFFFFFF)
    {
       return ((fa & FILE_ATTRIBUTE_DIRECTORY) != 0);
    }
 #else
    struct stat st;
-   if (stat(mFullName.c_str(), &st) == 0)
+   if (stat(mFullNameL.c_str(), &st) == 0)
    {
       return ((st.st_mode & S_IFDIR) != 0);
    }
@@ -350,16 +424,17 @@ bool Path::isDir() const
 
 bool Path::isFile() const
 {
+   _updateInternals();
 #ifdef _WIN32
    DWORD fa;
-   fa = GetFileAttributes(mFullName.c_str());
+   fa = GetFileAttributesW(mFullNameW.c_str());
    if (fa != 0xFFFFFFFF)
    {
       return ((fa & FILE_ATTRIBUTE_DIRECTORY) == 0);
    }
 #else
    struct stat st;
-   if (stat(mFullName.c_str(), &st) == 0)
+   if (stat(mFullNameL.c_str(), &st) == 0)
    {
       return ((st.st_mode & S_IFREG) != 0);
    }
@@ -369,16 +444,17 @@ bool Path::isFile() const
 
 bool Path::exists() const
 {
+   _updateInternals();
 #ifdef _WIN32
    DWORD fa;
-   fa = GetFileAttributes(mFullName.c_str());
+   fa = GetFileAttributesW(mFullNameW.c_str());
    if (fa != 0xFFFFFFFF)
    {
       return true;
    }
 #else
    struct stat st;
-   if (stat(mFullName.c_str(), &st) == 0)
+   if (stat(mFullNameL.c_str(), &st) == 0)
    {
       return true;
    }
@@ -410,12 +486,57 @@ bool Path::checkExtension(const String &ext) const
    return (pext.casecompare(ext) == 0);
 }
 
+bool Path::setExtension(const String &ext)
+{
+   if (mPaths.size() == 0)
+   {
+      return false;
+   }
+   
+   size_t bni = mPaths.size() - 1;
+   size_t p = mPaths[bni].rfind('.');
+   
+   if (p != String::npos)
+   {
+      if (ext.length() == 0)
+      {
+         mPaths[bni] = mPaths[bni].substr(0, p);
+      }
+      else
+      {
+         mPaths[bni] = mPaths[bni].substr(0, p + 1) + ext;
+      }
+   }
+   else
+   {
+      // current file path has no extension
+      if (ext.length() > 0)
+      {
+         mPaths[bni] += "." + ext;
+      }
+      else
+      {
+         return true;
+      }
+   }
+   
+   _updateFullName();
+   
+   return true;
+}
+
 size_t Path::fileSize() const
 {
    if (isFile())
    {
+      _updateInternals();
+#ifdef _WIN32
+      struct __stat64 fileStat;
+      if (_wstat64(mFullNameW.c_str(), &fileStat) == 0)
+#else
       struct stat fileStat;
-      if (stat(mFullName.c_str(), &fileStat) == 0)
+      if (stat(mFullNameL.c_str(), &fileStat) == 0)
+#endif
       {
          return fileStat.st_size;
       }
@@ -423,39 +544,281 @@ size_t Path::fileSize() const
    return 0;
 }
 
-bool Path::createDir(bool recursive) const
+Status Path::createDir(bool recursive) const
 {
    if (exists())
    {
-      return true;
+      return Status(true);
    }
    if (mPaths.size() == 0)
    {
-      return false;
+      return Status(false, "gcore::Path::createDir: Empty directory name.");
    }
    if (recursive)
    {
       Path pdir(*this);
       pdir.pop();
-      if (!pdir.createDir(recursive))
+      Status stat = pdir.createDir(recursive);
+      if (!stat)
       {
-         return false;
+         return stat;
       }
    }
+   _updateInternals();
 #ifdef _WIN32
-   return (CreateDirectory(mFullName.c_str(), NULL) == TRUE);
+   if (CreateDirectoryW(mFullNameW.c_str(), NULL) == TRUE)
 #else
-   return (mkdir(mFullName.c_str(), S_IRWXU) == 0);
+   if (mkdir(mFullNameL.c_str(), S_IRWXU) == 0)
 #endif
+   {
+      return Status(true);
+   }
+   else
+   {
+      return Status(false, std_errno(), "gcore::Path::createDir: Failed to create directory '%s'.", mFullName.c_str());
+   }
 }
 
-bool Path::removeFile() const
+Status Path::_removeDir(bool recursive) const
+{
+   if (isDir())
+   {
+      if (!recursive)
+      {
+         _updateInternals();
+#ifdef _WIN32
+         if (RemoveDirectoryW(mFullNameW.c_str()) == TRUE)
+#else
+         if (rmdir(mFullNameL.c_str()) == 0)
+#endif
+         {
+            return Status(true);
+         }
+         else
+         {
+            return Status(false, std_errno(), "gcore::Path::_removeDir: Failed to remove directory '%s'.", mFullName.c_str());
+         }
+      }
+      else
+      {
+         Status stat;
+         List<Path> contents;
+         size_t n = listDir(contents);
+         
+         for (size_t i=0; i<n; ++i)
+         {
+            stat = contents[i].remove(true);
+            if (!stat)
+            {
+               return stat;
+            }
+         }
+         
+         return Status(true);
+      }
+   }
+   else
+   {
+      return Status(false, "gcore::Path::_removeDir: '%s' is not a valid directory.", mFullName.c_str());
+   }
+}
+
+Status Path::_copyDir(const Path &to, bool recursive, bool createMissingDirs, bool overwrite) const
+{
+   if (isDir())
+   {
+      Status stat;
+      
+      if (!to.exists())
+      {
+         if (!createMissingDirs)
+         {
+            return Status(false, "gcore::Path::_copyDir: Destination '%s' doesn't exist.", to.fullname('/').c_str());
+         }
+         else
+         {
+            stat = to.createDir(true);
+            if (!stat)
+            {
+               return stat;
+            }
+         }
+      }
+      else
+      {
+         if (to.isFile())
+         {
+            return Status(false, "gcore::Path::_copyDir: Destination '%s' is a file.", to.fullname('/').c_str());
+         }
+      }
+      
+      Path dst(to);
+      dst.push(basename());
+      
+      if (dst.exists())
+      {
+         if (!overwrite)
+         {
+            return Status(false, "gcore::Path::_copyDir: Destination directory '%s' already exists.", dst.fullname('/').c_str());
+         }
+         else if (!dst.isDir())
+         {
+            return Status(false, "gcore::Path::_copyDir: Destination '%s' is not a directory.", dst.fullname('/').c_str());
+         }
+      }
+      else
+      {
+         stat = dst.createDir(false);
+         if (!stat)
+         {
+            return stat;
+         }
+      }
+      
+      List<Path> contents;
+      size_t n = listDir(contents);
+      
+      for (size_t i=0; i<n; ++i)
+      {
+         if (contents[i].isDir() && !recursive)
+         {
+            // don't even create empty directory
+            continue;
+         }
+         stat = contents[i].copy(dst, recursive, false, overwrite);
+         if (!stat)
+         {
+            return stat;
+         }
+      }
+      
+      return Status(true);
+   }
+   else
+   {
+      return Status(false, "gcore::Path::_copyDir: '%s' is not a valid directory.", mFullName.c_str());
+   }
+}
+
+Status Path::_removeFile() const
 {
    if (isFile())
    {
-      return (remove(mFullName.c_str()) == 0);
+      _updateInternals();
+#ifdef _WIN32
+      if (DeleteFileW(mFullNameW.c_str()) == TRUE)
+#else
+      if (::remove(mFullNameL.c_str()) == 0)
+#endif
+      {
+         return Status(true);
+      }
+      else
+      {
+         return Status(false, std_errno(), "gcore::Path::_removeFile: '%s' is not a file.", mFullName.c_str());
+      }
    }
-   return false;
+   else
+   {
+      return Status(false, "gcore::Path::_removeFile: '%s' is not a valid file.", mFullName.c_str());
+   }
+}
+
+Status Path::_copyFile(const Path &to, bool createMissingDirs, bool overwrite) const
+{
+   if (isFile())
+   {
+      Path toDir(to);
+      Path toFile(to);
+      
+      if (to.exists())
+      {
+         if (to.isFile())
+         {
+            if (!overwrite)
+            {
+               return Status(false, "gcore::Path::_copyFile: '%s' already exists.", to.fullname('/').c_str());
+            }
+            else
+            {
+               toDir.pop();
+            }
+         }
+         else
+         {
+            // append basename to 'to'
+            toFile.push(basename());
+            
+            if (toFile.isFile())
+            {
+               if (!overwrite)
+               {
+                  return Status(false, "gcore::Path::_copyFile: '%s' already exists.", toFile.fullname('/').c_str());
+               }
+            }
+            else if (toFile.isDir())
+            {
+               return Status(false, "gcore::Path::_copyFile: Directory with the same name '%s' already exists.", toFile.fullname('/').c_str());
+            }
+         }
+      }
+      else
+      {
+         toDir.pop();
+         
+         if (!toDir.exists())
+         {
+            if (!createMissingDirs)
+            {
+               return Status(false, "gcore::Path::_copyFile: Destination's directory '%s' doesn't exist.", toDir.fullname('/').c_str());
+            }
+            else
+            {
+               Status stat = toDir.createDir(true);
+               if (!stat)
+               {
+                  return stat;
+               }
+            }
+         }
+         else if (toDir.isFile())
+         {
+            return Status(false, "gcore::Path::_copyFile: '%s' is not a directory.", toDir.fullname('/').c_str());
+         }
+      }
+      
+      Status stat(true);
+      FILE *src = open("rb");
+      FILE *dst = toFile.open("wb");
+      
+      // Copy by chunks or 8 Mb
+      size_t chunkSize = 8 * 1024 * 1024;
+      unsigned char *chunk = (unsigned char*) malloc(chunkSize);
+      
+      while (!feof(src))
+      {
+         size_t readSize = fread(chunk, 1, chunkSize, src);
+         if (readSize > 0)
+         {
+            fwrite(chunk, 1, readSize, dst);
+         }
+         if (ferror(src))
+         {
+            stat = Status(false, "gcore::Path::_copyFile: Failed to copy file.", toFile.fullname('/').c_str());
+            break;
+         }
+      }
+      
+      free(chunk);
+      fclose(src);
+      fclose(dst);
+      
+      return stat;
+   }
+   else
+   {
+      return Status(false, "gcore::Path::_copyFile: '%s' is not a valid file.", mFullName.c_str());
+   }
 }
 
 void Path::forEach(ForEachFunc callback, bool recurse, unsigned short flags) const
@@ -466,7 +829,7 @@ void Path::forEach(ForEachFunc callback, bool recurse, unsigned short flags) con
    }
    Path path(*this);
 #ifdef _WIN32
-   WIN32_FIND_DATA fd;
+   WIN32_FIND_DATAW fd;
    HANDLE hFile;
    String fffs; // find first file string 
    if (mFullName.length() == 0)
@@ -492,12 +855,15 @@ void Path::forEach(ForEachFunc callback, bool recurse, unsigned short flags) con
          fffs = mFullName;
       }
    }
-   hFile = FindFirstFile(fffs.c_str(), &fd);
+   std::wstring wfffs;
+   DecodeUTF8(fffs.c_str(), wfffs);
+   hFile = FindFirstFileW(wfffs.c_str(), &fd);
    if (hFile != INVALID_HANDLE_VALUE)
    {
+      String fname;
       do
       {
-         String fname = fd.cFileName;
+         EncodeUTF8(fd.cFileName, fname);
          if (fname == "." ||  fname == "..")
          {
             continue;
@@ -526,26 +892,29 @@ void Path::forEach(ForEachFunc callback, bool recurse, unsigned short flags) con
             }
          }
          path.pop();
-      } while (FindNextFile(hFile, &fd));
+      } while (FindNextFileW(hFile, &fd));
       FindClose(hFile);
    }
 #else
    DIR *d;
+   String ldir;
    if (mFullName.length() == 0)
    {
       Path cwd = CurrentDir();
-      d = opendir(cwd.fullname('/').c_str());
+      UTF8ToLocale(cwd.fullname('/').c_str(), ldir);
    }
    else
    {
-      d = opendir(mFullName.c_str());
+      UTF8ToLocale(mFullName.c_str(), ldir);
    }
+   d = opendir(ldir.c_str());
    if (d)
    {
       struct dirent *de;
       while ((de = readdir(d)) != 0)
       {
-         String fname = de->d_name;
+         String fname;
+         LocaleToUTF8(de->d_name, fname);
          if (fname == "." || fname == "..")
          {
             continue;
@@ -590,35 +959,64 @@ size_t Path::listDir(PathList &l, bool recurse, unsigned short flags) const
    return l.size();
 }
 
+FILE* Path::open(const char *mode) const
+{
+   _updateInternals();
+#ifdef _WIN32
+   std::wstring wmode;
+   // supposes mode and ASCII string, thus UTF-8 (should be)
+   DecodeUTF8(mode, wmode);
+   return _wfopen(mFullNameW.c_str(), wmode.c_str());
+#else
+   return fopen(mFullNameL.c_str(), mode);
+#endif
+}
+
+bool Path::open(std::ifstream &inf, std::ios::openmode mode) const
+{
+   _updateInternals();
+#ifdef _WIN32
+   inf.open(mFullNameW.c_str(), std::ios::in | mode);
+#else
+   inf.open(mFullNameL.c_str(), std::ios::in | mode);
+#endif
+   return inf.is_open();
+}
+
+bool Path::open(std::ofstream &outf, std::ios::openmode mode) const
+{
+   _updateInternals();
+#ifdef _WIN32
+   outf.open(mFullNameW.c_str(), std::ios::out | mode);
+#else
+   outf.open(mFullNameL.c_str(), std::ios::out | mode);
+#endif
+   return outf.is_open();
+}
+
 Path Path::CurrentDir()
 {
+   Path rv(".");
 #ifdef _WIN32
-   DWORD cwdLen = GetCurrentDirectory(0, NULL);
-   char *cwd = (char*)malloc(cwdLen * sizeof(char));
-   GetCurrentDirectory(cwdLen, cwd);
-#else
-   size_t bufLen = 1024;
-   char *buf = (char*)malloc(bufLen * sizeof(char));
-   char *cwd = getcwd(buf, bufLen);
-   while (cwd == NULL)
+   DWORD cwdLen = GetCurrentDirectoryW(0, NULL);
+   wchar_t *cwd = (wchar_t*) malloc(cwdLen * sizeof(wchar_t));
+   if (GetCurrentDirectoryW(cwdLen, cwd))
    {
-      if (errno == ERANGE)
+      rv = cwd;
+   }
+   free(cwd);
+#else
+   char *cwd = getcwd(NULL, 0);
+   if (cwd != NULL)
+   {
+      std::string ucwd;
+      if (LocaleToUTF8(cwd, ucwd))
       {
-         free(buf);
-         bufLen *= 2;
-         buf = (char*)malloc(bufLen * sizeof(char));
-         cwd = getcwd(buf, bufLen);
+         rv = ucwd;
       }
-      else
-      {
-         buf[0] = '\0';
-         cwd = buf;
-         break;
-      }
+      free(cwd);
    }
 #endif
-   Path rv = Path(cwd);
-   free(cwd);
    return rv;
 }
 
@@ -735,7 +1133,7 @@ Status MMap::open(const Path &path, unsigned char flags, size_t offset, size_t s
       hint = FILE_FLAG_SEQUENTIAL_SCAN;
    }
    
-   HANDLE fd = CreateFile(path.fullname('/').c_str(), access, sharemode, NULL, OPEN_EXISTING, hint, NULL);
+   HANDLE fd = CreateFileW(path.internalName().c_str(), access, sharemode, NULL, OPEN_EXISTING, hint, NULL);
    
    if (fd == INVALID_HANDLE_VALUE)
    {
@@ -750,7 +1148,7 @@ Status MMap::open(const Path &path, unsigned char flags, size_t offset, size_t s
    
    int oflags = ((flags & READ_ONLY) == 0 ? O_RDONLY : O_RDWR);
    
-   int fd = ::open(path.fullname('/').c_str(), oflags);
+   int fd = ::open(path.internalName().c_str(), oflags);
    
    if (fd == -1)
    {

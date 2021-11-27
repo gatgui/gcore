@@ -81,8 +81,8 @@ namespace gcore
       Status create(const String &name);
       void closeRead();
       void closeWrite();
-      int read(char *buffer, int size, Status *status=0) const;
-      int write(const char *buffer, int size, Status *status=0) const;
+      int read(void *buffer, int size, Status *status=0) const;
+      int write(const void *buffer, int size, Status *status=0) const;
       int write(const String &str, Status *status=0) const;
       PipeID readID() const;
       PipeID writeID() const;

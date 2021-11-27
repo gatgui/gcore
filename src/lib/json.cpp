@@ -26,6 +26,7 @@ SOFTWARE.
 
 #include <gcore/json.h>
 #include <gcore/plist.h>
+#include <gcore/unicode.h>
 
 namespace gcore
 {
@@ -96,6 +97,12 @@ Value::Value(const char *str)
    : mType(str ? StringType : NullType)
 {
    mValue.str = (str ? new String(str) : 0);
+}
+
+Value::Value(const wchar_t *wstr)
+   : mType(wstr ? StringType : NullType)
+{
+   mValue.str = (wstr ? new String(wstr) : 0);
 }
 
 Value::Value(const String &str)
@@ -182,7 +189,7 @@ bool Value::toPropertyList(PropertyList &pl, const String &cprop) const
             bprop += ".";
          }
          
-         for (Object::const_iterator it=obegin(); it!=oend(); ++it)
+         for (Object::const_iterator it=objectBegin(); it!=objectEnd(); ++it)
          {
             prop = bprop + it->first;
             if (!it->second.toPropertyList(pl, prop))
@@ -198,7 +205,7 @@ bool Value::toPropertyList(PropertyList &pl, const String &cprop) const
          String prop, bprop = cprop + "[";
          size_t i = 0;
          
-         for (Array::const_iterator it=abegin(); it!=aend(); ++it, ++i)
+         for (Array::const_iterator it=arrayBegin(); it!=arrayEnd(); ++it, ++i)
          {
             prop = bprop + String(i) + "]";
             if (!it->toPropertyList(pl, prop))
@@ -361,6 +368,39 @@ Value& Value::operator=(const char *str)
       else
       {
          mValue.str = new String(str);
+      }
+   }
+   else
+   {
+      if (mValue.str)
+      {
+         delete mValue.str;
+         mValue.str = 0;
+      }
+      mType = NullType;
+   }
+   
+   return *this;
+}
+
+Value& Value::operator=(const wchar_t *wstr)
+{
+   if (mType != StringType)
+   {
+      reset();
+      mType = StringType;
+      mValue.str = 0;
+   }
+   
+   if (wstr)
+   {
+      if (mValue.str)
+      {
+         EncodeUTF8(wstr, *(mValue.str));
+      }
+      else
+      {
+         mValue.str = new String(wstr);
       }
    }
    else
@@ -724,22 +764,22 @@ bool Value::erase(const String &key)
 static Array gsEmptyArray;
 static Object gsEmptyObject;
 
-ArrayConstIterator Value::abegin() const
+ArrayConstIterator Value::arrayBegin() const
 {
    return (mType == ArrayType ? mValue.arr->begin() : gsEmptyArray.begin());
 }
 
-ArrayConstIterator Value::aend() const
+ArrayConstIterator Value::arrayEnd() const
 {
    return (mType == ArrayType ? mValue.arr->end() : gsEmptyArray.end());
 }
 
-ArrayIterator Value::abegin()
+ArrayIterator Value::arrayBegin()
 {
    return (mType == ArrayType ? mValue.arr->begin() : gsEmptyArray.begin());
 }
 
-ArrayIterator Value::aend()
+ArrayIterator Value::arrayEnd()
 {
    return (mType == ArrayType ? mValue.arr->end() : gsEmptyArray.end());
 }
@@ -762,12 +802,12 @@ Value& Value::operator[](size_t idx)
    return mValue.arr->at(idx);
 }
 
-ObjectConstIterator Value::obegin() const
+ObjectConstIterator Value::objectBegin() const
 {
    return (mType == ObjectType ? mValue.obj->begin() : gsEmptyObject.begin());
 }
 
-ObjectConstIterator Value::oend() const
+ObjectConstIterator Value::objectEnd() const
 {
    return (mType == ObjectType ? mValue.obj->end() : gsEmptyObject.end());
 }
@@ -787,12 +827,22 @@ ObjectConstIterator Value::find(const char *name) const
    return this->find(_name);
 }
 
-ObjectIterator Value::obegin()
+ObjectConstIterator Value::find(const wchar_t *name) const
+{
+   if (mType != ObjectType)
+   {
+      return gsEmptyObject.end();
+   }
+   String _name(name);
+   return this->find(_name);
+}
+
+ObjectIterator Value::objectBegin()
 {
    return (mType == ObjectType ? mValue.obj->begin() : gsEmptyObject.begin());
 }
 
-ObjectIterator Value::oend()
+ObjectIterator Value::objectEnd()
 {
    return (mType == ObjectType ? mValue.obj->end() : gsEmptyObject.end());
 }
@@ -803,6 +853,16 @@ ObjectIterator Value::find(const String &name)
 }
 
 ObjectIterator Value::find(const char *name)
+{
+   if (mType != ObjectType)
+   {
+      return gsEmptyObject.end();
+   }
+   String _name(name);
+   return this->find(_name);
+}
+
+ObjectIterator Value::find(const wchar_t *name)
 {
    if (mType != ObjectType)
    {
@@ -841,38 +901,78 @@ const Value& Value::operator[](const char *name) const
    return this->operator[](_name);
 }
 
+const Value& Value::operator[](const wchar_t *name) const
+{
+   String _name(name);
+   return this->operator[](_name);
+}
+
 Value& Value::operator[](const char *name)
 {
    String _name(name);
    return this->operator[](_name);
 }
 
-Status Value::write(const char *path) const
+Value& Value::operator[](const wchar_t *name)
 {
-   if (!path)
-   {
-      return Status(false, "Invalid path.");
-   }
-   
+   String _name(name);
+   return this->operator[](_name);
+}
+
+Status Value::write(const Path &path, bool asciiOnly) const
+{
    if (mType != ObjectType)
    {
       return Status(false, "Value is not an object.");
    }
    
-   std::ofstream out(path);
+   std::ofstream out;
    
-   if (out.is_open())
+   if (path.open(out))
    {
-      write(out);
+      write(out, asciiOnly);
       return Status(true);
    }
    else
    {
-      return Status(false, "Invalid file '%s'", path);
+      return Status(false, "Invalid file '%s'", path.fullname('/').c_str());
    }
 }
 
-void Value::write(std::ostream &os, const String indent, bool skipFirstIndent) const
+static void WriteASCIIString(std::ostream &os, const String &s)
+{
+   const char *c = s.c_str();
+   const char *e = c + s.length();
+   char tmp[8];
+   
+   while (*c != '\0')
+   {
+      if (IsUTF8SingleChar(*c))
+      {
+         os << *c;
+      }
+      else
+      {
+         Codepoint cp = DecodeUTF8(c, e - c);
+         if (IsValidCodepoint(cp))
+         {
+            size_t n = CodepointToASCII(cp, ACF_16, tmp, 8);
+            //os << "\\";
+            for (size_t i=0; i<n; ++i)
+            {
+               os << tmp[i];
+            }
+         }
+         else
+         {
+            std::cerr << "Skip invalid utf-8 character" << std::endl;
+         }
+      }
+      c = UTF8Next(c);
+   }
+}
+
+void Value::write(std::ostream &os, bool asciiOnly, const String indent, bool skipFirstIndent) const
 {
    switch (type())
    {
@@ -886,7 +986,16 @@ void Value::write(std::ostream &os, const String indent, bool skipFirstIndent) c
       os << (skipFirstIndent ? "" : indent) << mValue.num;
       break;
    case StringType:
-      os << (skipFirstIndent ? "" : indent) << "\"" << mValue.str->c_str() << "\"";
+      if (asciiOnly)
+      {
+         os << (skipFirstIndent ? "" : indent) << "\"";
+         WriteASCIIString(os, *(mValue.str));
+         os << "\"";
+      }
+      else
+      {
+         os << (skipFirstIndent ? "" : indent) << "\"" << mValue.str->c_str() << "\"";
+      }
       break;
    case ObjectType:
       {
@@ -894,8 +1003,17 @@ void Value::write(std::ostream &os, const String indent, bool skipFirstIndent) c
          os << (skipFirstIndent ? "" : indent) << "{" << std::endl;
          for (Object::const_iterator it=mValue.obj->begin(); it!=mValue.obj->end(); ++it, ++i)
          {
-            os << indent << "  \"" << it->first.c_str() << "\": ";
-            it->second.write(os, indent + "  ", true);
+            if (asciiOnly)
+            {
+               os << indent << "  \"";
+               WriteASCIIString(os, it->first);
+               os << "\": ";
+            }
+            else
+            {
+               os << indent << "  \"" << it->first.c_str() << "\": ";
+            }
+            it->second.write(os, asciiOnly, indent + "  ", true);
             if (i + 1 < n) os << ", ";
             os << std::endl;
          }
@@ -908,7 +1026,7 @@ void Value::write(std::ostream &os, const String indent, bool skipFirstIndent) c
          os << (skipFirstIndent ? "" : indent) << "[" << std::endl;
          for (Array::const_iterator it=mValue.arr->begin(); it!=mValue.arr->end(); ++it, ++i)
          {
-            it->write(os, indent + "  ");
+            it->write(os, asciiOnly, indent + "  ");
             if (i + 1 < n) os << ", ";
             os << std::endl;
          }
@@ -920,19 +1038,14 @@ void Value::write(std::ostream &os, const String indent, bool skipFirstIndent) c
    }
 }
 
-Status Value::read(const char *path)
+Status Value::read(const Path &path)
 {
-   if (!path)
-   {
-      return Status(false, "Invalid path.");
-   }
+   std::ifstream in;
    
-   std::ifstream in(path);
-   
-   if (!in.is_open())
+   if (!path.open(in))
    {
       reset();
-      return Status(false, "Invalid file '%s'", path);
+      return Status(false, "Invalid file '%s'", path.fullname('/').c_str());
    }
    else
    {
@@ -945,18 +1058,13 @@ Status Value::read(std::istream &in)
    return read(in, false, 0);
 }
 
-Status Value::Parse(const char *path, Value::ParserCallbacks &callbacks)
+Status Value::Parse(const Path &path, Value::ParserCallbacks &callbacks)
 {
-   if (!path)
-   {
-      return Status(false, "Invalid path.");
-   }
-   
    json::Value val;
    
-   std::ifstream in(path);
+   std::ifstream in;
    
-   if (in.is_open())
+   if (path.open(in))
    {
       Status rv = val.read(in, true, &callbacks);
       val.reset();
@@ -964,7 +1072,7 @@ Status Value::Parse(const char *path, Value::ParserCallbacks &callbacks)
    }
    else
    {
-      return Status(false, "Invalid file '%s'", path);
+      return Status(false, "Invalid file '%s'", path.fullname('/').c_str());
    }
 }
 
@@ -1372,6 +1480,8 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
             // Validate escape characters in str
             
             size_t len = str.length();
+            size_t elen = 0;
+            Codepoint cp = InvalidCodepoint;
             p0 = 0;
             p1 = str.find('\\', p0);
             
@@ -1393,17 +1503,21 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                      p0 = p1 + 2;
                      break;
                   case 'u':
-                     // + 4 digits
-                     if (p1 + 5 >= len || 
-                         (str[p1 + 2] < '0' || str[p1 + 2] > '9') || 
-                         (str[p1 + 3] < '0' || str[p1 + 3] > '9') || 
-                         (str[p1 + 4] < '0' || str[p1 + 4] > '9') || 
-                         (str[p1 + 5] < '0' || str[p1 + 5] > '9'))
+                     cp = InvalidCodepoint;
+                     if (ASCIIToCodepoint(str.c_str() + p1, cp) == 0)
                      {
                         in.seekg(orgPos, in.beg);
                         return Failed(this, lineno, coloff+p1, "Expected 4 digits after \\u escape character");
                      }
-                     p0 = p1 + 6;
+                     elen = EncodeUTF8(cp, (char*)(str.c_str() + p1), 6);
+                     if (elen == 0)
+                     {
+                        in.seekg(orgPos, in.beg);
+                        return Failed(this, lineno, coloff+p1, "Codepoint requires more than 6 utf-8 characters");
+                     }
+                     str.erase(p1 + elen, 6 - elen);
+                     len = str.length();
+                     p0 = p1 + elen;
                      break;
                   default:
                      in.seekg(orgPos, in.beg);
@@ -1430,7 +1544,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                
                if (cb && cb->objectKey)
                {
-                  cb->objectKey(key.c_str());
+                  cb->objectKey(key);
                }
                
                p1 = remain.find_first_not_of(sSpaces);
@@ -1459,7 +1573,7 @@ Status Value::read(std::istream &in, bool consumeAll, Value::ParserCallbacks *cb
                
                if (cb && cb->stringScalar)
                {
-                  cb->stringScalar(str.c_str());
+                  cb->stringScalar(str);
                }
                
                if (psi.value)

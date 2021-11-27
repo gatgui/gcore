@@ -24,41 +24,37 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef __gcore_
-#define __gcore_
-
-#include <gcore/pipe.h>
-#include <gcore/process.h>
-#include <gcore/threads.h>
-#include <gcore/threadpool.h>
-#include <gcore/dmodule.h>
-#include <gcore/path.h>
-#include <gcore/rex.h>
-#include <gcore/tokenizer.h>
-#include <gcore/plist.h>
-#include <gcore/md5.h>
-#include <gcore/xml.h>
-#include <gcore/string.h>
-#include <gcore/date.h>
-#include <gcore/env.h>
-#include <gcore/typetraits.h>
-#include <gcore/list.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+#include <iostream>
 #include <gcore/argparser.h>
-#include <gcore/dirmap.h>
-#include <gcore/bcfile.h>
-#include <gcore/log.h>
-#include <gcore/base64.h>
-#include <gcore/base85.h>
-#include <gcore/json.h>
-#include <gcore/tpl.h>
-#include <gcore/hashmap.h>
-#include <gcore/eventqueue.h>
-#include <gcore/perflog.h>
-#include <gcore/functor.h>
-#include <gcore/time.h>
-#include <gcore/status.h>
-#include <gcore/net.h>
+#include <gcore/path.h>
 #include <gcore/unicode.h>
 
-#endif 
-
+int main(int argc, char **argv)
+{
+   gcore::FlagDesc cmdflags[] = {ACCEPTS_NOFLAG_ARGUMENTS(1)};
+   
+   gcore::ArgParser args(cmdflags, 1);
+   
+   gcore::Status stat = args.parse(argc-1, argv+1);
+   
+   if (!stat)
+   {
+      std::cerr << stat << std::endl;
+      return 1;
+   }
+   
+   gcore::String filename;
+   
+   args.getArgument(0, filename);
+   
+   gcore::Encoding e = gcore::ReadBOM(filename.c_str());
+   
+   const char *es = gcore::EncodingToString(e);
+   
+   std::cout << (es ? es : "unknown") << std::endl;
+   
+   return 0;
+}

@@ -78,6 +78,7 @@ cdef extern from "<gcore/string.h>" namespace "gcore":
       String(char*)
       String(String &)
       char* c_str()
+      String& assign "operator=" (String&)
    
    cdef cppclass StringList:
       StringList()
@@ -86,6 +87,14 @@ cdef extern from "<gcore/string.h>" namespace "gcore":
       String& at(int)
       List[String].iterator begin()
       List[String].iterator end()
+   
+
+cdef extern from "<gcore/unicode.h>" namespace "gcore":
+   
+   bint UTF8ToLocale(char*, String&)
+   bint UTF8ToLocale_ip(String&)
+   bint LocaleToUTF8(char*, String&)
+   bint LocaleToUTF8_ip(String&)
    
 
 cdef extern from "<gcore/path.h>" namespace "gcore":
@@ -111,14 +120,17 @@ cdef extern from "<gcore/path.h>" namespace "gcore":
       Path& normalize()
       
       String basename()
-      String dirname(char) # char sep=DIR_SEP
-      String fullname(char) # char sep=DIR_SEP
+      String dirname(char) # char sep='/'
+      String fullname(char) # char sep='/'
       String extension()
       bint checkExtension(String&)
+      bint setExtension(String&)
       size_t fileSize()
       
-      bint createDir(bint) # bool recursive=false
-      bint removeFile()
+      Status createDir(bint) # bool recursive
+      
+      Status copy(Path&, bint, bint, bint) # Path &to, bool recursive, bool createMissingDirs, bool overwrite
+      Status remove(bint) # bool recursive
       
       String pop()
       Path& push(String&)

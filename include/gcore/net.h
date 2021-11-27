@@ -118,19 +118,22 @@ namespace gcore
       //
       // Note
       //   'bytes', if allocated, MUST be freed by the caller no matter the return value or error status
-      virtual bool read(char *&bytes, size_t &len, double timeout=-1, Status *status=0) = 0;
+      //   A zero byte (0, 0x00, '\0') is always appended to 'bytes' (not included in 'len')
+      virtual bool read(void *&bytes, size_t &len, double timeout=-1, Status *status=0) = 0;
       // Arguments
       //   See 'read'
-      //   [in] until : character string to look for in read data (included in result)
+      //   [in] until : sequence of bytes to look for in read data (included in result)
       //                when set to NULL, 'readUntil' behaves as 'read'
+      //   [in] unlen : length of 'until' byte sequence
+      //                when set to 0, 'readUntil' behaves as 'read'
       //
       // Return value
-      //   true if the 'until' string was from in read bytes, false otherwise
+      //   true if the 'until' sequence was found in read bytes, false otherwise
       //
       // Note
       //   when false is returned, it doesn't mean nothing was read, be sure to check the 'bytes' buffer
-      virtual bool readUntil(const char *until, char *&bytes, size_t &len, double timeout=-1, Status *status=0) = 0;
-      virtual size_t write(const char* bytes, size_t len, double timeout=-1, Status *status=0) = 0;
+      virtual bool readUntil(const void *until, size_t unlen, void *&bytes, size_t &len, double timeout=-1, Status *status=0) = 0;
+      virtual size_t write(const void* bytes, size_t len, double timeout=-1, Status *status=0) = 0;
       
       bool read(String &s, double timeout=-1, Status *status=0);
       bool readUntil(const char *until, String &s, double timeout=-1, Status *status=0);
@@ -138,9 +141,9 @@ namespace gcore
       
       // If bytes is non NULL, alloc will try re-allocating them
       // bytes must have been allocated by 'alloc' method
-      char* alloc(size_t sz, char *bytes=0);
+      void* alloc(size_t sz, void *bytes=0);
       // Use this method to release memory allocated by 'read', 'readUntil' or 'alloc' methods
-      void free(char *&bytes);
+      void free(void *&bytes);
       
       void setBufferSize(unsigned long n);
       inline unsigned long bufferSize() const { return mBufferSize; }
@@ -157,7 +160,7 @@ namespace gcore
       
       sock_t mFD;
       unsigned long mBufferSize;
-      char *mBuffer;
+      unsigned char *mBuffer;
       unsigned long mBufferOffset;
    };
    
@@ -195,9 +198,9 @@ namespace gcore
       using Connection::readUntil;
       using Connection::write;
       
-      virtual bool read(char *&bytes, size_t &len, double timeout=-1, Status *status=0);
-      virtual bool readUntil(const char *until, char *&bytes, size_t &len, double timeout=-1, Status *status=0);
-      virtual size_t write(const char* bytes, size_t len, double timeout=-1, Status *status=0);
+      virtual bool read(void *&bytes, size_t &len, double timeout=-1, Status *status=0);
+      virtual bool readUntil(const void *until, size_t unlen, void *&bytes, size_t &len, double timeout=-1, Status *status=0);
+      virtual size_t write(const void* bytes, size_t len, double timeout=-1, Status *status=0);
       
       
    private:
@@ -206,7 +209,7 @@ namespace gcore
       TCPConnection(const TCPConnection&);
       TCPConnection& operator=(const TCPConnection&);
       
-      bool checkUntil(const char *until, char *in, size_t inlen, char *&out, size_t &outlen);
+      bool checkUntil(const void *until, size_t unlen, void *in, size_t inlen, void *&out, size_t &outlen);
       
    protected:
       

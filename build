@@ -1,0 +1,235 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import shutil
+import multiprocessing
+import subprocess
+
+# pylint: disable=redefined-outer-name
+
+def _check_flag(sn, ln, count, args, iarg):
+    if args[iarg] in (sn, ln):
+        nargs = len(args)
+        if iarg + count >= nargs:
+            print("Not enough arguments for flag %s/%s" % (sn, ln))
+            sys.exit(1)
+        vals = []
+        i = 1
+        while i <= count:
+            vals.append(args[iarg + i])
+            i += 1
+        return (iarg + count + 1, vals)
+    else:
+        return (iarg, None)
+
+def _usage():
+    print("SYNOPSIS")
+    print("  build [OPTIONS]")
+    print("")
+    print("  -c/--configure       : Configure project")
+    print("                         Arguments following -c/--configure until next recognized flag")
+    print("                           will be passed on to cmake command with '-D' prepended")
+    print("                         They must follow cmake format NAME=VALUE")
+    print("  -ip/--install-prefix : Override install directory")
+    print("                         This flag use used both at configure and install time")
+    print("  -f/--force           : Force build or configure")
+    print("  -c/--clean           : Clean build output")
+    print("  -d/--debug           : Configure/Build for debug mode")
+    print("  -b/--build           : Build project")
+    print("  -j/--jobs <N>        : Number of build jobs")
+    print("                           Uses all available cpu by default")
+    print("                           Values below zero are interpreted as an inverse ratio of available CPUs")
+    print("                           i.e.: -2 -> 1/2 -> half of the CPUs")
+    print("                                 -4 -> 1/4 -> a quarter of the CPUs")
+    print("                           The value '0' means all CPUs")
+    print("  -i/--install         : Install project")
+    print("  -v/--verbose         : Verbose output")
+    print("  -dr/--dry-run        : Do not execute")
+    print("  -h/--help            : Show this help")
+    print("")
+
+if __name__ == "__main__":
+    topdir = os.path.dirname(os.path.abspath(__file__))
+    blddir = os.path.join(topdir, ".build")
+
+    debug = False
+    config = False
+    configopts = []
+    build = False
+    buildprocess = None
+    install = False
+    installprefix = None
+    verbose = False
+    force = False
+    inconfig = False
+    clean = False
+    dryrun = False
+
+    # TODO: compiler switch (at least msvc)
+
+    args = sys.argv[1:]
+    nargs = len(args)
+    i = 0
+    while i < nargs:
+        j, vl = _check_flag("-d", "--debug", 0, args, i)
+        if j > i:
+            debug = True
+            inconfig = False
+            i = j
+            continue
+        j, vl = _check_flag("-c", "--configure", 0, args, i)
+        if j > i:
+            config = True
+            inconfig = True
+            i = j
+            continue
+        j, vl = _check_flag("-b", "--build", 0, args, i)
+        if j > i:
+            build = True
+            inconfig = False
+            i = j
+            continue
+        j, vl = _check_flag("-j", "--jobs", 1, args, i)
+        if j > i:
+            i = j
+            try:
+                buildprocess = int(vl[0])
+            except:
+                print("Invalid value for -j/--jobs flag: %s" % vl[0])
+            continue
+        j, vl = _check_flag("-i", "--install", 0, args, i)
+        if j > i:
+            install = True
+            inconfig = False
+            i = j
+            continue
+        j, vl = _check_flag("-ip", "--install-prefix", 1, args, i)
+        if j > i:
+            installprefix = os.path.abspath(vl[0])
+            inconfig = False
+            i = j
+            continue
+        j, vl = _check_flag("-f", "--force", 0, args, i)
+        if j > i:
+            force = True
+            inconfig = False
+            i = j
+            continue
+        j, vl = _check_flag("-x", "--clean", 0, args, i)
+        if j > i:
+            clean = True
+            inconfig = False
+            i = j
+            continue
+        j, vl = _check_flag("-v", "--verbose", 0, args, i)
+        if j > i:
+            verbose = True
+            inconfig = False
+            i = j
+            continue
+        j, vl = _check_flag("-dr", "--dry-run", 0, args, i)
+        if j > i:
+            dryrun = True
+            inconfig = False
+            i = j
+            continue
+        j, vl = _check_flag("-h", "--help", 0, args, i)
+        if j > i:
+            _usage()
+            sys.exit(0)
+
+        if inconfig:
+            spl = args[i].split("=")
+            if len(spl) < 2:
+                print("Invalid configure argument: %s" % args[i])
+                sys.exit(1)
+            configopts.append(args[i])
+            i += 1
+        else:
+            print("Unexpected argument: %s" % args[i])
+            sys.exit(1)
+
+    suffix = ("debug" if debug else "release")
+
+    outdir = os.path.join(topdir, suffix)
+    blddir = os.path.join(blddir, suffix)
+
+    if not os.path.isdir(blddir):
+        if not config:
+            print("Project hasn't been configured yet")
+            sys.exit(1)
+        if not dryrun:
+            os.makedirs(blddir)
+    else:
+        if clean and config is False and build is False:
+            print("=== CLEAN: rm -rf %s" % blddir)
+            if not dryrun:
+                shutil.rmtree(blddir)
+            sys.exit(0)
+        else:
+            cmakecache = os.path.join(blddir, "CMakeCache.txt")
+            if config and force and os.path.isfile(cmakecache):
+                print("=== FORCE: rm %s" % cmakecache)
+                if not dryrun:
+                    os.remove(cmakecache)
+
+    if not installprefix:
+        installprefix = outdir
+
+    if buildprocess is None or buildprocess == 0:
+        buildprocess = multiprocessing.cpu_count()
+    elif buildprocess < 0:
+        buildprocess = max(multiprocessing.cpu_count() // -buildprocess, 1)
+
+    cwd = os.getcwd()
+    os.chdir(blddir)
+
+    if config:
+        bt = suffix[0].upper() + suffix[1:]
+        cmd = ["cmake", "../..", "-DCMAKE_INSTALL_PREFIX=%s" % installprefix, "-DCMAKE_BUILD_TYPE=%s" % bt]
+        if configopts:
+            cmd.extend(["-D%s" % x for x in configopts])
+        print("=== CONFIGURE: %s" % subprocess.list2cmdline(cmd))
+        if not dryrun:
+            p = subprocess.Popen(cmd, shell=False)
+            p.communicate()
+            if p.returncode != 0:
+                print("CONFIGURE FAILED!")
+                os.chdir(cwd)
+                sys.exit(p.returncode)
+
+    if build:
+        cmd = ["cmake", "--build", ".", "-j", str(buildprocess)]
+        if clean or force:
+            cmd.append("--clean-first")
+        if verbose:
+            cmd.append("--verbose")
+        print("=== BUILD: %s" % subprocess.list2cmdline(cmd))
+        if not dryrun:
+            p = subprocess.Popen(cmd, shell=False)
+            p.communicate()
+            if p.returncode != 0:
+                print("BUILD FAILED!")
+                os.chdir(cwd)
+                sys.exit(p.returncode)
+
+    if install:
+        # what if we have nothing to install?
+        cmd = ["cmake", "--install", ".", "--prefix", installprefix]
+        if verbose:
+            cmd.append("--verbose")
+        print("=== INSTALL: %s" % subprocess.list2cmdline(cmd))
+        if not dryrun:
+            p = subprocess.Popen(cmd, shell=False)
+            p.communicate()
+            if p.returncode != 0:
+                print("INSTALL FAILED!")
+                os.chdir(cwd)
+                sys.exit(p.returncode)
+
+    os.chdir(cwd)
+
+    sys.exit(0)
+
+

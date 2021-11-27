@@ -28,18 +28,14 @@ SOFTWARE.
 #define __gcore_config_h_
 
 #ifndef GCORE_STATIC
-# ifdef GCORE_EXPORTS
-#   ifdef _WIN32
+# ifdef _WIN32
+#   ifdef GCORE_EXPORTS
 #     define GCORE_API __declspec(dllexport)
 #   else
-#     define GCORE_API
+#     define GCORE_API __declspec(dllimport)
 #   endif
 # else
-#   ifdef _WIN32
-#     define GCORE_API __declspec(dllimport)
-#   else
-#     define GCORE_API
-#   endif
+#   define GCORE_API __attribute__((visibility("default")))
 # endif
 #else
 # define GCORE_API
